@@ -90,6 +90,7 @@ public class Lua
 
 	readonly lua_State_ptr L;
 	static Dictionary<lua_State_ptr, Lua> LuaInstances = new Dictionary<lua_State_ptr, Lua>();
+	static List<LuaWrapper.lua_CFunction> LuaFunctions = new List<LuaWrapper.lua_CFunction>();
 
 	public Lua()
 	{
@@ -105,10 +106,12 @@ public class Lua
 
 	LuaWrapper.lua_CFunction CB_Function(Function fn)
 	{
-		return (lua_State_ptr L) =>
+		LuaWrapper.lua_CFunction cb = (lua_State_ptr L) =>
 		{
 			return fn(LuaInstances[L]);
 		};
+		LuaFunctions.Add(cb);
+		return cb;
 	}
 
 	Function CB_Function(LuaWrapper.lua_CFunction fn)
@@ -276,12 +279,12 @@ public class Lua
 	{
 		LuaWrapper.lua_pushnumber(L, n);
 	}
-	//public void PushLString(string s, ulong l)
-	//{
-	//	char_ptr str = Marshal.StringToHGlobalAnsi(s);
-	//	LuaWrapper.lua_pushlstring(L, str, l);
-	//	Marshal.FreeHGlobal(str);
-	//}    
+	public void PushLString(byte[] str)
+	{
+		IntPtr p = Marshal.AllocHGlobal(str.Length);
+		LuaWrapper.lua_pushlstring(L, p, (ulong)str.Length);
+		Marshal.FreeHGlobal(p);
+	}
 	public void PushString(string s)
 	{
 		char_ptr str = Marshal.StringToHGlobalAnsi(s);
@@ -290,7 +293,7 @@ public class Lua
 	}
 	public void PushCClosure(Function fn, int n)
 	{
-		LuaWrapper.lua_pushcclosure(L, (lua_State_ptr L) => { return fn(LuaInstances[L]); }, n);
+		LuaWrapper.lua_pushcclosure(L, CB_Function(fn), n);
 	}
 	public void PushBoolean(bool b)
 	{
