@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using lua_State_ptr = System.IntPtr;
@@ -15,6 +17,11 @@ public class Lua
 	** lua.h
 	** ===============================================================
 	*/
+
+	public delegate int Function(Lua L);
+	//public delegate byte[] Chunkreader(Lua L, void_ptr ud, out size_t sz);
+	//public delegate int Chunkwriter(Lua L, void_ptr p, size_t sz, void_ptr ud);
+	public delegate void Hook(Lua L, out Debug ar);
 
 	public enum ValueType : int
 	{
@@ -59,24 +66,88 @@ public class Lua
 		COUNT = 1 << EventCode.COUNT,
 	}
 
+	const int LUA_IDSIZE = 60;
 	const int LUA_REGISTRYINDEX = -10000;
 	const int LUA_GLOBALSINDEX = -10001;
+
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	public struct Debug
+	{
+		int Event;
+		string Name;
+		string Namewhat;
+		string What;
+		string Source;
+		int CurrentLine;
+		int Nups;
+		int LineDefined;
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = LUA_IDSIZE)]
+		byte[] Short_src;
+
+		int I_ci;
+	}
+
 	readonly lua_State_ptr L;
+	static Dictionary<lua_State_ptr, Lua> LuaInstances = new Dictionary<lua_State_ptr, Lua>();
 
 	public Lua()
 	{
 		L = LuaWrapper.lua_open();
+		LuaInstances.Add(L, this);
 	}
 
 	~Lua()
 	{
 		LuaWrapper.lua_close(L);
+		LuaInstances.Remove(L);
 	}
 
-
-	public LuaWrapper.lua_CFunction atpanic(LuaWrapper.lua_CFunction panicf)
+	LuaWrapper.lua_CFunction CB_Function(Function fn)
 	{
-		return LuaWrapper.lua_atpanic(L, panicf);
+		return (lua_State_ptr L) =>
+		{
+			return fn(LuaInstances[L]);
+		};
+	}
+
+	Function CB_Function(LuaWrapper.lua_CFunction fn)
+	{
+		return (Lua L) =>
+		{
+			return fn(L.L);
+		};
+	}
+
+	//LuaWrapper.lua_Chunkreader CB_Chunkreader(Chunkreader fn)
+	//{
+	//	return (lua_State_ptr L, void_ptr ud, out size_t sz) =>
+	//	{
+	//		byte[] chunk = fn(LuaInstances[L], ud, out sz);
+	//		return fn(LuaInstances[L], ud, out sz);
+	//	};
+	//}
+
+	LuaWrapper.lua_Hook CB_Hook(Hook fn)
+	{
+		return (lua_State_ptr L, lua_Debug_ptr ar) => 
+		{
+			Debug d = Marshal.PtrToStructure<Debug>(ar);
+			fn(LuaInstances[L], out d); 
+		};
+	}
+
+	//Hook CB_Hook(LuaWrapper.lua_Hook fn)
+	//{
+	//	return (Lua L, lua_Debug_ptr ar) =>
+	//	{
+	//		fn(L.L, ar);
+	//	};
+	//}
+
+	public void AtPanic(Function panicf)
+	{
+		LuaWrapper.lua_atpanic(L, CB_Function(panicf));
 	}
 
 	/*
@@ -176,9 +247,9 @@ public class Lua
 	{
 		return LuaWrapper.lua_strlen(L, idx);
 	}
-	public LuaWrapper.lua_CFunction ToCFunction(int idx)
+	public Function ToFunction(int idx)
 	{
-		return LuaWrapper.lua_tocfunction(L, idx);
+		return CB_Function(LuaWrapper.lua_tocfunction(L, idx));
 	}
 	public void_ptr ToUserData(int idx)
 	{
@@ -197,7 +268,7 @@ public class Lua
     ** push functions (C -> stack)
     */
 
-	public void PushNil(lua_State_ptr L)
+	public void PushNil()
 	{
 		LuaWrapper.lua_pushnil(L);
 	}
@@ -217,9 +288,9 @@ public class Lua
 		LuaWrapper.lua_pushstring(L, str);
 		Marshal.FreeHGlobal(str);
 	}
-	public void PushCClosure(LuaWrapper.lua_CFunction fn, int n)
+	public void PushCClosure(Function fn, int n)
 	{
-		LuaWrapper.lua_pushcclosure(L, fn, n);
+		LuaWrapper.lua_pushcclosure(L, (lua_State_ptr L) => { return fn(LuaInstances[L]); }, n);
 	}
 	public void PushBoolean(bool b)
 	{
@@ -302,22 +373,22 @@ public class Lua
 	{
 		return (ErrorCode)LuaWrapper.lua_pcall(L, nargs, nresults, errfunc);
 	}
-	public ErrorCode CPCall(LuaWrapper.lua_CFunction func, void_ptr ud)
+	public ErrorCode CPCall(Function func, void_ptr ud)
 	{
-		return (ErrorCode)LuaWrapper.lua_cpcall(L, func, ud);
+		return (ErrorCode)LuaWrapper.lua_cpcall(L, CB_Function(func), ud);
 	}
-	public ErrorCode Load(LuaWrapper.lua_Chunkreader reader, void_ptr dt, string chunkname)
-	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(chunkname);
-		int res = LuaWrapper.lua_load(L, reader, dt, str);
-		Marshal.FreeHGlobal(str);
-		return (ErrorCode)res;
-	}
+	//public ErrorCode Load(Chunkreader reader, void_ptr dt, string chunkname)
+	//{
+	//	char_ptr str = Marshal.StringToHGlobalAnsi(chunkname);
+	//	int res = LuaWrapper.lua_load(L, reader, dt, str);
+	//	Marshal.FreeHGlobal(str);
+	//	return (ErrorCode)res;
+	//}
 
-	public int Dump(LuaWrapper.lua_Chunkwriter writer, void_ptr data)
-	{
-		return LuaWrapper.lua_dump(L, writer, data);
-	}
+	//public int Dump(Chunkwriter writer, void_ptr data)
+	//{
+	//	return LuaWrapper.lua_dump(L, writer, data);
+	//}
 
 	/*
     ** coroutine functions
@@ -405,14 +476,14 @@ public class Lua
 		return Marshal.PtrToStringAnsi(LuaWrapper.lua_setupvalue(L, funcindex, n));
 	}
 
-	public int SetHook(LuaWrapper.lua_Hook func, HookMask mask, int count)
+	public int SetHook(Hook func, HookMask mask, int count)
 	{
-		return LuaWrapper.lua_sethook(L, func, (int)mask, count);
+		return LuaWrapper.lua_sethook(L, CB_Hook(func), (int)mask, count);
 	}
-	public LuaWrapper.lua_Hook GetHook()
-	{
-		return LuaWrapper.lua_gethook(L);
-	}
+	//public Hook GetHook()
+	//{
+	//	return CB_Hook(LuaWrapper.lua_gethook(L));
+	//}
 	public HookMask GetHookMask()
 	{
 		return (HookMask)LuaWrapper.lua_gethookmask(L);
@@ -429,13 +500,13 @@ public class Lua
 	*/
 
 	public void Pop(int n) => SetTop(-(n) - 1);
-	public void Register(string n, LuaWrapper.lua_CFunction f)
+	public void Register(string n, Function f)
 	{
 		PushString(n);
-		PushCFunction(f);
+		PushFunction(f);
 		SetTable(LUA_GLOBALSINDEX);
 	}
-	public void PushCFunction(LuaWrapper.lua_CFunction f) => PushCClosure(f, 0);
+	public void PushFunction(Function f) => PushCClosure(f, 0);
 	public bool IsFunction(int n) => Type(n) == ValueType.FUNCTION;
 	public bool IsTable(int n) => Type(n) == ValueType.TABLE;
 	public bool IsLightUserData(int n) => Type(n) == ValueType.LIGHTUSERDATA;
@@ -486,5 +557,201 @@ public class Lua
 	** lauxlib.h
 	** ===============================================================
 	*/
-	
+
+	public void OpenLib(string libname, luaL_reg_ptr l, int nup)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(libname);
+		LuaWrapper.luaL_openlib(L, str, l, nup);
+		Marshal.FreeHGlobal(str);
+	}
+	public int GetMetaField(int obj, string e)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(e);
+		int res = LuaWrapper.luaL_getmetafield(L, obj, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+	public int CallMeta(int obj, string e)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(e);
+		int res = LuaWrapper.luaL_callmeta(L, obj, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+	public int TypError(int narg, string tname)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
+		int res = LuaWrapper.luaL_typerror(L, narg, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+	public int ArgError(int numarg, string extramsg)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(extramsg);
+		int res = LuaWrapper.luaL_argerror(L, numarg, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+	public string CheckLString(int numArg, out size_t l)
+	{
+		return Marshal.PtrToStringAnsi(LuaWrapper.luaL_checklstring(L, numArg, out l));
+	}
+	public string OptLString(int numArg, string def, out size_t l)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(def);
+		char_ptr res = LuaWrapper.luaL_optlstring(L, numArg, str, out l);
+		Marshal.FreeHGlobal(str);
+		return Marshal.PtrToStringAnsi(res);
+	}
+	public float CheckNumber(int numArg)
+	{
+		return LuaWrapper.luaL_checknumber(L, numArg);
+	}
+	public float OptNumber(int nArg, float def)
+	{
+		return LuaWrapper.luaL_optnumber(L, nArg, def);
+	}
+
+	public void CheckStack(int sz, string msg)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(msg);
+		LuaWrapper.luaL_checkstack(L, sz, str);
+		Marshal.FreeHGlobal(str);
+	}
+	public void CheckType(int narg, int t)
+	{
+		LuaWrapper.luaL_checktype(L, narg, t);
+	}
+	public void CheckAny(int narg)
+	{
+		LuaWrapper.luaL_checkany(L, narg);
+	}
+
+	public int NewMetaTable(string tname)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
+		int res = LuaWrapper.luaL_newmetatable(L, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+	public void GetMetaTable(string tname)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
+		LuaWrapper.luaL_getmetatable(L, str);
+		Marshal.FreeHGlobal(str);
+	}
+	public void_ptr CheckUData(int ud, string tname)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
+		void_ptr res = LuaWrapper.luaL_checkudata(L, ud, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+
+	public void Where(int lvl)
+	{
+		LuaWrapper.luaL_where(L, lvl);
+	}
+
+	public int Ref(int t)
+	{
+		return LuaWrapper.luaL_ref(L, t);
+	}
+	public void Unref(int t, int reference)
+	{
+		LuaWrapper.luaL_unref(L, t, reference);
+	}
+
+	public int GetN(int t)
+	{
+		return LuaWrapper.luaL_getn(L, t);
+	}
+	public void SetN(int t, int n)
+	{
+		LuaWrapper.luaL_setn(L, t, n);
+	}
+
+	public int LoadFile(string filename)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(filename);
+		int res = LuaWrapper.luaL_loadfile(L, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+	public int LoadBuffer(void_ptr buff, size_t sz, string name)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(name);
+		int res = LuaWrapper.luaL_loadbuffer(L, buff, sz, str);
+		Marshal.FreeHGlobal(str);
+		return res;
+	}
+
+	public void BuffInit(luaL_Buffer_ptr B)
+	{
+		LuaWrapper.luaL_buffinit(L, B);
+	}
+	public static string PrepBuffer(luaL_Buffer_ptr B)
+	{
+		return Marshal.PtrToStringAnsi(LuaWrapper.luaL_prepbuffer(B));
+	}
+	//public static void luaL_addlstring(luaL_Buffer_ptr B, char_ptr s, size_t l)
+	//{
+	//	LuaWrapper.luaL_addlstring(B, s, l);
+	//}
+	public static void AddString(luaL_Buffer_ptr B, string s)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(s);
+		LuaWrapper.luaL_addstring(B, str);
+		Marshal.FreeHGlobal(str);
+	}
+	public static void AddValue(luaL_Buffer_ptr B)
+	{
+		LuaWrapper.luaL_addvalue(B);
+	}
+	public static void PushResult(luaL_Buffer_ptr B)
+	{
+		LuaWrapper.luaL_pushresult(B);
+	}
+
+	public ErrorCode DoFile(string filename)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(filename);
+		int res = LuaWrapper.lua_dofile(L, str);
+		Marshal.FreeHGlobal(str);
+		return (ErrorCode)res;
+	}
+	public ErrorCode DoString(string str)
+	{
+		char_ptr s = Marshal.StringToHGlobalAnsi(str);
+		int res = LuaWrapper.lua_dostring(L, s);
+		Marshal.FreeHGlobal(s);
+		return (ErrorCode)res;
+	}
+	public ErrorCode DoBuffer(IntPtr buff, ulong sz, string n)
+	{
+		char_ptr str = Marshal.StringToHGlobalAnsi(n);
+		int res = LuaWrapper.lua_dobuffer(L, buff, sz, str);
+		Marshal.FreeHGlobal(str);
+		return (ErrorCode)res;
+	}
+
+	/*
+	** ===============================================================
+	** some useful macros
+	** ===============================================================
+	*/
+
+	public void ArgCheck(bool cond, int numarg, string extramsg) 
+	{
+		if (!cond)
+		{
+			ArgError(numarg, extramsg);
+		}
+	}
+	public string CheckString(int n) => CheckLString(n, out ulong _);
+	public string OptString(int n, string d) => OptLString(n, d, out _);
+	public int CheckInt(int n) => (int)CheckNumber(n);
+	public long CheckLong(int n) => (long)CheckNumber(n);
+	public int OptInt(int n, float d) => (int)OptNumber(n, d);
+	public long OptLong(int n, float d) => (long)OptNumber(n, d);
 }
