@@ -286,9 +286,9 @@ public static class GameLuaAPI
 		return 0.0f;
 	}
 
-	public static void ReadDataFile(string[] args)
+	public static void ReadDataFile(object[] args)
 	{
-		string path = args[0];
+		string path = args[0] as string;
 		Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", args.Length, path);
 	}
 
