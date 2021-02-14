@@ -18,7 +18,6 @@ public class LuaRuntime
         L.OpenString();
         L.OpenTable();
         RegisterLuaFunctions(typeof(GameLuaAPI));
-
         
         Register<Action<string[]>>(LogWarn);
     }
@@ -195,15 +194,37 @@ public class LuaRuntime
             ParameterInfo[] parameters = mi.GetParameters();
             object[] invokeParams = new object[parameters.Length];
 
-            // Special case: dynamic string parameters
-            if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string[]))
+            // Special case: dynamic parameters
+            if (parameters.Length == 1 && parameters[0].ParameterType == typeof(object[]))
             {
-                string[] strParams = new string[expectedParams];
+                object[] dynParams = new object[expectedParams];
                 for (int i = 0; i < expectedParams; ++i)
                 {
-                    strParams[i] = l.ToString(i + 1);
+                    Lua.ValueType luaType = l.Type(i + 1);
+
+                    if (luaType == Lua.ValueType.NIL)
+                    {
+                        dynParams[i] = null;
+                    }
+                    else if (luaType == Lua.ValueType.NUMBER)
+                    {
+                        dynParams[i] = l.ToNumber(i + 1);
+                    }
+                    else if (luaType == Lua.ValueType.STRING)
+                    {
+                        dynParams[i] = l.ToString(i + 1);
+                    }
+                    else if (luaType == Lua.ValueType.BOOLEAN)
+                    {
+                        dynParams[i] = l.ToBoolean(i + 1);
+                    }
+                    else
+                    {
+                        Debug.LogErrorFormat("Cannot convert lua function parameter '{0}' to C# primitive in function '{1}'", luaType.ToString(), mi.Name);
+                        continue;
+                    }
                 }
-                invokeParams[0] = strParams;
+                invokeParams[0] = dynParams;
             }
             else
             {
@@ -233,7 +254,11 @@ public class LuaRuntime
                         continue;
                     }
 
-                    if (funcType == Lua.ValueType.NUMBER)
+                    if (funcType == Lua.ValueType.NIL)
+                    {
+                        invokeParams[paramIdx] = null;
+                    }
+                    else if (funcType == Lua.ValueType.NUMBER)
                     {
                         invokeParams[paramIdx] = l.ToNumber(luaIdx);
                     }
@@ -361,7 +386,7 @@ public class LuaRuntime
         return error == Lua.ErrorCode.NONE;
     }
 
-    static void LogWarn(string[] msg)
+    static void LogWarn(object[] msg)
     {
         Debug.LogWarning(string.Join("", msg));
     }
