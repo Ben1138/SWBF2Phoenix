@@ -1,3 +1,6 @@
 [submodule "lua5.0-swbf2-x64"]
 	path = lua5.0-swbf2-x64
 	url = https://github.com/Ben1138/lua5.0-swbf2-x64
+[submodule "LibSWBF2"]
+	path = LibSWBF2
+	url = https://github.com/Ben1138/LibSWBF2
