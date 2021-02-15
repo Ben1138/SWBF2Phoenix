@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.CompilerServices;
@@ -9,6 +10,9 @@ using System.Linq;
 public class LuaRuntime
 {
     Lua L;
+
+    // Store all MethodInfos for each occouring method name in order to be able to handle overloaded methods
+    Dictionary<string, List<MethodInfo>> MethodOverloads = new Dictionary<string, List<MethodInfo>>();
 
     public LuaRuntime()
     {
@@ -198,6 +202,11 @@ public class LuaRuntime
         return false;
     }
 
+    T Cast<T>(object obj)
+    {
+        return (T)obj;
+    }
+
     bool Register<T>(T method) where T : Delegate
     {
         return Register(method.Method);
@@ -205,10 +214,26 @@ public class LuaRuntime
 
     bool Register(MethodInfo mi)
     {
+        string methodName = mi.Name;
+
         if (!mi.IsStatic)
         {
-            Debug.LogWarningFormat("Cannor register non-static method '{0}' as Lua function!", mi.Name);
+            Debug.LogWarningFormat("Cannor register non-static method '{0}' as Lua function!", methodName);
             return false;
+        }
+
+        List<MethodInfo> overloads = null;
+        if (!MethodOverloads.TryGetValue(methodName, out overloads))
+        {
+            overloads = new List<MethodInfo>();
+            MethodOverloads.Add(methodName, overloads);
+        }
+        overloads.Add(mi);
+
+        if (overloads.Count > 1)
+        {
+            // do not register a method name to Lua more than once!
+            return true;
         }
 
         Lua.Function fn = (Lua l) =>
@@ -218,7 +243,41 @@ public class LuaRuntime
 
             int expectedParams = l.GetTop();
 
-            ParameterInfo[] parameters = mi.GetParameters();
+            // find correct overloaded method (if any)
+            if (!MethodOverloads.TryGetValue(methodName, out List<MethodInfo> availableOverloads))
+            {
+                Debug.LogErrorFormat("There is no method registered to '{0}'!? This should never happen!", methodName);
+                return 0;
+            }
+
+            MethodInfo method = null;
+            foreach (MethodInfo i in availableOverloads)
+            {
+                if (i.GetParameters().Length == expectedParams)
+                {
+                    method = i;
+                    break;
+                }
+            }
+            if (method == null)
+            {
+                foreach (MethodInfo i in availableOverloads)
+                {
+                    ParameterInfo[] p = i.GetParameters();
+                    if (p.Length == 1 && p[0].ParameterType == typeof(object[]))
+                    {
+                        method = i;
+                        break;
+                    }
+                }
+            }
+            if (method == null)
+            {
+                Debug.LogErrorFormat("There is no overloaded method '{0}' registered with {1} parameters (what lua expected)!", methodName, expectedParams);
+                return 0;
+            }
+
+            ParameterInfo[] parameters = method.GetParameters();
             object[] invokeParams = new object[parameters.Length];
 
             // Special case: dynamic parameters
@@ -247,7 +306,7 @@ public class LuaRuntime
                     }
                     else
                     {
-                        Debug.LogErrorFormat("Cannot convert lua function parameter '{0}' to C# primitive in function '{1}'", luaType.ToString(), mi.Name);
+                        Debug.LogErrorFormat("Cannot convert lua function parameter '{0}' to C# primitive in function '{1}'", luaType.ToString(), methodName);
                         continue;
                     }
                 }
@@ -257,7 +316,7 @@ public class LuaRuntime
             {
                 if (expectedParams != parameters.Length)
                 {
-                    Debug.LogErrorFormat("Lua expects {0} parameters, but '{1}' got {2}", expectedParams, mi.Name, parameters.Length);
+                    Debug.LogErrorFormat("Lua expects {0} parameters, but '{1}' got {2}", expectedParams, methodName, parameters.Length);
                     return 0;
                 }
 
@@ -267,7 +326,7 @@ public class LuaRuntime
                     Lua.ValueType funcType = ToLuaType(pi.ParameterType);
                     if (funcType == Lua.ValueType.NONE)
                     {
-                        Debug.LogErrorFormat("Unsupported parameter type '{0}' in lua function '{1}'", pi.ParameterType.Name, mi.Name);
+                        Debug.LogErrorFormat("Unsupported parameter type '{0}' in lua function '{1}'", pi.ParameterType.Name, methodName);
                         continue;
                     }
 
@@ -277,7 +336,7 @@ public class LuaRuntime
                     Lua.ValueType luaType = l.Type(luaIdx);
                     if (luaType != funcType)
                     {
-                        Debug.LogErrorFormat("Unexpected parameter type '{0}' of parameter '{1}' in function '{2}'! Lua expected '{3}'", funcType.ToString(), pi.Name, mi.Name, luaType.ToString());
+                        Debug.LogErrorFormat("Unexpected parameter type '{0}' of parameter '{1}' in function '{2}'! Lua expected '{3}'", funcType.ToString(), pi.Name, methodName, luaType.ToString());
                         continue;
                     }
 
@@ -287,7 +346,8 @@ public class LuaRuntime
                     }
                     else if (funcType == Lua.ValueType.NUMBER)
                     {
-                        invokeParams[paramIdx] = l.ToNumber(luaIdx);
+                        float val = l.ToNumber(luaIdx);
+                        invokeParams[paramIdx] = Convert.ChangeType(val, pi.ParameterType);
                     }
                     else if (funcType == Lua.ValueType.STRING)
                     {
@@ -299,34 +359,34 @@ public class LuaRuntime
                     }
                     else
                     {
-                        Debug.LogErrorFormat("Unsupported parameter type '{0}' in lua function '{1}'", pi.ParameterType.Name, mi.Name);
+                        Debug.LogErrorFormat("Unsupported parameter type '{0}' in lua function '{1}'", pi.ParameterType.Name, methodName);
                         continue;
                     }
                 }
             }
 
-            object outParam = mi.Invoke(null, invokeParams);
+            object outParam = method.Invoke(null, invokeParams);
 
             // Out-Parameter
-            if (mi.ReturnType != typeof(void))
+            if (method.ReturnType != typeof(void))
             {
-                if (IsTuple(mi.ReturnType))
+                if (IsTuple(method.ReturnType))
                 {
-                    FieldInfo[] fields = mi.ReturnType.GetFields();
+                    FieldInfo[] fields = method.ReturnType.GetFields();
                     foreach (FieldInfo field in fields)
                     {
                         if (!HandleOutParam(l, field.FieldType, ref outStack, field.GetValue(outParam)))
                         {
-                            Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", mi.ReturnType.Name, mi.Name);
+                            Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", method.ReturnType.Name, methodName);
                             return 0;
                         }
                     }
                 }
                 else
                 {
-                    if (!HandleOutParam(l, mi.ReturnType, ref outStack, outParam))
+                    if (!HandleOutParam(l, method.ReturnType, ref outStack, outParam))
                     {
-                        Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", mi.ReturnType.Name, mi.Name);
+                        Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", method.ReturnType.Name, methodName);
                         return 0;
                     }
                 }
@@ -335,8 +395,8 @@ public class LuaRuntime
             return outStack;
         };
 
-        L.Register(mi.Name, fn);
-        //Debug.LogFormat("Registered Lua function '{0}'", mi.Name);
+        L.Register(methodName, fn);
+        //Debug.LogFormat("Registered Lua function '{0}'", methodName);
         return true;
     }
 

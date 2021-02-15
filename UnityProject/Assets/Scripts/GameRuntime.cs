@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GameRuntime : MonoBehaviour
 {
-    static Path GamePath = @"F:/SteamLibrary/steamapps/common/Star Wars Battlefront II";
+    public Path GamePath { get; private set; } = @"F:/SteamLibrary/steamapps/common/Star Wars Battlefront II";
     Path StdLVLPC;
 
     public static GameRuntime Instance { get; private set; } = null;
@@ -15,7 +15,8 @@ public class GameRuntime : MonoBehaviour
 
     public static LuaRuntime GetLuaRuntime()
     {
-        return Instance == null ? null : Instance.Env.GetLuaRuntime();
+        RuntimeEnvironment env = GetCurrentEnvironment();
+        return env == null ? null : env.GetLuaRuntime();
     }
 
     public static RuntimeEnvironment GetCurrentEnvironment()
@@ -83,7 +84,6 @@ public class GameRuntime : MonoBehaviour
     {
         Debug.Log("Running Game");
         bIsRunning = true;
-        Env.Execute("geo1c_con");
-        Env.GetLuaRuntime().CallLua("ScriptInit");
+        Env.Run("geo1c_con", "ScriptInit");
     }
 }

@@ -47,14 +47,14 @@ public class LuaEditor : EditorWindow
         GUILayout.BeginHorizontal();
         LuaCode = GUILayout.TextArea(LuaCode, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
 
-        string luaStackStr = "";
+        GUILayout.BeginVertical(GUILayout.Width(400));
         int stackSize = L.GetTop();
-        for (int i = 0; i < stackSize; ++i)
+        for (int i = 1; i <= stackSize; ++i)
         {
             (string typeStr, string valStr) = runtime.LuaValueToStr(i);
-            luaStackStr += string.Format("[{0}] {1}\t{2}\n", i, typeStr, valStr);
+            EditorGUILayout.LabelField(typeStr, valStr);
         }
-        GUILayout.TextArea(luaStackStr, GUILayout.Width(400), GUILayout.ExpandHeight(true));
+        GUILayout.EndVertical();
         GUILayout.EndHorizontal();
         
         if (GUILayout.Button("Execute"))
