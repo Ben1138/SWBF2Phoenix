@@ -5,6 +5,7 @@ using UnityEngine;
 using System.Runtime.CompilerServices;
 using System.Linq;
 
+// Don't permanently store references of these! 
 public class LuaRuntime
 {
     Lua L;
@@ -19,7 +20,7 @@ public class LuaRuntime
         L.OpenTable();
         RegisterLuaFunctions(typeof(GameLuaAPI));
         
-        Register<Action<string[]>>(LogWarn);
+        Register<Action<object[]>>(LogWarn);
     }
 
     public Lua GetLua()
@@ -133,17 +134,43 @@ public class LuaRuntime
 
     public bool Execute(IntPtr binary, ulong buffSize, string name)
     {
-        return PrintError(L.DoBuffer(binary, buffSize, name));
+        if (Check(L.DoBuffer(binary, buffSize, name)))
+        {
+            Debug.LogFormat("'{0}' executed.", name);
+            return true;
+        }
+        return false;
     }
 
     public bool ExecuteFile(string path)
     {
-        return PrintError(L.DoFile(path));
+        return Check(L.DoFile(path));
     }
 
     public bool ExecuteString(string luaCode)
     {
-        return PrintError(L.DoString(luaCode));
+        return Check(L.DoString(luaCode));
+    }
+
+    public bool CallLua(string fnName)
+    {
+        bool res = false;
+        L.GetGlobal(fnName);
+        if (!L.IsFunction(-1))
+        {
+            Debug.LogErrorFormat("Could not find global function '{0}()'!", fnName);
+            return res;
+        }
+        res = Check(L.PCall(0, 0, 0));
+        if (!res)
+        {
+            L.Pop(2);
+        }
+        else
+        {
+            L.Pop(1);
+        }
+        return res;
     }
 
     int Panic(Lua l)
@@ -309,7 +336,7 @@ public class LuaRuntime
         };
 
         L.Register(mi.Name, fn);
-        Debug.LogFormat("Registered Lua function '{0}'", mi.Name);
+        //Debug.LogFormat("Registered Lua function '{0}'", mi.Name);
         return true;
     }
 
@@ -367,14 +394,14 @@ public class LuaRuntime
         }
     }
 
-    bool PrintError(Lua.ErrorCode error)
+    bool Check(Lua.ErrorCode error)
     {
         if (error != Lua.ErrorCode.NONE)
         {
             int stack = L.GetTop();
             if (stack > 0)
             {
-                string luaErrMsg = L.ToString(0);
+                string luaErrMsg = L.ToString(-1);
                 Debug.LogErrorFormat("[LUA] {0} ERROR: {1}", error.ToString(), luaErrMsg);
             }
             else
