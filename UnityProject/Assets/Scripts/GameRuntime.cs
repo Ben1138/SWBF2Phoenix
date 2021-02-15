@@ -73,10 +73,6 @@ public class GameRuntime : MonoBehaviour
             {
                 Run();
             }
-            if (Env.IsLoading)
-            {
-                Debug.Log(Env.GetLoadingProgress());
-            }
         }
     }
 

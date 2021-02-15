@@ -3,8 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
+#if UNITY_EDITOR
 public class EnvironmentMonitor : EditorWindow
 {
+    GUIStyle EnvLVLStyle = new GUIStyle();
+    GUIStyle FallbackLVLStyle = new GUIStyle();
+
+
+    void OnEnable()
+    {
+        EnvLVLStyle.normal.textColor = Color.green;
+        FallbackLVLStyle.normal.textColor = Color.yellow;
+    }
+
     [MenuItem("Environment/Monitor")]
     public static void OpenEnvironmentMonitor()
     {
@@ -28,14 +39,11 @@ public class EnvironmentMonitor : EditorWindow
         EditorGUILayout.LabelField("Environment State", env.State.ToString());
         EditorGUILayout.Space();
 
-        foreach (var lvl in env.LoadedLVLs)
-        {
-            EditorGUILayout.LabelField(lvl.Name, "[ Loaded ]");
-        }
 
-        foreach (LVLHandle handle in env.LoadingLVLs)
+        foreach (var lvl in env.LVLs)
         {
-            EditorGUILayout.LabelField(handle.GetRelativePath(), string.Format("{0:0.} %", env.GetProgress(handle) * 100.0f));
+            EditorGUILayout.LabelField(lvl.RelativePath, lvl.Level == null ? string.Format("{0:0.} %", env.GetProgress(lvl.Handle) * 100.0f) : "Loaded", lvl.bIsFallback ? FallbackLVLStyle : EnvLVLStyle);
         }
     }
 }
+#endif

@@ -6,15 +6,11 @@ using UnityEngine;
 public struct LVLHandle
 {
     uint NativeHandle;
-    Path RelativePath;
 
-    public LVLHandle(uint nativeHandle, Path relPath)
+    public LVLHandle(uint nativeHandle)
     {
         NativeHandle = nativeHandle;
-        RelativePath = relPath;
     }
-
-    public string GetRelativePath() => RelativePath;
     public uint GetNativeHandle() => NativeHandle;
 
     public bool IsValid() => NativeHandle != uint.MaxValue;
@@ -22,6 +18,18 @@ public struct LVLHandle
 
 public class RuntimeEnvironment
 {
+#if UNITY_EDITOR
+    public class LevelST
+    {
+        public LibSWBF2.Wrappers.Level Level;
+        public LVLHandle Handle;
+        public Path RelativePath;
+        public bool bIsFallback;
+    }
+
+    public List<LevelST> LVLs = new List<LevelST>();
+#endif
+
     public enum EnvState
     {
         Init, Loading, Loaded
@@ -29,10 +37,6 @@ public class RuntimeEnvironment
 
     public bool IsLoading => State == EnvState.Loading;
     public bool IsLoaded => State == EnvState.Loaded;
-
-    // for monitoring only
-    public List<LibSWBF2.Wrappers.Level> LoadedLVLs = new List<LibSWBF2.Wrappers.Level>();
-    public List<LVLHandle> LoadingLVLs = new List<LVLHandle>();
 
     public Path Path { get; private set; }
     public Path FallbackPath { get; private set; }
@@ -133,17 +137,33 @@ public class RuntimeEnvironment
         Path fallbackLVLPath = FallbackPath / relativeLVLPath;
         if (envLVLPath.Exists())
         {
-            LVLHandle handle = new LVLHandle(EnvCon.AddLevel(envLVLPath, subLVLs), relativeLVLPath);
-            LoadingLVLs.Add(handle);
+            LVLHandle handle = new LVLHandle(EnvCon.AddLevel(envLVLPath, subLVLs));
+#if UNITY_EDITOR
+            LVLs.Add(new LevelST
+            { 
+                Level = null, 
+                Handle = handle,
+                RelativePath = relativeLVLPath,
+                bIsFallback = false
+            });
+#endif
             return handle;
         }
         if (fallbackLVLPath.Exists())
         {
-            LVLHandle handle = new LVLHandle(EnvCon.AddLevel(fallbackLVLPath, subLVLs), relativeLVLPath);
-            LoadingLVLs.Add(handle);
+            LVLHandle handle = new LVLHandle(EnvCon.AddLevel(fallbackLVLPath, subLVLs));
+#if UNITY_EDITOR
+            LVLs.Add(new LevelST
+            {
+                Level = null,
+                Handle = handle,
+                RelativePath = relativeLVLPath,
+                bIsFallback = true
+            });
+#endif
             return handle;
         }
-        return new LVLHandle(uint.MaxValue, "");
+        return new LVLHandle(uint.MaxValue);
     }
 
     public float GetProgress(LVLHandle handle)
@@ -158,16 +178,15 @@ public class RuntimeEnvironment
             State = EnvState.Loaded;
         }
 
-        for (int i = 0; i < LoadingLVLs.Count; ++i)
+#if UNITY_EDITOR
+        for (int i = 0; i < LVLs.Count; ++i)
         {
-            var lvl = EnvCon.GetLevel(LoadingLVLs[i].GetNativeHandle());
-            if (lvl != null)
+            if (LVLs[i].Level == null)
             {
-                LoadingLVLs.RemoveAt(i);
-                LoadedLVLs.Add(lvl);
-                break; // do not further iterate altered list
+                LVLs[i].Level = EnvCon.GetLevel(LVLs[i].Handle.GetNativeHandle());
             }
         }
+#endif
     }
 
     RuntimeEnvironment(Path path, Path fallbackPath)
