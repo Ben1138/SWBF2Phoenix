@@ -1,9 +1,14 @@
+using System;
 using System.Text;
-using System.Collections.Generic;
 using UnityEngine;
 
 public static class GameLuaAPI
 {
+	static RuntimeEnvironment ENV { get { return GameRuntime.GetCurrentEnvironment(); } }
+	static LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
+	static Lua L { get { return RT.GetLua(); } }
+
+
 	public static string ScriptCB_GetPlatform()
 	{
 		return "PC";
@@ -67,13 +72,7 @@ public static class GameLuaAPI
 
 	public static void ScriptCB_DoFile(string scriptName)
 	{
-		LuaRuntime runtime = GameRuntime.GetLuaRuntime();
-		if (runtime == null)
-		{
-			Debug.LogError("ScriptCB_DoFile has been called without the LuaRuntime present!");
-			return;
-		}
-		// TODO: execute lvl script
+		ENV.Execute(scriptName);
 	}
 
 	public static void SetPS2ModelMemory()
@@ -290,6 +289,11 @@ public static class GameLuaAPI
 	{
 		string path = args[0] as string;
 		Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", args.Length, path);
+
+		string[] subLVLs = new string[args.Length - 1];
+		Array.Copy(args, 1, subLVLs, 0, subLVLs.Length);
+
+		ENV.ScheduleLVL(path, subLVLs);
 	}
 
 	public static void AddDownloadableContent(string threeLetterName, string scriptName, int levelMemoryModifier)
