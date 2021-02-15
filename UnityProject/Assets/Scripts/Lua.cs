@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+
 using lua_State_ptr = System.IntPtr;
 using lua_Debug_ptr = System.IntPtr;
 using char_ptr = System.IntPtr;
@@ -10,6 +11,8 @@ using size_t = System.UInt64;
 using luaL_reg_ptr = System.IntPtr;
 using luaL_Buffer_ptr = System.IntPtr;
 
+
+// Don't permanently store references of these! 
 public class Lua
 {
 	/* 
@@ -90,6 +93,9 @@ public class Lua
 
 	readonly lua_State_ptr L;
 	static Dictionary<lua_State_ptr, Lua> LuaInstances = new Dictionary<lua_State_ptr, Lua>();
+
+	// This exist merely to keep references to all lua lambdas, so they don't get GC'd, which
+	// will lead to a crash otherwise when lua tries to call a deleted C# callback
 	static List<LuaWrapper.lua_CFunction> LuaFunctions = new List<LuaWrapper.lua_CFunction>();
 
 	public Lua()
@@ -517,6 +523,24 @@ public class Lua
 	public bool IsBoolean(int n) => Type(n) == ValueType.BOOLEAN;
 	public bool IsNone(int n) => Type(n) == ValueType.NONE;
 	public bool IsNoneOrNil(int n) => Type(n) <= 0;
+
+	/*
+	** compatibility macros and functions
+	*/
+
+	public void GetRegistry() => PushValue(LUA_REGISTRYINDEX);
+	public void SetGlobal(string s)
+	{
+		PushString(s);
+		Insert(-2);
+		SetTable(LUA_GLOBALSINDEX);
+	}
+
+	public void GetGlobal(string s)
+	{
+		PushString(s);
+		GetTable(LUA_GLOBALSINDEX);
+	}
 
 
 	/* 
