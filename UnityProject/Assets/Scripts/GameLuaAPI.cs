@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -75,22 +76,22 @@ public static class GameLuaAPI
 		ENV.Execute(scriptName);
 	}
 
-	public static void SetPS2ModelMemory()
+	public static void SetPS2ModelMemory(int PS2Mem)
 	{
 		
 	}
 
-	public static void StealArtistHeap()
+	public static void StealArtistHeap(int numBytes)
 	{
 		
 	}
 
-	public static void SetTeamAggressiveness()
+	public static void SetTeamAggressiveness(int teamIdx, float aggr)
 	{
 		
 	}
 
-	public static void SetMemoryPoolSize()
+	public static void SetMemoryPoolSize(string poolName, int size)
 	{
 		
 	}
@@ -100,77 +101,82 @@ public static class GameLuaAPI
 		
 	}
 
-	public static void AddWalkerType()
+	public static void AddWalkerType(int pairOfLegs, int unkwn1)
 	{
 		
 	}
 
-	public static void SetSpawnDelay()
+	public static void SetSpawnDelay(float unkwn1, float unkwn2)
 	{
 		
 	}
 
-	public static void SetHeroClass()
+	public static void SetHeroClass(int teamIdx, string className)
 	{
 		
 	}
 
-	public static void SetTeamAsEnemy()
+	public static void SetTeamAsEnemy(int teamIdx1, int teamIdx2)
 	{
 		
 	}
 
-	public static void SetTeamAsFriend()
+	public static void SetTeamAsFriend(int teamIdx1, int teamIdx2)
 	{
 		
 	}
 
-	public static void SetTeamName()
+	public static void SetTeamName(int teamIdx, string name)
 	{
 		
 	}
 
-	public static void SetUnitCount()
+	public static void SetUnitCount(int teamIdx, int numUnits)
 	{
 		
 	}
 
-	public static void AddUnitClass()
+	public static void AddUnitClass(int teamIdx, string className, int unitCount)
+	{
+
+	}
+
+	public static void AddUnitClass(int teamIdx, string className, int unitCount, int unkwn1)
 	{
 		
 	}
 
-	public static void SetDenseEnvironment()
+	public static void SetDenseEnvironment(string isDense)
+	{
+		// seems to be always called with string "false"
+	}
+
+	public static void SetMinFlyHeight(float height)
 	{
 		
 	}
 
-	public static void SetMinFlyHeight()
+	public static void SetMaxFlyHeight(float height)
 	{
 		
 	}
 
-	public static void SetMaxFlyHeight()
+	public static void SetMaxPlayerFlyHeight(float height)
 	{
 		
 	}
 
-	public static void SetMaxPlayerFlyHeight()
+	public static void SetAttackingTeam(int teamIdx)
 	{
 		
 	}
 
-	public static void SetAttackingTeam()
+	public static void AddCameraShot(object[] args)
 	{
 		
 	}
 
-	public static void AddCameraShot()
-	{
-		
-	}
-
-	public static void SetTeamIcon()
+	public static void SetTeamIcon(int teamIdx, string iconName, string hudIconName, string flagIconName)
 	{
 		
 	}
@@ -185,7 +191,7 @@ public static class GameLuaAPI
 		
 	}
 
-	public static void SetReinforcementCount()
+	public static void SetReinforcementCount(int teamIdx, int count)
 	{
 		
 	}
@@ -195,47 +201,48 @@ public static class GameLuaAPI
 		
 	}
 
-	public static void OpenAudioStream()
+	public static int OpenAudioStream(string lvlPath, string streamName)
+	{
+		// TODO: what exactly does this function return? An audio stream object?
+		return 0;
+	}
+
+	public static void AudioStreamAppendSegments(string lvlPath, string voiceOverName, int audioStream)
 	{
 		
 	}
 
-	public static void AudioStreamAppendSegments()
+	public static void SetBleedingVoiceOver(int teamIdx1, int teamIdx2, string voiceOverName, int unkwn1)
 	{
 		
 	}
 
-	public static void SetBleedingVoiceOver()
+	public static void SetLowReinforcementsVoiceOver(int teamIdx1, int teamIdx2, string voiceOverName, float unkwn1, int unkwn2)
 	{
 		
 	}
 
-	public static void SetLowReinforcementsVoiceOver()
+	public static void SetOutOfBoundsVoiceOver(int teamIdx, string soundName)
 	{
 		
 	}
 
-	public static void SetOutOfBoundsVoiceOver()
+	public static void SetAmbientMusic(int teamIdx, float unkwn1, string musicName, int unkwn2, int unkwn3)
 	{
 		
 	}
 
-	public static void SetAmbientMusic()
+	public static void SetVictoryMusic(int teamIdx, string soundName)
 	{
 		
 	}
 
-	public static void SetVictoryMusic()
+	public static void SetDefeatMusic(int teamIdx, string soundName)
 	{
 		
 	}
 
-	public static void SetDefeatMusic()
-	{
-		
-	}
-
-	public static void SetSoundEffect()
+	public static void SetSoundEffect(string eventName, string soundName)
 	{
 		
 	}
@@ -287,13 +294,29 @@ public static class GameLuaAPI
 
 	public static void ReadDataFile(object[] args)
 	{
-		string path = args[0] as string;
-		Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", args.Length, path);
+		// NOTE: ReadDataFile has dynamic parameters and can be either called:
+		// - ReadDataFile("file.lvl", "subLVL1", "subLVL2", ...)
+		// - ReadDataFile("file.lvl;subLVL1;subLVL2")
+		// or potentially as a mixture. Though I personally didn't see a mixture yet.
 
-		string[] subLVLs = new string[args.Length - 1];
-		Array.Copy(args, 1, subLVLs, 0, subLVLs.Length);
+		string path = "";
 
-		ENV.ScheduleLVL(path, subLVLs);
+		List<string> subLVLs = new List<string>();
+		for (int i = 0; i < args.Length; ++i)
+        {
+			string arg = (string)args[i];
+			string[] splits = arg.Split(';');
+			subLVLs.AddRange(arg.Split(';'));
+
+			if (i == 0)
+            {
+				path = splits[0];
+				subLVLs.RemoveAt(0);
+			}
+		}
+
+		//Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", subLVLs.Count, path);
+		ENV.ScheduleLVL(path, subLVLs.ToArray());
 	}
 
 	public static void AddDownloadableContent(string threeLetterName, string scriptName, int levelMemoryModifier)

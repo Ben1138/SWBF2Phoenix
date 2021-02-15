@@ -1,21 +1,27 @@
 public class Path
 {
     string P;
-
+    
     public Path(string path)
     {
         P = path;
 
-        // always ensure forward slash
-        P.Replace('\\', '/');
+        // always ensure useage of forward slash
+        P = P.Replace('\\', '/');
+        P = P.Replace(@"\\", "/");
+
+        // Paths never end with a slash '/'
+        if (P.EndsWith("/"))
+        {
+            P = P.Substring(0, P.Length - 1);
+        }
     }
 
     public static implicit operator string(Path p) => p.P;
     public static implicit operator Path(string p) => new Path(p);
 
     public static Path operator /(Path lhs, Path rhs) => Concat(lhs, rhs);
-    public static Path operator /(string lhs, Path rhs) => Concat(lhs, rhs);
-    public static Path operator /(Path lhs, string rhs) => Concat(lhs, rhs);
+    public static Path operator -(Path lhs, Path rhs) => Remove(lhs, rhs);
 
     public bool Exists() => System.IO.File.Exists(P) || System.IO.Directory.Exists(P);
 
@@ -27,22 +33,18 @@ public class Path
     public static Path Concat(Path lhs, Path rhs)
     {
         Path path = new Path(lhs);
-        if (!path.P.EndsWith("/"))
-        {
-            path.P += '/';
-        }
-        path.P += rhs.P;
+        path.P += '/' + rhs.P;
         return path;
     }
 
-    public static Path Concat(Path lhs, string rhs)
+    public static Path Remove(Path lhs, Path rhs)
     {
         Path path = new Path(lhs);
-        if (!path.P.EndsWith("/"))
+        path.P = path.P.Replace(rhs.P, "");
+        if (path.P.EndsWith("/"))
         {
-            path.P += '/';
+            path.P = path.P.Substring(0, path.P.Length - 1);
         }
-        path.P += rhs;
         return path;
     }
 
@@ -50,5 +52,11 @@ public class Path
     {
         System.IO.FileAttributes attr = System.IO.File.GetAttributes(P);
         return attr != System.IO.FileAttributes.Directory;
+    }
+
+    public string GetLeaf()
+    {
+        string[] nodes = P.Split('/');
+        return nodes[nodes.Length - 1];
     }
 }
