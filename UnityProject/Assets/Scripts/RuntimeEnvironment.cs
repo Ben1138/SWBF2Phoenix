@@ -18,39 +18,53 @@ public struct LVLHandle
 
 public class RuntimeEnvironment
 {
-#if UNITY_EDITOR
-    public class LevelST
+    public class LevelLoadST
     {
-        public LibSWBF2.Wrappers.Level Level;
         public LVLHandle Handle;
         public Path RelativePath;
         public bool bIsFallback;
     }
 
-    public List<LevelST> LVLs = new List<LevelST>();
-#endif
-
-    public enum EnvState
+    public class LevelST
     {
-        Init, Loading, Loaded
+        public LibSWBF2.Wrappers.Level Level;
+        public Path RelativePath;
+        public bool bIsFallback;
     }
 
-    public bool IsLoading => State == EnvState.Loading;
-    public bool IsLoaded => State == EnvState.Loaded;
+    public List<LevelST> LVLs = new List<LevelST>();
+    public List<LevelLoadST> LoadingLVLs = new List<LevelLoadST>();
+
+    public enum EnvStage
+    {
+        Init,           // env creation, base lvls (mission.lvl, ...) scheduled
+        LoadingBase,    // loading base lvls
+        ExecuteMain,    // execute lua main function -> scheduling world lvls
+        LoadingWorld,   // loading world lvls
+        CreateScene,    // create unity scene, convert all meshes, etc. + call optional lua post load function
+        Loaded          // ready to rumble
+    }
+
+    public bool IsLoaded => Stage == EnvStage.Loaded;
 
     public Path Path { get; private set; }
     public Path FallbackPath { get; private set; }
-    public EnvState State { get; private set; }
+    public EnvStage Stage { get; private set; }
+
+    bool CanSchedule => Stage == EnvStage.Init || Stage == EnvStage.ExecuteMain;
+    bool CanExecute => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
 
     LuaRuntime LuaRT;
-
-    //uint MissionHandle;
-    //uint CommonHandle;
-
     LibSWBF2.Wrappers.Container EnvCon;
 
+    // points to world level inside 'LVLs'
+    LibSWBF2.Wrappers.Level WorldLevel;
 
-    public static RuntimeEnvironment Create(Path envPath, Path fallbackPath)
+    string InitScriptName;
+    string InitFunctionName;
+    string PostLoadFunctionName;
+
+    public static RuntimeEnvironment Create(Path envPath, Path fallbackPath = null)
     {
         if (!envPath.Exists())
         {
@@ -65,8 +79,11 @@ public class RuntimeEnvironment
         Debug.Assert(fallbackPath.Exists());
 
         RuntimeEnvironment rt = new RuntimeEnvironment(envPath, fallbackPath);
+        rt.Stage = EnvStage.Init;
+        rt.WorldLevel = null;
         rt.ScheduleLVL("mission.lvl");
-        rt.ScheduleLVL("common.lvl");
+        //rt.ScheduleLVL("common.lvl");
+        //rt.ScheduleLVL("core.lvl");
         return rt;
     }
 
@@ -77,7 +94,7 @@ public class RuntimeEnvironment
 
     public bool Execute(string scriptName)
     {
-        Debug.Assert(State == EnvState.Loaded);
+        Debug.Assert(CanExecute);
         LibSWBF2.Wrappers.Script s = EnvCon.FindWrapper<LibSWBF2.Wrappers.Script>(scriptName);
         if (s == null || !s.IsValid())
         {
@@ -94,34 +111,56 @@ public class RuntimeEnvironment
         return LuaRT.Execute(luaBin, size, s.Name);
     }
 
-    public bool Run(string initScript, string initFn)
+    public void Run(string initScript, string initFn = null, string postLoadFn = null)
     {
-        Debug.Assert(State == EnvState.Loaded);
+        Debug.Assert(Stage == EnvStage.Init);
 
-        // 1 - execute the main script
-        bool res = Execute(initScript);
-
-        // 2 - execute the main function
-        if (res)
-        {
-            res &= LuaRT.CallLua(initFn);
-        }
-
-        // 3 - load via ReadDataFile scheduled lvl files
-        if (res)
-        {
-            //LoadScheduled();
-        }
-
-        return res;
-    }
-
-    public void LoadScheduled()
-    {
-        Debug.Assert(State != EnvState.Loading);
+        InitScriptName = initScript;
+        InitFunctionName = initFn;
+        PostLoadFunctionName = postLoadFn;
 
         EnvCon.LoadLevels();
-        State = EnvState.Loading;
+        Stage = EnvStage.LoadingBase;
+    }
+
+    void RunMain()
+    {
+        Debug.Assert(Stage == EnvStage.ExecuteMain);
+
+        // 1 - execute the main script
+        if (!Execute(InitScriptName))
+        {
+            Debug.LogErrorFormat("Executing lua main script '{0}' failed!", InitScriptName);
+            return;
+        }
+
+        // 2 - execute the main function
+        if (!string.IsNullOrEmpty(InitFunctionName) && !LuaRT.CallLua(InitFunctionName))
+        {
+            Debug.LogErrorFormat("Executing lua main function '{0}' failed!", InitFunctionName);
+            return;
+        }
+
+        LuaRT.CallLua(PostLoadFunctionName);
+
+        // 3 - load via ReadDataFile scheduled lvl files
+        //EnvCon.LoadLevels();
+        //Stage = EnvStage.LoadingWorld;
+    }
+
+    void CreateScene()
+    {
+        Debug.Assert(Stage == EnvStage.CreateScene);
+
+        // TODO: world level conversion starts here
+
+        // 4 - execute post load function AFTER scene has been created
+        if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLua(PostLoadFunctionName))
+        {
+            Debug.LogErrorFormat("Executing lua post load function '{0}' failed!", PostLoadFunctionName);
+        }
+
+        Stage = EnvStage.Loaded;
     }
 
     public float GetLoadingProgress()
@@ -129,40 +168,36 @@ public class RuntimeEnvironment
         return EnvCon.GetOverallProgress();
     }
 
-    public LVLHandle ScheduleLVL(Path relativeLVLPath, string[] subLVLs = null)
+    public LVLHandle ScheduleLVL(Path relativeLVLPath, string[] subLVLs = null, bool bForceLocal = false)
     {
-        Debug.Assert(State != EnvState.Loading);
+        Debug.Assert(CanSchedule);
 
         Path envLVLPath = Path / relativeLVLPath;
         Path fallbackLVLPath = FallbackPath / relativeLVLPath;
         if (envLVLPath.Exists())
         {
             LVLHandle handle = new LVLHandle(EnvCon.AddLevel(envLVLPath, subLVLs));
-#if UNITY_EDITOR
-            LVLs.Add(new LevelST
+            LoadingLVLs.Add(new LevelLoadST
             { 
-                Level = null, 
                 Handle = handle,
                 RelativePath = relativeLVLPath,
                 bIsFallback = false
             });
-#endif
             return handle;
         }
-        if (fallbackLVLPath.Exists())
+        if (!bForceLocal && fallbackLVLPath.Exists())
         {
             LVLHandle handle = new LVLHandle(EnvCon.AddLevel(fallbackLVLPath, subLVLs));
-#if UNITY_EDITOR
-            LVLs.Add(new LevelST
+            LoadingLVLs.Add(new LevelLoadST
             {
-                Level = null,
                 Handle = handle,
                 RelativePath = relativeLVLPath,
                 bIsFallback = true
             });
-#endif
             return handle;
         }
+
+        Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relativeLVLPath);
         return new LVLHandle(uint.MaxValue);
     }
 
@@ -173,27 +208,52 @@ public class RuntimeEnvironment
 
     public void Update()
     {
-        if (State == EnvState.Loading && EnvCon.IsDone())
+        for (int i = 0; i < LoadingLVLs.Count; ++i)
         {
-            State = EnvState.Loaded;
-        }
-
-#if UNITY_EDITOR
-        for (int i = 0; i < LVLs.Count; ++i)
-        {
-            if (LVLs[i].Level == null)
+            var lvl = EnvCon.GetLevel(LoadingLVLs[i].Handle.GetNativeHandle());
+            if (lvl != null)
             {
-                LVLs[i].Level = EnvCon.GetLevel(LVLs[i].Handle.GetNativeHandle());
+                LVLs.Add(new LevelST
+                {
+                    Level = lvl,
+                    RelativePath = LoadingLVLs[i].RelativePath,
+                    bIsFallback = LoadingLVLs[i].bIsFallback
+                });
+                if (lvl.IsWorldLevel)
+                {
+                    if (WorldLevel != null)
+                    {
+                        Debug.LogErrorFormat("Encounterred another world lvl '{0}' in environment! Previously found world lvl: '{1}'", lvl.Name, WorldLevel.Name);
+                    }
+                    else
+                    {
+                        WorldLevel = lvl;
+                    }
+                }
+
+                LoadingLVLs.RemoveAt(i);
+                break; // do not further iterate altered list
             }
         }
-#endif
+
+        if (Stage == EnvStage.LoadingBase && EnvCon.IsDone())
+        {
+            Stage = EnvStage.ExecuteMain;
+            RunMain();
+        }
+
+        if (Stage == EnvStage.LoadingWorld && EnvCon.IsDone())
+        {
+            Stage = EnvStage.CreateScene;
+            CreateScene();
+        }
     }
 
     RuntimeEnvironment(Path path, Path fallbackPath)
     {
         Path = path;
         FallbackPath = fallbackPath;
-        State = EnvState.Init;
+        Stage = EnvStage.Init;
 
         LuaRT = new LuaRuntime();
         EnvCon = new LibSWBF2.Wrappers.Container();
