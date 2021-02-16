@@ -55,43 +55,92 @@ public class LuaRuntime
         {
             return Lua.ValueType.BOOLEAN;
         }
+        else if (T == typeof(Lua.Function))
+        {
+            return Lua.ValueType.FUNCTION;
+        }
+        else if (T == typeof(object))
+        {
+            return Lua.ValueType.NIL;
+        }
 
         return Lua.ValueType.NONE;
     }
 
-    public T ToValue<T>(int idx)
+    public object ToValue(int idx)
     {
-        Lua.ValueType desiredType = ToLuaType(typeof(T));
-        if (desiredType == Lua.ValueType.NONE)
-        {
-            Debug.LogErrorFormat("Cannot convert Type '{0}' to a Lua Type!", typeof(T).Name);
-            return default;
-        }
+        return ToValue(L, idx);
+    }
 
-        Lua.ValueType type = L.Type(idx);
-        if (desiredType != type)
-        {
-            Debug.LogErrorFormat("Desired Type is '{0}', but Lua Type is '{0}'!", desiredType.ToString(), type.ToString());
-            return default;
-        }
-
+    public static object ToValue(Lua l, int idx)
+    {
+        Lua.ValueType type = l.Type(idx);
         object res;
         switch (type)
         {
+            case Lua.ValueType.NIL:
+                res = null;
+                break;
             case Lua.ValueType.NUMBER:
-                res = L.ToNumber(idx);
+                res = l.ToNumber(idx);
                 break;
             case Lua.ValueType.STRING:
-                res = L.ToString(idx);
+                res = l.ToString(idx);
                 break;
             case Lua.ValueType.BOOLEAN:
-                res = L.ToBoolean(idx);
+                res = l.ToBoolean(idx);
+                break;
+            case Lua.ValueType.FUNCTION:
+                res = l.ToFunction(idx);
                 break;
             default:
-                Debug.LogErrorFormat("Cannot convert Lua Type '{0}' to C# primitive!", type.ToString());
-                return default;
+                Debug.LogErrorFormat("Cannot convert Lua Type '{0}' to C# equivalent!", type.ToString());
+                return null;
         }
-        return (T)res;
+        return res;
+    }
+
+    public int PushValue<T>(T value)
+    {
+        return PushValue(L, value);
+    }
+
+    public static int PushValue<T>(Lua l, T value)
+    {
+        return PushValue(l, value, typeof(T));
+    }
+
+    public static int PushValue(Lua l, object value, Type T)
+    {
+        Lua.ValueType type = ToLuaType(T);
+        if (type == Lua.ValueType.NUMBER)
+        {
+            l.PushNumber(Convert.ToSingle(value));
+            return 1;
+        }
+        else if (type == Lua.ValueType.STRING)
+        {
+            l.PushString(Convert.ToString(value));
+            return 1;
+        }
+        else if (type == Lua.ValueType.BOOLEAN)
+        {
+            l.PushBoolean(Convert.ToBoolean(value));
+            return 1;
+        }
+        else if (type == Lua.ValueType.FUNCTION)
+        {
+            l.PushFunction((Lua.Function)value);
+            return 1;
+        }
+        else if (T == typeof(byte[]))
+        {
+            l.PushLString((byte[])value);
+            return 1;
+        }
+
+        Debug.LogErrorFormat("Cannot not push C# value of type '{0}' to lua!", T.Name);
+        return 0;
     }
 
     public (string, string) LuaValueToStr(int idx)
@@ -202,7 +251,7 @@ public class LuaRuntime
         return false;
     }
 
-    T Cast<T>(object obj)
+    static T Cast<T>(object obj)
     {
         return (T)obj;
     }
@@ -238,10 +287,15 @@ public class LuaRuntime
 
         Lua.Function fn = (Lua l) =>
         {
-            int inStack = 0;
-            int outStack = 0;
+            int inStackCount = 0;
+            int outStackCount = 0;
 
             int expectedParams = l.GetTop();
+            Lua.ValueType[] expectedParamTypes = new Lua.ValueType[expectedParams];
+            for (int i = 0; i < expectedParams; ++i)
+            {
+                expectedParamTypes[i] = l.Type(i + 1);
+            }
 
             // find correct overloaded method (if any)
             if (!MethodOverloads.TryGetValue(methodName, out List<MethodInfo> availableOverloads))
@@ -255,6 +309,7 @@ public class LuaRuntime
             {
                 if (i.GetParameters().Length == expectedParams)
                 {
+
                     method = i;
                     break;
                 }
@@ -286,29 +341,7 @@ public class LuaRuntime
                 object[] dynParams = new object[expectedParams];
                 for (int i = 0; i < expectedParams; ++i)
                 {
-                    Lua.ValueType luaType = l.Type(i + 1);
-
-                    if (luaType == Lua.ValueType.NIL)
-                    {
-                        dynParams[i] = null;
-                    }
-                    else if (luaType == Lua.ValueType.NUMBER)
-                    {
-                        dynParams[i] = l.ToNumber(i + 1);
-                    }
-                    else if (luaType == Lua.ValueType.STRING)
-                    {
-                        dynParams[i] = l.ToString(i + 1);
-                    }
-                    else if (luaType == Lua.ValueType.BOOLEAN)
-                    {
-                        dynParams[i] = l.ToBoolean(i + 1);
-                    }
-                    else
-                    {
-                        Debug.LogErrorFormat("Cannot convert lua function parameter '{0}' to C# primitive in function '{1}'", luaType.ToString(), methodName);
-                        continue;
-                    }
+                    dynParams[i] = ToValue(i + 1);
                 }
                 invokeParams[0] = dynParams;
             }
@@ -326,41 +359,20 @@ public class LuaRuntime
                     Lua.ValueType funcType = ToLuaType(pi.ParameterType);
                     if (funcType == Lua.ValueType.NONE)
                     {
-                        Debug.LogErrorFormat("Unsupported parameter type '{0}' in lua function '{1}'", pi.ParameterType.Name, methodName);
+                        Debug.LogErrorFormat("Unsupported C# parameter type '{0}' in function '{1}'", pi.ParameterType.Name, methodName);
                         continue;
                     }
 
-                    int paramIdx = inStack;
-                    int luaIdx = ++inStack;
+                    int paramIdx = inStackCount;
+                    int luaIdx = ++inStackCount;
 
-                    Lua.ValueType luaType = l.Type(luaIdx);
-                    if (luaType != funcType)
-                    {
-                        Debug.LogErrorFormat("Unexpected parameter type '{0}' of parameter '{1}' in function '{2}'! Lua expected '{3}'", funcType.ToString(), pi.Name, methodName, luaType.ToString());
-                        continue;
-                    }
+                    Lua.ValueType luaType = expectedParamTypes[paramIdx];
+                    invokeParams[paramIdx] = ToValue(luaIdx);
 
-                    if (funcType == Lua.ValueType.NIL)
+                    if (luaType == Lua.ValueType.NUMBER)
                     {
-                        invokeParams[paramIdx] = null;
-                    }
-                    else if (funcType == Lua.ValueType.NUMBER)
-                    {
-                        float val = l.ToNumber(luaIdx);
-                        invokeParams[paramIdx] = Convert.ChangeType(val, pi.ParameterType);
-                    }
-                    else if (funcType == Lua.ValueType.STRING)
-                    {
-                        invokeParams[paramIdx] = l.ToString(luaIdx);
-                    }
-                    else if (funcType == Lua.ValueType.BOOLEAN)
-                    {
-                        invokeParams[paramIdx] = l.ToBoolean(luaIdx);
-                    }
-                    else
-                    {
-                        Debug.LogErrorFormat("Unsupported parameter type '{0}' in lua function '{1}'", pi.ParameterType.Name, methodName);
-                        continue;
+                        // also support other number parameters, such as int, long etc
+                        invokeParams[paramIdx] = Convert.ChangeType(invokeParams[paramIdx], pi.ParameterType);
                     }
                 }
             }
@@ -370,12 +382,13 @@ public class LuaRuntime
             // Out-Parameter
             if (method.ReturnType != typeof(void))
             {
+                // Lua supports multiple return values. In C# we use tuples to mirror that
                 if (IsTuple(method.ReturnType))
                 {
                     FieldInfo[] fields = method.ReturnType.GetFields();
                     foreach (FieldInfo field in fields)
                     {
-                        if (!HandleOutParam(l, field.FieldType, ref outStack, field.GetValue(outParam)))
+                        if (!HandleOutParam(l, ref outStackCount, field.FieldType, field.GetValue(outParam)))
                         {
                             Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", method.ReturnType.Name, methodName);
                             return 0;
@@ -384,7 +397,7 @@ public class LuaRuntime
                 }
                 else
                 {
-                    if (!HandleOutParam(l, method.ReturnType, ref outStack, outParam))
+                    if (!HandleOutParam(l, ref outStackCount, method.ReturnType, outParam))
                     {
                         Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", method.ReturnType.Name, methodName);
                         return 0;
@@ -392,7 +405,7 @@ public class LuaRuntime
                 }
             }
 
-            return outStack;
+            return outStackCount;
         };
 
         L.Register(methodName, fn);
@@ -400,34 +413,11 @@ public class LuaRuntime
         return true;
     }
 
-    static bool HandleOutParam(Lua l, Type t, ref int stackCounter, object outParam)
+    static bool HandleOutParam(Lua l, ref int stackCounter, Type outParamType, object outParam)
     {
-        Lua.ValueType type = ToLuaType(t);
-        if (type == Lua.ValueType.NUMBER)
-        {
-            l.PushNumber(Convert.ToSingle(outParam));
-            stackCounter++;
-            return true;
-        }
-        else if (type == Lua.ValueType.STRING)
-        {
-            l.PushString(Convert.ToString(outParam));
-            stackCounter++;
-            return true;
-        }
-        else if (type == Lua.ValueType.BOOLEAN)
-        {
-            l.PushBoolean(Convert.ToBoolean(outParam));
-            stackCounter++;
-            return true;
-        }
-        else if (t == typeof(byte[]))
-        {
-            l.PushLString((byte[])outParam);
-            stackCounter++;
-            return true;
-        }
-        return false;
+        int prev = stackCounter;
+        stackCounter += PushValue(l, outParam, outParamType);
+        return stackCounter != prev;
     }
 
     void RegisterLuaFunctions(Type sourceClass)
@@ -468,7 +458,6 @@ public class LuaRuntime
             {
                 Debug.LogErrorFormat("[LUA] {0} ERROR", error.ToString());
             }
-            Debug.LogErrorFormat(error.ToString());
         }
         return error == Lua.ErrorCode.NONE;
     }

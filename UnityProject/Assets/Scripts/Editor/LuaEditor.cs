@@ -13,7 +13,7 @@ public class LuaEditor : EditorWindow
 
     string LuaCode;
     
-    [MenuItem("Lua/Editor")]
+    [MenuItem("Debug/Lua Editor")]
     public static void OpenLuaEditor()
     {
         LuaEditor window = GetWindow<LuaEditor>();
@@ -33,6 +33,8 @@ public class LuaEditor : EditorWindow
             PlayerPrefs.SetString(SAVE_CODE_KEY, LuaCode);
             SaveCounter = 0.0f;
         }
+
+        Repaint();
     }
 
     void OnGUI()

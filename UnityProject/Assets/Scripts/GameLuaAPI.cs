@@ -105,6 +105,25 @@ public static class GameLuaAPI
 	{
 		
 	}
+	public static int AddAIGoal(int teamIdx, string goalName, float goalWeight)
+	{
+		return 0;
+	}
+
+	public static int AddAIGoal(int teamIdx, string goalName, float goalWeight, string captureRegion)
+	{
+		return 0;
+	}
+
+	public static int AddAIGoal(int teamIdx, string goalName, float goalWeight, string captureRegion, int flagPtr)
+	{
+		return 0;
+	}
+
+	public static void ClearAIGoals(int teamIdx)
+    {
+
+    }
 
 	public static void SetSpawnDelay(float unkwn1, float unkwn2)
 	{
@@ -181,7 +200,7 @@ public static class GameLuaAPI
 		
 	}
 
-	public static void SetBleedRate()
+	public static void SetBleedRate(int teamIdx, float rate)
 	{
 		
 	}
@@ -247,12 +266,17 @@ public static class GameLuaAPI
 		
 	}
 
-	public static void SetMapNorthAngle()
+	public static void SetMapNorthAngle(int unkwn1)
+	{
+
+	}
+
+	public static void SetMapNorthAngle(float angle, int unkwn1)
 	{
 		
 	}
 
-	public static void AISnipeSuitabilityDist()
+	public static void AISnipeSuitabilityDist(float distance)
 	{
 		
 	}
@@ -262,17 +286,17 @@ public static class GameLuaAPI
 		
 	}
 
-	public static void AddDeathRegion()
+	public static void AddDeathRegion(string regionName)
 	{
 		
 	}
 
-	public static void SetProperty()
+	public static void SetProperty(string instName, string propName, object propValue)
 	{
 		
 	}
 
-	public static void DisableBarriers()
+	public static void DisableBarriers(string barrierName)
 	{
 		
 	}
@@ -287,14 +311,64 @@ public static class GameLuaAPI
 		
 	}
 
-	public static float GetCommandPostBleedValue()
+	public static float GetCommandPostBleedValue(string cpName, int teamIdx)
 	{
 		return 0.0f;
 	}
 
+	public static void SetFlagGameplayType(string typeName)
+    {
+
+    }
+
+	public static void AddMissionObjective(int teamIdx, string localizePath)
+	{
+
+	}
+
+	public static void AddMissionObjective(int teamIdx, string colorName, string localizePath)
+	{
+
+	}
+
+	public static void ActivateObjective(string objectiveName)
+    {
+
+    }
+
+	public static int CreateTimer(string timerName)
+    {
+		return 0;
+    }
+
+	public static void StopTimer(int timer)
+    {
+
+    }
+
+	public static void SetTimerRate(int timer, float rate)
+	{
+		
+	}
+
+	public static int GetObjectTeam(string objName)
+    {
+		return 0;
+    }
+
+	public static int GetObjectTeam(int objPtr)
+	{
+		return 0;
+	}
+
+	public static bool IsObjectAlive(string objName)
+	{
+		return false;
+	}
+
 	public static void ReadDataFile(object[] args)
 	{
-		// NOTE: ReadDataFile has dynamic parameters and can be either called:
+		// NOTE: ReadDataFile has dynamic parameters and can be either called like:
 		// - ReadDataFile("file.lvl", "subLVL1", "subLVL2", ...)
 		// - ReadDataFile("file.lvl;subLVL1;subLVL2")
 		// or potentially as a mixture. Though I personally didn't see a mixture yet.
@@ -306,7 +380,7 @@ public static class GameLuaAPI
         {
 			string arg = (string)args[i];
 			string[] splits = arg.Split(';');
-			subLVLs.AddRange(arg.Split(';'));
+			subLVLs.AddRange(splits);
 
 			if (i == 0)
             {
@@ -315,12 +389,53 @@ public static class GameLuaAPI
 			}
 		}
 
+		bool bForceLocal = path.StartsWith("dc:", StringComparison.InvariantCultureIgnoreCase);
+		if (bForceLocal)
+        {
+			path = path.Remove(0, 3);
+		}
+
 		//Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", subLVLs.Count, path);
-		ENV.ScheduleLVL(path, subLVLs.ToArray());
+		ENV.ScheduleLVL(path, subLVLs.ToArray(), bForceLocal);
 	}
 
 	public static void AddDownloadableContent(string threeLetterName, string scriptName, int levelMemoryModifier)
 	{
 		
+	}
+
+	// event callbacks
+
+	public static void OnCharacterDeath(Lua.Function callback)
+    {
+		// TODO: store callback in a list and execute it when event occours
+    }
+	public static void OnTicketCountChange(Lua.Function callback)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnTimerElapse(Lua.Function callback, int timer)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnFinishCapture(Lua.Function callback)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnFinishCaptureName(Lua.Function callback, string cpName)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnFinishNeutralize(Lua.Function callback)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnCommandPostRespawn(Lua.Function callback)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnCommandPostKill(Lua.Function callback)
+	{
+		// TODO: store callback in a list and execute it when event occours
 	}
 }

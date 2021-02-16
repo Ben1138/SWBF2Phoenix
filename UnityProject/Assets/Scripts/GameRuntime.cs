@@ -32,7 +32,6 @@ public class GameRuntime : MonoBehaviour
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
         if (GamePath.IsFile() || 
             !GamePath.Exists() || 
-            StdLVLPC.IsFile() || 
             !CheckExistence("common.lvl") ||
             !CheckExistence("core.lvl") ||
             !CheckExistence("ingame.lvl") ||
@@ -44,8 +43,9 @@ public class GameRuntime : MonoBehaviour
             return;
         }
 
-        Env = RuntimeEnvironment.Create(StdLVLPC, null);
-        Env?.LoadScheduled();
+        Env = RuntimeEnvironment.Create(StdLVLPC);
+        Env.Run("cor1c_con", "ScriptInit", "ScriptPostLoad");
+        bIsRunning = true;
     }
 
     bool CheckExistence(string lvlName)
@@ -69,17 +69,6 @@ public class GameRuntime : MonoBehaviour
         if (Env != null)
         {
             Env.Update();
-            if (!bIsRunning && Env.IsLoaded)
-            {
-                Run();
-            }
         }
-    }
-
-    void Run()
-    {
-        Debug.Log("Running Game");
-        bIsRunning = true;
-        Env.Run("geo1c_con", "ScriptInit");
     }
 }
