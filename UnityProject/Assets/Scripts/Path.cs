@@ -1,3 +1,11 @@
+
+/// <summary>
+/// Path will:<br/>
+/// - always use forward slashes
+/// - ensure there is NO trailing slash at the end
+/// - ensure there are no double slashes
+/// - might or might not start with a slash
+/// </summary>
 public class Path
 {
     string P;
@@ -33,7 +41,11 @@ public class Path
     public static Path Concat(Path lhs, Path rhs)
     {
         Path path = new Path(lhs);
-        path.P += '/' + rhs.P;
+        if (!rhs.P.StartsWith("/"))
+        {
+            path.P += '/';
+        }
+        path.P += rhs.P;
         return path;
     }
 
