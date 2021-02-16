@@ -94,6 +94,11 @@ public class RuntimeEnvironment
         return LuaRT;
     }
 
+    public T Find<T>(string texName) where T : LibSWBF2.Wrappers.NativeWrapper, new()
+    {
+        return EnvCon.FindWrapper<T>(texName);
+    }
+
     public bool Execute(string scriptName)
     {
         Debug.Assert(CanExecute);
@@ -136,49 +141,12 @@ public class RuntimeEnvironment
         Stage = EnvStage.LoadingBase;
     }
 
-    void RunMain()
-    {
-        Debug.Assert(Stage == EnvStage.ExecuteMain);
-
-        // 1 - execute the main script
-        if (!Execute(InitScriptName))
-        {
-            Debug.LogErrorFormat("Executing lua main script '{0}' failed!", InitScriptName);
-            return;
-        }
-        OnExecuteMain?.Invoke(this, null);
-
-        // 2 - execute the main function -> will call ReadDataFile multiple times
-        if (!string.IsNullOrEmpty(InitFunctionName) && !LuaRT.CallLua(InitFunctionName))
-        {
-            Debug.LogErrorFormat("Executing lua main function '{0}' failed!", InitFunctionName);
-            return;
-        }
-
-        // 3 - load the (via ReadDataFile) scheduled lvl files
-        EnvCon.LoadLevels();
-        Stage = EnvStage.LoadingWorld;
-    }
-
-    void CreateScene()
-    {
-        Debug.Assert(Stage == EnvStage.CreateScene);
-
-        // TODO: world level conversion starts here
-
-        // 4 - execute post load function AFTER scene has been created
-        if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLua(PostLoadFunctionName))
-        {
-            Debug.LogErrorFormat("Executing lua post load function '{0}' failed!", PostLoadFunctionName);
-        }
-
-        Stage = EnvStage.Loaded;
-        OnLoaded?.Invoke(this, null);
-    }
-
     public float GetLoadingProgress()
     {
-        return EnvCon.GetOverallProgress();
+        float stageContribution = 1.0f / 2.0f;
+        float stageProgress = Stage >= EnvStage.LoadingWorld ? stageContribution : 0.0f;
+
+        return stageProgress + stageContribution * EnvCon.GetOverallProgress();
     }
 
     public LVLHandle ScheduleLVLAbs(Path absoluteLVLPath, string[] subLVLs = null, bool bForceLocal = false)
@@ -281,6 +249,46 @@ public class RuntimeEnvironment
             Stage = EnvStage.CreateScene;
             CreateScene();
         }
+    }
+
+    void RunMain()
+    {
+        Debug.Assert(Stage == EnvStage.ExecuteMain);
+
+        // 1 - execute the main script
+        if (!Execute(InitScriptName))
+        {
+            Debug.LogErrorFormat("Executing lua main script '{0}' failed!", InitScriptName);
+            return;
+        }
+        OnExecuteMain?.Invoke(this, null);
+
+        // 2 - execute the main function -> will call ReadDataFile multiple times
+        if (!string.IsNullOrEmpty(InitFunctionName) && !LuaRT.CallLua(InitFunctionName))
+        {
+            Debug.LogErrorFormat("Executing lua main function '{0}' failed!", InitFunctionName);
+            return;
+        }
+
+        // 3 - load the (via ReadDataFile) scheduled lvl files
+        EnvCon.LoadLevels();
+        Stage = EnvStage.LoadingWorld;
+    }
+
+    void CreateScene()
+    {
+        Debug.Assert(Stage == EnvStage.CreateScene);
+
+        // TODO: world level conversion starts here
+
+        // 4 - execute post load function AFTER scene has been created
+        if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLua(PostLoadFunctionName))
+        {
+            Debug.LogErrorFormat("Executing lua post load function '{0}' failed!", PostLoadFunctionName);
+        }
+
+        Stage = EnvStage.Loaded;
+        OnLoaded?.Invoke(this, null);
     }
 
     RuntimeEnvironment(Path path, Path fallbackPath)
