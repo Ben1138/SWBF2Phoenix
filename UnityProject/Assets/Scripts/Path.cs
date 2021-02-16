@@ -1,3 +1,4 @@
+using UnityEngine;
 
 /// <summary>
 /// Path will:<br/>
@@ -53,6 +54,10 @@ public class Path
     {
         Path path = new Path(lhs);
         path.P = path.P.Replace(rhs.P, "");
+        if (path.P.StartsWith("/"))
+        {
+            path.P = path.P.Substring(1, path.P.Length - 1);
+        }
         if (path.P.EndsWith("/"))
         {
             path.P = path.P.Substring(0, path.P.Length - 1);
@@ -66,9 +71,26 @@ public class Path
         return attr != System.IO.FileAttributes.Directory;
     }
 
-    public string GetLeaf()
+    // nodeCount: how many nodes to return, starting counting from leaf node
+    public Path GetLeafs(int nodeCount)
     {
+        Debug.Assert(nodeCount > 0);
         string[] nodes = P.Split('/');
-        return nodes[nodes.Length - 1];
+        nodeCount = Mathf.Min(nodeCount, nodes.Length);
+        Path result = "";
+        for (int i = nodes.Length - nodeCount; i < nodes.Length; ++i)
+        {
+            result /= nodes[i];
+        }
+        if (result.P.StartsWith("/"))
+        {
+            result.P = result.P.Substring(1, result.P.Length - 1);
+        }
+        return result;
+    }
+
+    public Path GetLeaf()
+    {
+        return GetLeafs(1);
     }
 }

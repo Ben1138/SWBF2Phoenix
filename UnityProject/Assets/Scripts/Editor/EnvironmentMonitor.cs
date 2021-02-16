@@ -30,7 +30,7 @@ public class EnvironmentMonitor : EditorWindow
 
     void OnGUI()
     {
-        RuntimeEnvironment env = GameRuntime.GetCurrentEnvironment();
+        RuntimeEnvironment env = GameRuntime.GetEnvironment();
         if (!Application.isPlaying || GameRuntime.Instance == null || env == null)
         {
             EditorGUILayout.LabelField("Game is not running");
@@ -50,7 +50,7 @@ public class EnvironmentMonitor : EditorWindow
         }
         foreach (var lvl in env.LoadingLVLs)
         {
-            EditorGUILayout.LabelField(lvl.RelativePath, string.Format("{0:0.} %", env.GetProgress(lvl.Handle) * 100.0f), lvl.bIsFallback ? FallbackLVLStyle : EnvLVLStyle);
+            EditorGUILayout.LabelField(lvl.PathPartial, string.Format("{0:0.} %", env.GetProgress(lvl.Handle) * 100.0f), lvl.bIsFallback ? FallbackLVLStyle : EnvLVLStyle);
         }
     }
 }
