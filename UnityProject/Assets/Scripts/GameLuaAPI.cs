@@ -5,14 +5,20 @@ using UnityEngine;
 
 public static class GameLuaAPI
 {
-	static RuntimeEnvironment ENV { get { return GameRuntime.GetCurrentEnvironment(); } }
+	static RuntimeEnvironment ENV { get { return GameRuntime.GetEnvironment(); } }
 	static LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
 	static Lua L { get { return RT.GetLua(); } }
 
 
 	public static string ScriptCB_GetPlatform()
 	{
+		// "PC", "XBox", "PS2"
 		return "PC";
+	}
+
+	public static (float, float, float, float) ScriptCB_GetScreenInfo()
+    {
+		return (Screen.width, Screen.height, 0.0f, Screen.width / Screen.height);
 	}
 
 	public static string ScriptCB_GetOnlineService()
@@ -39,6 +45,21 @@ public static class GameLuaAPI
 	public static void ScriptCB_SetNumBots(int numBots)
 	{
 		
+	}
+
+	public static int ScriptCB_GetCTFNumBots()
+    {
+		return 0;
+    }
+
+	public static float ScriptCB_GetCTFMaxTimeLimit()
+    {
+		return 0.0f;
+    }
+
+	public static int ScriptCB_GetCTFCaptureLimit()
+	{
+		return 0;
 	}
 
 	public static bool ScriptCB_IsMissionSetupSaved()
@@ -200,6 +221,11 @@ public static class GameLuaAPI
 		
 	}
 
+	public static void SetTeamIcon(int teamIdx, string iconName)
+	{
+
+	}
+
 	public static void SetBleedRate(int teamIdx, float rate)
 	{
 		
@@ -296,14 +322,54 @@ public static class GameLuaAPI
 		
 	}
 
+	public static void SetClassProperty(string className, string propName, object propValue)
+	{
+
+	}
+
 	public static void DisableBarriers(string barrierName)
 	{
 		
 	}
 
-	public static void PlayAnimation()
+	public static void PlayAnimation(string animName)
 	{
 		
+	}
+
+	public static void PlayAnimationFromTo(string animName, float start, float end)
+	{
+
+	}
+
+	public static void PauseAnimation(string animName)
+    {
+
+    }
+
+	public static void RewindAnimation(string animName)
+	{
+
+	}
+
+	public static void BlockPlanningGraphArcs(string planNodeName)
+	{
+
+	}
+
+	public static void BlockPlanningGraphArcs(int planNode)
+	{
+
+	}
+
+	public static void UnblockPlanningGraphArcs(string planNodeName)
+    {
+
+    }
+
+	public static void UnblockPlanningGraphArcs(int planNode)
+	{
+
 	}
 
 	public static void SetUberMode()
@@ -316,7 +382,27 @@ public static class GameLuaAPI
 		return 0.0f;
 	}
 
+	public static void AICanCaptureCP(string cpName, int teamIdx, bool canCapture)
+    {
+
+    }
+
+	public static void MapHideCommandPosts()
+    {
+		MapHideCommandPosts(true);
+	}
+
+	public static void MapHideCommandPosts(bool hide)
+	{
+
+	}
+
 	public static void SetFlagGameplayType(string typeName)
+    {
+
+    }
+
+	public static void SetAIViewMultiplier(float multiplier)
     {
 
     }
@@ -351,6 +437,16 @@ public static class GameLuaAPI
 		
 	}
 
+	public static void SetTimerValue(int timer, float value)
+    {
+
+    }
+
+	public static void StartTimer(int timer)
+    {
+
+    }
+
 	public static int GetObjectTeam(string objName)
     {
 		return 0;
@@ -365,6 +461,111 @@ public static class GameLuaAPI
 	{
 		return false;
 	}
+
+	public static void KillObject(string objName)
+    {
+
+    }
+
+	public static void SetNumBirdTypes(int num)
+    {
+
+    }
+
+	public static void SetBirdType(int birdIdx, float unkwn1, string typeName)
+    {
+
+    }
+
+	public static void SetNumFishTypes(int num)
+    {
+
+    }
+
+	public static void SetFishType(int fishIdx, float unkwn1, string typeName)
+	{
+
+	}
+
+	public static void SetAllowBlindJetJumps(int num)
+	{
+
+	}
+
+	public static void SetAIDamageThreshold(string objName, float threshold)
+    {
+
+    }
+
+	public static void SetParticleLODBias(int bias)
+    {
+
+    }
+
+	public static void SetMaxCollisionDistance(float distance)
+	{
+
+	}
+
+	public static void SetWorldExtents(float distance)
+	{
+
+	}
+
+	public static int GetRegion(string regionName)
+    {
+		return 0;
+    }
+
+	public static string GetRegionName(int region)
+	{
+		return "";
+	}
+
+	public static void ActivateRegion(string regionName)
+	{
+
+    }
+
+	public static void ShowTeamPoints(int teamIdx, bool show)
+    {
+
+    }
+
+	public static int GetObjectPtr(string objName)
+    {
+		return 0;
+    }
+
+	public static void MapAddEntityMarker(string objName, string iconName, float size, int teamIdx, string color, bool unkwn1)
+    {
+
+    }
+
+	public static void MapAddEntityMarker(string objName, string iconName, float size, int teamIdx, string color, bool unkwn1, bool unkwn2, bool unkwn3)
+	{
+
+	}
+
+	public static void MapAddEntityMarker(string objName, string iconName, float size, int teamIdx, string color, bool unkwn1, bool unkwn2, bool unkwn3, bool unkwn4)
+	{
+
+	}
+
+	public static void MapRemoveRegionMarker(int region)
+	{
+
+	}
+
+	public static void MapRemoveRegionMarker(string regionName)
+    {
+
+    }
+
+	public static int GetFlagCarrier(string flagName)
+    {
+		return 0;
+    }
 
 	public static void ReadDataFile(object[] args)
 	{
@@ -396,12 +597,12 @@ public static class GameLuaAPI
 		}
 
 		//Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", subLVLs.Count, path);
-		ENV.ScheduleLVL(path, subLVLs.ToArray(), bForceLocal);
+		ENV.ScheduleLVLRel(path, subLVLs.ToArray(), bForceLocal);
 	}
 
 	public static void AddDownloadableContent(string threeLetterName, string scriptName, int levelMemoryModifier)
 	{
-		
+		GameRuntime.Instance.RegisterAddonScript(scriptName, threeLetterName);
 	}
 
 	// event callbacks
@@ -410,6 +611,10 @@ public static class GameLuaAPI
     {
 		// TODO: store callback in a list and execute it when event occours
     }
+	public static void OnCharacterDeathTeam(Lua.Function callback, int teamIdx)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
 	public static void OnTicketCountChange(Lua.Function callback)
 	{
 		// TODO: store callback in a list and execute it when event occours
@@ -435,6 +640,22 @@ public static class GameLuaAPI
 		// TODO: store callback in a list and execute it when event occours
 	}
 	public static void OnCommandPostKill(Lua.Function callback)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnObjectKillName(Lua.Function callback, string objName)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnObjectKillTeam(Lua.Function callback, int teamIdx)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnObjectKillClass(Lua.Function callback, string className)
+	{
+		// TODO: store callback in a list and execute it when event occours
+	}
+	public static void OnObjectRespawnName(Lua.Function callback, string objName)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
