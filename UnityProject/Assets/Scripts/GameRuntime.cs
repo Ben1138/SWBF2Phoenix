@@ -5,11 +5,18 @@ using UnityEngine;
 
 public class GameRuntime : MonoBehaviour
 {
+    public static GameRuntime Instance { get; private set; } = null;
     public Path GamePath { get; private set; } = @"F:/SteamLibrary/steamapps/common/Star Wars Battlefront II";
+
+
+    public Loadscreen InitScreen;
+    public Loadscreen LoadScreen;
+
+
     Path AddonPath => GamePath / "GameData/addon";
     Path StdLVLPC;
+    Loadscreen CurrentLS;
 
-    public static GameRuntime Instance { get; private set; } = null;
 
     RuntimeEnvironment Env;
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
@@ -27,7 +34,57 @@ public class GameRuntime : MonoBehaviour
 
     public void RegisterAddonScript(string scriptName, string addonName)
     {
+        if (RegisteredAddons.TryGetValue(scriptName, out string addNm))
+        {
+            Debug.LogWarningFormat("Addon script '{0}' already registered to '{1}'!", scriptName, addNm);
+            return;
+        }
         RegisteredAddons.Add(scriptName, addonName);
+    }
+
+    public void EnterMainMenu(bool bInit = false)
+    {
+        Debug.Assert(Env == null || Env.IsLoaded);
+
+        ShowLoadscreen(bInit);
+        Env = RuntimeEnvironment.Create(StdLVLPC);
+
+        RegisteredAddons.Clear();
+        ExploreAddons();
+
+        Env.OnExecuteMain += OnMainMenuExecution;
+        Env.OnLoaded += OnMainMenuLoaded;
+        Env.Run("missionlist");
+    }
+
+    public void EnterMap(string mapScript)
+    {
+        Debug.Assert(Env == null || Env.IsLoaded);
+        ShowLoadscreen();
+
+        Path envPath = StdLVLPC;
+        if (RegisteredAddons.TryGetValue(mapScript, out string addonName))
+        {
+            envPath = AddonPath / addonName / "data/_lvl_pc";
+        }
+
+        Env = RuntimeEnvironment.Create(envPath, StdLVLPC);
+        Env.OnLoaded += OnMapLoaded;
+        Env.OnExecuteMain += OnMapExecution;
+        Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
+    }
+
+    void ShowLoadscreen(bool bInitScreen = false)
+    {
+        Debug.Assert(CurrentLS == null);
+        CurrentLS = Instantiate(bInitScreen ? InitScreen : LoadScreen);
+    }
+
+    void RemoveLoadscreen()
+    {
+        Debug.Assert(CurrentLS != null);
+        Destroy(CurrentLS.gameObject);
+        CurrentLS = null;
     }
 
     void Init()
@@ -48,7 +105,7 @@ public class GameRuntime : MonoBehaviour
             return;
         }
 
-        EnterMainMenu();
+        EnterMainMenu(true);
     }
 
     void ExploreAddons()
@@ -65,36 +122,19 @@ public class GameRuntime : MonoBehaviour
         }
     }
 
-    void EnterMainMenu()
-    {
-        Debug.Assert(Env == null || Env.IsLoaded);
-
-        Env = RuntimeEnvironment.Create(StdLVLPC);
-
-        ExploreAddons();
-
-        Env.OnExecuteMain += OnMainMenuExecution;
-        Env.OnLoaded += OnMainMenuLoaded;
-        Env.Run("missionlist");
-    }
-
-    void EnterMap(string mapScript)
-    {
-        Debug.Assert(Env == null || Env.IsLoaded);
-
-        Path envPath = StdLVLPC;
-        if (RegisteredAddons.TryGetValue(mapScript, out string addonName))
-        {
-            envPath = AddonPath / addonName / "data/_lvl_pc";
-        }
-
-        Env = RuntimeEnvironment.Create(envPath, StdLVLPC);
-        Env.OnLoaded += OnMapLoaded;
-        Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
-    }
-
     void OnMainMenuExecution(object sender, EventArgs e)
     {
+        Debug.Assert(CurrentLS != null);
+
+
+        //var tex = Env.Find<LibSWBF2.Wrappers.Texture>("_LOCALIZE_english_bootlegal");
+        //Texture2D loadImg = Convert(tex);
+        //if (loadImg != null)
+        //{
+        //    CurrentLS.SetLoadImage(loadImg);
+        //}
+
+
         foreach (var lvl in Env.LVLs)
         {
             if (lvl.RelativePath.GetLeaf() == "addme.script")
@@ -112,12 +152,18 @@ public class GameRuntime : MonoBehaviour
 
     void OnMainMenuLoaded(object sender, EventArgs e)
     {
+        RemoveLoadscreen();
         EnterMap("geo1c_con");
+    }
+
+    void OnMapExecution(object sender, EventArgs e)
+    {
+        // TODO: apply loadscreen texture
     }
 
     void OnMapLoaded(object sender, EventArgs e)
     {
-
+        RemoveLoadscreen();
     }
 
     bool CheckExistence(string lvlName)
@@ -133,11 +179,30 @@ public class GameRuntime : MonoBehaviour
 
     void Start()
     {
+        Debug.Assert(InitScreen != null);
+        Debug.Assert(LoadScreen != null);
+
         Init();
     }
 
     void Update()
     {
         Env?.Update();
+    }
+
+
+
+    // TODO: remove once we have proper conversion classes
+    Texture2D Convert(LibSWBF2.Wrappers.Texture tex)
+    {
+        if (!tex.IsConvertibleFormat)
+        {
+            return null;
+        }
+
+        Texture2D res = new Texture2D(tex.width, tex.height, TextureFormat.RGBA32, false);
+        res.name = tex.name;
+        res.LoadRawTextureData(tex.dataRGBA);
+        return res;
     }
 }
