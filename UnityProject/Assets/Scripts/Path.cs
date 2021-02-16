@@ -2,9 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// Path will:<br/>
-/// - always use forward slashes
-/// - ensure there is NO trailing slash at the end
-/// - ensure there are no double slashes
+/// - always use forward slashes<br/>
+/// - ensure there is NO trailing slash at the end<br/>
+/// - ensure there are no double slashes<br/>
 /// - might or might not start with a slash
 /// </summary>
 public class Path
