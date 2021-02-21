@@ -7,16 +7,23 @@ Shader "Unlit/LoadIcon"
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
-        LOD 100
+        Tags
+        {
+            "Queue" = "Transparent"
+            "IgnoreProjector" = "True"
+            "RenderType" = "Transparent"
+            "PreviewType" = "Plane"
+            "CanUseSpriteAtlas" = "True"
+        }
+
+        Lighting Off
+        ZWrite Off
 
         Pass
         {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
 

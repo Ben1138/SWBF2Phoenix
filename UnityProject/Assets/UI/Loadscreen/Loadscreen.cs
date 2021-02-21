@@ -14,8 +14,10 @@ public class Loadscreen : MonoBehaviour
 
     public CanvasGroup CVGroup;
     public RawImage LoadImage;
-    public Text ProgressText;
+    public Image LoadIcon;
     bool ImageSet;
+    float Percentage;
+    float PercentageSpeed = 0.8f;
     float FadeScreenDuration = 0.5f;
     float FadeImageDuration = 0.5f;
     float FadeImagePlayback;
@@ -41,7 +43,7 @@ public class Loadscreen : MonoBehaviour
     {
         Debug.Assert(CVGroup != null);
         Debug.Assert(LoadImage != null);
-        Debug.Assert(ProgressText != null);
+        Debug.Assert(LoadIcon != null);
         State = LSState.FadeIn;
         FadeScreenPlayback = 0.0f;
         FadeScreenPlayback = 0.0f;
@@ -50,6 +52,7 @@ public class Loadscreen : MonoBehaviour
     IEnumerator DelayedDestroy()
     {
         yield return new WaitForSeconds(FadeScreenDuration);
+        LoadIcon.material.SetFloat("_Percent", 0.0f);
         DestroyImmediate(gameObject);
     }
 
@@ -59,7 +62,8 @@ public class Loadscreen : MonoBehaviour
         RuntimeEnvironment rt = GameRuntime.GetEnvironment();
         if (rt != null)
         {
-            ProgressText.text = string.Format("{0:0.} %", rt.GetLoadingProgress() * 100.0f);
+            Percentage = Mathf.Lerp(Percentage, rt.GetLoadingProgress(), Time.deltaTime * PercentageSpeed);
+            LoadIcon.material.SetFloat("_Percent", Percentage);
         }
 
         if (ImageSet)
