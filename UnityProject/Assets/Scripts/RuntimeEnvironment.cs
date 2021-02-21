@@ -16,6 +16,16 @@ public struct LVLHandle
     public bool IsValid() => NativeHandle != uint.MaxValue;
 }
 
+public class LoadscreenLoadedEventsArgs : EventArgs
+{
+    public LoadscreenLoadedEventsArgs(Texture2D tex)
+    {
+        LoadscreenTexture = tex;
+    }
+
+    public Texture2D LoadscreenTexture;
+}
+
 public class RuntimeEnvironment
 {
     public class LevelLoadST
@@ -45,6 +55,7 @@ public class RuntimeEnvironment
     public List<LevelLoadST> LoadingLVLs = new List<LevelLoadST>();
 
     public bool IsLoaded => Stage == EnvStage.Loaded;
+    public EventHandler<LoadscreenLoadedEventsArgs> OnLoadscreenLoaded;
     public EventHandler<EventArgs> OnExecuteMain;
     public EventHandler<EventArgs> OnLoaded;
 
@@ -58,8 +69,10 @@ public class RuntimeEnvironment
     LuaRuntime LuaRT;
     LibSWBF2.Wrappers.Container EnvCon;
 
-    // points to world level inside 'LVLs'
-    LibSWBF2.Wrappers.Level WorldLevel;
+    LibSWBF2.Wrappers.Level WorldLevel; // points to world level inside 'LVLs'
+
+    LVLHandle LoadscreenHandle;
+    LibSWBF2.Wrappers.Level LoadscreenLVL; // points to level inside 'LVLs'
 
     string InitScriptName;
     string InitFunctionName;
@@ -137,7 +150,9 @@ public class RuntimeEnvironment
         InitFunctionName = initFn;
         PostLoadFunctionName = postLoadFn;
 
+        LoadscreenHandle = ScheduleLVLRel(GetLoadscreenPath());
         EnvCon.LoadLevels();
+
         Stage = EnvStage.LoadingBase;
     }
 
@@ -238,10 +253,24 @@ public class RuntimeEnvironment
             }
         }
 
-        if (Stage == EnvStage.LoadingBase && EnvCon.IsDone() && LoadingLVLs.Count == 0)
+        if (Stage == EnvStage.LoadingBase)
         {
-            Stage = EnvStage.ExecuteMain;
-            RunMain();
+            if (LoadscreenLVL == null)
+            {
+                LoadscreenLVL = EnvCon.GetLevel(LoadscreenHandle.GetNativeHandle());
+                if (LoadscreenLVL != null)
+                {
+                    var textures = LoadscreenLVL.GetTextures();
+                    int texIdx = UnityEngine.Random.Range(0, textures.Length - 1);
+                    OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureDB.Convert(textures[texIdx])));
+                }
+            }
+
+            if (EnvCon.IsDone() && LoadingLVLs.Count == 0)
+            {
+                Stage = EnvStage.ExecuteMain;
+                RunMain();
+            }
         }
 
         if (Stage == EnvStage.LoadingWorld && EnvCon.IsDone() && LoadingLVLs.Count == 0)
@@ -249,6 +278,17 @@ public class RuntimeEnvironment
             Stage = EnvStage.CreateScene;
             CreateScene();
         }
+    }
+
+    Path GetLoadscreenPath()
+    {
+        // First, try grab loadscreen for standard maps
+        Path loadscreenLVL = new Path("load") / (InitScriptName.Substring(0, 4) + ".lvl");
+        if ((Path / loadscreenLVL).Exists() || (FallbackPath / loadscreenLVL).Exists())
+        {
+            return loadscreenLVL;
+        }
+        return "load/common.lvl";
     }
 
     void RunMain()

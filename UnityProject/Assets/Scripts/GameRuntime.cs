@@ -8,18 +8,21 @@ public class GameRuntime : MonoBehaviour
     public static GameRuntime Instance { get; private set; } = null;
     public Path GamePath { get; private set; } = @"F:/SteamLibrary/steamapps/common/Star Wars Battlefront II";
 
-
-    public Loadscreen InitScreen;
-    public Loadscreen LoadScreen;
-
+    public Loadscreen InitScreenPrefab;
+    public Loadscreen LoadScreenPrefab;
+    public GameObject MainMenuPrefab;
 
     Path AddonPath => GamePath / "GameData/addon";
     Path StdLVLPC;
-    Loadscreen CurrentLS;
 
+    Loadscreen CurrentLS;
+    GameObject CurrentMenu;
 
     RuntimeEnvironment Env;
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
+
+    bool bInitMainMenu;
+
 
     public static LuaRuntime GetLuaRuntime()
     {
@@ -46,8 +49,16 @@ public class GameRuntime : MonoBehaviour
     {
         Debug.Assert(Env == null || Env.IsLoaded);
 
+        bInitMainMenu = bInit;
         ShowLoadscreen(bInit);
+        RemoveMenu();
+
         Env = RuntimeEnvironment.Create(StdLVLPC);
+
+        if (!bInit)
+        {
+            Env.ScheduleLVLRel("load/gal_con.lvl");
+        }
 
         RegisteredAddons.Clear();
         ExploreAddons();
@@ -60,7 +71,9 @@ public class GameRuntime : MonoBehaviour
     public void EnterMap(string mapScript)
     {
         Debug.Assert(Env == null || Env.IsLoaded);
+
         ShowLoadscreen();
+        RemoveMenu();
 
         Path envPath = StdLVLPC;
         if (RegisteredAddons.TryGetValue(mapScript, out string addonName))
@@ -69,6 +82,8 @@ public class GameRuntime : MonoBehaviour
         }
 
         Env = RuntimeEnvironment.Create(envPath, StdLVLPC);
+        Env.ScheduleLVLRel("load/common.lvl");
+        Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
         Env.OnLoaded += OnMapLoaded;
         Env.OnExecuteMain += OnMapExecution;
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
@@ -77,14 +92,37 @@ public class GameRuntime : MonoBehaviour
     void ShowLoadscreen(bool bInitScreen = false)
     {
         Debug.Assert(CurrentLS == null);
-        CurrentLS = Instantiate(bInitScreen ? InitScreen : LoadScreen);
+        CurrentLS = Instantiate(bInitScreen ? InitScreenPrefab : LoadScreenPrefab);
+    }
+
+    void OnLoadscreenTextureLoaded(object sender, LoadscreenLoadedEventsArgs args)
+    {
+        CurrentLS.SetLoadImage(args.LoadscreenTexture);
     }
 
     void RemoveLoadscreen()
     {
         Debug.Assert(CurrentLS != null);
-        Destroy(CurrentLS.gameObject);
+        CurrentLS.FadeOut();
         CurrentLS = null;
+    }
+
+    void ShowMenu(GameObject prefab)
+    {
+        if (CurrentMenu != null)
+        {
+            RemoveMenu();
+        }
+        CurrentMenu = Instantiate(prefab);
+    }
+
+    void RemoveMenu()
+    {
+        if (CurrentMenu != null)
+        {
+            Destroy(CurrentMenu.gameObject);
+            CurrentMenu = null;
+        }
     }
 
     void Init()
@@ -126,14 +164,16 @@ public class GameRuntime : MonoBehaviour
     {
         Debug.Assert(CurrentLS != null);
 
-
-        //var tex = Env.Find<LibSWBF2.Wrappers.Texture>("_LOCALIZE_english_bootlegal");
-        //Texture2D loadImg = Convert(tex);
-        //if (loadImg != null)
-        //{
-        //    CurrentLS.SetLoadImage(loadImg);
-        //}
-
+        if (bInitMainMenu)
+        {
+            var tex = Env.Find<LibSWBF2.Wrappers.Texture>("_LOCALIZE_english_bootlegal");
+            CurrentLS.SetLoadImage(TextureDB.Convert(tex));
+        }
+        else
+        {
+            var tex = Env.Find<LibSWBF2.Wrappers.Texture>("gal_con");
+            CurrentLS.SetLoadImage(TextureDB.Convert(tex));
+        }
 
         foreach (var lvl in Env.LVLs)
         {
@@ -153,12 +193,13 @@ public class GameRuntime : MonoBehaviour
     void OnMainMenuLoaded(object sender, EventArgs e)
     {
         RemoveLoadscreen();
-        EnterMap("geo1c_con");
+        //EnterMap("geo1c_con");
+        ShowMenu(MainMenuPrefab);
     }
 
     void OnMapExecution(object sender, EventArgs e)
     {
-        // TODO: apply loadscreen texture
+        
     }
 
     void OnMapLoaded(object sender, EventArgs e)
@@ -179,8 +220,9 @@ public class GameRuntime : MonoBehaviour
 
     void Start()
     {
-        Debug.Assert(InitScreen != null);
-        Debug.Assert(LoadScreen != null);
+        Debug.Assert(InitScreenPrefab != null);
+        Debug.Assert(LoadScreenPrefab != null);
+        Debug.Assert(MainMenuPrefab   != null);
 
         Init();
     }
@@ -189,11 +231,25 @@ public class GameRuntime : MonoBehaviour
     {
         Env?.Update();
     }
+}
 
+public static class TextureDB
+{
+    static byte[] MirrorVertically(byte[] data, int width, int height, int stride)
+    {
+        int byteWidth = width * stride;
+        byte[] mirrored = new byte[data.Length];
+        for (int rowIdx = 0; rowIdx < height; ++rowIdx)
+        {
+            int rowReverseIdx = height - rowIdx - 1;
+            Array.Copy(data, rowReverseIdx * byteWidth, mirrored, rowIdx * byteWidth, byteWidth);
+        }
+        return mirrored;
+    }
 
 
     // TODO: remove once we have proper conversion classes
-    Texture2D Convert(LibSWBF2.Wrappers.Texture tex)
+    public static Texture2D Convert(LibSWBF2.Wrappers.Texture tex)
     {
         if (!tex.IsConvertibleFormat)
         {
@@ -202,7 +258,24 @@ public class GameRuntime : MonoBehaviour
 
         Texture2D res = new Texture2D(tex.width, tex.height, TextureFormat.RGBA32, false);
         res.name = tex.name;
-        res.LoadRawTextureData(tex.dataRGBA);
+
+        res.LoadRawTextureData(MirrorVertically(tex.dataRGBA, tex.width, tex.height, 4));
+        res.Apply();
         return res;
+    }
+
+    public static Texture2D Get(string texName)
+    {
+        RuntimeEnvironment env = GameRuntime.GetEnvironment();
+        if (env == null)
+        {
+            return null;
+        }
+        var texture =  env.Find<LibSWBF2.Wrappers.Texture>(texName);
+        if (texture == null)
+        {
+            return null;
+        }
+        return Convert(texture);
     }
 }

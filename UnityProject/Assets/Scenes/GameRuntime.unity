@@ -235,8 +235,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78d15e63002497340882c6c017ee0810, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  InitScreen: {fileID: 8116435525958827643, guid: b41f2353f3f33804b919c04b2fd29246, type: 3}
-  LoadScreen: {fileID: 4217219954888887521, guid: 753242c13dd40b24f96abc9c00940f1d, type: 3}
+  InitScreenPrefab: {fileID: 8116435525958827643, guid: b41f2353f3f33804b919c04b2fd29246, type: 3}
+  LoadScreenPrefab: {fileID: 4217219954888887521, guid: 753242c13dd40b24f96abc9c00940f1d, type: 3}
+  MainMenuPrefab: {fileID: 8024252916743084298, guid: d10b36dfe08ba6e429b94996d4ee3cea, type: 3}
 --- !u!4 &1641162174
 Transform:
   m_ObjectHideFlags: 0
