@@ -16,7 +16,7 @@ public class EnvironmentMonitor : EditorWindow
         FallbackLVLStyle.normal.textColor = Color.yellow;
     }
 
-    [MenuItem("Debug/Environment Monitor")]
+    [MenuItem("Runtime/Environment Monitor")]
     public static void OpenEnvironmentMonitor()
     {
         EnvironmentMonitor window = GetWindow<EnvironmentMonitor>();
@@ -37,7 +37,7 @@ public class EnvironmentMonitor : EditorWindow
             return;
         }
 
-        Path gamePath = GameRuntime.Instance.GamePath;
+        RPath gamePath = GameRuntime.Instance.GamePath;
         EditorGUILayout.LabelField("Environment Path", env.Path - gamePath);
         EditorGUILayout.LabelField("Fallback Path", env.FallbackPath - gamePath);
         EditorGUILayout.Space();

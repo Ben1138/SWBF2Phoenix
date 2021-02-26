@@ -13,7 +13,7 @@ public class LuaEditor : EditorWindow
 
     string LuaCode;
     
-    [MenuItem("Debug/Lua Editor")]
+    [MenuItem("Runtime/Lua Editor")]
     public static void OpenLuaEditor()
     {
         LuaEditor window = GetWindow<LuaEditor>();

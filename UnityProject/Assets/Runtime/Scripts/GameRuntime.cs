@@ -6,14 +6,14 @@ using UnityEngine;
 public class GameRuntime : MonoBehaviour
 {
     public static GameRuntime Instance { get; private set; } = null;
-    public Path GamePath { get; private set; } = @"F:/SteamLibrary/steamapps/common/Star Wars Battlefront II";
+    public RPath GamePath { get; private set; } = @"F:/SteamLibrary/steamapps/common/Star Wars Battlefront II";
 
     public Loadscreen InitScreenPrefab;
     public Loadscreen LoadScreenPrefab;
     public GameObject MainMenuPrefab;
 
-    Path AddonPath => GamePath / "GameData/addon";
-    Path StdLVLPC;
+    RPath AddonPath => GamePath / "GameData/addon";
+    RPath StdLVLPC;
 
     Loadscreen CurrentLS;
     GameObject CurrentMenu;
@@ -75,7 +75,7 @@ public class GameRuntime : MonoBehaviour
         ShowLoadscreen();
         RemoveMenu();
 
-        Path envPath = StdLVLPC;
+        RPath envPath = StdLVLPC;
         if (RegisteredAddons.TryGetValue(mapScript, out string addonName))
         {
             envPath = AddonPath / addonName / "data/_lvl_pc";
@@ -150,9 +150,9 @@ public class GameRuntime : MonoBehaviour
     {
         string[] addons = System.IO.Directory.GetDirectories(AddonPath);
         
-        foreach (Path addon in addons)
+        foreach (RPath addon in addons)
         {
-            Path addme = addon / "addme.script";
+            RPath addme = addon / "addme.script";
             if (addme.Exists() && addme.IsFile())
             {
                 Env.ScheduleLVLAbs(addme);
@@ -179,7 +179,7 @@ public class GameRuntime : MonoBehaviour
         {
             if (lvl.RelativePath.GetLeaf() == "addme.script")
             {
-                var addme = lvl.Level.GetScript("addme");
+                var addme = lvl.Level.GetWrapper<LibSWBF2.Wrappers.Script>("addme");
                 if (addme == null)
                 {
                     Debug.LogWarningFormat("Seems like '{0}' has no 'addme' script chunk!", lvl.RelativePath);
@@ -209,7 +209,7 @@ public class GameRuntime : MonoBehaviour
 
     bool CheckExistence(string lvlName)
     {
-        Path p = StdLVLPC / lvlName;
+        RPath p = StdLVLPC / lvlName;
         bool bExists = p.Exists();
         if (!bExists)
         {
@@ -259,7 +259,7 @@ public static class TextureDB
         Texture2D res = new Texture2D(tex.width, tex.height, TextureFormat.RGBA32, false);
         res.name = tex.name;
 
-        res.LoadRawTextureData(MirrorVertically(tex.dataRGBA, tex.width, tex.height, 4));
+        res.LoadRawTextureData(MirrorVertically(tex.GetBytesRGBA(), tex.width, tex.height, 4));
         res.Apply();
         return res;
     }
