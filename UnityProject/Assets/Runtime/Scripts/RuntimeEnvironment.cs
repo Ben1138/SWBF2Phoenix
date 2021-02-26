@@ -31,14 +31,14 @@ public class RuntimeEnvironment
     public class LevelLoadST
     {
         public LVLHandle Handle;
-        public Path PathPartial;
+        public RPath PathPartial;
         public bool bIsFallback;
     }
 
     public class LevelST
     {
         public LibSWBF2.Wrappers.Level Level;
-        public Path RelativePath;
+        public RPath RelativePath;
         public bool bIsFallback;
     }
     public enum EnvStage
@@ -59,8 +59,8 @@ public class RuntimeEnvironment
     public EventHandler<EventArgs> OnExecuteMain;
     public EventHandler<EventArgs> OnLoaded;
 
-    public Path Path { get; private set; }
-    public Path FallbackPath { get; private set; }
+    public RPath Path { get; private set; }
+    public RPath FallbackPath { get; private set; }
     public EnvStage Stage { get; private set; }
 
     bool CanSchedule => Stage == EnvStage.Init || Stage == EnvStage.ExecuteMain;
@@ -78,7 +78,7 @@ public class RuntimeEnvironment
     string InitFunctionName;
     string PostLoadFunctionName;
 
-    public static RuntimeEnvironment Create(Path envPath, Path fallbackPath = null)
+    public static RuntimeEnvironment Create(RPath envPath, RPath fallbackPath = null)
     {
         if (!envPath.Exists())
         {
@@ -164,7 +164,7 @@ public class RuntimeEnvironment
         return stageProgress + stageContribution * EnvCon.GetOverallProgress();
     }
 
-    public LVLHandle ScheduleLVLAbs(Path absoluteLVLPath, string[] subLVLs = null, bool bForceLocal = false)
+    public LVLHandle ScheduleLVLAbs(RPath absoluteLVLPath, string[] subLVLs = null, bool bForceLocal = false)
     {
         Debug.Assert(CanSchedule);
 
@@ -185,12 +185,12 @@ public class RuntimeEnvironment
     }
 
     // relativeLVLPath: relative to Environment!
-    public LVLHandle ScheduleLVLRel(Path relativeLVLPath, string[] subLVLs = null, bool bForceLocal = false)
+    public LVLHandle ScheduleLVLRel(RPath relativeLVLPath, string[] subLVLs = null, bool bForceLocal = false)
     {
         Debug.Assert(CanSchedule);
 
-        Path envLVLPath = Path / relativeLVLPath;
-        Path fallbackLVLPath = FallbackPath / relativeLVLPath;
+        RPath envLVLPath = Path / relativeLVLPath;
+        RPath fallbackLVLPath = FallbackPath / relativeLVLPath;
         if (envLVLPath.Exists() && envLVLPath.IsFile())
         {
             LVLHandle handle = new LVLHandle(EnvCon.AddLevel(envLVLPath, subLVLs));
@@ -260,7 +260,7 @@ public class RuntimeEnvironment
                 LoadscreenLVL = EnvCon.GetLevel(LoadscreenHandle.GetNativeHandle());
                 if (LoadscreenLVL != null)
                 {
-                    var textures = LoadscreenLVL.GetTextures();
+                    var textures = LoadscreenLVL.GetWrappers<LibSWBF2.Wrappers.Texture>();
                     int texIdx = UnityEngine.Random.Range(0, textures.Length - 1);
                     OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureDB.Convert(textures[texIdx])));
                 }
@@ -280,10 +280,10 @@ public class RuntimeEnvironment
         }
     }
 
-    Path GetLoadscreenPath()
+    RPath GetLoadscreenPath()
     {
         // First, try grab loadscreen for standard maps
-        Path loadscreenLVL = new Path("load") / (InitScriptName.Substring(0, 4) + ".lvl");
+        RPath loadscreenLVL = new RPath("load") / (InitScriptName.Substring(0, 4) + ".lvl");
         if ((Path / loadscreenLVL).Exists() || (FallbackPath / loadscreenLVL).Exists())
         {
             return loadscreenLVL;
@@ -331,7 +331,7 @@ public class RuntimeEnvironment
         OnLoaded?.Invoke(this, null);
     }
 
-    RuntimeEnvironment(Path path, Path fallbackPath)
+    RuntimeEnvironment(RPath path, RPath fallbackPath)
     {
         Path = path;
         FallbackPath = fallbackPath;
