@@ -3,6 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+/*
+ * Phases of RuntimeEnvironment:
+ * 
+ * 1. Init                          Environment is created, with base LVLs scheduled and ready to load
+ * 2. Loading Base                  Loading scheduled base LVLs
+ * 3. Executing Main                There's always a LUA script responsible for environment setup that will be executed in this phase.
+ *                                  Usually, there's an optional main function within the main script that will called aswell, if specified.
+ *                                  The main LUA script is expected to call ReadDataFile on multiple LVL files. These LVL files will be scheduled.
+ * 4. Loading World                 All LVLs that have been scheduled during phase 3 will be loaded in this phase
+ * 5. Create Scene                  In this phase, scene conversion of the imported world LVL takes place. 
+ * 6. Loaded                        Final state. Everything is done.
+ * 
+ */
+
+
 public struct LVLHandle
 {
     uint NativeHandle;
@@ -34,7 +49,6 @@ public class RuntimeEnvironment
         public RPath PathPartial;
         public bool bIsFallback;
     }
-
     public class LevelST
     {
         public LibSWBF2.Wrappers.Level Level;
@@ -43,40 +57,58 @@ public class RuntimeEnvironment
     }
     public enum EnvStage
     {
-        Init,           // env creation, base lvls (mission.lvl, ...) scheduled
-        LoadingBase,    // loading base lvls
-        ExecuteMain,    // execute lua main function -> scheduling world lvls
-        LoadingWorld,   // loading world lvls
-        CreateScene,    // create unity scene, convert all meshes, etc. + call optional lua post load function
-        Loaded          // ready to rumble
+        Init,        
+        LoadingBase, 
+        ExecuteMain, 
+        LoadingWorld,
+        CreateScene, 
+        Loaded       
     }
 
-    public List<LevelST> LVLs = new List<LevelST>();
-    public List<LevelLoadST> LoadingLVLs = new List<LevelLoadST>();
 
-    public bool IsLoaded => Stage == EnvStage.Loaded;
+    public List<LevelST>        LVLs = new List<LevelST>();
+    public List<LevelLoadST>    LoadingLVLs = new List<LevelLoadST>();
+
+    public bool                                     IsLoaded => Stage == EnvStage.Loaded;
     public EventHandler<LoadscreenLoadedEventsArgs> OnLoadscreenLoaded;
-    public EventHandler<EventArgs> OnExecuteMain;
-    public EventHandler<EventArgs> OnLoaded;
+    public EventHandler<EventArgs>                  OnExecuteMain;
+    public EventHandler<EventArgs>                  OnLoaded;
 
-    public RPath Path { get; private set; }
-    public RPath FallbackPath { get; private set; }
-    public EnvStage Stage { get; private set; }
+    public RPath Path           { get; private set; }
+    public RPath FallbackPath   { get; private set; }
+    public EnvStage Stage       { get; private set; }
 
     bool CanSchedule => Stage == EnvStage.Init || Stage == EnvStage.ExecuteMain;
-    bool CanExecute => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
+    bool CanExecute  => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
 
     LuaRuntime LuaRT;
+    LVLHandle  LoadscreenHandle;
+
     LibSWBF2.Wrappers.Container EnvCon;
-
-    LibSWBF2.Wrappers.Level WorldLevel; // points to world level inside 'LVLs'
-
-    LVLHandle LoadscreenHandle;
-    LibSWBF2.Wrappers.Level LoadscreenLVL; // points to level inside 'LVLs'
+    LibSWBF2.Wrappers.Level     WorldLevel;     // points to world level inside 'LVLs'
+    LibSWBF2.Wrappers.Level     LoadscreenLVL;  // points to level inside 'LVLs'
 
     string InitScriptName;
     string InitFunctionName;
     string PostLoadFunctionName;
+
+
+    RuntimeEnvironment(RPath path, RPath fallbackPath)
+    {
+        Path = path;
+        FallbackPath = fallbackPath;
+        Stage = EnvStage.Init;
+        WorldLevel = null;
+
+        LuaRT = new LuaRuntime();
+        EnvCon = new LibSWBF2.Wrappers.Container();
+    }
+
+    ~RuntimeEnvironment()
+    {
+        EnvCon.Delete();
+    }
+
 
     public static RuntimeEnvironment Create(RPath envPath, RPath fallbackPath = null)
     {
@@ -93,8 +125,6 @@ public class RuntimeEnvironment
         Debug.Assert(fallbackPath.Exists());
 
         RuntimeEnvironment rt = new RuntimeEnvironment(envPath, fallbackPath);
-        rt.Stage = EnvStage.Init;
-        rt.WorldLevel = null;
         rt.ScheduleLVLRel("core.lvl");
         rt.ScheduleLVLRel("shell.lvl");
         rt.ScheduleLVLRel("common.lvl");
@@ -319,7 +349,17 @@ public class RuntimeEnvironment
     {
         Debug.Assert(Stage == EnvStage.CreateScene);
 
-        // TODO: world level conversion starts here
+        // WorldLevel will be null for Main Menu
+        if (WorldLevel != null)
+        {
+            Loader.SetGlobalContainer(EnvCon);
+            WorldLoader.Instance.TerrainAsMesh = true;
+            foreach (var world in WorldLevel.GetWrappers<LibSWBF2.Wrappers.World>())
+            {
+                WorldLoader.Instance.ImportWorld(world);
+            }
+        }
+        Loader.SetGlobalContainer(null);
 
         // 4 - execute post load function AFTER scene has been created
         if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLua(PostLoadFunctionName))
@@ -329,20 +369,5 @@ public class RuntimeEnvironment
 
         Stage = EnvStage.Loaded;
         OnLoaded?.Invoke(this, null);
-    }
-
-    RuntimeEnvironment(RPath path, RPath fallbackPath)
-    {
-        Path = path;
-        FallbackPath = fallbackPath;
-        Stage = EnvStage.Init;
-
-        LuaRT = new LuaRuntime();
-        EnvCon = new LibSWBF2.Wrappers.Container();
-    }
-
-    ~RuntimeEnvironment()
-    {
-        EnvCon.Delete();
     }
 }
