@@ -4,3 +4,6 @@
 [submodule "LibSWBF2"]
 	path = LibSWBF2
 	url = https://github.com/Ben1138/LibSWBF2
+[submodule "UnityProject/Assets/LVLImport"]
+	path = UnityProject/Assets/LVLImport
+	url = https://github.com/WHSnyder/SWBF2-.lvl-Extraction-Tools-for-Unity3D
