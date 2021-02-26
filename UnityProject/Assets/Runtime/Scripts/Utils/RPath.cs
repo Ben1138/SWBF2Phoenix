@@ -7,11 +7,11 @@ using UnityEngine;
 /// - ensure there are no double slashes<br/>
 /// - might or might not start with a slash
 /// </summary>
-public class Path
+public class RPath
 {
     string P;
     
-    public Path(string path)
+    public RPath(string path)
     {
         P = path;
 
@@ -26,11 +26,11 @@ public class Path
         }
     }
 
-    public static implicit operator string(Path p) => p.P;
-    public static implicit operator Path(string p) => new Path(p);
+    public static implicit operator string(RPath p) => p.P;
+    public static implicit operator RPath(string p) => new RPath(p);
 
-    public static Path operator /(Path lhs, Path rhs) => Concat(lhs, rhs);
-    public static Path operator -(Path lhs, Path rhs) => Remove(lhs, rhs);
+    public static RPath operator /(RPath lhs, RPath rhs) => Concat(lhs, rhs);
+    public static RPath operator -(RPath lhs, RPath rhs) => Remove(lhs, rhs);
 
     public bool Exists() => System.IO.File.Exists(P) || System.IO.Directory.Exists(P);
 
@@ -39,9 +39,9 @@ public class Path
         return P;
     }
 
-    public static Path Concat(Path lhs, Path rhs)
+    public static RPath Concat(RPath lhs, RPath rhs)
     {
-        Path path = new Path(lhs);
+        RPath path = new RPath(lhs);
         if (!rhs.P.StartsWith("/"))
         {
             path.P += '/';
@@ -50,9 +50,9 @@ public class Path
         return path;
     }
 
-    public static Path Remove(Path lhs, Path rhs)
+    public static RPath Remove(RPath lhs, RPath rhs)
     {
-        Path path = new Path(lhs);
+        RPath path = new RPath(lhs);
         path.P = path.P.Replace(rhs.P, "");
         if (path.P.StartsWith("/"))
         {
@@ -72,12 +72,12 @@ public class Path
     }
 
     // nodeCount: how many nodes to return, starting counting from leaf node
-    public Path GetLeafs(int nodeCount)
+    public RPath GetLeafs(int nodeCount)
     {
         Debug.Assert(nodeCount > 0);
         string[] nodes = P.Split('/');
         nodeCount = Mathf.Min(nodeCount, nodes.Length);
-        Path result = "";
+        RPath result = "";
         for (int i = nodes.Length - nodeCount; i < nodes.Length; ++i)
         {
             result /= nodes[i];
@@ -89,7 +89,7 @@ public class Path
         return result;
     }
 
-    public Path GetLeaf()
+    public RPath GetLeaf()
     {
         return GetLeafs(1);
     }
