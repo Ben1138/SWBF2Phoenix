@@ -166,13 +166,11 @@ public class GameRuntime : MonoBehaviour
 
         if (bInitMainMenu)
         {
-            var tex = Env.Find<LibSWBF2.Wrappers.Texture>("_LOCALIZE_english_bootlegal");
-            CurrentLS.SetLoadImage(TextureDB.Convert(tex));
+            CurrentLS.SetLoadImage(TextureLoader.Instance.ImportTexture("_LOCALIZE_english_bootlegal"));
         }
         else
         {
-            var tex = Env.Find<LibSWBF2.Wrappers.Texture>("gal_con");
-            CurrentLS.SetLoadImage(TextureDB.Convert(tex));
+            CurrentLS.SetLoadImage(TextureLoader.Instance.ImportTexture("gal_con"));
         }
 
         foreach (var lvl in Env.LVLs)
@@ -230,52 +228,5 @@ public class GameRuntime : MonoBehaviour
     void Update()
     {
         Env?.Update();
-    }
-}
-
-public static class TextureDB
-{
-    static byte[] MirrorVertically(byte[] data, int width, int height, int stride)
-    {
-        int byteWidth = width * stride;
-        byte[] mirrored = new byte[data.Length];
-        for (int rowIdx = 0; rowIdx < height; ++rowIdx)
-        {
-            int rowReverseIdx = height - rowIdx - 1;
-            Array.Copy(data, rowReverseIdx * byteWidth, mirrored, rowIdx * byteWidth, byteWidth);
-        }
-        return mirrored;
-    }
-
-
-    // TODO: remove once we have proper conversion classes
-    public static Texture2D Convert(LibSWBF2.Wrappers.Texture tex)
-    {
-        if (!tex.IsConvertibleFormat)
-        {
-            return null;
-        }
-
-        Texture2D res = new Texture2D(tex.width, tex.height, TextureFormat.RGBA32, false);
-        res.name = tex.name;
-
-        res.LoadRawTextureData(MirrorVertically(tex.GetBytesRGBA(), tex.width, tex.height, 4));
-        res.Apply();
-        return res;
-    }
-
-    public static Texture2D Get(string texName)
-    {
-        RuntimeEnvironment env = GameRuntime.GetEnvironment();
-        if (env == null)
-        {
-            return null;
-        }
-        var texture =  env.Find<LibSWBF2.Wrappers.Texture>(texName);
-        if (texture == null)
-        {
-            return null;
-        }
-        return Convert(texture);
     }
 }

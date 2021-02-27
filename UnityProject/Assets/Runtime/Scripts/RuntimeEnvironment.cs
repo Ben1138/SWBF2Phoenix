@@ -102,6 +102,8 @@ public class RuntimeEnvironment
 
         LuaRT = new LuaRuntime();
         EnvCon = new LibSWBF2.Wrappers.Container();
+
+        Loader.SetGlobalContainer(EnvCon);
     }
 
     ~RuntimeEnvironment()
@@ -292,7 +294,7 @@ public class RuntimeEnvironment
                 {
                     var textures = LoadscreenLVL.GetWrappers<LibSWBF2.Wrappers.Texture>();
                     int texIdx = UnityEngine.Random.Range(0, textures.Length - 1);
-                    OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureDB.Convert(textures[texIdx])));
+                    OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureLoader.Instance.ImportTexture(textures[texIdx].name)));
                 }
             }
 
@@ -352,14 +354,14 @@ public class RuntimeEnvironment
         // WorldLevel will be null for Main Menu
         if (WorldLevel != null)
         {
-            Loader.SetGlobalContainer(EnvCon);
+            bool hasTerrain = false;
             WorldLoader.Instance.TerrainAsMesh = true;
             foreach (var world in WorldLevel.GetWrappers<LibSWBF2.Wrappers.World>())
             {
-                WorldLoader.Instance.ImportWorld(world);
+                WorldLoader.Instance.ImportTerrain = !hasTerrain;
+                WorldLoader.Instance.ImportWorld(world, out hasTerrain);
             }
         }
-        Loader.SetGlobalContainer(null);
 
         // 4 - execute post load function AFTER scene has been created
         if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLua(PostLoadFunctionName))

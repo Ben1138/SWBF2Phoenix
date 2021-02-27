@@ -18,9 +18,9 @@ public class SWBFButton : MonoBehaviour
         Debug.Assert(Center != null);
         Debug.Assert(Right  != null);
 
-        Left.texture   = TextureDB.Get("bf2_buttons_botleft");
-        Center.texture = TextureDB.Get("bf2_buttons_items_center");
-        Right.texture  = TextureDB.Get("bf2_buttons_botright");
+        Left.texture   = TextureLoader.Instance.ImportTexture("bf2_buttons_botleft");
+        Center.texture = TextureLoader.Instance.ImportTexture("bf2_buttons_items_center");
+        Right.texture  = TextureLoader.Instance.ImportTexture("bf2_buttons_botright");
     }
 
     void Update()
