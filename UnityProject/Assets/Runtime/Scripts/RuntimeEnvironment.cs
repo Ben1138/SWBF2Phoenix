@@ -294,7 +294,7 @@ public class RuntimeEnvironment
                 {
                     var textures = LoadscreenLVL.GetWrappers<LibSWBF2.Wrappers.Texture>();
                     int texIdx = UnityEngine.Random.Range(0, textures.Length - 1);
-                    OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureLoader.Instance.ImportTexture(textures[texIdx].name)));
+                    OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureLoader.Instance.ImportUITexture(textures[texIdx].name)));
                 }
             }
 
