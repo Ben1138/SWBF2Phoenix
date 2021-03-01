@@ -166,11 +166,11 @@ public class GameRuntime : MonoBehaviour
 
         if (bInitMainMenu)
         {
-            CurrentLS.SetLoadImage(TextureLoader.Instance.ImportTexture("_LOCALIZE_english_bootlegal"));
+            CurrentLS.SetLoadImage(TextureLoader.Instance.ImportUITexture("_LOCALIZE_english_bootlegal"));
         }
         else
         {
-            CurrentLS.SetLoadImage(TextureLoader.Instance.ImportTexture("gal_con"));
+            CurrentLS.SetLoadImage(TextureLoader.Instance.ImportUITexture("gal_con"));
         }
 
         foreach (var lvl in Env.LVLs)
