@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 
 public class GameRuntime : MonoBehaviour
@@ -11,6 +12,7 @@ public class GameRuntime : MonoBehaviour
     public Loadscreen InitScreenPrefab;
     public Loadscreen LoadScreenPrefab;
     public GameObject MainMenuPrefab;
+    public Volume     PostProcessingVolume;
 
     RPath AddonPath => GamePath / "GameData/addon";
     RPath StdLVLPC;
@@ -129,6 +131,8 @@ public class GameRuntime : MonoBehaviour
     {
         Instance = this;
 
+        WorldLoader.UseHDRP = true;
+
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
         if (GamePath.IsFile() || 
             !GamePath.Exists() || 
@@ -221,6 +225,7 @@ public class GameRuntime : MonoBehaviour
         Debug.Assert(InitScreenPrefab != null);
         Debug.Assert(LoadScreenPrefab != null);
         Debug.Assert(MainMenuPrefab   != null);
+        Debug.Assert(PostProcessingVolume != null);
 
         Init();
     }
