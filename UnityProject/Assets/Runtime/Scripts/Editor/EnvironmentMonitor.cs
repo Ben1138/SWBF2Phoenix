@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-#if UNITY_EDITOR
 public class EnvironmentMonitor : EditorWindow
 {
     GUIStyle EnvLVLStyle = new GUIStyle();
@@ -54,4 +53,3 @@ public class EnvironmentMonitor : EditorWindow
         }
     }
 }
-#endif
