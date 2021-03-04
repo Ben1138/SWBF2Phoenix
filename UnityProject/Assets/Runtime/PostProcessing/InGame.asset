@@ -432,7 +432,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59b6606ef2548734bb6d11b9d160bc7e, type: 3}
   m_Name: HDRISky
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   m_AdvancedMode: 0
   rotation:
     m_OverrideState: 0
@@ -614,7 +614,7 @@ MonoBehaviour:
   m_AdvancedMode: 0
   skyType:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 4
   skyAmbientMode:
     m_OverrideState: 1
     m_Value: 1
@@ -813,7 +813,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d877ec3e844f2ca46830012e8e79319b, type: 3}
   m_Name: PhysicallyBasedSky
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   m_AdvancedMode: 0
   rotation:
     m_OverrideState: 0
@@ -856,12 +856,12 @@ MonoBehaviour:
     m_Value: 1
   type:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 0
   sphericalMode:
     m_OverrideState: 0
     m_Value: 1
   seaLevel:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 0
   planetaryRadius:
     m_OverrideState: 0
@@ -897,7 +897,7 @@ MonoBehaviour:
     min: 0
   aerosolDensity:
     m_OverrideState: 0
-    m_Value: 0.01192826
+    m_Value: 0
     min: 0
     max: 1
   aerosolTint:
@@ -921,8 +921,8 @@ MonoBehaviour:
     min: 1
     max: 10
   groundTint:
-    m_OverrideState: 0
-    m_Value: {r: 0.4, g: 0.25, b: 0.15, a: 1}
+    m_OverrideState: 1
+    m_Value: {r: 0.04, g: 0.04, b: 0.04, a: 1}
     hdr: 0
     showAlpha: 0
     showEyeDropper: 0
