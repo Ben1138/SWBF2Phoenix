@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-
-#if UNITY_EDITOR
 public class LuaEditor : EditorWindow
 {
     // every X seconds, save the edited lua code
@@ -66,4 +64,3 @@ public class LuaEditor : EditorWindow
         }
     }
 }
-#endif
