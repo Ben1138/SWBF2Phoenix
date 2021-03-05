@@ -518,6 +518,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 3146369164186090527}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: StartCorouscant
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: MainMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 2188432986157283956, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
       propertyPath: m_AnchoredPosition.x
       value: -0.000061035156
@@ -525,6 +553,10 @@ PrefabInstance:
     - target: {fileID: 6048111539855675302, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
       propertyPath: m_Name
       value: SWBFButton (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6985500107316820951, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_Text
+      value: Corouscant
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
@@ -624,6 +656,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 3146369164186090527}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: StartMustafar
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: MainMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2186110485547377311, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 2188432986157283956, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
       propertyPath: m_AnchoredPosition.x
       value: -0.000061035156
@@ -631,6 +691,10 @@ PrefabInstance:
     - target: {fileID: 6048111539855675302, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
       propertyPath: m_Name
       value: SWBFButton (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6985500107316820951, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
+      propertyPath: m_Text
+      value: Mustafar
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 07fe8237a4740c0449e6c261016a366d, type: 3}
