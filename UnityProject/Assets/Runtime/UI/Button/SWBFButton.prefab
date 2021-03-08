@@ -333,8 +333,6 @@ MonoBehaviour:
   Left: {fileID: 1666373568680267190}
   Center: {fileID: 799287143109725479}
   Right: {fileID: 4903505212987728661}
-  FlickerIntensity: 0.2
-  FlickerSpeed: 10
 --- !u!114 &1229367676181418862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -371,6 +369,22 @@ MonoBehaviour:
         - m_Target: {fileID: 1424470130859106072}
           m_TargetAssemblyTypeName: SWBFButton, Assembly-CSharp
           m_MethodName: OnPointerExit
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - eventID: 2
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1424470130859106072}
+          m_TargetAssemblyTypeName: SWBFButton, Assembly-CSharp
+          m_MethodName: OnClick
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}

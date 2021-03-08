@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using LibSWBF2;
+using LibSWBF2.Enums;
 
 
 /*
@@ -18,19 +20,6 @@ using UnityEngine;
  */
 
 
-public struct LVLHandle
-{
-    uint NativeHandle;
-
-    public LVLHandle(uint nativeHandle)
-    {
-        NativeHandle = nativeHandle;
-    }
-    public uint GetNativeHandle() => NativeHandle;
-
-    public bool IsValid() => NativeHandle != uint.MaxValue;
-}
-
 public class LoadscreenLoadedEventsArgs : EventArgs
 {
     public LoadscreenLoadedEventsArgs(Texture2D tex)
@@ -43,11 +32,12 @@ public class LoadscreenLoadedEventsArgs : EventArgs
 
 public class RuntimeEnvironment
 {
-    public class LevelLoadST
+    public class LoadST
     {
-        public LVLHandle Handle;
+        public SWBF2Handle Handle;
         public RPath PathPartial;
         public bool bIsFallback;
+        public bool bIsSoundBank;
     }
     public class LevelST
     {
@@ -67,7 +57,7 @@ public class RuntimeEnvironment
 
 
     public List<LevelST>        LVLs = new List<LevelST>();
-    public List<LevelLoadST>    LoadingLVLs = new List<LevelLoadST>();
+    public List<LoadST>    LoadingLVLs = new List<LoadST>();
 
     public bool                                     IsLoaded => Stage == EnvStage.Loaded;
     public EventHandler<LoadscreenLoadedEventsArgs> OnLoadscreenLoaded;
@@ -81,8 +71,8 @@ public class RuntimeEnvironment
     bool CanSchedule => Stage == EnvStage.Init || Stage == EnvStage.ExecuteMain;
     bool CanExecute  => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
 
-    LuaRuntime LuaRT;
-    LVLHandle  LoadscreenHandle;
+    LuaRuntime  LuaRT;
+    SWBF2Handle LoadscreenHandle;
 
     LibSWBF2.Wrappers.Container EnvCon;
     LibSWBF2.Wrappers.Level     WorldLevel;     // points to world level inside 'LVLs'
@@ -91,6 +81,8 @@ public class RuntimeEnvironment
     string InitScriptName;
     string InitFunctionName;
     string PostLoadFunctionName;
+
+    List<GameObject> SceneRoots = new List<GameObject>();
 
 
     RuntimeEnvironment(RPath path, RPath fallbackPath)
@@ -131,6 +123,7 @@ public class RuntimeEnvironment
         rt.ScheduleLVLRel("shell.lvl");
         rt.ScheduleLVLRel("common.lvl");
         rt.ScheduleLVLRel("mission.lvl");
+        rt.ScheduleSoundBankRel("sound/common.bnk");
         return rt;
     }
 
@@ -139,9 +132,9 @@ public class RuntimeEnvironment
         return LuaRT;
     }
 
-    public T Find<T>(string texName) where T : LibSWBF2.Wrappers.NativeWrapper, new()
+    public T Find<T>(string name) where T : LibSWBF2.Wrappers.NativeWrapper, new()
     {
-        return EnvCon.FindWrapper<T>(texName);
+        return EnvCon.FindWrapper<T>(name);
     }
 
     public bool Execute(string scriptName)
@@ -177,6 +170,8 @@ public class RuntimeEnvironment
     public void Run(string initScript, string initFn = null, string postLoadFn = null)
     {
         Debug.Assert(Stage == EnvStage.Init);
+        Debug.Assert(SceneRoots.Count == 0);
+        Loader.ResetAllLoaders();
 
         InitScriptName = initScript;
         InitFunctionName = initFn;
@@ -188,6 +183,14 @@ public class RuntimeEnvironment
         Stage = EnvStage.LoadingBase;
     }
 
+    public void ClearScene()
+    {
+        for (int i = 0; i < SceneRoots.Count; ++i)
+        {
+            UnityEngine.Object.Destroy(SceneRoots[i]);
+        }
+    }
+
     public float GetLoadingProgress()
     {
         float stageContribution = 1.0f / 2.0f;
@@ -196,28 +199,29 @@ public class RuntimeEnvironment
         return stageProgress + stageContribution * EnvCon.GetOverallProgress();
     }
 
-    public LVLHandle ScheduleLVLAbs(RPath absoluteLVLPath, string[] subLVLs = null, bool bForceLocal = false)
+    public SWBF2Handle ScheduleLVLAbs(RPath absoluteLVLPath, string[] subLVLs = null, bool bForceLocal = false)
     {
         Debug.Assert(CanSchedule);
 
         if (absoluteLVLPath.Exists() && absoluteLVLPath.IsFile())
         {
-            LVLHandle handle = new LVLHandle(EnvCon.AddLevel(absoluteLVLPath, subLVLs));
-            LoadingLVLs.Add(new LevelLoadST
+            SWBF2Handle handle = EnvCon.AddLevel(absoluteLVLPath, subLVLs);
+            LoadingLVLs.Add(new LoadST
             {
                 Handle = handle,
                 PathPartial = absoluteLVLPath.GetLeafs(2),
-                bIsFallback = false
+                bIsFallback = false,
+                bIsSoundBank = false
             });
             return handle;
         }
 
         Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", absoluteLVLPath);
-        return new LVLHandle(uint.MaxValue);
+        return new SWBF2Handle(uint.MaxValue);
     }
 
     // relativeLVLPath: relative to Environment!
-    public LVLHandle ScheduleLVLRel(RPath relativeLVLPath, string[] subLVLs = null, bool bForceLocal = false)
+    public SWBF2Handle ScheduleLVLRel(RPath relativeLVLPath, string[] subLVLs = null, bool bForceLocal = false)
     {
         Debug.Assert(CanSchedule);
 
@@ -225,63 +229,117 @@ public class RuntimeEnvironment
         RPath fallbackLVLPath = FallbackPath / relativeLVLPath;
         if (envLVLPath.Exists() && envLVLPath.IsFile())
         {
-            LVLHandle handle = new LVLHandle(EnvCon.AddLevel(envLVLPath, subLVLs));
-            LoadingLVLs.Add(new LevelLoadST
+            SWBF2Handle handle = EnvCon.AddLevel(envLVLPath, subLVLs);
+            LoadingLVLs.Add(new LoadST
             { 
                 Handle = handle,
                 PathPartial = relativeLVLPath.GetLeafs(2),
-                bIsFallback = false
+                bIsFallback = false,
+                bIsSoundBank = false
             });
             return handle;
         }
         if (!bForceLocal && fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
         {
-            LVLHandle handle = new LVLHandle(EnvCon.AddLevel(fallbackLVLPath, subLVLs));
-            LoadingLVLs.Add(new LevelLoadST
+            SWBF2Handle handle = EnvCon.AddLevel(fallbackLVLPath, subLVLs);
+            LoadingLVLs.Add(new LoadST
             {
                 Handle = handle,
                 PathPartial = relativeLVLPath.GetLeafs(2),
-                bIsFallback = true
+                bIsFallback = true,
+                bIsSoundBank = false
             });
             return handle;
         }
 
         Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relativeLVLPath);
-        return new LVLHandle(uint.MaxValue);
+        return new SWBF2Handle(uint.MaxValue);
     }
 
-    public float GetProgress(LVLHandle handle)
+    // relativeLVLPath: relative to Environment!
+    public SWBF2Handle ScheduleSoundBankRel(RPath relativeLVLPath)
     {
-        return EnvCon.GetProgress(handle.GetNativeHandle());
+        Debug.Assert(CanSchedule);
+
+        RPath envLVLPath = Path / relativeLVLPath;
+        RPath fallbackLVLPath = FallbackPath / relativeLVLPath;
+        if (envLVLPath.Exists() && envLVLPath.IsFile())
+        {
+            SWBF2Handle handle = EnvCon.AddSoundBank(envLVLPath);
+            LoadingLVLs.Add(new LoadST
+            {
+                Handle = handle,
+                PathPartial = relativeLVLPath.GetLeafs(2),
+                bIsFallback = false,
+                bIsSoundBank = true
+            });
+            return handle;
+        }
+        if (fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
+        {
+            SWBF2Handle handle = EnvCon.AddSoundBank(fallbackLVLPath);
+            LoadingLVLs.Add(new LoadST
+            {
+                Handle = handle,
+                PathPartial = relativeLVLPath.GetLeafs(2),
+                bIsFallback = true,
+                bIsSoundBank = true
+            });
+            return handle;
+        }
+
+        Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relativeLVLPath);
+        return new SWBF2Handle(uint.MaxValue);
+    }
+
+    public float GetProgress(SWBF2Handle handle)
+    {
+        return EnvCon.GetProgress(handle);
     }
 
     public void Update()
     {
         for (int i = 0; i < LoadingLVLs.Count; ++i)
         {
-            var lvl = EnvCon.GetLevel(LoadingLVLs[i].Handle.GetNativeHandle());
-            if (lvl != null)
+            if (LoadingLVLs[i].bIsSoundBank)
             {
-                LVLs.Add(new LevelST
+                if (EnvCon.GetStatus(LoadingLVLs[i].Handle) == ELoadStatus.Loaded)
                 {
-                    Level = lvl,
-                    RelativePath = LoadingLVLs[i].PathPartial,
-                    bIsFallback = LoadingLVLs[i].bIsFallback
-                });
-                if (lvl.IsWorldLevel)
-                {
-                    if (WorldLevel != null)
-                    {
-                        Debug.LogErrorFormat("Encounterred another world lvl '{0}' in environment! Previously found world lvl: '{1}'", lvl.Name, WorldLevel.Name);
-                    }
-                    else
-                    {
-                        WorldLevel = lvl;
-                    }
+                    LoadingLVLs.RemoveAt(i);
                 }
+                else if (EnvCon.GetStatus(LoadingLVLs[i].Handle) == ELoadStatus.Failed)
+                {
+                    Debug.LogErrorFormat("Loading '{0}' failed!", LoadingLVLs[i].PathPartial);
+                    LoadingLVLs.RemoveAt(i);
+                }
+            }
+            else
+            {
+                // will return a Level instance ONLY IF loaded
+                var lvl = EnvCon.GetLevel(LoadingLVLs[i].Handle);
+                if (lvl != null)
+                {
+                    LVLs.Add(new LevelST
+                    {
+                        Level = lvl,
+                        RelativePath = LoadingLVLs[i].PathPartial,
+                        bIsFallback = LoadingLVLs[i].bIsFallback
+                    });
+                    if (lvl.IsWorldLevel)
+                    {
+                        if (WorldLevel != null)
+                        {
+                            Debug.LogErrorFormat("Encounterred another world lvl '{0}' in environment! Previously found world lvl: '{1}'", lvl.Name, WorldLevel.Name);
+                        }
+                        else
+                        {
+                            WorldLevel = lvl;
+                        }
+                    }
 
-                LoadingLVLs.RemoveAt(i);
-                break; // do not further iterate altered list
+                    LoadingLVLs.RemoveAt(i);
+                    break; // do not further iterate altered list
+                }
             }
         }
 
@@ -289,7 +347,7 @@ public class RuntimeEnvironment
         {
             if (LoadscreenLVL == null)
             {
-                LoadscreenLVL = EnvCon.GetLevel(LoadscreenHandle.GetNativeHandle());
+                LoadscreenLVL = EnvCon.GetLevel(LoadscreenHandle);
                 if (LoadscreenLVL != null)
                 {
                     var textures = LoadscreenLVL.GetWrappers<LibSWBF2.Wrappers.Texture>();
@@ -359,7 +417,7 @@ public class RuntimeEnvironment
             foreach (var world in WorldLevel.GetWrappers<LibSWBF2.Wrappers.World>())
             {
                 WorldLoader.Instance.ImportTerrain = !hasTerrain;
-                WorldLoader.Instance.ImportWorld(world, out hasTerrain);
+                SceneRoots.Add(WorldLoader.Instance.ImportWorld(world, out hasTerrain));
             }
         }
 

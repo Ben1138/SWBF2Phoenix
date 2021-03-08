@@ -9,7 +9,10 @@ public class SWBFButton : MonoBehaviour
     public RawImage Left;
     public RawImage Center;
     public RawImage Right;
+
     bool bIsHovering;
+    AudioClip HoverSound;
+    AudioClip ClickSound;
 
 
     void Start()
@@ -21,6 +24,9 @@ public class SWBFButton : MonoBehaviour
         Left.texture   = TextureLoader.Instance.ImportUITexture("bf2_buttons_botleft");
         Center.texture = TextureLoader.Instance.ImportUITexture("bf2_buttons_items_center");
         Right.texture  = TextureLoader.Instance.ImportUITexture("bf2_buttons_botright");
+
+        HoverSound = SoundLoader.LoadSound("ui_menumove");
+        ClickSound = SoundLoader.LoadSound("ui_planetzoom");
     }
 
     void Update()
@@ -44,10 +50,16 @@ public class SWBFButton : MonoBehaviour
     public void OnPointerEnter()
     {
         bIsHovering = true;
+        GameRuntime.Instance.PlayUISound(HoverSound, 1.4f);
     }
 
     public void OnPointerExit()
     {
         bIsHovering = false;
+    }
+
+    public void OnClick()
+    {
+        GameRuntime.Instance.PlayUISound(ClickSound, 1.1f);
     }
 }

@@ -17,7 +17,7 @@ public class Loadscreen : MonoBehaviour
     public Image LoadIcon;
     bool ImageSet;
     float Percentage;
-    float PercentageSpeed = 0.8f;
+    float PercentageSpeed = 1.2f;
     float FadeScreenDuration = 0.5f;
     float FadeImageDuration = 0.5f;
     float FadeImagePlayback;
