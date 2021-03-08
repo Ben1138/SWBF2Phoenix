@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.Rendering;
 
 
@@ -12,7 +13,9 @@ public class GameRuntime : MonoBehaviour
     public Loadscreen InitScreenPrefab;
     public Loadscreen LoadScreenPrefab;
     public GameObject MainMenuPrefab;
+    public GameObject PauseMenuPrefab;
     public Volume     PostProcessingVolume;
+    public AudioMixerGroup UIAudioMixer;
 
     RPath AddonPath => GamePath / "GameData/addon";
     RPath StdLVLPC;
@@ -20,10 +23,15 @@ public class GameRuntime : MonoBehaviour
     Loadscreen CurrentLS;
     GameObject CurrentMenu;
 
+    // ring buffer
+    AudioSource[] UIAudio = new AudioSource[5];
+    byte UIAudioHead = 0;
+
     RuntimeEnvironment Env;
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
 
     bool bInitMainMenu;
+    bool bAvailablePauseMenu;
 
 
     public static LuaRuntime GetLuaRuntime()
@@ -50,11 +58,13 @@ public class GameRuntime : MonoBehaviour
     public void EnterMainMenu(bool bInit = false)
     {
         Debug.Assert(Env == null || Env.IsLoaded);
+        bAvailablePauseMenu = false;
 
         bInitMainMenu = bInit;
         ShowLoadscreen(bInit);
         RemoveMenu();
 
+        Env?.ClearScene();
         Env = RuntimeEnvironment.Create(StdLVLPC);
 
         if (!bInit)
@@ -73,6 +83,7 @@ public class GameRuntime : MonoBehaviour
     public void EnterMap(string mapScript)
     {
         Debug.Assert(Env == null || Env.IsLoaded);
+        bAvailablePauseMenu = false;
 
         ShowLoadscreen();
         RemoveMenu();
@@ -83,12 +94,36 @@ public class GameRuntime : MonoBehaviour
             envPath = AddonPath / addonName / "data/_lvl_pc";
         }
 
+        Env?.ClearScene();
         Env = RuntimeEnvironment.Create(envPath, StdLVLPC);
         Env.ScheduleLVLRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
         Env.OnLoaded += OnMapLoaded;
         Env.OnExecuteMain += OnMapExecution;
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
+    }
+
+    // Counterpart of ShowMenu()
+    public void RemoveMenu()
+    {
+        if (CurrentMenu != null)
+        {
+            Destroy(CurrentMenu.gameObject);
+            CurrentMenu = null;
+        }
+    }
+
+    public void PlayUISound(AudioClip sound, float pitch = 1.0f)
+    {
+        UIAudio[UIAudioHead].clip = sound;
+        UIAudio[UIAudioHead].pitch = pitch;
+        UIAudio[UIAudioHead].Play();
+
+        UIAudioHead++;
+        if (UIAudioHead >= UIAudio.Length)
+        {
+            UIAudioHead = 0;
+        }
     }
 
     void ShowLoadscreen(bool bInitScreen = false)
@@ -109,6 +144,7 @@ public class GameRuntime : MonoBehaviour
         CurrentLS = null;
     }
 
+    // Counterpart is RemoveMenu()
     void ShowMenu(GameObject prefab)
     {
         if (CurrentMenu != null)
@@ -118,20 +154,12 @@ public class GameRuntime : MonoBehaviour
         CurrentMenu = Instantiate(prefab);
     }
 
-    void RemoveMenu()
-    {
-        if (CurrentMenu != null)
-        {
-            Destroy(CurrentMenu.gameObject);
-            CurrentMenu = null;
-        }
-    }
-
     void Init()
     {
         Instance = this;
 
         WorldLoader.UseHDRP = true;
+        ClassLoader.Instance.RegisterClassScript("commandpost", typeof(GC_commandpost));
 
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
         if (GamePath.IsFile() || 
@@ -201,12 +229,13 @@ public class GameRuntime : MonoBehaviour
 
     void OnMapExecution(object sender, EventArgs e)
     {
-        
+        // after script execution, but BEFORE map conversion
     }
 
     void OnMapLoaded(object sender, EventArgs e)
     {
         RemoveLoadscreen();
+        bAvailablePauseMenu = true;
     }
 
     bool CheckExistence(string lvlName)
@@ -225,7 +254,16 @@ public class GameRuntime : MonoBehaviour
         Debug.Assert(InitScreenPrefab != null);
         Debug.Assert(LoadScreenPrefab != null);
         Debug.Assert(MainMenuPrefab   != null);
+        Debug.Assert(PauseMenuPrefab  != null);
         Debug.Assert(PostProcessingVolume != null);
+
+        for (int i = 0; i < UIAudio.Length; ++i)
+        {
+            GameObject audioObj = new GameObject(string.Format("UIAudio{0}", i));
+            audioObj.transform.SetParent(transform);
+            UIAudio[i] = audioObj.AddComponent<AudioSource>();
+            UIAudio[i].outputAudioMixerGroup = UIAudioMixer;
+        }
 
         Init();
     }
@@ -233,5 +271,18 @@ public class GameRuntime : MonoBehaviour
     void Update()
     {
         Env?.Update();
+
+        if (bAvailablePauseMenu && Input.GetButtonDown("Cancel"))
+        {
+            if (CurrentMenu != null)
+            {
+                RemoveMenu();
+            }
+            else
+            {
+                ShowMenu(PauseMenuPrefab);
+            }
+            PlayUISound(SoundLoader.LoadSound("ui_menuBack"), 1.2f);
+        }
     }
 }
