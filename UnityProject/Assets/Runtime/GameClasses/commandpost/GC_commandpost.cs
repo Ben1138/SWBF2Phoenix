@@ -14,7 +14,6 @@ public class GC_commandpost : ISWBFGameClass
     public float HoloTurnOnTime = 1.0f;
     public Collider CaptureRegion;
     public Collider ControlRegion;
-    public byte TeamID = 0;
     public AudioClip CapturedSound;
     public AudioClip LostSound;
     public AudioClip ChargeSound;
@@ -25,11 +24,12 @@ public class GC_commandpost : ISWBFGameClass
     public GameObject HoloIcon;
     public HDAdditionalLightData Light;
 
+    byte TeamID = 0;
     AudioSource AudioAction;
     AudioSource AudioAmbient;
     AudioSource AudioCapture;
     Vector2 CapturePitch = new Vector2(0.5f, 1.5f);
-    public float CaptureTimer;
+    float CaptureTimer;
 
     // cache
     bool bInit = false;
@@ -51,10 +51,6 @@ public class GC_commandpost : ISWBFGameClass
         CL.AssignProp(inst, "LostSound",      0, ref LostSound);
         CL.AssignProp(inst, "ChargeSound",    0, ref ChargeSound);
         CL.AssignProp(inst, "DischargeSound", 0, ref DischargeSound);
-
-        // TODO: why?
-        NeutralizeTime /= 10.0f;
-        CaptureTime /= 10.0f;
 
         Transform hpHolo = transform.Find("com_bldg_controlzone/hp_hologram");
         if (hpHolo != null)
