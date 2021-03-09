@@ -126,6 +126,21 @@ public class GameRuntime : MonoBehaviour
         }
     }
 
+    // TODO
+    public Color GetTeamColor(byte teamId)
+    {
+        switch (teamId)
+        {
+            case 1:
+                return Color.green;
+            case 2:
+                return Color.red;
+            case 3:
+                return Color.yellow;
+        }
+        return Color.white;
+    }
+
     void ShowLoadscreen(bool bInitScreen = false)
     {
         Debug.Assert(CurrentLS == null);
