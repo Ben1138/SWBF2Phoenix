@@ -56,8 +56,8 @@ public class RuntimeEnvironment
     }
 
 
-    public List<LevelST>        LVLs = new List<LevelST>();
-    public List<LoadST>    LoadingLVLs = new List<LoadST>();
+    public List<LevelST> LVLs = new List<LevelST>();
+    public List<LoadST>  LoadingLVLs = new List<LoadST>();
 
     public bool                                     IsLoaded => Stage == EnvStage.Loaded;
     public EventHandler<LoadscreenLoadedEventsArgs> OnLoadscreenLoaded;
@@ -134,13 +134,13 @@ public class RuntimeEnvironment
 
     public T Find<T>(string name) where T : LibSWBF2.Wrappers.NativeWrapper, new()
     {
-        return EnvCon.FindWrapper<T>(name);
+        return EnvCon.Get<T>(name);
     }
 
     public bool Execute(string scriptName)
     {
         Debug.Assert(CanExecute);
-        LibSWBF2.Wrappers.Script script = EnvCon.FindWrapper<LibSWBF2.Wrappers.Script>(scriptName);
+        LibSWBF2.Wrappers.Script script = EnvCon.Get<LibSWBF2.Wrappers.Script>(scriptName);
         if (script == null || !script.IsValid())
         {
             Debug.LogErrorFormat("Couldn't find script '{0}'!", scriptName);
@@ -350,9 +350,9 @@ public class RuntimeEnvironment
                 LoadscreenLVL = EnvCon.GetLevel(LoadscreenHandle);
                 if (LoadscreenLVL != null)
                 {
-                    var textures = LoadscreenLVL.GetWrappers<LibSWBF2.Wrappers.Texture>();
+                    var textures = LoadscreenLVL.Get<LibSWBF2.Wrappers.Texture>();
                     int texIdx = UnityEngine.Random.Range(0, textures.Length - 1);
-                    OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureLoader.Instance.ImportUITexture(textures[texIdx].name)));
+                    OnLoadscreenLoaded?.Invoke(this, new LoadscreenLoadedEventsArgs(TextureLoader.Instance.ImportUITexture(textures[texIdx].Name)));
                 }
             }
 
@@ -414,7 +414,7 @@ public class RuntimeEnvironment
         {
             bool hasTerrain = false;
             WorldLoader.Instance.TerrainAsMesh = true;
-            foreach (var world in WorldLevel.GetWrappers<LibSWBF2.Wrappers.World>())
+            foreach (var world in WorldLevel.Get<LibSWBF2.Wrappers.World>())
             {
                 WorldLoader.Instance.ImportTerrain = !hasTerrain;
                 SceneRoots.Add(WorldLoader.Instance.ImportWorld(world, out hasTerrain));

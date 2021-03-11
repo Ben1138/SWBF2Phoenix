@@ -224,7 +224,7 @@ public class GameRuntime : MonoBehaviour
         {
             if (lvl.RelativePath.GetLeaf() == "addme.script")
             {
-                var addme = lvl.Level.GetWrapper<LibSWBF2.Wrappers.Script>("addme");
+                var addme = lvl.Level.Get<LibSWBF2.Wrappers.Script>("addme");
                 if (addme == null)
                 {
                     Debug.LogWarningFormat("Seems like '{0}' has no 'addme' script chunk!", lvl.RelativePath);
@@ -251,6 +251,9 @@ public class GameRuntime : MonoBehaviour
     {
         RemoveLoadscreen();
         bAvailablePauseMenu = true;
+
+        //AudioClip clip = SoundLoader.LoadSound("geo_amb_desert");
+        //Debug.Log(clip.name);
     }
 
     bool CheckExistence(string lvlName)
