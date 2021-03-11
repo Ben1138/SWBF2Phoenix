@@ -8,16 +8,18 @@ using CL = ClassLoader;
 
 public class GC_commandpost : ISWBFGameClass
 {
-    [Header("SWBF Properties")]
-    public float NeutralizeTime = 1.0f;
-    public float CaptureTime = 1.0f;
-    public float HoloTurnOnTime = 1.0f;
+    // SWBF Class Properties
+    static float NeutralizeTime = 1.0f;
+    static float CaptureTime = 1.0f;
+    static float HoloTurnOnTime = 1.0f;
+    static AudioClip CapturedSound;
+    static AudioClip LostSound;
+    static AudioClip ChargeSound;
+    static AudioClip DischargeSound;
+
+    [Header("SWBF Instance Properties")]
     public Collider CaptureRegion;
     public Collider ControlRegion;
-    public AudioClip CapturedSound;
-    public AudioClip LostSound;
-    public AudioClip ChargeSound;
-    public AudioClip DischargeSound;
 
     [Header("References")]
     public LineRenderer HoloRay;
@@ -32,7 +34,8 @@ public class GC_commandpost : ISWBFGameClass
     float CaptureTimer;
 
     // cache
-    bool bInit = false;
+    bool bInitClass = false;
+    bool bInitInstance = false;
     float HoloWidthStart;
     float HoloWidthEnd;
     float LightIntensity;
@@ -40,17 +43,17 @@ public class GC_commandpost : ISWBFGameClass
     float HoloAlpha;
 
 
-    public override void Init(Instance inst)
+    public override void InitClass(EntityClass cl)
     {
-        CL.AssignProp(inst, "NeutralizeTime",    ref NeutralizeTime);
-        CL.AssignProp(inst, "CaptureTime",       ref CaptureTime);
-        CL.AssignProp(inst, "HoloTurnOnTime",    ref HoloTurnOnTime);
-        CL.AssignProp(inst, "CaptureRegion",     ref CaptureRegion);
-        CL.AssignProp(inst, "ControlRegion",     ref ControlRegion);
-        CL.AssignProp(inst, "CapturedSound",  0, ref CapturedSound);
-        CL.AssignProp(inst, "LostSound",      0, ref LostSound);
-        CL.AssignProp(inst, "ChargeSound",    0, ref ChargeSound);
-        CL.AssignProp(inst, "DischargeSound", 0, ref DischargeSound);
+        if (bInitClass) return;
+
+        CL.AssignProp(cl, "NeutralizeTime",    ref NeutralizeTime);
+        CL.AssignProp(cl, "CaptureTime",       ref CaptureTime);
+        CL.AssignProp(cl, "HoloTurnOnTime",    ref HoloTurnOnTime);
+        CL.AssignProp(cl, "CapturedSound",  0, ref CapturedSound);
+        CL.AssignProp(cl, "LostSound",      0, ref LostSound);
+        CL.AssignProp(cl, "ChargeSound",    0, ref ChargeSound);
+        CL.AssignProp(cl, "DischargeSound", 0, ref DischargeSound);
 
         Transform hpHolo = transform.Find("com_bldg_controlzone/hp_hologram");
         if (hpHolo != null)
@@ -95,8 +98,17 @@ public class GC_commandpost : ISWBFGameClass
         AudioAction.minDistance = 2.0f;
         AudioAction.maxDistance = 40.0f;
 
-        SetTeam(0);
-        bInit = true;
+        bInitClass = true;
+    }
+
+    public override void InitInstance(Instance inst)
+    {
+        CL.AssignProp(inst, "CaptureRegion", ref CaptureRegion);
+        CL.AssignProp(inst, "ControlRegion", ref ControlRegion);
+        CL.AssignProp(inst, "Team",          ref TeamID);
+
+        SetTeam(TeamID);
+        bInitInstance = true;
     }
 
     public void SetTeam(byte teamId)
@@ -122,7 +134,12 @@ public class GC_commandpost : ISWBFGameClass
 
     void Update()
     {
-        if (!bInit) return;
+        return;
+
+
+
+
+        if (!bInitInstance) return;
 
         CaptureTimer += Time.deltaTime;
         float progress;

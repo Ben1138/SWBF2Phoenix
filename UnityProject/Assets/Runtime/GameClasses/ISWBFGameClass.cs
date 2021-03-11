@@ -5,5 +5,6 @@ using LibSWBF2;
 
 public abstract class ISWBFGameClass : MonoBehaviour
 {
-    public abstract void Init(LibSWBF2.Wrappers.Instance inst);
+    public abstract void InitClass(LibSWBF2.Wrappers.EntityClass cl); 
+    public abstract void InitInstance(LibSWBF2.Wrappers.Instance inst);
 }
