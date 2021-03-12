@@ -83,6 +83,7 @@ public class RuntimeEnvironment
     string PostLoadFunctionName;
 
     List<GameObject> SceneRoots = new List<GameObject>();
+    Dictionary<string, ISWBFGameClass> WorldInstances = new Dictionary<string, ISWBFGameClass>(StringComparer.InvariantCultureIgnoreCase);
 
 
     RuntimeEnvironment(RPath path, RPath fallbackPath)
@@ -189,6 +190,7 @@ public class RuntimeEnvironment
         {
             UnityEngine.Object.Destroy(SceneRoots[i]);
         }
+        WorldInstances.Clear();
     }
 
     public float GetLoadingProgress()
@@ -370,6 +372,14 @@ public class RuntimeEnvironment
         }
     }
 
+    public void SetProperty(string instName, string propName, object propValue)
+    {
+        if (WorldInstances.TryGetValue(instName, out ISWBFGameClass classScript))
+        {
+            classScript.SetProperty(propName, propValue);
+        }
+    }
+
     RPath GetLoadscreenPath()
     {
         // First, try grab loadscreen for standard maps
@@ -414,10 +424,17 @@ public class RuntimeEnvironment
         {
             bool hasTerrain = false;
             WorldLoader.Instance.TerrainAsMesh = true;
+
+            List<(GameObject, ISWBFClass)> instances = new List<(GameObject, ISWBFClass)>();
             foreach (var world in WorldLevel.Get<LibSWBF2.Wrappers.World>())
             {
                 WorldLoader.Instance.ImportTerrain = !hasTerrain;
-                SceneRoots.Add(WorldLoader.Instance.ImportWorld(world, out hasTerrain));
+                SceneRoots.Add(WorldLoader.Instance.ImportWorld(world, out hasTerrain, out instances));
+
+                foreach ((GameObject, ISWBFGameClass) inst in instances)
+                {
+                    WorldInstances.Add(inst.Item1.name, inst.Item2);
+                }
             }
         }
 
