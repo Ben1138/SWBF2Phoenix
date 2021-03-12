@@ -8,25 +8,27 @@ using CL = ClassLoader;
 
 public class GC_commandpost : ISWBFGameClass
 {
-    // SWBF Class Properties
-    static float NeutralizeTime = 1.0f;
-    static float CaptureTime = 1.0f;
-    static float HoloTurnOnTime = 1.0f;
-    static AudioClip CapturedSound;
-    static AudioClip LostSound;
-    static AudioClip ChargeSound;
-    static AudioClip DischargeSound;
+    struct ClassProperties
+    {
+       public float NeutralizeTime;
+       public float CaptureTime;
+       public float HoloTurnOnTime;
+       public AudioClip CapturedSound;
+       public AudioClip LostSound;
+       public AudioClip ChargeSound;
+       public AudioClip DischargeSound;
+    }
 
     [Header("SWBF Instance Properties")]
     public Collider CaptureRegion;
     public Collider ControlRegion;
+    public byte Team = 0;
 
     [Header("References")]
     public LineRenderer HoloRay;
     public GameObject HoloIcon;
     public HDAdditionalLightData Light;
 
-    byte TeamID = 0;
     AudioSource AudioAction;
     AudioSource AudioAmbient;
     AudioSource AudioCapture;
@@ -105,21 +107,31 @@ public class GC_commandpost : ISWBFGameClass
     {
         CL.AssignProp(inst, "CaptureRegion", ref CaptureRegion);
         CL.AssignProp(inst, "ControlRegion", ref ControlRegion);
-        CL.AssignProp(inst, "Team",          ref TeamID);
+        CL.AssignProp(inst, "Team",          ref Team);
 
-        SetTeam(TeamID);
+        SetTeam(Team);
         bInitInstance = true;
+    }
+
+    public override void SetProperty(string propName, object propValue)
+    {
+        
+    }
+
+    public override void SetClassProperty(string propName, object propValue)
+    {
+        throw new NotImplementedException();
     }
 
     public void SetTeam(byte teamId)
     {
         CaptureTimer = 0.0f;
-        TeamID = teamId;
+        Team = teamId;
 
-        AudioCapture.clip = TeamID == 0 ? ChargeSound : DischargeSound;
+        AudioCapture.clip = Team == 0 ? ChargeSound : DischargeSound;
         AudioCapture.Play();
 
-        AudioAction.clip = TeamID == 0 ? LostSound : CapturedSound;
+        AudioAction.clip = Team == 0 ? LostSound : CapturedSound;
         AudioAction.Play();
 
         UpdateColor();
@@ -127,7 +139,7 @@ public class GC_commandpost : ISWBFGameClass
 
     public void UpdateColor()
     {
-        HoloColor = GameRuntime.Instance.GetTeamColor(TeamID);
+        HoloColor = GameRuntime.Instance.GetTeamColor(Team);
         HoloRay.material.SetColor("_EmissiveColor", HoloColor);
         Light.color = HoloColor;
     }
@@ -143,7 +155,7 @@ public class GC_commandpost : ISWBFGameClass
 
         CaptureTimer += Time.deltaTime;
         float progress;
-        if (TeamID == 0)
+        if (Team == 0)
         {
             progress = CaptureTimer / CaptureTime;
             if (CaptureTimer >= CaptureTime)
