@@ -82,8 +82,7 @@ public class RuntimeEnvironment
     string InitFunctionName;
     string PostLoadFunctionName;
 
-    List<GameObject> SceneRoots = new List<GameObject>();
-    Dictionary<string, ISWBFGameClass> WorldInstances = new Dictionary<string, ISWBFGameClass>(StringComparer.InvariantCultureIgnoreCase);
+    RuntimeScene RScene;
 
 
     RuntimeEnvironment(RPath path, RPath fallbackPath)
@@ -125,6 +124,9 @@ public class RuntimeEnvironment
         rt.ScheduleLVLRel("common.lvl");
         rt.ScheduleLVLRel("mission.lvl");
         rt.ScheduleSoundBankRel("sound/common.bnk");
+
+        rt.RScene = new RuntimeScene(rt.EnvCon);
+
         return rt;
     }
 
@@ -171,7 +173,6 @@ public class RuntimeEnvironment
     public void Run(string initScript, string initFn = null, string postLoadFn = null)
     {
         Debug.Assert(Stage == EnvStage.Init);
-        Debug.Assert(SceneRoots.Count == 0);
         Loader.ResetAllLoaders();
 
         InitScriptName = initScript;
@@ -182,15 +183,6 @@ public class RuntimeEnvironment
         EnvCon.LoadLevels();
 
         Stage = EnvStage.LoadingBase;
-    }
-
-    public void ClearScene()
-    {
-        for (int i = 0; i < SceneRoots.Count; ++i)
-        {
-            UnityEngine.Object.Destroy(SceneRoots[i]);
-        }
-        WorldInstances.Clear();
     }
 
     public float GetLoadingProgress()
@@ -372,12 +364,9 @@ public class RuntimeEnvironment
         }
     }
 
-    public void SetProperty(string instName, string propName, object propValue)
+    public void ClearScene()
     {
-        if (WorldInstances.TryGetValue(instName, out ISWBFGameClass classScript))
-        {
-            classScript.SetProperty(propName, propValue);
-        }
+        // TODO: forward to EnvironmentScene
     }
 
     RPath GetLoadscreenPath()
@@ -422,20 +411,7 @@ public class RuntimeEnvironment
         // WorldLevel will be null for Main Menu
         if (WorldLevel != null)
         {
-            bool hasTerrain = false;
-            WorldLoader.Instance.TerrainAsMesh = true;
-
-            List<(GameObject, ISWBFClass)> instances = new List<(GameObject, ISWBFClass)>();
-            foreach (var world in WorldLevel.Get<LibSWBF2.Wrappers.World>())
-            {
-                WorldLoader.Instance.ImportTerrain = !hasTerrain;
-                SceneRoots.Add(WorldLoader.Instance.ImportWorld(world, out hasTerrain, out instances));
-
-                foreach ((GameObject, ISWBFGameClass) inst in instances)
-                {
-                    WorldInstances.Add(inst.Item1.name, inst.Item2);
-                }
-            }
+            RScene.Import(WorldLevel.Get<LibSWBF2.Wrappers.World>());
         }
 
         // 4 - execute post load function AFTER scene has been created
