@@ -16,6 +16,7 @@ public interface Ref
 /// </summary>
 public sealed class Ref<T> : Ref
 {
+    public Action OnValueChanged;
     T Value;
 
     public Ref(T val)
@@ -23,15 +24,29 @@ public sealed class Ref<T> : Ref
         Value = val;
     }
 
-    public void Set(object val)
+    public T Get()
     {
-        Value = (T)val;
+        return Value;
     }
 
-    //public static implicit operator Ref<T>(T value)
-    //{
-    //    return new Ref<T>(value);
-    //}
+    public void Set(object val)
+    {
+        try
+        {
+            Value = (T)val;
+        }
+        catch
+        {
+            Value = (T)Convert.ChangeType(val, typeof(T));
+        }
+        OnValueChanged?.Invoke();
+    }
+
+    public void Set(T val)
+    {
+        Value = val;
+        OnValueChanged?.Invoke();
+    }
 
     public static implicit operator T(Ref<T> refVal)
     {
@@ -44,43 +59,38 @@ public sealed class Ref<T> : Ref
 /// </summary>
 public sealed class PropertyDB
 {
-    Dictionary<string, VariableRef> Properties = new Dictionary<string, VariableRef>();
-
-    class VariableRef
-    {
-        public Action<object> Set { get; private set; }
-        public VariableRef(Action<object> setter)
-        {
-            Set = setter;
-        }
-    }
+    Dictionary<string, Ref> Properties = new Dictionary<string, Ref>();
 
     public void Register<T>(string propName, T variable) where T : Ref
     {
-        Properties.Add(propName, new VariableRef(
-            val => { variable.Set(val); })
-        );
+        Properties.Add(propName, variable);
     }
 
     public void SetProperty(string propName, object propValue)
     {
-        if (Properties.TryGetValue(propName, out VariableRef variable))
+        if (Properties.TryGetValue(propName, out Ref variable))
         {
             variable.Set(propValue);
+            return;
         }
+        Debug.LogWarningFormat("Could not find property '{0}'!", propName);
     }
 }
 
 public abstract class ISWBFInstance : MonoBehaviour
 {
-    protected PropertyDB P { get; private set; } = new PropertyDB();
+    public PropertyDB P { get; private set; } = new PropertyDB();
     public abstract void InitInstance(Instance inst, ISWBFClass classProperties);
 }
 
 public abstract class ISWBFClass
 {
-    protected PropertyDB P { get; private set; } = new PropertyDB();
-    public abstract void InitClass(EntityClass ec);
+    public PropertyDB P { get; private set; } = new PropertyDB();
+    public string Name { get; private set; }
+    public virtual void InitClass(EntityClass ec)
+    {
+        Name = ec.Name;
+    }
 }
 
 //public class OdfClass

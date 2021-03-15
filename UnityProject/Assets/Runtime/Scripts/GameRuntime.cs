@@ -45,6 +45,11 @@ public class GameRuntime : MonoBehaviour
         return Instance == null ? null : Instance.Env;
     }
 
+    public static RuntimeScene GetScene()
+    {
+        return Instance == null ? null : Instance.Env.GetScene();
+    }
+
     public void RegisterAddonScript(string scriptName, string addonName)
     {
         if (RegisteredAddons.TryGetValue(scriptName, out string addNm))
