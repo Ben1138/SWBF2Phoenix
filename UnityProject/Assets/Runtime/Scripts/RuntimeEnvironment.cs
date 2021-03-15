@@ -103,6 +103,10 @@ public class RuntimeEnvironment
         EnvCon.Delete();
     }
 
+    public RuntimeScene GetScene()
+    {
+        return RScene;
+    }
 
     public static RuntimeEnvironment Create(RPath envPath, RPath fallbackPath = null)
     {

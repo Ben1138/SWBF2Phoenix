@@ -4,8 +4,6 @@ using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 using LibSWBF2.Wrappers;
 
-using CL = ClassLoader;
-
 public class GC_commandpost : ISWBFInstance
 {
     public class ClassProperties : ISWBFClass
@@ -20,6 +18,7 @@ public class GC_commandpost : ISWBFInstance
 
         public override void InitClass(EntityClass ec)
         {
+            base.InitClass(ec);
             P.Register("NeutralizeTime", NeutralizeTime);
             P.Register("CaptureTime", CaptureTime);
             P.Register("HoloTurnOnTime", HoloTurnOnTime);
@@ -28,13 +27,14 @@ public class GC_commandpost : ISWBFInstance
             P.Register("ChargeSound", ChargeSound);
             P.Register("DischargeSound", DischargeSound);
 
-            CL.AssignProp(ec, "NeutralizeTime", NeutralizeTime);
-            CL.AssignProp(ec, "CaptureTime", CaptureTime);
-            CL.AssignProp(ec, "HoloTurnOnTime", HoloTurnOnTime);
-            CL.AssignProp(ec, "CapturedSound", 0, CapturedSound);
-            CL.AssignProp(ec, "LostSound", 0, LostSound);
-            CL.AssignProp(ec, "ChargeSound", 0, ChargeSound);
-            CL.AssignProp(ec, "DischargeSound", 0, DischargeSound);
+            RuntimeScene sc = GameRuntime.GetScene();
+            sc.AssignProp(ec, "NeutralizeTime", NeutralizeTime);
+            sc.AssignProp(ec, "CaptureTime", CaptureTime);
+            sc.AssignProp(ec, "HoloTurnOnTime", HoloTurnOnTime);
+            sc.AssignProp(ec, "CapturedSound", 0, CapturedSound);
+            sc.AssignProp(ec, "LostSound", 0, LostSound);
+            sc.AssignProp(ec, "ChargeSound", 0, ChargeSound);
+            sc.AssignProp(ec, "DischargeSound", 0, DischargeSound);
         }
     }
 
@@ -46,8 +46,8 @@ public class GC_commandpost : ISWBFInstance
     ClassProperties C;
 
     // SWBF Instance Properties
-    Ref<Collider> CaptureRegion = new Ref<Collider>(null);
-    Ref<Collider> ControlRegion = new Ref<Collider>(null);
+    Ref<Region> CaptureRegion = new Ref<Region>(null);
+    Ref<Region> ControlRegion = new Ref<Region>(null);
     Ref<byte> Team = new Ref<byte>(0);
 
     AudioSource AudioAction;
@@ -69,15 +69,7 @@ public class GC_commandpost : ISWBFInstance
     {
         C = (ClassProperties)classProperties;
 
-        P.Register("CaptureRegion", CaptureRegion);
-        P.Register("ControlRegion", ControlRegion);
-        P.Register("Team", Team);
-
-        CL.AssignProp(inst, "CaptureRegion", CaptureRegion);
-        CL.AssignProp(inst, "ControlRegion", ControlRegion);
-        CL.AssignProp(inst, "Team",          Team);
-
-        Transform hpHolo = transform.Find("com_bldg_controlzone/hp_hologram");
+        Transform hpHolo = transform.Find(string.Format("{0}/hp_hologram", C.Name));
         if (hpHolo != null)
         {
             GameObject holoPrefab = Resources.Load<GameObject>("cp_holo");
@@ -120,14 +112,26 @@ public class GC_commandpost : ISWBFInstance
         AudioAction.minDistance = 2.0f;
         AudioAction.maxDistance = 40.0f;
 
-        SetTeam(Team);
+
+        P.Register("CaptureRegion", CaptureRegion);
+        P.Register("ControlRegion", ControlRegion);
+        P.Register("Team", Team);
+
+        Team.OnValueChanged += ApplyTeam;
+        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnEntered += OnCaptureRegionEnter;
+        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnExit += OnCaptureRegionExit;
+
+        RuntimeScene sc = GameRuntime.GetScene();
+        sc.AssignProp(inst, "CaptureRegion", CaptureRegion);
+        sc.AssignProp(inst, "ControlRegion", ControlRegion);
+        sc.AssignProp(inst, "Team", Team);
+
         bInitInstance = true;
     }
 
-    public void SetTeam(byte teamId)
+    void ApplyTeam()
     {
         CaptureTimer = 0.0f;
-        Team.Set(teamId);
 
         AudioCapture.clip = Team == 0 ? C.ChargeSound : C.DischargeSound;
         AudioCapture.Play();
@@ -138,7 +142,17 @@ public class GC_commandpost : ISWBFInstance
         UpdateColor();
     }
 
-    public void UpdateColor()
+    void OnCaptureRegionEnter(GameObject other)
+    {
+        Debug.LogWarningFormat("Capture Region '{0}' entered by '{1}'", CaptureRegion.Get().name, other.name);
+    }
+
+    void OnCaptureRegionExit(GameObject other)
+    {
+        Debug.LogWarningFormat("Capture Region '{0}' exited by'{1}'", CaptureRegion.Get().name, other.name);
+    }
+
+    void UpdateColor()
     {
         HoloColor = GameRuntime.Instance.GetTeamColor(Team);
         HoloRay.material.SetColor("_EmissiveColor", HoloColor);
@@ -147,11 +161,6 @@ public class GC_commandpost : ISWBFInstance
 
     void Update()
     {
-        return;
-
-
-
-
         if (!bInitInstance) return;
 
         CaptureTimer += Time.deltaTime;
@@ -161,7 +170,7 @@ public class GC_commandpost : ISWBFInstance
             progress = CaptureTimer / C.CaptureTime;
             if (CaptureTimer >= C.CaptureTime)
             {
-                SetTeam(1);
+                Team.Set(1);
             }
             AudioCapture.pitch = Mathf.Lerp(CapturePitch.x, CapturePitch.y, CaptureTimer / C.CaptureTime);
         }
@@ -170,7 +179,7 @@ public class GC_commandpost : ISWBFInstance
             progress = CaptureTimer / C.NeutralizeTime;
             if (CaptureTimer >= C.NeutralizeTime)
             {
-                SetTeam(0);
+                Team.Set(0);
             }
             AudioCapture.pitch = Mathf.Lerp(CapturePitch.y, CapturePitch.x, CaptureTimer / C.CaptureTime);
         }
