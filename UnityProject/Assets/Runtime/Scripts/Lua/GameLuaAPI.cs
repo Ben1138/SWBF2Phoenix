@@ -319,12 +319,14 @@ public static class GameLuaAPI
 
 	public static void SetProperty(string instName, string propName, object propValue)
 	{
-		
+		RuntimeScene scene = GameRuntime.GetScene();
+		scene?.SetProperty(instName, propName, propValue);
 	}
 
 	public static void SetClassProperty(string className, string propName, object propValue)
 	{
-
+		RuntimeScene scene = GameRuntime.GetScene();
+		scene?.SetClassProperty(className, propName, propValue);
 	}
 
 	public static void DisableBarriers(string barrierName)
