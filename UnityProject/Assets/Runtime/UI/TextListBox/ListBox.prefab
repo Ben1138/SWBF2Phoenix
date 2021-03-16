@@ -32,7 +32,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0010238077}
+  m_AnchoredPosition: {x: 0, y: 0.0009598814}
   m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1066737480679216278
@@ -196,7 +196,7 @@ MonoBehaviour:
   ItemPrefab: {fileID: 4869181487087477543, guid: 3a3a1e91106cca74791a9d151cdb0e3f, type: 3}
   Content: {fileID: 6630211451416130008}
   CheckList: 0
-  Spacing: 10
+  Spacing: 5
 --- !u!1 &4214562445629641063
 GameObject:
   m_ObjectHideFlags: 0
@@ -480,7 +480,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 3345217701958311916}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9999984
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
