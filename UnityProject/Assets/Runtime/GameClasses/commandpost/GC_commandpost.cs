@@ -8,39 +8,39 @@ public class GC_commandpost : ISWBFInstance
 {
     public class ClassProperties : ISWBFClass
     {
-        public Ref<float> NeutralizeTime = new Ref<float>(1.0f);
-        public Ref<float> CaptureTime = new Ref<float>(1.0f);
-        public Ref<float> HoloTurnOnTime = new Ref<float>(1.0f);
-        public Ref<AudioClip> CapturedSound = new Ref<AudioClip>(null);
-        public Ref<AudioClip> LostSound = new Ref<AudioClip>(null);
-        public Ref<AudioClip> ChargeSound = new Ref<AudioClip>(null);
+        public Ref<float>     NeutralizeTime = new Ref<float>(1.0f);
+        public Ref<float>     CaptureTime    = new Ref<float>(1.0f);
+        public Ref<float>     HoloTurnOnTime = new Ref<float>(1.0f);
+        public Ref<AudioClip> CapturedSound  = new Ref<AudioClip>(null);
+        public Ref<AudioClip> LostSound      = new Ref<AudioClip>(null);
+        public Ref<AudioClip> ChargeSound    = new Ref<AudioClip>(null);
         public Ref<AudioClip> DischargeSound = new Ref<AudioClip>(null);
 
         public override void InitClass(EntityClass ec)
         {
             base.InitClass(ec);
             P.Register("NeutralizeTime", NeutralizeTime);
-            P.Register("CaptureTime", CaptureTime);
+            P.Register("CaptureTime",    CaptureTime);
             P.Register("HoloTurnOnTime", HoloTurnOnTime);
-            P.Register("CapturedSound", CapturedSound);
-            P.Register("LostSound", LostSound);
-            P.Register("ChargeSound", ChargeSound);
+            P.Register("CapturedSound",  CapturedSound);
+            P.Register("LostSound",      LostSound);
+            P.Register("ChargeSound",    ChargeSound);
             P.Register("DischargeSound", DischargeSound);
 
             RuntimeScene sc = GameRuntime.GetScene();
-            sc.AssignProp(ec, "NeutralizeTime", NeutralizeTime);
-            sc.AssignProp(ec, "CaptureTime", CaptureTime);
-            sc.AssignProp(ec, "HoloTurnOnTime", HoloTurnOnTime);
-            sc.AssignProp(ec, "CapturedSound", 0, CapturedSound);
-            sc.AssignProp(ec, "LostSound", 0, LostSound);
-            sc.AssignProp(ec, "ChargeSound", 0, ChargeSound);
+            sc.AssignProp(ec, "NeutralizeTime",    NeutralizeTime);
+            sc.AssignProp(ec, "CaptureTime",       CaptureTime);
+            sc.AssignProp(ec, "HoloTurnOnTime",    HoloTurnOnTime);
+            sc.AssignProp(ec, "CapturedSound",  0, CapturedSound);
+            sc.AssignProp(ec, "LostSound",      0, LostSound);
+            sc.AssignProp(ec, "ChargeSound",    0, ChargeSound);
             sc.AssignProp(ec, "DischargeSound", 0, DischargeSound);
         }
     }
 
     [Header("References")]
     public LineRenderer HoloRay;
-    public GameObject HoloIcon;
+    public GameObject   HoloIcon;
     public HDAdditionalLightData Light;
 
     ClassProperties C;
@@ -48,7 +48,7 @@ public class GC_commandpost : ISWBFInstance
     // SWBF Instance Properties
     Ref<Region> CaptureRegion = new Ref<Region>(null);
     Ref<Region> ControlRegion = new Ref<Region>(null);
-    Ref<byte> Team = new Ref<byte>(0);
+    Ref<byte>   Team          = new Ref<byte>(0);
 
     AudioSource AudioAction;
     AudioSource AudioAmbient;
@@ -86,12 +86,11 @@ public class GC_commandpost : ISWBFInstance
         AudioAmbient = gameObject.AddComponent<AudioSource>();
         AudioAmbient.spatialBlend = 1.0f;
         AudioAmbient.clip = SoundLoader.LoadSound("com_blg_commandpost2");
-        AudioAmbient.loop = true;
         AudioAmbient.pitch = 1.0f;
         AudioAmbient.volume = 0.5f;
         AudioAmbient.rolloffMode = AudioRolloffMode.Linear;
         AudioAmbient.minDistance = 2.0f;
-        AudioAmbient.maxDistance = 40.0f;
+        AudioAmbient.maxDistance = 20.0f;
         AudioAmbient.Play();
 
         AudioCapture = gameObject.AddComponent<AudioSource>();
@@ -101,7 +100,7 @@ public class GC_commandpost : ISWBFInstance
         AudioCapture.volume = 0.8f;
         AudioCapture.rolloffMode = AudioRolloffMode.Linear;
         AudioCapture.minDistance = 2.0f;
-        AudioCapture.maxDistance = 40.0f;
+        AudioCapture.maxDistance = 20.0f;
 
         AudioAction = gameObject.AddComponent<AudioSource>();
         AudioAction.spatialBlend = 1.0f;
@@ -110,21 +109,21 @@ public class GC_commandpost : ISWBFInstance
         AudioAction.volume = 0.5f;
         AudioAction.rolloffMode = AudioRolloffMode.Linear;
         AudioAction.minDistance = 2.0f;
-        AudioAction.maxDistance = 40.0f;
+        AudioAction.maxDistance = 20.0f;
 
 
         P.Register("CaptureRegion", CaptureRegion);
         P.Register("ControlRegion", ControlRegion);
-        P.Register("Team", Team);
+        P.Register("Team",          Team);
 
         Team.OnValueChanged += ApplyTeam;
-        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnEntered += OnCaptureRegionEnter;
-        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnExit += OnCaptureRegionExit;
+        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnEnter += OnCaptureRegionEnter;
+        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnLeave += OnCaptureRegionLeave;
 
         RuntimeScene sc = GameRuntime.GetScene();
         sc.AssignProp(inst, "CaptureRegion", CaptureRegion);
         sc.AssignProp(inst, "ControlRegion", ControlRegion);
-        sc.AssignProp(inst, "Team", Team);
+        sc.AssignProp(inst, "Team",          Team);
 
         bInitInstance = true;
     }
@@ -136,6 +135,7 @@ public class GC_commandpost : ISWBFInstance
         AudioCapture.clip = Team == 0 ? C.ChargeSound : C.DischargeSound;
         AudioCapture.Play();
 
+        AudioAmbient.loop = true;
         AudioAction.clip = Team == 0 ? C.LostSound : C.CapturedSound;
         AudioAction.Play();
 
@@ -144,12 +144,12 @@ public class GC_commandpost : ISWBFInstance
 
     void OnCaptureRegionEnter(GameObject other)
     {
-        Debug.LogWarningFormat("Capture Region '{0}' entered by '{1}'", CaptureRegion.Get().name, other.name);
+        //Debug.LogFormat("Capture Region '{0}' entered by '{1}'", CaptureRegion.Get().name, other.name);
     }
 
-    void OnCaptureRegionExit(GameObject other)
+    void OnCaptureRegionLeave(GameObject other)
     {
-        Debug.LogWarningFormat("Capture Region '{0}' exited by'{1}'", CaptureRegion.Get().name, other.name);
+        //Debug.LogFormat("Capture Region '{0}' exited by'{1}'", CaptureRegion.Get().name, other.name);
     }
 
     void UpdateColor()

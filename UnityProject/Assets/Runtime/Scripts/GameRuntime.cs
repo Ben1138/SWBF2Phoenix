@@ -8,7 +8,7 @@ using UnityEngine.Rendering;
 public class GameRuntime : MonoBehaviour
 {
     public static GameRuntime Instance { get; private set; } = null;
-    public RPath GamePath { get; private set; } = @"C:\Program Files (x86)\Steam\steamapps\common\Star Wars Battlefront II";
+    public RPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
 
     public Loadscreen InitScreenPrefab;
     public Loadscreen LoadScreenPrefab;

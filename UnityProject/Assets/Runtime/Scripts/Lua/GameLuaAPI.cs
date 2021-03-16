@@ -529,6 +529,16 @@ public static class GameLuaAPI
 
     }
 
+	public static void DeactivateRegion(string regionName)
+	{
+
+	}
+
+	public static void ReleaseEnterRegion(int regionEventRef)
+    {
+
+    }
+
 	public static void ShowTeamPoints(int teamIdx, bool show)
     {
 
@@ -609,56 +619,194 @@ public static class GameLuaAPI
 
 	// event callbacks
 
-	public static void OnCharacterDeath(Lua.Function callback)
+	public static void OnCharacterDeath(LuaRuntime.LFunction callback)
     {
 		// TODO: store callback in a list and execute it when event occours
     }
-	public static void OnCharacterDeathTeam(Lua.Function callback, int teamIdx)
+	public static void OnCharacterDeathTeam(LuaRuntime.LFunction callback, int teamIdx)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnTicketCountChange(Lua.Function callback)
+	public static void OnTicketCountChange(LuaRuntime.LFunction callback)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnTimerElapse(Lua.Function callback, int timer)
+	public static void OnTimerElapse(LuaRuntime.LFunction callback, int timer)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnFinishCapture(Lua.Function callback)
+	public static void OnEnterRegion(LuaRuntime.LFunction callback, string regionName)
+    {
+		GameLuaEvents.Register(GameLuaEvents.Event.OnEnterRegion, callback, regionName);
+	}
+	public static void OnEnterRegionTeam(LuaRuntime.LFunction callback, string regionName, int teamIdx)
+	{
+		GameLuaEvents.Register(GameLuaEvents.Event.OnEnterRegionTeam, callback, (regionName, teamIdx));
+	}
+	public static void OnLeaveRegion(LuaRuntime.LFunction callback, string regionName)
+    {
+		GameLuaEvents.Register(GameLuaEvents.Event.OnLeaveRegion, callback, regionName);
+
+	}
+	public static void OnFinishCapture(LuaRuntime.LFunction callback)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnFinishCaptureName(Lua.Function callback, string cpName)
+	public static void OnFinishCaptureName(LuaRuntime.LFunction callback, string cpName)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnFinishNeutralize(Lua.Function callback)
+	public static void OnFinishNeutralize(LuaRuntime.LFunction callback)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnCommandPostRespawn(Lua.Function callback)
+	public static void OnCommandPostRespawn(LuaRuntime.LFunction callback)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnCommandPostKill(Lua.Function callback)
+	public static void OnCommandPostKill(LuaRuntime.LFunction callback)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnObjectKillName(Lua.Function callback, string objName)
+	public static void OnObjectKillName(LuaRuntime.LFunction callback, string objName)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnObjectKillTeam(Lua.Function callback, int teamIdx)
+	public static void OnObjectKillTeam(LuaRuntime.LFunction callback, int teamIdx)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnObjectKillClass(Lua.Function callback, string className)
+	public static void OnObjectKillClass(LuaRuntime.LFunction callback, string className)
 	{
 		// TODO: store callback in a list and execute it when event occours
 	}
-	public static void OnObjectRespawnName(Lua.Function callback, string objName)
+	public static void OnObjectRespawnName(LuaRuntime.LFunction callback, string objName)
 	{
 		// TODO: store callback in a list and execute it when event occours
+	}
+}
+
+public static class GameLuaEvents
+{
+	static RuntimeEnvironment ENV { get { return GameRuntime.GetEnvironment(); } }
+	static LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
+	static Lua L { get { return RT.GetLua(); } }
+
+	public enum Event
+	{
+		OnEnterRegion,
+		OnEnterRegionTeam,
+		OnLeaveRegion
+	}
+
+	class CallbackDict<T>
+    {
+		Dictionary<T, List<LuaRuntime.LFunction>> Callbacks = new Dictionary<T, List<LuaRuntime.LFunction>>();
+
+		public int AddCallback(T key, LuaRuntime.LFunction callback)
+		{
+			if (Callbacks.TryGetValue(key, out List<LuaRuntime.LFunction> callbacks))
+			{
+				callbacks.Add(callback);
+				return callbacks.Count - 1;
+			}
+			callbacks = new List<LuaRuntime.LFunction>() { callback };
+			Callbacks.Add(key, callbacks);
+			return callbacks.Count - 1;
+		}
+
+		public void RemoveCallback(T key, int idx)
+        {
+			if (Callbacks.TryGetValue(key, out List<LuaRuntime.LFunction> callbacks))
+			{
+				callbacks.RemoveAt(idx);
+			}
+		}
+
+		public void Invoke(T key, object[] args)
+        {
+			if (Callbacks.TryGetValue(key, out List<LuaRuntime.LFunction> callbacks))
+			{
+				for (int i = 0; i < callbacks.Count; ++i)
+                {
+					callbacks[i].Invoke(args);
+				}
+			}
+		}
+	}
+
+	//class CallbackDict<T1, T2>
+	//{
+	//	Dictionary<T2, CallbackDict<T1>> Callbacks = new Dictionary<T2, CallbackDict<T1>>();
+
+	//	public int AddCallback(T1 key1, T2 key2, Lua.Function callback)
+	//	{
+	//		CallbackDict<T1> innerDict = null;
+	//		if (Callbacks.TryGetValue(key2, out innerDict))
+	//		{
+	//			return innerDict.AddCallback(key1, callback);
+	//		}
+
+	//		innerDict = new CallbackDict<T1>();
+	//		Callbacks.Add(key2, innerDict);
+	//		return innerDict.AddCallback(key1, callback);
+	//	}
+
+	//	public void RemoveCallback(T1 key1, T2 key2, int idx)
+ //       {
+	//		CallbackDict<T1> innerDict = null;
+	//		if (Callbacks.TryGetValue(key2, out innerDict))
+	//		{
+	//			innerDict.RemoveCallback(key1, idx);
+	//		}
+	//	}
+
+	//	public void Invoke(T1 key1, T2 key2)
+	//	{
+	//		if (Callbacks.TryGetValue(key2, out CallbackDict<T1> callbacks))
+	//		{
+	//			callbacks.Invoke(key1);
+	//		}
+	//	}
+	//}
+
+	//class CallbackDict<T1, T2, T3>
+	//{
+	//	CallbackDict<T1, CallbackDict<T2, T3>> Callbacks = new CallbackDict<T1, CallbackDict<T2, T3>>();
+	//}
+
+	static Dictionary<Event, CallbackDict<object>> Callbacks = new Dictionary<Event, CallbackDict<object>>();
+	static Dictionary<int, (Event, int)> GlobalIdxDict = new Dictionary<int, (Event, int)>();
+	static int GlobalIdxCounter = 0;
+
+	static CallbackDict<object> Get(Event ev)
+	{
+		if (Callbacks.TryGetValue(ev, out CallbackDict<object> inner))
+		{
+			return inner;
+		}
+
+		inner = new CallbackDict<object>();
+		Callbacks.Add(ev, inner);
+		return inner;
+	}
+
+	public static void Clear()
+    {
+		Callbacks.Clear();
+		GlobalIdxDict.Clear();
+	}
+
+	public static int Register(Event ev, LuaRuntime.LFunction callback, object key)
+	{
+		int localIdx = Get(ev).AddCallback(key, callback);
+		GlobalIdxDict.Add(GlobalIdxCounter, (ev, localIdx));
+		return GlobalIdxCounter++;
+	}
+
+	// To be called by environment
+	public static void Invoke(Event ev, object key, params object[] eventArgs)
+    {
+		Get(ev).Invoke(key, eventArgs);
 	}
 }

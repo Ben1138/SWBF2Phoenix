@@ -1,16 +1,21 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
+
 public class LuaEditor : EditorWindow
 {
     // every X seconds, save the edited lua code
     const float SAVE_INTERVALL = 2.0f;
     const string SAVE_CODE_KEY = "SWBF2RuntimeLuaEditorCode";
     float SaveCounter = 0;
-
-    string LuaCode;
     
+    string LuaCode;
+
+    TableTreeView TreeView;
+
+
     [MenuItem("Runtime/Lua Editor")]
     public static void OpenLuaEditor()
     {
@@ -46,15 +51,48 @@ public class LuaEditor : EditorWindow
         Lua L = runtime.GetLua();
 
         GUILayout.BeginHorizontal();
-        LuaCode = GUILayout.TextArea(LuaCode, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+        LuaCode = GUILayout.TextArea(LuaCode, GUILayout.Width(300), GUILayout.ExpandHeight(true));
 
-        GUILayout.BeginVertical(GUILayout.Width(400));
+        GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
         int stackSize = L.GetTop();
-        for (int i = 1; i <= stackSize; ++i)
+        for (int i = stackSize - 1; i >= 0; --i)
         {
-            (string typeStr, string valStr) = runtime.LuaValueToStr(i);
-            EditorGUILayout.LabelField(typeStr, valStr);
+            Lua.ValueType type = L.Type(i);
+            string typeStr = type.ToString();
+            if (type == Lua.ValueType.TABLE)
+            {
+                GUILayout.BeginHorizontal();
+                EditorGUILayout.PrefixLabel("TABLE");
+                if (GUILayout.Button(TreeView == null ? "Expand" : "Collapse"))
+                {
+                    if (TreeView == null)
+                    {
+                        TreeView = new TableTreeView(new TreeViewState(), i);
+                    }
+                    else
+                    {
+                        TreeView = null;
+                    }
+                }
+                Rect last = GUILayoutUtility.GetLastRect();
+                GUILayout.EndHorizontal();
+                if (TreeView != null && TreeView.TableIdx == i)
+                {
+                    GUILayout.Space(100);
+                    TreeView.OnGUI(new Rect(last.x, last.y + last.height, position.width, 100));
+                }
+            }
+            else
+            {
+                object value = runtime.ToValue(i);
+                string valueStr = value != null ? value.ToString() : "NIL";
+                EditorGUILayout.LabelField(typeStr, valueStr);
+            }
         }
+
+        GUILayout.Space(20);
+        EditorGUILayout.LabelField("GC Count", L.GetGCCount().ToString());
+        EditorGUILayout.LabelField("GC Threshold", L.GetGCThreshold().ToString());
         GUILayout.EndVertical();
         GUILayout.EndHorizontal();
         
@@ -62,5 +100,72 @@ public class LuaEditor : EditorWindow
         {
             runtime.ExecuteString(LuaCode);
         }
+    }
+}
+
+class TableTreeView : TreeView
+{
+    public int TableIdx { get; private set; }
+
+    public TableTreeView(TreeViewState treeViewState, int tableIdx)
+        : base(treeViewState)
+    {
+        TableIdx = tableIdx;
+        Reload();
+    }
+
+    protected override TreeViewItem BuildRoot()
+    {
+        var root = new TreeViewItem { id = 0, depth = -1, displayName = "TABLE" };
+
+        LuaRuntime runtime = GameRuntime.GetLuaRuntime();
+        if (!Application.isPlaying || runtime == null)
+        {
+            return root;
+        }
+        Lua L = runtime.GetLua();
+
+        // BuildRoot is called every time Reload is called to ensure that TreeViewItems 
+        // are created from data. Here we create a fixed set of items. In a real world example,
+        // a data model should be passed into the TreeView and the items created from the model.
+
+        // This section illustrates that IDs should be unique. The root item is required to 
+        // have a depth of -1, and the rest of the items increment from that.
+
+        LuaRuntime.Table table = runtime.ToValue(TableIdx) as LuaRuntime.Table;
+        if (table != null)
+        {
+            var allItems = new List<TreeViewItem>();
+            int id = 0;
+
+            void AddTable(LuaRuntime.Table t, int depth)
+            {
+                foreach (KeyValuePair<object, object> entry in table)
+                {
+                    if (entry.Value is LuaRuntime.Table)
+                    {
+                        AddTable((LuaRuntime.Table)entry.Value, depth + 1);
+                    }
+                    else
+                    {
+                        allItems.Add(new TreeViewItem 
+                        { 
+                            id = id++, 
+                            depth = depth, 
+                            displayName = string.Format($"{entry.Key.ToString()} = {entry.Value.ToString()}") 
+                        });
+                    }
+                }
+            }
+
+            AddTable(table, 0);
+
+            // Utility method that initializes the TreeViewItem.children and .parent for all items.
+            SetupParentsAndChildrenFromDepths(root, allItems);
+        }
+
+
+        // Return root of the tree
+        return root;
     }
 }

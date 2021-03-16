@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class MainMenu : MonoBehaviour
 {
+    LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
+
     public void StartGeonosis()
     {
         GameRuntime.Instance.EnterMap("geo1c_con");
@@ -17,5 +19,11 @@ public class MainMenu : MonoBehaviour
     public void StartCorouscant()
     {
         GameRuntime.Instance.EnterMap("cor1c_con");
+    }
+
+    void Start()
+    {
+        LuaRuntime.Table spMissions = RT.GetTable("sp_missionselect_listbox_contents");
+        Debug.Log(spMissions.Get(1, "mapluafile"));
     }
 }
