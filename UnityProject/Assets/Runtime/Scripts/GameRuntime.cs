@@ -37,6 +37,10 @@ public class GameRuntime : MonoBehaviour
     bool bInitMainMenu;
     bool bAvailablePauseMenu;
 
+    // contains mapluafile strings, e.g. cor1c_con
+    List<string> MapRotation = new List<string>();
+    int MapRotationIdx = -1;
+
 
     public static LuaRuntime GetLuaRuntime()
     {
@@ -54,6 +58,31 @@ public class GameRuntime : MonoBehaviour
         return Instance == null ? null : Instance.Env.GetScene();
     }
 
+    public void AddToMapRotation(List<string> mapScripts)
+    {
+        MapRotation.AddRange(mapScripts);
+    }
+
+    public void AddToMapRotation(string mapScript)
+    {
+        MapRotation.Add(mapScript);
+    }
+
+    public void NextMap()
+    {
+        if (MapRotation.Count == 0)
+        {
+            return;
+        }
+
+        if (++MapRotationIdx >= MapRotation.Count)
+        {
+            MapRotationIdx = 0;
+        }
+
+        EnterMap(MapRotation[MapRotationIdx]);
+    }
+
     public void RegisterAddonScript(string scriptName, string addonName)
     {
         if (RegisteredAddons.TryGetValue(scriptName, out string addNm))
@@ -68,6 +97,9 @@ public class GameRuntime : MonoBehaviour
     {
         Debug.Assert(Env == null || Env.IsLoaded);
         bAvailablePauseMenu = false;
+
+        MapRotation.Clear();
+        MapRotationIdx = -1;
 
         bInitMainMenu = bInit;
         ShowLoadscreen(bInit);
@@ -198,6 +230,7 @@ public class GameRuntime : MonoBehaviour
         }
 
         EnterMainMenu(true);
+        //EnterMap("hot1g_con");
     }
 
     void ExploreAddons()

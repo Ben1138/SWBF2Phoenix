@@ -83,7 +83,7 @@ public class RuntimeEnvironment
     string InitFunctionName;
     string PostLoadFunctionName;
 
-    RuntimeScene RScene;
+    RuntimeScene RTScene;
 
     List<LibSWBF2.Wrappers.Localization> Localizations = new List<LibSWBF2.Wrappers.Localization>();
     Dictionary<string, List<LibSWBF2.Wrappers.Localization>> LocalizationLookup = new Dictionary<string, List<LibSWBF2.Wrappers.Localization>>();
@@ -109,7 +109,7 @@ public class RuntimeEnvironment
 
     public RuntimeScene GetScene()
     {
-        return RScene;
+        return RTScene;
     }
 
     public static RuntimeEnvironment Create(RPath envPath, RPath fallbackPath = null)
@@ -134,7 +134,7 @@ public class RuntimeEnvironment
         rt.ScheduleLVLRel("mission.lvl");
         rt.ScheduleSoundBankRel("sound/common.bnk");
 
-        rt.RScene = new RuntimeScene(rt.EnvCon);
+        rt.RTScene = new RuntimeScene(rt.EnvCon);
 
         return rt;
     }
@@ -391,7 +391,8 @@ public class RuntimeEnvironment
 
     public void ClearScene()
     {
-        // TODO: forward to EnvironmentScene
+        RTScene.Clear();
+        RTScene = null;
     }
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)
@@ -409,6 +410,13 @@ public class RuntimeEnvironment
             }
         }
         return bReturnNullIfNotFound ? null : localizedPath;
+    }
+
+    public string GetLocalizedMapName(string mapluafile)
+    {
+        object[] res = LuaRT.CallLuaFunction("missionlist_GetLocalizedMapName", 2, false, true, mapluafile);
+        string mapName = res[0] as string;
+        return mapName;
     }
 
     RPath GetLoadscreenPath()
@@ -453,7 +461,7 @@ public class RuntimeEnvironment
         // WorldLevel will be null for Main Menu
         if (WorldLevel != null)
         {
-            RScene.Import(WorldLevel.Get<LibSWBF2.Wrappers.World>());
+            RTScene.Import(WorldLevel.Get<LibSWBF2.Wrappers.World>());
         }
 
         // 4 - execute post load function AFTER scene has been created
