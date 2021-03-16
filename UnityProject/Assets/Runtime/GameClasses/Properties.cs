@@ -55,7 +55,8 @@ public sealed class Ref<T> : Ref
 }
 
 /// <summary>
-/// Stores references to class members
+/// Stores references to properties.
+/// Properties are case insensitive!
 /// </summary>
 public sealed class PropertyDB
 {
@@ -63,12 +64,12 @@ public sealed class PropertyDB
 
     public void Register<T>(string propName, T variable) where T : Ref
     {
-        Properties.Add(propName, variable);
+        Properties.Add(propName.ToLowerInvariant(), variable);
     }
 
     public void SetProperty(string propName, object propValue)
     {
-        if (Properties.TryGetValue(propName, out Ref variable))
+        if (Properties.TryGetValue(propName.ToLowerInvariant(), out Ref variable))
         {
             variable.Set(propValue);
             return;
@@ -91,30 +92,4 @@ public abstract class ISWBFClass
     {
         Name = ec.Name;
     }
-}
-
-//public class OdfClass
-//{
-//    Dictionary<string, string[]> Properties = new Dictionary<string, string[]>();
-
-//    public bool GetProperty(string propName, out string[] propValues)
-//    {
-//        return Properties.TryGetValue(propName, out propValues);
-//    }
-
-//    public bool GetProperty<T>(string propName, out T propValue)
-//    {
-//        if (Properties.TryGetValue(propName, out string[] propValues) && propValues.Length > 0)
-//        {
-//            propValue = (T)Convert.ChangeType(propValues[0], typeof(T), CultureInfo.InvariantCulture);
-//            return true;
-//        }
-//        propValue = default;
-//        return false;
-//    }
-//}
-
-public class ClassDB
-{
-    Dictionary<string, ISWBFClass> OdfClasses = new Dictionary<string, ISWBFClass>();
 }

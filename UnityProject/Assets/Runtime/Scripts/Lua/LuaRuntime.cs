@@ -9,10 +9,149 @@ using System.Linq;
 // Don't permanently store references of these! 
 public class LuaRuntime
 {
+    // References a function defined in Lua (not a CFunction!)
+    public class LFunction
+    {
+        static Lua L => GameRuntime.GetLuaRuntime()?.GetLua();
+
+        int RefIdx;
+
+        LFunction() { }
+
+        ~LFunction()
+        {
+            if (L != null)
+            {
+                L.Unref(Lua.LUA_REGISTRYINDEX, RefIdx);
+            }
+        }
+
+        // Will fail if the top of the Lua stack is not a function!
+        internal static LFunction FromStack()
+        {
+            if (L == null || !L.IsFunction(-1))
+            {
+                return null;
+            }
+
+            LFunction fn = new LFunction();
+
+            // Ref will pop the top of the Lua stack (must be a function) and put it
+            // into a lua registry, returning a reference index within that table
+            fn.RefIdx = L.Ref(Lua.LUA_REGISTRYINDEX);
+
+            // since we want to preserve the stack "as is", let's push the function back on again
+            L.RawGetI(Lua.LUA_REGISTRYINDEX, fn.RefIdx);
+
+            return fn;
+        }
+
+        public void Invoke(params object[] args)
+        {
+            LuaRuntime rt = GameRuntime.GetLuaRuntime();
+            if (rt != null)
+            {
+                rt.CallLuaFunction(RefIdx, args);
+            }
+        }
+
+        public override string ToString()
+        {
+            return "LFunction" + RefIdx;
+        }
+    }
+
+    public class Table : IEnumerable<KeyValuePair<object, object>>
+    {
+        public int Count => Contents.Count;
+
+        static Lua L => GameRuntime.GetLuaRuntime()?.GetLua();
+        Dictionary<object, object> Contents = new Dictionary<object, object>();
+
+        Table() { }
+
+
+        internal static Table FromStack(int idx)
+        {
+            if (L == null || !L.IsTable(-1))
+            {
+                return null;
+            }
+
+            Table t = new Table();
+
+            // push the key where to start traversal.
+            // when pushing nil, we start at the beginning
+            L.PushNil();
+
+            // consider relative indices
+            if (idx < 0) idx--;
+
+            while (L.Next(idx))
+            {
+                // if Next() was successful, it pushed the next key value pair onto the stack
+                // -1 = value
+                // -2 = key
+
+                object key = ToValue(L, -2);
+                if (key == null)
+                {
+                    throw new Exception("Ehm, what?");
+                }
+                t.Contents.Add(key, ToValue(L, -1));
+
+                // pop value, keep key to continue traversal at that key
+                L.Pop(1);
+            }
+
+            return t;
+        }
+
+        public object Get(params object[] path)
+        {
+            return Get(path, 0);
+        }
+
+        object Get(object[] path, int startIdx)
+        {
+            if (path[startIdx].GetType() == typeof(int))
+            {
+                // lua only knows floats as numbers
+                path[startIdx] = Convert.ChangeType(path[startIdx], typeof(float));
+            }
+
+            if (Contents.TryGetValue(path[startIdx], out object value))
+            {
+                if (value.GetType() == typeof(Table))
+                {
+                    return ((Table)value).Get(path, startIdx + 1);
+                }
+                return value;
+            }
+            return null;
+        }
+
+        public override string ToString()
+        {
+            return string.Format($"[{Contents.Count.ToString()}]");
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return Contents.GetEnumerator();
+        }
+
+        IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator()
+        {
+            return Contents.GetEnumerator();
+        }
+    }
+
     Lua L;
 
     // Store all MethodInfos for each occouring method name in order to be able to handle overloaded methods
     Dictionary<string, List<MethodInfo>> MethodOverloads = new Dictionary<string, List<MethodInfo>>();
+
 
     public LuaRuntime()
     {
@@ -24,7 +163,7 @@ public class LuaRuntime
         L.OpenTable();
         RegisterLuaFunctions(typeof(GameLuaAPI));
         
-        Register<Action<object[]>>(LogWarn);
+        Register<Action<object[]>>(Print);
     }
 
     public Lua GetLua()
@@ -55,7 +194,7 @@ public class LuaRuntime
         {
             return Lua.ValueType.BOOLEAN;
         }
-        else if (T == typeof(Lua.Function))
+        else if (T == typeof(LFunction))
         {
             return Lua.ValueType.FUNCTION;
         }
@@ -75,6 +214,7 @@ public class LuaRuntime
     public static object ToValue(Lua l, int idx)
     {
         Lua.ValueType type = l.Type(idx);
+        int top = l.GetTop();
         object res;
         switch (type)
         {
@@ -91,18 +231,45 @@ public class LuaRuntime
                 res = l.ToBoolean(idx);
                 break;
             case Lua.ValueType.FUNCTION:
-                res = l.ToFunction(idx);
+                if (idx == -1 || idx == l.GetTop())
+                {
+                    res = LFunction.FromStack();
+                }
+                else
+                {
+                    res = "LFunction";
+                }
+                break;
+            case Lua.ValueType.TABLE:
+                res = Table.FromStack(idx);
                 break;
             default:
                 Debug.LogErrorFormat("Cannot convert Lua Type '{0}' to C# equivalent!", type.ToString());
                 return null;
         }
+
+        // Debug only!
+        int top2 = l.GetTop();
+        Lua.ValueType type2 = l.Type(idx);
+        if (top != top2 || type != type2)
+        {
+            Debug.LogError("Somewhere, something went terribly wrong...");
+        }
+
         return res;
     }
 
     public int PushValue<T>(T value)
     {
         return PushValue(L, value);
+    }
+
+    public void PushValues(object[] values)
+    {
+        for (int i = 0; i < values.Length; ++i)
+        {
+            PushValue(L, values[i], values[i].GetType());
+        }
     }
 
     public static int PushValue<T>(Lua l, T value)
@@ -130,7 +297,7 @@ public class LuaRuntime
         }
         else if (type == Lua.ValueType.FUNCTION)
         {
-            l.PushFunction((Lua.Function)value);
+            l.PushFunction((Lua.CFunction)value);
             return 1;
         }
         else if (T == typeof(byte[]))
@@ -143,46 +310,19 @@ public class LuaRuntime
         return 0;
     }
 
-    public (string, string) LuaValueToStr(int idx)
+    public Table GetTable(string name)
     {
-        Lua.ValueType type = L.Type(idx);
+        return GetTable(L, name);
+    }
 
-        string typeStr = type.ToString();
-        string valueStr = "";
-        switch (type)
+    public static Table GetTable(Lua l, string name)
+    {
+        l.GetGlobal(name);
+        if (l.IsTable(-1))
         {
-            case Lua.ValueType.NIL:
-                valueStr = "NIL";
-                break;
-            case Lua.ValueType.NUMBER:
-                valueStr = L.ToNumber(idx).ToString();
-                break;
-            case Lua.ValueType.STRING:
-                valueStr = L.ToString(idx).ToString();
-                break;
-            case Lua.ValueType.BOOLEAN:
-                valueStr = L.ToBoolean(idx).ToString();
-                break;
-            case Lua.ValueType.FUNCTION:
-                valueStr = L.ToFunction(idx).ToString();
-                break;
-            case Lua.ValueType.LIGHTUSERDATA:
-                valueStr = L.ToUserData(idx).ToString();
-                break;
-            case Lua.ValueType.TABLE:
-                // TODO: proper table display (e.g. num of entries, or sth)
-                valueStr = "???";
-                break;
-            case Lua.ValueType.THREAD:
-                valueStr = L.ToThread(idx).ToString();
-                break;
-            case Lua.ValueType.NONE:
-            default:
-                Debug.LogErrorFormat("Cannot convert Lua Type '{0}' to C# primitive!", type.ToString());
-                valueStr = "UNKNOWN";
-                break;
+            return Table.FromStack(-1);
         }
-        return (typeStr, valueStr);
+        return null;
     }
 
     public bool Execute(IntPtr binary, ulong buffSize, string name)
@@ -205,7 +345,7 @@ public class LuaRuntime
         return Check(L.DoString(luaCode));
     }
 
-    public bool CallLua(string fnName)
+    public bool CallLuaFunction(string fnName, params object[] args)
     {
         bool res = false;
         L.GetGlobal(fnName);
@@ -214,15 +354,36 @@ public class LuaRuntime
             Debug.LogErrorFormat("Could not find global function '{0}()'!", fnName);
             return res;
         }
-        res = Check(L.PCall(0, 0, 0));
+        PushValues(args);
+        int toPop = 1; // pop function
+        res = Check(L.PCall(args.Length, 0, 0));
         if (!res)
         {
-            L.Pop(2);
+            toPop++; // pop error message
         }
-        else
+        L.Pop(toPop);
+        return res;
+    }
+
+    bool CallLuaFunction(int fnRefIdx, object[] args)
+    {
+        bool res = false;
+
+        // get function from reference index and push it on the stack
+        L.RawGetI(Lua.LUA_REGISTRYINDEX, fnRefIdx);
+        if (!L.IsFunction(-1))
         {
-            L.Pop(1);
+            Debug.LogErrorFormat("Given LFunction does not point to a lua function but '{0}'!", L.Type(-1).ToString());
+            return res;
         }
+        PushValues(args);
+        int toPop = 1; // pop function
+        res = Check(L.PCall(args.Length, 0, 0));
+        if (!res)
+        {
+            toPop++; // pop error message
+        }
+        L.Pop(toPop);
         return res;
     }
 
@@ -285,9 +446,8 @@ public class LuaRuntime
             return true;
         }
 
-        Lua.Function fn = (Lua l) =>
+        Lua.CFunction fn = (Lua l) =>
         {
-            int inStackCount = 0;
             int outStackCount = 0;
 
             int expectedParams = l.GetTop();
@@ -298,6 +458,7 @@ public class LuaRuntime
             }
 
             // find correct overloaded method (if any)
+            // right now, overloads are merely identified by parameter count, NOT parameter types!
             if (!MethodOverloads.TryGetValue(methodName, out List<MethodInfo> availableOverloads))
             {
                 Debug.LogErrorFormat("There is no method registered to '{0}'!? This should never happen!", methodName);
@@ -309,7 +470,6 @@ public class LuaRuntime
             {
                 if (i.GetParameters().Length == expectedParams)
                 {
-
                     method = i;
                     break;
                 }
@@ -339,9 +499,10 @@ public class LuaRuntime
             if (parameters.Length == 1 && parameters[0].ParameterType == typeof(object[]))
             {
                 object[] dynParams = new object[expectedParams];
-                for (int i = 0; i < expectedParams; ++i)
+                for (int i = expectedParams - 1; i >= 0; --i)
                 {
-                    dynParams[i] = ToValue(i + 1);
+                    dynParams[i] = ToValue(-1);
+                    l.Pop(1);
                 }
                 invokeParams[0] = dynParams;
             }
@@ -354,29 +515,28 @@ public class LuaRuntime
                 }
 
                 // In-Parameters
-                foreach (ParameterInfo pi in parameters)
+                for (int i = parameters.Length - 1; i >= 0; --i)
                 {
-                    Lua.ValueType funcType = ToLuaType(pi.ParameterType);
-                    if (funcType == Lua.ValueType.NONE)
+                    ParameterInfo pi = parameters[i];
+
+                    if (ToLuaType(pi.ParameterType) == Lua.ValueType.NONE)
                     {
                         Debug.LogErrorFormat("Unsupported C# parameter type '{0}' in function '{1}'", pi.ParameterType.Name, methodName);
                         continue;
                     }
 
-                    int paramIdx = inStackCount;
-                    int luaIdx = ++inStackCount;
-
-                    Lua.ValueType luaType = expectedParamTypes[paramIdx];
-                    invokeParams[paramIdx] = ToValue(luaIdx);
+                    Lua.ValueType luaType = expectedParamTypes[i];
+                    invokeParams[i] = ToValue(-1);
+                    l.Pop(1);
 
                     if (luaType == Lua.ValueType.NUMBER)
                     {
                         // also support other number parameters, such as int, long etc
-                        invokeParams[paramIdx] = Convert.ChangeType(invokeParams[paramIdx], pi.ParameterType);
+                        invokeParams[i] = Convert.ChangeType(invokeParams[i], pi.ParameterType);
                     }
                 }
             }
-
+            
             object outParam = method.Invoke(null, invokeParams);
 
             // Out-Parameter
@@ -462,7 +622,7 @@ public class LuaRuntime
         return error == Lua.ErrorCode.NONE;
     }
 
-    static void LogWarn(object[] msg)
+    static void Print(object[] msg)
     {
         Debug.LogWarning(string.Join("", msg));
     }

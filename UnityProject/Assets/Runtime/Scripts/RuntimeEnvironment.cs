@@ -122,6 +122,7 @@ public class RuntimeEnvironment
         }
         Debug.Assert(fallbackPath.Exists());
 
+        GameLuaEvents.Clear();
         RuntimeEnvironment rt = new RuntimeEnvironment(envPath, fallbackPath);
         rt.ScheduleLVLRel("core.lvl");
         rt.ScheduleLVLRel("shell.lvl");
@@ -397,7 +398,7 @@ public class RuntimeEnvironment
         OnExecuteMain?.Invoke(this, null);
 
         // 2 - execute the main function -> will call ReadDataFile multiple times
-        if (!string.IsNullOrEmpty(InitFunctionName) && !LuaRT.CallLua(InitFunctionName))
+        if (!string.IsNullOrEmpty(InitFunctionName) && !LuaRT.CallLuaFunction(InitFunctionName))
         {
             Debug.LogErrorFormat("Executing lua main function '{0}' failed!", InitFunctionName);
             return;
@@ -419,7 +420,7 @@ public class RuntimeEnvironment
         }
 
         // 4 - execute post load function AFTER scene has been created
-        if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLua(PostLoadFunctionName))
+        if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLuaFunction(PostLoadFunctionName))
         {
             Debug.LogErrorFormat("Executing lua post load function '{0}' failed!", PostLoadFunctionName);
         }

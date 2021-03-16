@@ -92,7 +92,13 @@ public class RuntimeScene
             {
                 if (!Regions.ContainsKey(region.Key))
                 {
-                    Regions.Add(region.Key, region.Value.gameObject.AddComponent<Region>());
+                    Region reg = region.Value.gameObject.AddComponent<Region>();
+
+                    // invoke Lua events
+                    reg.OnEnter += (GameObject obj) => GameLuaEvents.Invoke(GameLuaEvents.Event.OnEnterRegion, region.Key, region.Key, obj.name);
+                    reg.OnLeave += (GameObject obj) => GameLuaEvents.Invoke(GameLuaEvents.Event.OnLeaveRegion, region.Key, region.Key, obj.name);
+
+                    Regions.Add(region.Key, reg);
                 }
             }
 
