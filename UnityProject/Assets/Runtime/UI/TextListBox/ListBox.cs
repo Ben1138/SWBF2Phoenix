@@ -1,23 +1,25 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class TextListBox : MonoBehaviour
+public class ListBox : MonoBehaviour
 {
     [Header("References")]
     public GameObject ItemPrefab;
     public Transform Content;
 
     [Header("Settings")]
+    public bool CheckList = false;
     public float Spacing = 10.0f;
 
+    public Action<int> OnSelect;
     public int CurrentSelection { get; private set; } = -1;
 
-    List<TextListBoxItem> Items = new List<TextListBoxItem>();
+    List<ListBoxItem> Items = new List<ListBoxItem>();
 
-    public int AddItem(string itemStr, bool bSpecialItem=false)
+    public ListBoxItem AddItem(string itemStr, bool bSpecialItem=false)
     {
         GameObject itemInst = Instantiate(ItemPrefab, Content);
         RectTransform itemTrans = itemInst.transform as RectTransform;
@@ -26,12 +28,13 @@ public class TextListBox : MonoBehaviour
         float yPos = -itemTrans.sizeDelta.y * Items.Count - Spacing * Items.Count;
         itemTrans.anchoredPosition = new Vector2(0.0f, yPos);
 
-        TextListBoxItem item  = itemInst.GetComponent<TextListBoxItem>();
+        ListBoxItem item  = itemInst.GetComponent<ListBoxItem>();
         int idx = Items.Count;
         item.OnClick += (PointerEventData eventData) => 
         {
             Select(idx);
         };
+        item.SetIsCheckable(CheckList);
         item.IsSpecialItem = bSpecialItem;
         item.SetText(itemStr);
         item.SetSelected(false);
@@ -40,7 +43,7 @@ public class TextListBox : MonoBehaviour
         conTrans.sizeDelta = new Vector2(conTrans.sizeDelta.x, -yPos);
 
         Items.Add(item);
-        return Items.Count - 1;
+        return item;
     }
 
     public void Select(int idx)
@@ -59,6 +62,21 @@ public class TextListBox : MonoBehaviour
         }
         CurrentSelection = idx;
         Items[CurrentSelection].SetSelected(true);
+
+        OnSelect?.Invoke(CurrentSelection);
+    }
+
+    public int[] GetCheckedIndices()
+    {
+        List<int> check = new List<int>();
+        for (int i = 0; i < Items.Count; ++i)
+        {
+            if (Items[i].IsChecked)
+            {
+                check.Add(i);
+            }
+        }
+        return check.ToArray();
     }
 
     public void Clear()
@@ -68,8 +86,8 @@ public class TextListBox : MonoBehaviour
             Destroy(Items[i].gameObject);
         }
         Items.Clear();
+        CurrentSelection = -1;
     }
-
 
     // Start is called before the first frame update
     void Start()

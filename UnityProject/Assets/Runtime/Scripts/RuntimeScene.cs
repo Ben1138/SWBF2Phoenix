@@ -16,6 +16,8 @@ public class RuntimeScene
     Dictionary<string, GameObject> LoadedSkydomes = new Dictionary<string, GameObject>();
     Dictionary<string, Region>     Regions  = new Dictionary<string, Region>();
 
+    List<GameObject> WorldRoots = new List<GameObject>();
+
     public RuntimeScene(Container c)
     {
         EnvCon = c;
@@ -77,6 +79,12 @@ public class RuntimeScene
 
     public void Import(World[] worldLayers)
     {
+        if (WorldRoots.Count > 0)
+        {
+            Debug.LogError("Create a new RuntimeScene instance!");
+            return;
+        }
+
         MaterialLoader.UseHDRP = true;
         Loader.ResetAllLoaders();
 
@@ -143,6 +151,16 @@ public class RuntimeScene
 
                 LoadedSkydomes[world.SkydomeName] = skyRoot;
             }
+
+            WorldRoots.Add(worldRoot);
+        }
+    }
+
+    public void Clear()
+    {
+        for (int i = 0; i < WorldRoots.Count; ++i)
+        {
+            UnityEngine.Object.Destroy(WorldRoots[i]);
         }
     }
 

@@ -117,8 +117,15 @@ public class GC_commandpost : ISWBFInstance
         P.Register("Team",          Team);
 
         Team.OnValueChanged += ApplyTeam;
-        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnEnter += OnCaptureRegionEnter;
-        CaptureRegion.OnValueChanged += () => CaptureRegion.Get().OnLeave += OnCaptureRegionLeave;
+        CaptureRegion.OnValueChanged += () =>
+        {
+            Region region = CaptureRegion.Get();
+            if (region != null)
+            {
+                region.OnEnter += OnCaptureRegionEnter;
+                region.OnLeave += OnCaptureRegionLeave;
+            }
+        };
 
         RuntimeScene sc = GameRuntime.GetScene();
         sc.AssignProp(inst, "CaptureRegion", CaptureRegion);
@@ -130,6 +137,10 @@ public class GC_commandpost : ISWBFInstance
 
     void ApplyTeam()
     {
+        // TODO: Might be called before InitInstance, due to a lua SetProperty call...
+        // Is it valid to call SetProperty in ScriptInit() ?
+        if (!bInitInstance) return;
+
         CaptureTimer = 0.0f;
 
         AudioCapture.clip = Team == 0 ? C.ChargeSound : C.DischargeSound;
@@ -155,8 +166,11 @@ public class GC_commandpost : ISWBFInstance
     void UpdateColor()
     {
         HoloColor = GameRuntime.Instance.GetTeamColor(Team);
-        HoloRay.material.SetColor("_EmissiveColor", HoloColor);
-        Light.color = HoloColor;
+        HoloRay?.material.SetColor("_EmissiveColor", HoloColor);
+        if (Light != null)
+        {
+            Light.color = HoloColor;
+        }
     }
 
     void Update()
@@ -185,11 +199,16 @@ public class GC_commandpost : ISWBFInstance
         }
 
         float holoPresence = Mathf.Clamp01(Mathf.Sin(progress * Mathf.PI) * 3.0f);
-        HoloRay.startWidth = Mathf.Lerp(0.0f, HoloWidthStart, holoPresence);
-        HoloRay.endWidth   = Mathf.Lerp(0.0f, HoloWidthEnd,   holoPresence);
-        Light.intensity    = Mathf.Lerp(0.0f, LightIntensity, holoPresence);
-
         HoloColor.a = Mathf.Lerp(0.0f, HoloAlpha, holoPresence);
-        HoloRay.material.SetColor("_UnlitColor", HoloColor);
+        if (Light != null)
+        {
+            Light.intensity = Mathf.Lerp(0.0f, LightIntensity, holoPresence);
+        }
+        if (HoloRay != null)
+        {
+            HoloRay.startWidth = Mathf.Lerp(0.0f, HoloWidthStart, holoPresence);
+            HoloRay.endWidth   = Mathf.Lerp(0.0f, HoloWidthEnd,   holoPresence);
+            HoloRay.material.SetColor("_UnlitColor", HoloColor);
+        }
     }
 }

@@ -16,6 +16,9 @@ public interface Ref
 /// </summary>
 public sealed class Ref<T> : Ref
 {
+    static RuntimeEnvironment ENV => GameRuntime.GetEnvironment();
+    static RuntimeScene RTS => ENV == null ? null : ENV.GetScene();
+
     public Action OnValueChanged;
     T Value;
 
@@ -31,6 +34,12 @@ public sealed class Ref<T> : Ref
 
     public void Set(object val)
     {
+        if (typeof(T) == typeof(Region) && val.GetType() == typeof(string))
+        {
+            Value = (T)Convert.ChangeType(RTS.GetRegion(val as string), typeof(T));
+            return;
+        }
+
         try
         {
             Value = (T)val;
