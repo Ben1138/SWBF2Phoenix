@@ -21,7 +21,7 @@ public class Lua
 	** ===============================================================
 	*/
 
-	public delegate int Function(Lua L);
+	public delegate int CFunction(Lua L);
 	//public delegate byte[] Chunkreader(Lua L, void_ptr ud, out size_t sz);
 	//public delegate int Chunkwriter(Lua L, void_ptr p, size_t sz, void_ptr ud);
 	public delegate void Hook(Lua L, out Debug ar);
@@ -69,9 +69,9 @@ public class Lua
 		COUNT = 1 << EventCode.COUNT,
 	}
 
-	const int LUA_IDSIZE = 60;
-	const int LUA_REGISTRYINDEX = -10000;
-	const int LUA_GLOBALSINDEX = -10001;
+	public const int LUA_IDSIZE = 60;
+	public const int LUA_REGISTRYINDEX = -10000;
+	public const int LUA_GLOBALSINDEX = -10001;
 
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
 	public struct Debug
@@ -94,9 +94,9 @@ public class Lua
 	readonly lua_State_ptr L;
 	static Dictionary<lua_State_ptr, Lua> LuaInstances = new Dictionary<lua_State_ptr, Lua>();
 
-	// This exist merely to keep references to all lua lambdas, so they don't get GC'd, which
+	// These exist merely to keep references to all lua lambdas, so they don't get GC'd, which
 	// will lead to a crash otherwise when lua tries to call a deleted C# callback
-	static List<LuaWrapper.lua_CFunction> LuaFunctions = new List<LuaWrapper.lua_CFunction>();
+	List<LuaWrapper.lua_CFunction> LuaCFunctions = new List<LuaWrapper.lua_CFunction>();
 
 	public Lua()
 	{
@@ -110,18 +110,19 @@ public class Lua
 		LuaInstances.Remove(L);
 	}
 
-	LuaWrapper.lua_CFunction CB_Function(Function fn)
+	LuaWrapper.lua_CFunction CB_Function(CFunction fn)
 	{
 		LuaWrapper.lua_CFunction cb = (lua_State_ptr L) =>
 		{
 			return fn(LuaInstances[L]);
 		};
-		LuaFunctions.Add(cb);
+		LuaCFunctions.Add(cb);
 		return cb;
 	}
 
-	Function CB_Function(LuaWrapper.lua_CFunction fn)
+	CFunction CB_Function(LuaWrapper.lua_CFunction fn)
 	{
+		LuaCFunctions.Add(fn);
 		return (Lua L) =>
 		{
 			return fn(L.L);
@@ -154,7 +155,7 @@ public class Lua
 	//	};
 	//}
 
-	public void AtPanic(Function panicf)
+	public void AtPanic(CFunction panicf)
 	{
 		LuaWrapper.lua_atpanic(L, CB_Function(panicf));
 	}
@@ -256,7 +257,7 @@ public class Lua
 	{
 		return LuaWrapper.lua_strlen(L, idx);
 	}
-	public Function ToFunction(int idx)
+	public CFunction ToCFunction(int idx)
 	{
 		return CB_Function(LuaWrapper.lua_tocfunction(L, idx));
 	}
@@ -297,7 +298,7 @@ public class Lua
 		LuaWrapper.lua_pushstring(L, str);
 		Marshal.FreeHGlobal(str);
 	}
-	public void PushCClosure(Function fn, int n)
+	public void PushCClosure(CFunction fn, int n)
 	{
 		LuaWrapper.lua_pushcclosure(L, CB_Function(fn), n);
 	}
@@ -382,7 +383,7 @@ public class Lua
 	{
 		return (ErrorCode)LuaWrapper.lua_pcall(L, nargs, nresults, errfunc);
 	}
-	public ErrorCode CPCall(Function func, void_ptr ud)
+	public ErrorCode CPCall(CFunction func, void_ptr ud)
 	{
 		return (ErrorCode)LuaWrapper.lua_cpcall(L, CB_Function(func), ud);
 	}
@@ -509,13 +510,13 @@ public class Lua
 	*/
 
 	public void Pop(int n) => SetTop(-(n) - 1);
-	public void Register(string n, Function f)
+	public void Register(string n, CFunction f)
 	{
 		PushString(n);
 		PushFunction(f);
 		SetTable(LUA_GLOBALSINDEX);
 	}
-	public void PushFunction(Function f) => PushCClosure(f, 0);
+	public void PushFunction(CFunction f) => PushCClosure(f, 0);
 	public bool IsFunction(int n) => Type(n) == ValueType.FUNCTION;
 	public bool IsTable(int n) => Type(n) == ValueType.TABLE;
 	public bool IsLightUserData(int n) => Type(n) == ValueType.LIGHTUSERDATA;
