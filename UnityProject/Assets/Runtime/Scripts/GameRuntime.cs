@@ -230,7 +230,7 @@ public class GameRuntime : MonoBehaviour
         }
 
         EnterMainMenu(true);
-        //EnterMap("hot1g_con");
+        //EnterMap("spa6c_ass");
     }
 
     void ExploreAddons()
@@ -309,10 +309,10 @@ public class GameRuntime : MonoBehaviour
 
     void Start()
     {
-        Debug.Assert(InitScreenPrefab != null);
-        Debug.Assert(LoadScreenPrefab != null);
-        Debug.Assert(MainMenuPrefab   != null);
-        Debug.Assert(PauseMenuPrefab  != null);
+        Debug.Assert(InitScreenPrefab     != null);
+        Debug.Assert(LoadScreenPrefab     != null);
+        Debug.Assert(MainMenuPrefab       != null);
+        Debug.Assert(PauseMenuPrefab      != null);
         Debug.Assert(PostProcessingVolume != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
