@@ -8,6 +8,7 @@ public static class GameLuaAPI
 	public class Unicode : Attribute {}
 
 	static RuntimeEnvironment ENV { get { return GameRuntime.GetEnvironment(); } }
+	static RuntimeScene RTS { get { return ENV == null ? null : ENV.GetScene(); } }
 	static LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
 	static Lua L { get { return RT.GetLua(); } }
 
@@ -73,6 +74,17 @@ public static class GameLuaAPI
 	{
 		return 0;
 	}
+
+	public static void ScriptCB_SetDopplerFactor(float factor)
+    {
+
+    }
+
+	public static int ScriptCB_GetNumCameras()
+    {
+		// Apparently used to determine split screen. One camera per split screen
+		return 1;
+    }
 
 	[return: Unicode]
 	public static string ScriptCB_getlocalizestr(string localizePath)
@@ -168,6 +180,11 @@ public static class GameLuaAPI
 
     }
 
+	public static void SetAIVehicleNotifyRadius(float radius)
+    {
+
+    }
+
 	public static void SetSpawnDelay(float unkwn1, float unkwn2)
 	{
 		
@@ -238,9 +255,9 @@ public static class GameLuaAPI
 		
 	}
 
-	public static void AddCameraShot(object[] args)
+	public static void AddCameraShot(float quatX, float quatY, float quatZ, float quatW, float posX, float posY, float posZ)
 	{
-		
+		RTS.AddCameraShot(quatX, quatY, quatZ, quatW, posX, posY, posZ);
 	}
 
 	public static void SetTeamIcon(int teamIdx, string iconName, string hudIconName, string flagIconName)
@@ -265,7 +282,7 @@ public static class GameLuaAPI
 
 	public static void SetReinforcementCount(int teamIdx, int count)
 	{
-		
+		// count == -1 mean infinite reinforcements
 	}
 
 	public static void AddReinforcements()
@@ -319,6 +336,11 @@ public static class GameLuaAPI
 		
 	}
 
+	public static void ScaleSoundParameter(string soundName, string paramName, float scale)
+    {
+
+    }
+
 	public static void SetMapNorthAngle(int unkwn1)
 	{
 
@@ -343,6 +365,11 @@ public static class GameLuaAPI
 	{
 		
 	}
+
+	public static void AddLandingRegion(string regionName)
+    {
+
+    }
 
 	public static void SetProperty(string instName, string propName, object propValue)
 	{
@@ -621,6 +648,49 @@ public static class GameLuaAPI
 		return 0;
     }
 
+	public static void SpaceAssaultEnable(bool enable)
+    {
+
+    }
+
+	public static void SpaceAssaultSetupBitmaps(
+		object shipBitmapATT, object shipBitmapDEF,
+		object shieldBitmapATT, object shieldBitmapDEF,
+		object criticalSystemBitmapATT, object criticalSystemBitmapDEF)
+	{
+
+	}
+
+	public static void SpaceAssaultAddCriticalSystem(string name, float pointValue, float hudPosX, float hudPosY)
+    {
+		SpaceAssaultAddCriticalSystem(name, pointValue, hudPosX, hudPosY, true);
+	}
+
+	public static void SpaceAssaultAddCriticalSystem(string name, float pointValue, float hudPosX, float hudPosY, bool displayHudMarker)
+	{
+
+	}
+
+	public static void SpaceAssaultLinkCriticalSystems(object obj)
+    {
+
+    }
+
+	public static void AddSpaceAssaultDestroyPoints(object killer, string instName)
+    {
+
+    }
+
+	public static void EnableBuildingLockOn(string instName, bool lockOn)
+    {
+
+    }
+
+	public static void DisableSmallMapMiniMap()
+    {
+
+    }
+
 	public static void ReadDataFile(object[] args)
 	{
 		// NOTE: ReadDataFile has dynamic parameters and can be either called like:
@@ -659,23 +729,28 @@ public static class GameLuaAPI
 		GameRuntime.Instance.RegisterAddonScript(scriptName, threeLetterName);
 	}
 
-	// event callbacks
+
+
+
+	// ===============================================================================================================
+	// Event Callbacks
+	// ===============================================================================================================
 
 	public static void OnCharacterDeath(LuaRuntime.LFunction callback)
     {
-		// TODO: store callback in a list and execute it when event occours
+		
     }
 	public static void OnCharacterDeathTeam(LuaRuntime.LFunction callback, int teamIdx)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnTicketCountChange(LuaRuntime.LFunction callback)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnTimerElapse(LuaRuntime.LFunction callback, int timer)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnEnterRegion(LuaRuntime.LFunction callback, string regionName)
     {
@@ -692,39 +767,54 @@ public static class GameLuaAPI
 	}
 	public static void OnFinishCapture(LuaRuntime.LFunction callback)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnFinishCaptureName(LuaRuntime.LFunction callback, string cpName)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnFinishNeutralize(LuaRuntime.LFunction callback)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnCommandPostRespawn(LuaRuntime.LFunction callback)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnCommandPostKill(LuaRuntime.LFunction callback)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnObjectKillName(LuaRuntime.LFunction callback, string objName)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnObjectKillTeam(LuaRuntime.LFunction callback, int teamIdx)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnObjectKillClass(LuaRuntime.LFunction callback, string className)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
 	}
 	public static void OnObjectRespawnName(LuaRuntime.LFunction callback, string objName)
 	{
-		// TODO: store callback in a list and execute it when event occours
+		
+	}
+
+	public static void OnObjectDamageName(LuaRuntime.LFunction callback, string objName)
+    {
+
+    }
+
+	public static void OnTeamPointsChange(LuaRuntime.LFunction callback)
+    {
+
+    }
+
+	public static void OnTeamPointsChangeTeam(LuaRuntime.LFunction callback, int teamIdx)
+	{
+
 	}
 }
 
@@ -776,46 +866,6 @@ public static class GameLuaEvents
 			}
 		}
 	}
-
-	//class CallbackDict<T1, T2>
-	//{
-	//	Dictionary<T2, CallbackDict<T1>> Callbacks = new Dictionary<T2, CallbackDict<T1>>();
-
-	//	public int AddCallback(T1 key1, T2 key2, Lua.Function callback)
-	//	{
-	//		CallbackDict<T1> innerDict = null;
-	//		if (Callbacks.TryGetValue(key2, out innerDict))
-	//		{
-	//			return innerDict.AddCallback(key1, callback);
-	//		}
-
-	//		innerDict = new CallbackDict<T1>();
-	//		Callbacks.Add(key2, innerDict);
-	//		return innerDict.AddCallback(key1, callback);
-	//	}
-
-	//	public void RemoveCallback(T1 key1, T2 key2, int idx)
- //       {
-	//		CallbackDict<T1> innerDict = null;
-	//		if (Callbacks.TryGetValue(key2, out innerDict))
-	//		{
-	//			innerDict.RemoveCallback(key1, idx);
-	//		}
-	//	}
-
-	//	public void Invoke(T1 key1, T2 key2)
-	//	{
-	//		if (Callbacks.TryGetValue(key2, out CallbackDict<T1> callbacks))
-	//		{
-	//			callbacks.Invoke(key1);
-	//		}
-	//	}
-	//}
-
-	//class CallbackDict<T1, T2, T3>
-	//{
-	//	CallbackDict<T1, CallbackDict<T2, T3>> Callbacks = new CallbackDict<T1, CallbackDict<T2, T3>>();
-	//}
 
 	static Dictionary<Event, CallbackDict<object>> Callbacks = new Dictionary<Event, CallbackDict<object>>();
 	static Dictionary<int, (Event, int)> GlobalIdxDict = new Dictionary<int, (Event, int)>();

@@ -7,6 +7,12 @@ using LibSWBF2.Enums;
 
 public class RuntimeScene
 {
+    struct RTTransform
+    {
+        public Vector3    Position;
+        public Quaternion Rotation;
+    }
+
     Dictionary<string, ISWBFClass>    Classes   = new Dictionary<string, ISWBFClass>();
     Dictionary<string, ISWBFInstance> Instances = new Dictionary<string, ISWBFInstance>();
 
@@ -17,6 +23,7 @@ public class RuntimeScene
     Dictionary<string, Region>     Regions  = new Dictionary<string, Region>();
 
     List<GameObject> WorldRoots = new List<GameObject>();
+    List<RTTransform> CameraShots = new List<RTTransform>();
 
     public RuntimeScene(Container c)
     {
@@ -75,6 +82,16 @@ public class RuntimeScene
             return region;
         }
         return null;
+    }
+
+    public void AddCameraShot(float quatX, float quatY, float quatZ, float quatW, float posX, float posY, float posZ)
+    {
+        // TODO: space conversion
+        CameraShots.Add(new RTTransform 
+        {
+            Position = new Vector3(posX, posY, posZ),
+            Rotation = new Quaternion(quatX, quatY, quatZ, quatW)
+        });
     }
 
     public void Import(World[] worldLayers)
