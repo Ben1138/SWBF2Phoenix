@@ -10,6 +10,10 @@ public class GameRuntime : MonoBehaviour
     public static GameRuntime Instance { get; private set; } = null;
     public RPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
 
+    [Header("Settings")]
+    public string Language = "english";
+
+    [Header("References")]
     public Loadscreen InitScreenPrefab;
     public Loadscreen LoadScreenPrefab;
     public GameObject MainMenuPrefab;

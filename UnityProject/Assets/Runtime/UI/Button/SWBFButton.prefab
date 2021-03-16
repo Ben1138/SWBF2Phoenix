@@ -330,6 +330,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7d5461d93b1c4044a338899144bb5bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  LocalizePath: 
+  Text: {fileID: 6985500107316820951}
   Left: {fileID: 1666373568680267190}
   Center: {fileID: 799287143109725479}
   Right: {fileID: 4903505212987728661}
