@@ -5,6 +5,8 @@ using UnityEngine;
 
 public static class GameLuaAPI
 {
+	public class Unicode : Attribute {}
+
 	static RuntimeEnvironment ENV { get { return GameRuntime.GetEnvironment(); } }
 	static LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
 	static Lua L { get { return RT.GetLua(); } }
@@ -72,24 +74,71 @@ public static class GameLuaAPI
 		return 0;
 	}
 
+	[return: Unicode]
 	public static string ScriptCB_getlocalizestr(string localizePath)
 	{
-		return localizePath;
+		return ENV.GetLocalized(localizePath, false);
 	}
 
-	public static byte[] ScriptCB_tounicode(string ansiString)
+	[return: Unicode]
+	public static string ScriptCB_getlocalizestr(string localizePath, bool bReturnNullIfNotFound)
 	{
-		return Encoding.Convert(Encoding.ASCII, Encoding.Unicode, Encoding.ASCII.GetBytes(ansiString));
+		return ENV.GetLocalized(localizePath, bReturnNullIfNotFound);
 	}
 
-	public static string ScriptCB_ununicode(string unicodeString)
+	[return: Unicode]
+	public static string ScriptCB_tounicode(string ansiString)
 	{
-		return Encoding.ASCII.GetString(Encoding.Convert(Encoding.Unicode, Encoding.ASCII, Encoding.Unicode.GetBytes(unicodeString)));
+		string res = Encoding.Unicode.GetString(Encoding.Convert(Encoding.ASCII, Encoding.Unicode, Encoding.ASCII.GetBytes(ansiString)));
+		return res;
 	}
 
-	public static string ScriptCB_usprintf(string[] args)
+	public static string ScriptCB_ununicode([Unicode] string unicodeString)
 	{
-		return args[0];
+		string res = Encoding.ASCII.GetString(Encoding.Convert(Encoding.Unicode, Encoding.ASCII, Encoding.Unicode.GetBytes(unicodeString)));
+		return res;
+	}
+
+	[return: Unicode]
+	public static string ScriptCB_usprintf([Unicode] object[] args)
+	{
+		Debug.Assert(args.Length > 1);
+
+		// first argument is the localize path, the rest are format placements
+		string localizePath = args[0] as string;
+		object[] placements = new object[args.Length - 1];
+		Array.Copy(args, 1, placements, 0, placements.Length);
+
+		int GetNextIndex(string format)
+        {
+			int idx = format.IndexOf("%s");
+			if (idx >= 0) return idx;
+
+			idx = format.IndexOf("%i");
+			if (idx >= 0) return idx;
+
+			idx = format.IndexOf("%d");
+			if (idx >= 0) return idx;
+
+			idx = format.IndexOf("%f");
+			if (idx >= 0) return idx;
+
+			return -1;
+		}
+
+		// convert C-style printf format to C# format
+		string format = ENV.GetLocalized(localizePath);
+		int idx = GetNextIndex(format);
+		for (int i = 0; idx >= 0; idx = GetNextIndex(format), ++i)
+		{
+			string sub = format.Substring(0, idx);
+			sub += "{" + i + "}";
+			sub += format.Substring(idx + 2, format.Length - idx - 2);
+			format = sub;
+		}
+
+		string res = string.Format(format, placements);
+		return res;
 	}
 
 	public static void ScriptCB_DoFile(string scriptName)

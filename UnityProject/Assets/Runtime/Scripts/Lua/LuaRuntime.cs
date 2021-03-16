@@ -51,7 +51,7 @@ public class LuaRuntime
             LuaRuntime rt = GameRuntime.GetLuaRuntime();
             if (rt != null)
             {
-                rt.CallLuaFunction(RefIdx, args);
+                rt.CallLuaFunction(RefIdx, 0, false, false, args);
             }
         }
 
@@ -110,6 +110,13 @@ public class LuaRuntime
         public object Get(params object[] path)
         {
             return Get(path, 0);
+        }
+
+        public T Get<T>(params object[] path)
+        {
+            object res = Get(path);
+            if (res == null) return default;
+            return (T)Convert.ChangeType(res, typeof(T));
         }
 
         object Get(object[] path, int startIdx)
@@ -206,12 +213,12 @@ public class LuaRuntime
         return Lua.ValueType.NONE;
     }
 
-    public object ToValue(int idx)
+    public object ToValue(int idx, bool bIsUnicode = false)
     {
-        return ToValue(L, idx);
+        return ToValue(L, idx, bIsUnicode);
     }
 
-    public static object ToValue(Lua l, int idx)
+    public static object ToValue(Lua l, int idx, bool bIsUnicode=false)
     {
         Lua.ValueType type = l.Type(idx);
         int top = l.GetTop();
@@ -225,7 +232,7 @@ public class LuaRuntime
                 res = l.ToNumber(idx);
                 break;
             case Lua.ValueType.STRING:
-                res = l.ToString(idx);
+                res = bIsUnicode ? l.ToStringUnicode(idx) : l.ToString(idx);
                 break;
             case Lua.ValueType.BOOLEAN:
                 res = l.ToBoolean(idx);
@@ -264,21 +271,29 @@ public class LuaRuntime
         return PushValue(L, value);
     }
 
-    public void PushValues(object[] values)
+    public int PushValues(object[] values, bool bIsUnicode = false)
     {
+        int numPushed = 0;
         for (int i = 0; i < values.Length; ++i)
         {
-            PushValue(L, values[i], values[i].GetType());
+            numPushed += PushValue(L, values[i], values[i].GetType(), bIsUnicode);
         }
+        return numPushed;
     }
 
-    public static int PushValue<T>(Lua l, T value)
+    public static int PushValue<T>(Lua l, T value, bool bIsUnicode = false)
     {
-        return PushValue(l, value, typeof(T));
+        return PushValue(l, value, typeof(T), bIsUnicode);
     }
 
-    public static int PushValue(Lua l, object value, Type T)
+    public static int PushValue(Lua l, object value, Type T, bool bIsUnicode=false)
     {
+        if (value == null)
+        {
+            l.PushNil();
+            return 1;
+        }
+
         Lua.ValueType type = ToLuaType(T);
         if (type == Lua.ValueType.NUMBER)
         {
@@ -287,7 +302,14 @@ public class LuaRuntime
         }
         else if (type == Lua.ValueType.STRING)
         {
-            l.PushString(Convert.ToString(value));
+            if (bIsUnicode)
+            {
+                l.PushStringUnicode(Convert.ToString(value));
+            }
+            else
+            {
+                l.PushString(Convert.ToString(value));
+            }
             return 1;
         }
         else if (type == Lua.ValueType.BOOLEAN)
@@ -298,11 +320,6 @@ public class LuaRuntime
         else if (type == Lua.ValueType.FUNCTION)
         {
             l.PushFunction((Lua.CFunction)value);
-            return 1;
-        }
-        else if (T == typeof(byte[]))
-        {
-            l.PushLString((byte[])value);
             return 1;
         }
 
@@ -345,45 +362,50 @@ public class LuaRuntime
         return Check(L.DoString(luaCode));
     }
 
-    public bool CallLuaFunction(string fnName, params object[] args)
+    // Returns null on failure. If nResults was zero, the result will be an empty array
+    public object[] CallLuaFunction(string fnName, int nResults, params object[] args)
     {
-        bool res = false;
-        L.GetGlobal(fnName);
-        if (!L.IsFunction(-1))
-        {
-            Debug.LogErrorFormat("Could not find global function '{0}()'!", fnName);
-            return res;
-        }
-        PushValues(args);
-        int toPop = 1; // pop function
-        res = Check(L.PCall(args.Length, 0, 0));
-        if (!res)
-        {
-            toPop++; // pop error message
-        }
-        L.Pop(toPop);
-        return res;
+        return CallLuaFunction(fnName, nResults, false, false, args);
     }
 
-    bool CallLuaFunction(int fnRefIdx, object[] args)
+    // Returns null on failure. If nResults was zero, the result will be an empty array
+    public object[] CallLuaFunction(string fnName, int nResults, bool bUnicodeParams, bool bUnicodeReturn, params object[] args)
     {
-        bool res = false;
+        L.GetGlobal(fnName);
+        return CallLuaFunctionOnStack(nResults, bUnicodeParams, bUnicodeReturn, args);
+    }
 
+    // Returns null on failure. If nResults was zero, the result will be an empty array
+    object[] CallLuaFunction(int fnRefIdx, int nResults, bool bUnicodeParams, bool bUnicodeReturn, object[] args)
+    {
         // get function from reference index and push it on the stack
         L.RawGetI(Lua.LUA_REGISTRYINDEX, fnRefIdx);
+        return CallLuaFunctionOnStack(nResults, bUnicodeParams, bUnicodeReturn, args);
+    }
+
+    object[] CallLuaFunctionOnStack(int nResults, bool bUnicodeParams, bool bUnicodeReturn, object[] args)
+    {
+        object[] res = new object[nResults];
+
         if (!L.IsFunction(-1))
         {
             Debug.LogErrorFormat("Given LFunction does not point to a lua function but '{0}'!", L.Type(-1).ToString());
-            return res;
+            return null;
         }
-        PushValues(args);
-        int toPop = 1; // pop function
-        res = Check(L.PCall(args.Length, 0, 0));
-        if (!res)
+        PushValues(args, bUnicodeParams);
+        if (!Check(L.PCall(args.Length, nResults, 0)))
         {
-            toPop++; // pop error message
+            // pop error message
+            L.Pop(1);
+            return null;
         }
-        L.Pop(toPop);
+
+        for (int i = 0; i < nResults; ++i)
+        {
+            res[nResults - 1 - i] = ToValue(-1, bUnicodeReturn);
+            L.Pop(1);
+        }
+
         return res;
     }
 
@@ -498,10 +520,12 @@ public class LuaRuntime
             // Special case: dynamic parameters
             if (parameters.Length == 1 && parameters[0].ParameterType == typeof(object[]))
             {
+                bool bIsUnicode = parameters[0].GetCustomAttribute<GameLuaAPI.Unicode>() != null;
+
                 object[] dynParams = new object[expectedParams];
                 for (int i = expectedParams - 1; i >= 0; --i)
                 {
-                    dynParams[i] = ToValue(-1);
+                    dynParams[i] = ToValue(-1, bIsUnicode);
                     l.Pop(1);
                 }
                 invokeParams[0] = dynParams;
@@ -525,10 +549,11 @@ public class LuaRuntime
                         continue;
                     }
 
-                    Lua.ValueType luaType = expectedParamTypes[i];
-                    invokeParams[i] = ToValue(-1);
+                    bool bIsUnicode = pi.GetCustomAttribute<GameLuaAPI.Unicode>() != null;
+                    invokeParams[i] = ToValue(-1, bIsUnicode);
                     l.Pop(1);
 
+                    Lua.ValueType luaType = expectedParamTypes[i];
                     if (luaType == Lua.ValueType.NUMBER)
                     {
                         // also support other number parameters, such as int, long etc
@@ -542,13 +567,15 @@ public class LuaRuntime
             // Out-Parameter
             if (method.ReturnType != typeof(void))
             {
+                bool bIsUnicode = method.ReturnTypeCustomAttributes.IsDefined(typeof(GameLuaAPI.Unicode), false);
+
                 // Lua supports multiple return values. In C# we use tuples to mirror that
                 if (IsTuple(method.ReturnType))
                 {
                     FieldInfo[] fields = method.ReturnType.GetFields();
                     foreach (FieldInfo field in fields)
                     {
-                        if (!HandleOutParam(l, ref outStackCount, field.FieldType, field.GetValue(outParam)))
+                        if (!HandleOutParam(l, ref outStackCount, field.FieldType, field.GetValue(outParam), bIsUnicode))
                         {
                             Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", method.ReturnType.Name, methodName);
                             return 0;
@@ -557,7 +584,7 @@ public class LuaRuntime
                 }
                 else
                 {
-                    if (!HandleOutParam(l, ref outStackCount, method.ReturnType, outParam))
+                    if (!HandleOutParam(l, ref outStackCount, method.ReturnType, outParam, bIsUnicode))
                     {
                         Debug.LogErrorFormat("Unsupported return type '{0}' in lua function '{1}'", method.ReturnType.Name, methodName);
                         return 0;
@@ -573,10 +600,10 @@ public class LuaRuntime
         return true;
     }
 
-    static bool HandleOutParam(Lua l, ref int stackCounter, Type outParamType, object outParam)
+    static bool HandleOutParam(Lua l, ref int stackCounter, Type outParamType, object outParam, bool bIsUnicode)
     {
         int prev = stackCounter;
-        stackCounter += PushValue(l, outParam, outParamType);
+        stackCounter += PushValue(l, outParam, outParamType, bIsUnicode);
         return stackCounter != prev;
     }
 

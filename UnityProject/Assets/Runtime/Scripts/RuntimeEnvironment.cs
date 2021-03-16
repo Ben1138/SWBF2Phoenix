@@ -64,18 +64,19 @@ public class RuntimeEnvironment
     public EventHandler<EventArgs>                  OnExecuteMain;
     public EventHandler<EventArgs>                  OnLoaded;
 
-    public RPath Path           { get; private set; }
-    public RPath FallbackPath   { get; private set; }
-    public EnvStage Stage       { get; private set; }
+    public RPath    Path          { get; private set; }
+    public RPath    FallbackPath  { get; private set; }
+    public EnvStage Stage         { get; private set; }
 
     bool CanSchedule => Stage == EnvStage.Init || Stage == EnvStage.ExecuteMain;
     bool CanExecute  => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
 
     LuaRuntime  LuaRT;
+    SWBF2Handle CoreHandle;
     SWBF2Handle LoadscreenHandle;
 
     LibSWBF2.Wrappers.Container EnvCon;
-    LibSWBF2.Wrappers.Level     WorldLevel;     // points to world level inside 'LVLs'
+    LibSWBF2.Wrappers.Level     WorldLevel;     // points to level inside 'LVLs'
     LibSWBF2.Wrappers.Level     LoadscreenLVL;  // points to level inside 'LVLs'
 
     string InitScriptName;
@@ -83,6 +84,9 @@ public class RuntimeEnvironment
     string PostLoadFunctionName;
 
     RuntimeScene RScene;
+
+    List<LibSWBF2.Wrappers.Localization> Localizations = new List<LibSWBF2.Wrappers.Localization>();
+    Dictionary<string, List<LibSWBF2.Wrappers.Localization>> LocalizationLookup = new Dictionary<string, List<LibSWBF2.Wrappers.Localization>>();
 
 
     RuntimeEnvironment(RPath path, RPath fallbackPath)
@@ -124,7 +128,7 @@ public class RuntimeEnvironment
 
         GameLuaEvents.Clear();
         RuntimeEnvironment rt = new RuntimeEnvironment(envPath, fallbackPath);
-        rt.ScheduleLVLRel("core.lvl");
+        rt.CoreHandle = rt.ScheduleLVLRel("core.lvl");
         rt.ScheduleLVLRel("shell.lvl");
         rt.ScheduleLVLRel("common.lvl");
         rt.ScheduleLVLRel("mission.lvl");
@@ -336,6 +340,9 @@ public class RuntimeEnvironment
                         }
                     }
 
+                    // grab lvl localizations, if any
+                    Localizations.AddRange(lvl.Get<LibSWBF2.Wrappers.Localization>());
+
                     LoadingLVLs.RemoveAt(i);
                     break; // do not further iterate altered list
                 }
@@ -364,6 +371,19 @@ public class RuntimeEnvironment
 
         if (Stage == EnvStage.LoadingWorld && EnvCon.IsDone() && LoadingLVLs.Count == 0)
         {
+            for (int i = 0; i < Localizations.Count; ++i)
+            {
+                string locName = Localizations[i].Name;
+                if (LocalizationLookup.TryGetValue(locName, out var loc))
+                {
+                    loc.Add(Localizations[i]);
+                }
+                else
+                {
+                    LocalizationLookup.Add(locName, new List<LibSWBF2.Wrappers.Localization> { Localizations[i] });
+                }
+            }
+
             Stage = EnvStage.CreateScene;
             CreateScene();
         }
@@ -372,6 +392,23 @@ public class RuntimeEnvironment
     public void ClearScene()
     {
         // TODO: forward to EnvironmentScene
+    }
+
+    public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)
+    {
+        if (!LocalizationLookup.TryGetValue(GameRuntime.Instance.Language, out var locs))
+        {
+            return bReturnNullIfNotFound ? null : localizedPath;
+        }
+
+        for (int i = 0; i < locs.Count; ++i)
+        {
+            if (locs[i].GetLocalizedWideString(localizedPath, out string localizedUnicode))
+            {
+                return localizedUnicode;
+            }
+        }
+        return bReturnNullIfNotFound ? null : localizedPath;
     }
 
     RPath GetLoadscreenPath()
@@ -398,7 +435,7 @@ public class RuntimeEnvironment
         OnExecuteMain?.Invoke(this, null);
 
         // 2 - execute the main function -> will call ReadDataFile multiple times
-        if (!string.IsNullOrEmpty(InitFunctionName) && !LuaRT.CallLuaFunction(InitFunctionName))
+        if (!string.IsNullOrEmpty(InitFunctionName) && LuaRT.CallLuaFunction(InitFunctionName, 0) == null)
         {
             Debug.LogErrorFormat("Executing lua main function '{0}' failed!", InitFunctionName);
             return;
@@ -420,7 +457,7 @@ public class RuntimeEnvironment
         }
 
         // 4 - execute post load function AFTER scene has been created
-        if (!string.IsNullOrEmpty(PostLoadFunctionName) && !LuaRT.CallLuaFunction(PostLoadFunctionName))
+        if (!string.IsNullOrEmpty(PostLoadFunctionName) && LuaRT.CallLuaFunction(PostLoadFunctionName, 0) == null)
         {
             Debug.LogErrorFormat("Executing lua post load function '{0}' failed!", PostLoadFunctionName);
         }

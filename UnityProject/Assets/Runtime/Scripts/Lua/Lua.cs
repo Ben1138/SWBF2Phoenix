@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -253,6 +254,15 @@ public class Lua
 	{
 		return Marshal.PtrToStringAnsi(LuaWrapper.lua_tostring(L, idx));
 	}
+	public string ToStringUnicode(int idx)
+	{
+		IntPtr uniPtr = LuaWrapper.lua_tostring(L, idx);
+		int len = (int)LuaWrapper.lua_strlen(L, idx);
+		byte[] uniChars = new byte[len];
+		Marshal.Copy(uniPtr, uniChars, 0, len);
+		string res = Encoding.Unicode.GetString(uniChars);
+		return res;
+	}
 	public ulong StrLen(int idx)
 	{
 		return LuaWrapper.lua_strlen(L, idx);
@@ -286,16 +296,18 @@ public class Lua
 	{
 		LuaWrapper.lua_pushnumber(L, n);
 	}
-	public void PushLString(byte[] str)
-	{
-		IntPtr p = Marshal.AllocHGlobal(str.Length);
-		LuaWrapper.lua_pushlstring(L, p, (ulong)str.Length);
-		Marshal.FreeHGlobal(p);
-	}
 	public void PushString(string s)
 	{
 		char_ptr str = Marshal.StringToHGlobalAnsi(s);
 		LuaWrapper.lua_pushstring(L, str);
+		Marshal.FreeHGlobal(str);
+	}
+	public void PushStringUnicode(string s)
+	{
+		byte[] uniChars = Encoding.Unicode.GetBytes(s);
+		char_ptr str = Marshal.AllocHGlobal(uniChars.Length);
+		Marshal.Copy(uniChars, 0, str, uniChars.Length);
+		LuaWrapper.lua_pushlstring(L, str, (ulong)uniChars.Length);
 		Marshal.FreeHGlobal(str);
 	}
 	public void PushCClosure(CFunction fn, int n)

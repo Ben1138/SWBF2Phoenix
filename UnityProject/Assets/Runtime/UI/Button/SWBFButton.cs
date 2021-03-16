@@ -4,8 +4,14 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public class SWBFButton : MonoBehaviour
+public class SWBFButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
+    static RuntimeEnvironment ENV { get { return GameRuntime.GetEnvironment(); } }
+
+    public string LocalizePath;
+
+    [Header("References")]
+    public Text Text;
     public RawImage Left;
     public RawImage Center;
     public RawImage Right;
@@ -20,6 +26,11 @@ public class SWBFButton : MonoBehaviour
         Debug.Assert(Left   != null);
         Debug.Assert(Center != null);
         Debug.Assert(Right  != null);
+
+        if (!string.IsNullOrEmpty(LocalizePath))
+        {
+            Text.text = ENV.GetLocalized(LocalizePath);
+        }
 
         Left.texture   = TextureLoader.Instance.ImportUITexture("bf2_buttons_botleft");
         Center.texture = TextureLoader.Instance.ImportUITexture("bf2_buttons_items_center");
@@ -47,18 +58,18 @@ public class SWBFButton : MonoBehaviour
         }
     }
 
-    public void OnPointerEnter()
+    public void OnPointerEnter(PointerEventData eventData)
     {
         bIsHovering = true;
         GameRuntime.Instance.PlayUISound(HoverSound, 1.4f);
     }
 
-    public void OnPointerExit()
+    public void OnPointerExit(PointerEventData eventData)
     {
         bIsHovering = false;
     }
 
-    public void OnClick()
+    public void OnPointerClick(PointerEventData eventData)
     {
         GameRuntime.Instance.PlayUISound(ClickSound, 1.1f);
     }
