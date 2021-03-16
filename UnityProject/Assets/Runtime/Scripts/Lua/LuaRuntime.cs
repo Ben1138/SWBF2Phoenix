@@ -96,7 +96,7 @@ public class LuaRuntime
                 object key = ToValue(L, -2);
                 if (key == null)
                 {
-                    throw new Exception("Ehm, what?");
+                    throw new Exception("Key was null during lua table traversal! This should never happen!");
                 }
                 t.Contents.Add(key, ToValue(L, -1));
 
