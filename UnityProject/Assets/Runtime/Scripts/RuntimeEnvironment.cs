@@ -84,6 +84,8 @@ public class RuntimeEnvironment
     string PostLoadFunctionName;
 
     RuntimeScene RTScene;
+    GameMatch Match;
+    TimerDB Timers;
 
     List<LibSWBF2.Wrappers.Localization> Localizations = new List<LibSWBF2.Wrappers.Localization>();
     Dictionary<string, List<LibSWBF2.Wrappers.Localization>> LocalizationLookup = new Dictionary<string, List<LibSWBF2.Wrappers.Localization>>();
@@ -112,6 +114,16 @@ public class RuntimeEnvironment
         return RTScene;
     }
 
+    public GameMatch GetMatch()
+    {
+        return Match;
+    }
+
+    public TimerDB GetTimerDB()
+    {
+        return Timers;
+    }
+
     public static RuntimeEnvironment Create(RPath envPath, RPath fallbackPath = null)
     {
         if (!envPath.Exists())
@@ -135,6 +147,8 @@ public class RuntimeEnvironment
         rt.ScheduleSoundBankRel("sound/common.bnk");
 
         rt.RTScene = new RuntimeScene(rt.EnvCon);
+        rt.Match = new GameMatch();
+        rt.Timers = new TimerDB();
 
         return rt;
     }
@@ -389,10 +403,17 @@ public class RuntimeEnvironment
         }
     }
 
+    public void FixedUpdate(float deltaTime)
+    {
+        Timers?.Update(deltaTime);
+    }
+
     public void ClearScene()
     {
         RTScene.Clear();
         RTScene = null;
+        Match = null;
+        Timers = null;
     }
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)

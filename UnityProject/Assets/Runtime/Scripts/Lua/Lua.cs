@@ -318,18 +318,16 @@ public class Lua
 	{
 		LuaWrapper.lua_pushboolean(L, b ? 1 : 0);
 	}
-	//public void pushlightuserdata(byte[] data)
-	//{
-	//	void_ptr p = Marshal.AllocHGlobal(data.Length);
-	//	Marshal.Copy(p, 0, )
-	//	LuaWrapper.lua_pushlightuserdata(L, p);
-	//}
+    public void PushLightUserData(void_ptr ptr)
+    {
+        LuaWrapper.lua_pushlightuserdata(L, ptr);
+    }
 
-	/*
+    /*
     ** get functions (Lua -> stack)
     */
 
-	public void GetTable(int idx)
+    public void GetTable(int idx)
 	{
 		LuaWrapper.lua_gettable(L, idx);
 	}

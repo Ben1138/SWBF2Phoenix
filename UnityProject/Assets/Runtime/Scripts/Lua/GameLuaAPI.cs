@@ -7,10 +7,12 @@ public static class GameLuaAPI
 {
 	public class Unicode : Attribute {}
 
-	static RuntimeEnvironment ENV { get { return GameRuntime.GetEnvironment(); } }
-	static RuntimeScene RTS { get { return ENV == null ? null : ENV.GetScene(); } }
-	static LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
-	static Lua L { get { return RT.GetLua(); } }
+	static RuntimeEnvironment ENV => GameRuntime.GetEnvironment();
+	static RuntimeScene RTS => GameRuntime.GetScene();
+	static GameMatch MT => GameRuntime.GetMatch();
+	static LuaRuntime RT => GameRuntime.GetLuaRuntime();
+	static TimerDB TDB => GameRuntime.GetTimerDB();
+	static Lua L => RT.GetLua();
 
 
 	public static string ScriptCB_GetPlatform()
@@ -67,11 +69,15 @@ public static class GameLuaAPI
 
 	public static bool ScriptCB_IsMissionSetupSaved()
 	{
+		// I think this is the "galactic conquest" special items setup (e.g. sabotage, extra health, ...)
+		// see setup_teams.lua:12
 		return false;
 	}
 
 	public static int ScriptCB_LoadMissionSetup()
 	{
+		// I think this is the "galactic conquest" special items setup (e.g. sabotage, extra health, ...)
+		// see setup_teams.lua:13
 		return 0;
 	}
 
@@ -192,37 +198,38 @@ public static class GameLuaAPI
 
 	public static void SetHeroClass(int teamIdx, string className)
 	{
-		
+		MT.SetHeroClass(teamIdx, className);
 	}
 
 	public static void SetTeamAsEnemy(int teamIdx1, int teamIdx2)
 	{
-		
+		MT.SetTeamAsEnemy(teamIdx1, teamIdx2);
 	}
 
 	public static void SetTeamAsFriend(int teamIdx1, int teamIdx2)
 	{
-		
+		MT.SetTeamAsFriend(teamIdx1, teamIdx2);
 	}
 
 	public static void SetTeamName(int teamIdx, string name)
 	{
-		
+		MT.SetTeamName(teamIdx, name);
 	}
 
 	public static void SetUnitCount(int teamIdx, int numUnits)
 	{
-		
+		MT.SetUnitCount(teamIdx, numUnits);
 	}
 
 	public static void AddUnitClass(int teamIdx, string className, int unitCount)
 	{
-
+		MT.AddUnitClass(teamIdx, className, unitCount);
 	}
 
 	public static void AddUnitClass(int teamIdx, string className, int unitCount, int unkwn1)
 	{
-		
+		// TODO: unkwn1
+		MT.AddUnitClass(teamIdx, className, unitCount);
 	}
 
 	public static void SetDenseEnvironment(string isDense)
@@ -267,27 +274,27 @@ public static class GameLuaAPI
 
 	public static void SetTeamIcon(int teamIdx, string iconName)
 	{
-
+		MT.SetTeamIcon(teamIdx, iconName);
 	}
 
 	public static void SetBleedRate(int teamIdx, float rate)
 	{
-		
+		// a.k.a. reinforcement losses per second (e.g. 0.33)
 	}
 
-	public static void GetReinforcementCount()
+	public static int GetReinforcementCount(int teamIdx)
 	{
-		
+		return MT.GetReinforcementCount(teamIdx);
 	}
 
 	public static void SetReinforcementCount(int teamIdx, int count)
 	{
-		// count == -1 mean infinite reinforcements
+		MT.SetReinforcementCount(teamIdx, count);
 	}
 
-	public static void AddReinforcements()
+	public static void AddReinforcements(int teamIdx, int count)
 	{
-		
+		MT.AddReinforcements(teamIdx, count);
 	}
 
 	public static int OpenAudioStream(string lvlPath, string streamName)
@@ -315,6 +322,11 @@ public static class GameLuaAPI
 	{
 		
 	}
+
+	public static void BroadcastVoiceOver(string voName, int teamIdx)
+    {
+
+    }
 
 	public static void SetAmbientMusic(int teamIdx, float unkwn1, string musicName, int unkwn2, int unkwn3)
 	{
@@ -493,29 +505,60 @@ public static class GameLuaAPI
 
     }
 
-	public static int CreateTimer(string timerName)
+	public static void MissionVictory(object teams)
     {
-		return 0;
-    }
-
-	public static void StopTimer(int timer)
-    {
-
-    }
-
-	public static void SetTimerRate(int timer, float rate)
-	{
-		
+		// teams can either be one int (1), or a table of ints {1,2}
 	}
 
-	public static void SetTimerValue(int timer, float value)
+	public static int? CreateTimer(string timerName)
     {
-
+		return TDB.CreateTimer(timerName);
     }
 
-	public static void StartTimer(int timer)
-    {
+	public static void DestroyTimer(int? timer)
+	{
+		TDB.DestroyTimer(timer);
+	}
 
+	public static void StartTimer(int? timer)
+	{
+		TDB.StartTimer(timer);
+	}
+
+	public static void StopTimer(int? timer)
+    {
+		TDB.StopTimer(timer);
+	}
+
+	public static void SetTimerRate(int? timer, float rate)
+	{
+		TDB.SetTimerRate(timer, rate);
+	}
+
+	public static void SetTimerValue(int? timer, float value)
+    {
+		TDB.SetTimerValue(timer, value);
+	}
+
+	public static void ShowTimer(int? timer)
+    {
+		// only one neutral timer can be shown at a time.
+		// when called with 'nil', hide the timer
+    }
+
+	public static void SetDefeatTimer(int? timer, int teamIdx)
+    {
+		// only one defeat timer can be shown at a time.
+	}
+
+	public static void SetVictoryTimer(int? timer, int teamIdx)
+	{
+		// only one victory timer can be shown at a time.
+	}
+
+	public static int? FindTimer(string timerName)
+    {
+		return TDB.FindTimer(timerName);
     }
 
 	public static int GetObjectTeam(string objName)
@@ -523,7 +566,7 @@ public static class GameLuaAPI
 		return 0;
     }
 
-	public static int GetObjectTeam(int objPtr)
+	public static int GetObjectTeam(int? objPtr)
 	{
 		return 0;
 	}
@@ -618,6 +661,11 @@ public static class GameLuaAPI
 		return 0;
     }
 
+	public static string GetEntityName(object objPtr)
+    {
+		return null;
+    }
+
 	public static void MapAddEntityMarker(string objName, string iconName, float size, int teamIdx, string color, bool unkwn1)
     {
 
@@ -632,6 +680,11 @@ public static class GameLuaAPI
 	{
 
 	}
+
+	public static void MapRemoveEntityMarker(object objectPtr, int teamIdx)
+    {
+
+    }
 
 	public static void MapRemoveRegionMarker(int region)
 	{
@@ -746,11 +799,11 @@ public static class GameLuaAPI
 	}
 	public static void OnTicketCountChange(LuaRuntime.LFunction callback)
 	{
-		
+		// TicketCount seems to be the reinforcement count, see Objective.lua:192
 	}
 	public static void OnTimerElapse(LuaRuntime.LFunction callback, int timer)
 	{
-		
+		GameLuaEvents.Register(GameLuaEvents.Event.OnTimerElapse, callback, timer);
 	}
 	public static void OnEnterRegion(LuaRuntime.LFunction callback, string regionName)
     {
@@ -767,7 +820,8 @@ public static class GameLuaAPI
 	}
 	public static void OnFinishCapture(LuaRuntime.LFunction callback)
 	{
-		
+		// callback paramters:
+		// - postPtr
 	}
 	public static void OnFinishCaptureName(LuaRuntime.LFunction callback, string cpName)
 	{
@@ -775,15 +829,18 @@ public static class GameLuaAPI
 	}
 	public static void OnFinishNeutralize(LuaRuntime.LFunction callback)
 	{
-		
+		// callback paramters:
+		// - postPtr
 	}
 	public static void OnCommandPostRespawn(LuaRuntime.LFunction callback)
 	{
-		
+		// callback paramters:
+		// - postPtr
 	}
 	public static void OnCommandPostKill(LuaRuntime.LFunction callback)
 	{
-		
+		// callback paramters:
+		// - postPtr
 	}
 	public static void OnObjectKillName(LuaRuntime.LFunction callback, string objName)
 	{
@@ -828,7 +885,8 @@ public static class GameLuaEvents
 	{
 		OnEnterRegion,
 		OnEnterRegionTeam,
-		OnLeaveRegion
+		OnLeaveRegion,
+		OnTimerElapse
 	}
 
 	class CallbackDict<T>

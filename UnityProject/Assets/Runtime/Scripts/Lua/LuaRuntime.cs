@@ -193,6 +193,10 @@ public class LuaRuntime
         {
             return Lua.ValueType.NUMBER;
         }
+        else if (T == typeof(int?))
+        {
+            return Lua.ValueType.LIGHTUSERDATA;
+        }
         else if (T == typeof(string))
         {
             return Lua.ValueType.STRING;
@@ -231,6 +235,9 @@ public class LuaRuntime
             case Lua.ValueType.NUMBER:
                 res = l.ToNumber(idx);
                 break;
+            case Lua.ValueType.LIGHTUSERDATA:
+                res = (int?)l.ToUserData(idx);
+                break;
             case Lua.ValueType.STRING:
                 res = bIsUnicode ? l.ToStringUnicode(idx) : l.ToString(idx);
                 break;
@@ -254,7 +261,7 @@ public class LuaRuntime
                 Debug.LogErrorFormat("Cannot convert Lua Type '{0}' to C# equivalent!", type.ToString());
                 return null;
         }
-
+        
         // Debug only!
         int top2 = l.GetTop();
         Lua.ValueType type2 = l.Type(idx);
@@ -298,6 +305,11 @@ public class LuaRuntime
         if (type == Lua.ValueType.NUMBER)
         {
             l.PushNumber(Convert.ToSingle(value));
+            return 1;
+        }
+        else if (type == Lua.ValueType.LIGHTUSERDATA)
+        {
+            l.PushLightUserData((IntPtr)Convert.ToInt32(value));
             return 1;
         }
         else if (type == Lua.ValueType.STRING)
