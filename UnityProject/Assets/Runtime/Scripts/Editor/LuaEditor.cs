@@ -51,7 +51,7 @@ public class LuaEditor : EditorWindow
         Lua L = runtime.GetLua();
 
         GUILayout.BeginHorizontal();
-        LuaCode = GUILayout.TextArea(LuaCode, GUILayout.Width(300), GUILayout.ExpandHeight(true));
+        LuaCode = GUILayout.TextArea(LuaCode, GUILayout.Width(400), GUILayout.ExpandHeight(true));
 
         GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
         int stackSize = L.GetTop();
