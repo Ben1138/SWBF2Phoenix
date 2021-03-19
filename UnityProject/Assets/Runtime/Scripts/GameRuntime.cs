@@ -55,7 +55,20 @@ public class GameRuntime : MonoBehaviour
 
     public static RuntimeScene GetScene()
     {
-        return Instance == null ? null : Instance.Env.GetScene();
+        RuntimeEnvironment env = GetEnvironment();
+        return env == null ? null : env.GetScene();
+    }
+
+    public static GameMatch GetMatch()
+    {
+        RuntimeEnvironment env = GetEnvironment();
+        return env == null ? null : env.GetMatch();
+    }
+
+    public static TimerDB GetTimerDB()
+    {
+        RuntimeEnvironment env = GetEnvironment();
+        return env == null ? null : env.GetTimerDB();
     }
 
     public void AddToMapRotation(List<string> mapScripts)
@@ -342,5 +355,10 @@ public class GameRuntime : MonoBehaviour
             }
             PlayUISound(SoundLoader.LoadSound("ui_menuBack"), 1.2f);
         }
+    }
+
+    void FixedUpdate()
+    {
+        Env?.FixedUpdate(Time.fixedDeltaTime);
     }
 }

@@ -181,6 +181,15 @@ public class RuntimeScene
         }
     }
 
+    public ISWBFClass GetClass(string odfClassName)
+    {
+        if (Classes.TryGetValue(odfClassName, out ISWBFClass odf))
+        {
+            return odf;
+        }
+        return null;
+    }
+
     ISWBFClass GetClass(EntityClass ec)
     {
         ISWBFClass odf = null;
