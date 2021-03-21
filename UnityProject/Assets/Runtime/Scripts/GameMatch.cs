@@ -10,10 +10,12 @@ public class GameMatch
 
     public Color NeutralColor  { get; private set; } = new Color(1.0f, 1.0f, 1.0f);
     public Color FriendlyColor { get; private set; } = new Color(0.0f, 0.0f, 1.0f);
-    public Color EnemyColorr   { get; private set; } = new Color(1.0f, 0.0f, 0.0f);
-    public Color LocalsColorr  { get; private set; } = new Color(1.0f, 1.0f, 0.0f);
+    public Color EnemyColor    { get; private set; } = new Color(1.0f, 0.0f, 0.0f);
+    public Color LocalsColor   { get; private set; } = new Color(1.0f, 1.0f, 0.0f);
 
-    
+
+    bool LVLsLoaded = false;
+
 
     public class UnitClass
     {
@@ -35,7 +37,7 @@ public class GameMatch
         public float Aggressiveness = 1.0f;
         public Texture2D Icon = null;
         public int UnitCount = 0;
-        public int ReinforcementCount = 0; // -1 == infinite
+        public int ReinforcementCount = -1; // default is infinite
         public float SpawnDelay = 1.0f;
         public HashSet<UnitClass> UnitClasses = new HashSet<UnitClass>();
         public ISWBFClass HeroClass = null;
@@ -44,6 +46,10 @@ public class GameMatch
 
     public Team[] Teams { get; private set; } = new Team[MAX_TEAMS];
 
+    Queue<(int, string, int)> TeamUnits = new Queue<(int, string, int)>();
+    Queue<(int, string)> TeamHeroClass = new Queue<(int, string)>();
+    Queue<(int, string)> TeamIcon = new Queue<(int, string)>();
+
 
     public GameMatch()
     {
@@ -51,6 +57,40 @@ public class GameMatch
         {
             Teams[i] = new Team();
         }
+    }
+
+    // Since we're doing multithreaded loading, calling Lua stuff like "AddUnitClass" in "ScriptInit()"
+    // will yield no results, since the .lvl files containing those classes might still load at that point.
+    // Workaround: Queue those calls and apply them after all .lvl files have been loaded
+    public void ApplySchedule()
+    {
+        while (TeamUnits.Count > 0)
+        {
+            (int, string, int) addTeamUnit = TeamUnits.Dequeue();
+            ISWBFClass odf = RTS.GetClass(addTeamUnit.Item2);
+            if (odf != null)
+            {
+                Teams[addTeamUnit.Item1].UnitClasses.Add(new UnitClass { Unit = odf, Count = addTeamUnit.Item3 });
+            }
+        }
+
+        while (TeamHeroClass.Count > 0)
+        {
+            (int, string) setHeroClass = TeamHeroClass.Dequeue();
+            ISWBFClass odf = RTS.GetClass(setHeroClass.Item2);
+            if (odf != null)
+            {
+                Teams[setHeroClass.Item1].HeroClass = odf;
+            }
+        }
+
+        while (TeamIcon.Count > 0)
+        {
+            (int, string) setTeamIcon = TeamIcon.Dequeue();
+            Teams[setTeamIcon.Item1].Icon = TextureLoader.Instance.ImportUITexture(setTeamIcon.Item2);
+        }
+
+        LVLsLoaded = true;
     }
 
 
@@ -67,7 +107,14 @@ public class GameMatch
     public void SetTeamIcon(int teamIdx, string iconName)
     {
         if (!CheckTeamIdx(--teamIdx)) return;
-        Teams[teamIdx].Icon = TextureLoader.Instance.ImportUITexture(iconName);
+        if (!LVLsLoaded)
+        {
+            TeamIcon.Enqueue((teamIdx, iconName));
+        }
+        else
+        {
+            Teams[teamIdx].Icon = TextureLoader.Instance.ImportUITexture(iconName);
+        }
     }
 
     public void SetUnitCount(int teamIdx, int unitCount)
@@ -98,10 +145,17 @@ public class GameMatch
     {
         if (!CheckTeamIdx(--teamIdx)) return;
 
-        ISWBFClass odf = RTS.GetClass(className);
-        if (odf != null)
+        if (!LVLsLoaded)
         {
-            Teams[teamIdx].UnitClasses.Add(new UnitClass { Unit = odf, Count = unitCount });
+            TeamUnits.Enqueue((teamIdx, className, unitCount));
+        }
+        else
+        {
+            ISWBFClass odf = RTS.GetClass(className);
+            if (odf != null)
+            {
+                Teams[teamIdx].UnitClasses.Add(new UnitClass { Unit = odf, Count = unitCount });
+            }
         }
     }
 
@@ -109,10 +163,17 @@ public class GameMatch
     {
         if (!CheckTeamIdx(--teamIdx)) return;
 
-        ISWBFClass odf = RTS.GetClass(className);
-        if (odf != null)
+        if (!LVLsLoaded)
         {
-            Teams[teamIdx].HeroClass = odf;
+            TeamHeroClass.Enqueue((teamIdx, className));
+        }
+        else
+        {
+            ISWBFClass odf = RTS.GetClass(className);
+            if (odf != null)
+            {
+                Teams[teamIdx].HeroClass = odf;
+            }
         }
     }
 
@@ -137,8 +198,6 @@ public class GameMatch
     // ====================================================================================
     // Lua API end
     // ====================================================================================
-
-
 
 
     bool CheckTeamIdx(int teamIdx)

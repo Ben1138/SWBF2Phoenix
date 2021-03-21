@@ -47,7 +47,7 @@ public class MatchMonitor : EditorWindow
             EditorGUILayout.LabelField("Unit Count", t.UnitCount.ToString());
             EditorGUILayout.LabelField("Reinforcement Count", t.ReinforcementCount.ToString());
             EditorGUILayout.LabelField("Spawn Delay", t.SpawnDelay.ToString());
-            EditorGUILayout.LabelField("Hero Class", t.HeroClass?.ToString());
+            EditorGUILayout.LabelField("Hero Class", t.HeroClass?.Name);
             GUILayout.Label("Unit Classes:");
             foreach (GameMatch.UnitClass unitClass in t.UnitClasses)
             {
