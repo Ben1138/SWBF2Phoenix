@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using System.Runtime.CompilerServices;
 using System.Linq;
@@ -116,7 +117,7 @@ public class LuaRuntime
         {
             object res = Get(path);
             if (res == null) return default;
-            return (T)Convert.ChangeType(res, typeof(T));
+            return (T)Convert.ChangeType(res, typeof(T), CultureInfo.InvariantCulture);
         }
 
         object Get(object[] path, int startIdx)
@@ -124,7 +125,7 @@ public class LuaRuntime
             if (path[startIdx].GetType() == typeof(int))
             {
                 // lua only knows floats as numbers
-                path[startIdx] = Convert.ChangeType(path[startIdx], typeof(float));
+                path[startIdx] = Convert.ChangeType(path[startIdx], typeof(float), CultureInfo.InvariantCulture);
             }
 
             if (Contents.TryGetValue(path[startIdx], out object value))
@@ -569,7 +570,7 @@ public class LuaRuntime
                     if (luaType == Lua.ValueType.NUMBER)
                     {
                         // also support other number parameters, such as int, long etc
-                        invokeParams[i] = Convert.ChangeType(invokeParams[i], pi.ParameterType);
+                        invokeParams[i] = Convert.ChangeType(invokeParams[i], pi.ParameterType, CultureInfo.InvariantCulture);
                     }
                 }
             }

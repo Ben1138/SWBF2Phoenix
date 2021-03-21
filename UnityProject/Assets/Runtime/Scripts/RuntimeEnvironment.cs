@@ -398,6 +398,9 @@ public class RuntimeEnvironment
                 }
             }
 
+            // apply queued Lua calls like "AddUnitClass"
+            Match.ApplySchedule();
+
             Stage = EnvStage.CreateScene;
             CreateScene();
         }
@@ -414,6 +417,9 @@ public class RuntimeEnvironment
         RTScene = null;
         Match = null;
         Timers = null;
+        OnLoadscreenLoaded = null;
+        OnExecuteMain = null;
+        OnLoaded = null;
     }
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)

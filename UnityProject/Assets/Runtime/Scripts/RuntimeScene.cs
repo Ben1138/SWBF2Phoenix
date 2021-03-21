@@ -7,6 +7,8 @@ using LibSWBF2.Enums;
 
 public class RuntimeScene
 {
+    static RuntimeEnvironment ENV => GameRuntime.GetEnvironment();
+
     struct RTTransform
     {
         public Vector3    Position;
@@ -28,31 +30,6 @@ public class RuntimeScene
     public RuntimeScene(Container c)
     {
         EnvCon = c;
-    }
-
-    public void AssignProp<T1, T2>(T1 instOrClass, string propName, Ref<T2> value) where T1 : ISWBFProperties
-    {
-        if (instOrClass.GetProperty(propName, out string outVal))
-        {
-            value.Set((T2)Convert.ChangeType(outVal, typeof(T2), CultureInfo.InvariantCulture));
-        }
-    }
-
-    public void AssignProp<T1>(T1 instOrClass, string propName, Ref<Region> value) where T1 : ISWBFProperties
-    {
-        if (instOrClass.GetProperty(propName, out string outVal))
-        {
-            value.Set(GetRegion(outVal));
-        }
-    }
-
-    public void AssignProp<T1>(T1 instOrClass, string propName, int argIdx, Ref<AudioClip> value) where T1 : ISWBFProperties
-    {
-        if (instOrClass.GetProperty(propName, out string outVal))
-        {
-            string[] args = outVal.Split(' ');
-            value.Set(SoundLoader.LoadSound(args[argIdx]));
-        }
     }
 
     public void SetProperty(string instName, string propName, object propValue)
@@ -187,6 +164,11 @@ public class RuntimeScene
         {
             return odf;
         }
+        EntityClass ec = ENV.Find<EntityClass>(odfClassName);
+        if (ec != null)
+        {
+            return GetClass(ec);
+        }
         return null;
     }
 
@@ -196,7 +178,7 @@ public class RuntimeScene
         if (!Classes.TryGetValue(ec.Name, out odf))
         {
             EntityClass rootClass = ClassLoader.GetRootClass(ec);
-            Type classType = OdfRegister.GetClassType(rootClass.BaseClassName);
+            Type classType = ClassRegister.GetClassType(rootClass.BaseClassName);
             if (classType != null)
             {
                 odf = (ISWBFClass)Activator.CreateInstance(classType);
@@ -216,7 +198,7 @@ public class RuntimeScene
             GameObject instanceObject = ClassLoader.Instance.LoadInstance(inst);
             EntityClass rootClass = ClassLoader.GetRootClass(inst.EntityClass);
 
-            Type instType = OdfRegister.GetInstanceType(rootClass.BaseClassName);
+            Type instType = ClassRegister.GetInstanceType(rootClass.BaseClassName);
             if (instType != null)
             {
                 ISWBFInstance script = (ISWBFInstance)instanceObject.AddComponent(instType);
