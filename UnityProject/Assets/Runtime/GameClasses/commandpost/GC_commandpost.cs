@@ -4,38 +4,17 @@ using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 using LibSWBF2.Wrappers;
 
-public class GC_commandpost : ISWBFInstance
+public class GC_commandpost : ISWBFInstance<GC_commandpost.ClassProperties>
 {
     public class ClassProperties : ISWBFClass
     {
-        public Ref<float>     NeutralizeTime = new Ref<float>(1.0f);
-        public Ref<float>     CaptureTime    = new Ref<float>(1.0f);
-        public Ref<float>     HoloTurnOnTime = new Ref<float>(1.0f);
-        public Ref<AudioClip> CapturedSound  = new Ref<AudioClip>(null);
-        public Ref<AudioClip> LostSound      = new Ref<AudioClip>(null);
-        public Ref<AudioClip> ChargeSound    = new Ref<AudioClip>(null);
-        public Ref<AudioClip> DischargeSound = new Ref<AudioClip>(null);
-
-        public override void InitClass(EntityClass ec)
-        {
-            base.InitClass(ec);
-            P.Register("NeutralizeTime", NeutralizeTime);
-            P.Register("CaptureTime",    CaptureTime);
-            P.Register("HoloTurnOnTime", HoloTurnOnTime);
-            P.Register("CapturedSound",  CapturedSound);
-            P.Register("LostSound",      LostSound);
-            P.Register("ChargeSound",    ChargeSound);
-            P.Register("DischargeSound", DischargeSound);
-
-            RuntimeScene sc = GameRuntime.GetScene();
-            sc.AssignProp(ec, "NeutralizeTime",    NeutralizeTime);
-            sc.AssignProp(ec, "CaptureTime",       CaptureTime);
-            sc.AssignProp(ec, "HoloTurnOnTime",    HoloTurnOnTime);
-            sc.AssignProp(ec, "CapturedSound",  0, CapturedSound);
-            sc.AssignProp(ec, "LostSound",      0, LostSound);
-            sc.AssignProp(ec, "ChargeSound",    0, ChargeSound);
-            sc.AssignProp(ec, "DischargeSound", 0, DischargeSound);
-        }
+        public Prop<float> NeutralizeTime = new Prop<float>(1.0f);
+        public Prop<float> CaptureTime    = new Prop<float>(1.0f);
+        public Prop<float> HoloTurnOnTime = new Prop<float>(1.0f);
+        public MultiProp   ChargeSound    = new MultiProp(typeof(AudioClip), typeof(string));
+        public MultiProp   CapturedSound  = new MultiProp(typeof(AudioClip), typeof(string));
+        public MultiProp   DischargeSound = new MultiProp(typeof(AudioClip), typeof(string));
+        public MultiProp   LostSound      = new MultiProp(typeof(AudioClip), typeof(string));
     }
 
     [Header("References")]
@@ -43,21 +22,19 @@ public class GC_commandpost : ISWBFInstance
     public GameObject   HoloIcon;
     public HDAdditionalLightData Light;
 
-    ClassProperties C;
-
     // SWBF Instance Properties
-    Ref<Region> CaptureRegion = new Ref<Region>(null);
-    Ref<Region> ControlRegion = new Ref<Region>(null);
-    Ref<byte>   Team          = new Ref<byte>(0);
+    public Prop<Region> CaptureRegion = new Prop<Region>(null);
+    public Prop<Region> ControlRegion = new Prop<Region>(null);
+    public Prop<int>    Team          = new Prop<int>(0);
 
     AudioSource AudioAction;
     AudioSource AudioAmbient;
     AudioSource AudioCapture;
     Vector2 CapturePitch = new Vector2(0.5f, 1.5f);
-    float CaptureTimer;
+    float   CaptureTimer;
 
     // cache
-    bool bInitInstance = false;
+    bool bInitInstance => C != null;
     float HoloWidthStart;
     float HoloWidthEnd;
     float LightIntensity;
@@ -65,10 +42,28 @@ public class GC_commandpost : ISWBFInstance
     float HoloAlpha;
 
 
-    public override void InitInstance(Instance inst, ISWBFClass classProperties)
+    public override void BindEvents()
     {
-        C = (ClassProperties)classProperties;
+        Team.OnValueChanged += ApplyTeam;
+        CaptureRegion.OnValueChanged += (Region oldRegion) =>
+        {
+            if (oldRegion != null)
+            {
+                oldRegion.OnEnter -= OnCaptureRegionEnter;
+                oldRegion.OnLeave -= OnCaptureRegionLeave;
+            }
 
+            Region newRegion = CaptureRegion.Get();
+            if (newRegion != null)
+            {
+                newRegion.OnEnter += OnCaptureRegionEnter;
+                newRegion.OnLeave += OnCaptureRegionLeave;
+            }
+        };
+    }
+
+    public override void Init()
+    {
         Transform hpHolo = transform.Find(string.Format("{0}/hp_hologram", C.Name));
         if (hpHolo != null)
         {
@@ -90,7 +85,7 @@ public class GC_commandpost : ISWBFInstance
         AudioAmbient.volume = 0.5f;
         AudioAmbient.rolloffMode = AudioRolloffMode.Linear;
         AudioAmbient.minDistance = 2.0f;
-        AudioAmbient.maxDistance = 20.0f;
+        AudioAmbient.maxDistance = 30.0f;
         AudioAmbient.Play();
 
         AudioCapture = gameObject.AddComponent<AudioSource>();
@@ -100,7 +95,7 @@ public class GC_commandpost : ISWBFInstance
         AudioCapture.volume = 0.8f;
         AudioCapture.rolloffMode = AudioRolloffMode.Linear;
         AudioCapture.minDistance = 2.0f;
-        AudioCapture.maxDistance = 20.0f;
+        AudioCapture.maxDistance = 30.0f;
 
         AudioAction = gameObject.AddComponent<AudioSource>();
         AudioAction.spatialBlend = 1.0f;
@@ -109,45 +104,18 @@ public class GC_commandpost : ISWBFInstance
         AudioAction.volume = 0.5f;
         AudioAction.rolloffMode = AudioRolloffMode.Linear;
         AudioAction.minDistance = 2.0f;
-        AudioAction.maxDistance = 20.0f;
-
-
-        P.Register("CaptureRegion", CaptureRegion);
-        P.Register("ControlRegion", ControlRegion);
-        P.Register("Team",          Team);
-
-        Team.OnValueChanged += ApplyTeam;
-        CaptureRegion.OnValueChanged += () =>
-        {
-            Region region = CaptureRegion.Get();
-            if (region != null)
-            {
-                region.OnEnter += OnCaptureRegionEnter;
-                region.OnLeave += OnCaptureRegionLeave;
-            }
-        };
-
-        RuntimeScene sc = GameRuntime.GetScene();
-        sc.AssignProp(inst, "CaptureRegion", CaptureRegion);
-        sc.AssignProp(inst, "ControlRegion", ControlRegion);
-        sc.AssignProp(inst, "Team",          Team);
-
-        bInitInstance = true;
+        AudioAction.maxDistance = 30.0f;
     }
 
-    void ApplyTeam()
+    void ApplyTeam(int oldTeam)
     {
-        // TODO: Might be called before InitInstance, due to a lua SetProperty call...
-        // Is it valid to call SetProperty in ScriptInit() ?
-        if (!bInitInstance) return;
-
         CaptureTimer = 0.0f;
 
-        AudioCapture.clip = Team == 0 ? C.ChargeSound : C.DischargeSound;
+        AudioCapture.clip = Team == 0 ? C.ChargeSound.Get<AudioClip>(0) : C.DischargeSound.Get<AudioClip>(0);
         AudioCapture.Play();
 
         AudioAmbient.loop = true;
-        AudioAction.clip = Team == 0 ? C.LostSound : C.CapturedSound;
+        AudioAction.clip = Team == 0 ? C.LostSound.Get<AudioClip>(0) : C.CapturedSound.Get<AudioClip>(0);
         AudioAction.Play();
 
         UpdateColor();

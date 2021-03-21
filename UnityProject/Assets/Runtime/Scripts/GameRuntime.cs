@@ -181,7 +181,7 @@ public class GameRuntime : MonoBehaviour
     }
 
     // TODO
-    public Color GetTeamColor(byte teamId)
+    public Color GetTeamColor(int teamId)
     {
         switch (teamId)
         {

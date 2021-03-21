@@ -12,6 +12,7 @@ public class LuaEditor : EditorWindow
     float SaveCounter = 0;
     
     string LuaCode;
+    GUIStyle EditorStyle;
 
     TableTreeView TreeView;
 
@@ -26,6 +27,10 @@ public class LuaEditor : EditorWindow
     void Awake()
     {
         LuaCode = PlayerPrefs.GetString(SAVE_CODE_KEY);
+        EditorStyle = new GUIStyle();
+        EditorStyle.fontSize = 28;
+        EditorStyle.fontStyle = FontStyle.Normal;
+        EditorStyle.normal.textColor = Color.white;
     }
 
     void Update()
@@ -51,7 +56,7 @@ public class LuaEditor : EditorWindow
         Lua L = runtime.GetLua();
 
         GUILayout.BeginHorizontal();
-        LuaCode = GUILayout.TextArea(LuaCode, GUILayout.Width(400), GUILayout.ExpandHeight(true));
+        LuaCode = GUILayout.TextArea(LuaCode, /*EditorStyle, */GUILayout.Width(500), GUILayout.ExpandHeight(true));
 
         GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
         int stackSize = L.GetTop();
