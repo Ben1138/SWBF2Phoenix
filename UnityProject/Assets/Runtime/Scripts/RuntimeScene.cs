@@ -198,6 +198,12 @@ public class RuntimeScene
             GameObject instanceObject = ClassLoader.Instance.LoadInstance(inst);
             EntityClass rootClass = ClassLoader.GetRootClass(inst.EntityClass);
 
+            if (rootClass == null)
+            {
+                Debug.LogWarning($"Could not find root class '{inst.EntityClassName}' for instance '{inst.Name}'!");
+                continue;
+            }
+
             Type instType = ClassRegister.GetInstanceType(rootClass.BaseClassName);
             if (instType != null)
             {

@@ -46,6 +46,8 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>
         public Prop<float> AimFactorMove = new Prop<float>(1.0f);
 
         public Prop<string> AISizeType = new Prop<string>("SOLDIER");
+
+        public MultiProp WeaponName = new MultiProp(typeof(string));
     }
 
     Prop<float> CurHealth = new Prop<float>(100.0f);
