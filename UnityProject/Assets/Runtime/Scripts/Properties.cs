@@ -90,7 +90,7 @@ public sealed class MultiProp : Ref, IEnumerator, IEnumerable
 
     List<object[]> Values = new List<object[]>();
     Type[] ExpectedTypes;
-    int IterPos = 0;
+    int IterPos = -1;
 
 
     public MultiProp(params Type[] expectedTypes)
@@ -100,7 +100,7 @@ public sealed class MultiProp : Ref, IEnumerator, IEnumerable
 
     public T Get<T>(int argIdx)
     {
-        return (T)Values[0][argIdx];
+        return Values.Count > 0 ? (T)Values[0][argIdx] : default;
     }
 
     // "Set" here actually adds another prop entry
@@ -148,8 +148,7 @@ public sealed class MultiProp : Ref, IEnumerator, IEnumerable
     //IEnumerator
     public bool MoveNext()
     {
-        IterPos++;
-        return (IterPos < Values.Count);
+        return (++IterPos < Values.Count);
     }
 
     //IEnumerable
@@ -172,6 +171,16 @@ public sealed class PropertyDB
 
     Dictionary<string, Ref> Properties = new Dictionary<string, Ref>();
 
+
+    public T Get<T>(string propName) where T : Ref
+    {
+        if (Properties.TryGetValue(propName.ToLowerInvariant(), out Ref value))
+        {
+            return (T)value;
+        }
+        return default;
+    }
+
     public void Register<T>(string propName, T variable) where T : Ref
     {
         Properties.Add(propName.ToLowerInvariant(), variable);
@@ -189,9 +198,12 @@ public sealed class PropertyDB
 
     public static void AssignProp<T>(T instOrClass, string propName, Ref value) where T : ISWBFProperties
     {
-        if (instOrClass.GetProperty(propName, out string outVal))
+        if (instOrClass.GetProperty(propName, out string[] outVal))
         {
-            value.SetFromString(outVal);
+            for (int i = 0; i < outVal.Length; ++i)
+            {
+                value.SetFromString(outVal[i]);
+            }
         }
     }
 
@@ -214,6 +226,17 @@ public sealed class PropertyDB
         else if (destType == typeof(AudioClip))
         {
             outVal = Convert.ChangeType(SoundLoader.LoadSound(value), destType, CultureInfo.InvariantCulture);
+        }
+        else if (destType == typeof(bool))
+        {
+            if (value == "0" || value == "1")
+            {
+                outVal = value != "0" ? true : false;
+            }
+            else
+            {
+                outVal = Convert.ChangeType(value != "0" ? true : false, destType, CultureInfo.InvariantCulture);
+            }
         }
         else
         {
@@ -281,27 +304,31 @@ public abstract class ISWBFClass
 {
     static RuntimeEnvironment ENV => GameRuntime.GetEnvironment();
 
-    public PropertyDB P { get; private set; } = new PropertyDB();
-    public string Name { get; private set; }
-    public string LocalizedName { get; private set; }
+    public PropertyDB       P { get; private set; } = new PropertyDB();
+    public string           Name { get; private set; }
+    public EEntityClassType ClassType { get; private set; }
+    public string           LocalizedName { get; private set; }
 
     public void InitClass(EntityClass ec)
     {
         Name = ec.Name;
 
-        string locPath;
-        if (ec.ClassType == EEntityClassType.WeaponClass)
+        ClassType = ec.ClassType;
+        if (ClassType == EEntityClassType.WeaponClass)
         {
-            locPath = "weapons.";
+            string locPath = "weapons.";
+            int splitIdx = Name.IndexOf('_');
+            locPath += Name.Substring(0, splitIdx) + ".weap." + Name.Substring(splitIdx + 1).Replace("weap_", "");
+            LocalizedName = ENV.GetLocalized(locPath);
         }
         else
         {
-            locPath = "entity.";
+            string locPath = "entity.";
+            int splitIdx = Name.IndexOf('_');
+            locPath += Name.Substring(0, splitIdx) + '.' + Name.Substring(splitIdx + 1);
+            LocalizedName = ENV.GetLocalized(locPath);
         }
 
-        int splitIdx = Name.IndexOf('_');
-        locPath += Name.Substring(0, splitIdx) + '.' + Name.Substring(splitIdx + 1);
-        LocalizedName = ENV.GetLocalized(locPath);
 
         Type type = GetType();
         MemberInfo[] members = type.GetMembers();
