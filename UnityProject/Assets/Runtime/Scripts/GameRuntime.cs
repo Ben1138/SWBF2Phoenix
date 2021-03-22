@@ -18,8 +18,12 @@ public class GameRuntime : MonoBehaviour
     public Loadscreen LoadScreenPrefab;
     public GameObject MainMenuPrefab;
     public GameObject PauseMenuPrefab;
+    public GameObject CharacterSelectPrefab;
     public Volume     PostProcessingVolume;
     public AudioMixerGroup UIAudioMixer;
+
+    // This will only fire for maps, NOT for the main menu!
+    public Action OnMatchStart;
 
     RPath AddonPath => GamePath / "GameData/addon";
     RPath StdLVLPC;
@@ -157,7 +161,16 @@ public class GameRuntime : MonoBehaviour
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
     }
 
-    // Counterpart of ShowMenu()
+    public GameObject ShowMenu(GameObject prefab)
+    {
+        if (CurrentMenu != null)
+        {
+            RemoveMenu();
+        }
+        CurrentMenu = Instantiate(prefab);
+        return CurrentMenu;
+    }
+
     public void RemoveMenu()
     {
         if (CurrentMenu != null)
@@ -213,16 +226,6 @@ public class GameRuntime : MonoBehaviour
         CurrentLS = null;
     }
 
-    // Counterpart is RemoveMenu()
-    void ShowMenu(GameObject prefab)
-    {
-        if (CurrentMenu != null)
-        {
-            RemoveMenu();
-        }
-        CurrentMenu = Instantiate(prefab);
-    }
-
     void Init()
     {
         Instance = this;
@@ -243,7 +246,7 @@ public class GameRuntime : MonoBehaviour
         }
 
         EnterMainMenu(true);
-        //EnterMap("spa6c_ass");
+        //EnterMap("geo1c_con");
     }
 
     void ExploreAddons()
@@ -304,9 +307,7 @@ public class GameRuntime : MonoBehaviour
     {
         RemoveLoadscreen();
         bAvailablePauseMenu = true;
-
-        //AudioClip clip = SoundLoader.LoadSound("geo_amb_desert");
-        //Debug.Log(clip.name);
+        OnMatchStart?.Invoke();
     }
 
     bool CheckExistence(string lvlName)

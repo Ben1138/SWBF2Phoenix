@@ -256,7 +256,7 @@ public class RuntimeEnvironment
             });
             return handle;
         }
-        if (!bForceLocal && fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
+        if (fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
         {
             SWBF2Handle handle = EnvCon.AddLevel(fallbackLVLPath, subLVLs);
             LoadingLVLs.Add(new LoadST
@@ -415,6 +415,7 @@ public class RuntimeEnvironment
     {
         RTScene.Clear();
         RTScene = null;
+        Match.Clear();
         Match = null;
         Timers = null;
         OnLoadscreenLoaded = null;
@@ -424,19 +425,35 @@ public class RuntimeEnvironment
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)
     {
-        if (!LocalizationLookup.TryGetValue(GameRuntime.Instance.Language, out var locs))
+        if (GetLocalized(GameRuntime.Instance.Language, localizedPath, out string localizedUnicode))
         {
-            return bReturnNullIfNotFound ? null : localizedPath;
+            return localizedUnicode;
+        }
+        if (GetLocalized("english", localizedPath, out localizedUnicode))
+        {
+            return localizedUnicode;
+        }
+        return bReturnNullIfNotFound ? null : localizedPath;
+    }
+
+    bool GetLocalized(string language, string localizedPath, out string localizedUnicode)
+    {
+        localizedUnicode = localizedPath;
+
+        List<LibSWBF2.Wrappers.Localization> locs;
+        if (!LocalizationLookup.TryGetValue(language, out locs))
+        {
+            return false;
         }
 
         for (int i = 0; i < locs.Count; ++i)
         {
-            if (locs[i].GetLocalizedWideString(localizedPath, out string localizedUnicode))
+            if (locs[i].GetLocalizedWideString(localizedPath, out localizedUnicode))
             {
-                return localizedUnicode;
+                return true;
             }
         }
-        return bReturnNullIfNotFound ? null : localizedPath;
+        return false;
     }
 
     public string GetLocalizedMapName(string mapluafile)

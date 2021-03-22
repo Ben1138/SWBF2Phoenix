@@ -57,6 +57,8 @@ public class GameMatch
         {
             Teams[i] = new Team();
         }
+
+        GameRuntime.Instance.OnMatchStart += StartMatch;
     }
 
     // Since we're doing multithreaded loading, calling Lua stuff like "AddUnitClass" in "ScriptInit()"
@@ -91,6 +93,11 @@ public class GameMatch
         }
 
         LVLsLoaded = true;
+    }
+
+    public void Clear()
+    {
+        GameRuntime.Instance.OnMatchStart -= StartMatch;
     }
 
 
@@ -213,5 +220,15 @@ public class GameMatch
     bool CheckTeamIdx(int teamIdx1, int teamIdx2)
     {
         return CheckTeamIdx(teamIdx1) && CheckTeamIdx(teamIdx2);
+    }
+
+    // player get's to choose a side and character unit
+    void StartMatch()
+    {
+        CharacterSelect charSel = GameRuntime.Instance.ShowMenu(GameRuntime.Instance.CharacterSelectPrefab).GetComponent<CharacterSelect>();
+        foreach (UnitClass cl in Teams[0].UnitClasses)
+        {
+            charSel.Add(cl.Unit);
+        }
     }
 }
