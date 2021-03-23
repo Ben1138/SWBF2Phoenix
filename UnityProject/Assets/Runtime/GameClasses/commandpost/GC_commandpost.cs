@@ -30,8 +30,12 @@ public class GC_commandpost : ISWBFInstance<GC_commandpost.ClassProperties>
     AudioSource AudioAction;
     AudioSource AudioAmbient;
     AudioSource AudioCapture;
-    Vector2 CapturePitch = new Vector2(0.5f, 1.5f);
-    float   CaptureTimer;
+
+    [Header("Settings")]
+    public Vector2 CapturePitch = new Vector2(0.5f, 1.5f);
+    public float   CaptureTimer;
+    public int     CaptureCount;
+    public float   HoloPresenceSpeed = 1.0f;
 
     // cache
     bool bInitInstance => C != null;
@@ -40,6 +44,10 @@ public class GC_commandpost : ISWBFInstance<GC_commandpost.ClassProperties>
     float LightIntensity;
     Color HoloColor;
     float HoloAlpha;
+    float HoloPresence = 1.0f;
+    float HoloPresenceDest = 1.0f;
+    float HoloPresenceVel;
+    float LastHoloPresence;
 
 
     public override void BindEvents()
@@ -118,6 +126,8 @@ public class GC_commandpost : ISWBFInstance<GC_commandpost.ClassProperties>
         AudioAction.clip = Team == 0 ? C.LostSound.Get<AudioClip>(0) : C.CapturedSound.Get<AudioClip>(0);
         AudioAction.Play();
 
+        HoloPresence = 0.0f;
+        HoloPresenceDest = 1.0f;
         UpdateColor();
     }
 
@@ -145,38 +155,65 @@ public class GC_commandpost : ISWBFInstance<GC_commandpost.ClassProperties>
     {
         if (!bInitInstance) return;
 
-        CaptureTimer += Time.deltaTime;
-        float progress;
-        if (Team == 0)
+        if (CaptureCount > 0)
         {
-            progress = CaptureTimer / C.CaptureTime;
-            if (CaptureTimer >= C.CaptureTime)
+            float progress;
+            float captureMultiplier = Mathf.Sqrt(CaptureCount);
+            CaptureTimer += Time.deltaTime * captureMultiplier;
+            if (Team == 0)
             {
-                Team.Set(1);
+                if (C.CaptureTime - CaptureTimer <= HoloPresenceSpeed * captureMultiplier * 2f)
+                {
+                    HoloPresenceDest = 0.0f;
+                }
+
+                progress = CaptureTimer / C.CaptureTime;
+                if (CaptureTimer >= C.CaptureTime)
+                {
+                    Team.Set(1);
+                    progress = 0.0f;
+                }
+                AudioCapture.pitch = Mathf.Lerp(CapturePitch.x, CapturePitch.y, progress);
             }
-            AudioCapture.pitch = Mathf.Lerp(CapturePitch.x, CapturePitch.y, CaptureTimer / C.CaptureTime);
+            else
+            {
+                if (C.NeutralizeTime - CaptureTimer <= HoloPresenceSpeed * captureMultiplier * 2f)
+                {
+                    HoloPresenceDest = 0.0f;
+                }
+
+                progress = CaptureTimer / C.NeutralizeTime;
+                if (CaptureTimer >= C.NeutralizeTime)
+                {
+                    Team.Set(0);
+                    progress = 0.0f;
+                }
+                AudioCapture.pitch = Mathf.Lerp(CapturePitch.y, CapturePitch.x, progress);
+            }
         }
         else
         {
-            progress = CaptureTimer / C.NeutralizeTime;
-            if (CaptureTimer >= C.NeutralizeTime)
-            {
-                Team.Set(0);
-            }
-            AudioCapture.pitch = Mathf.Lerp(CapturePitch.y, CapturePitch.x, CaptureTimer / C.CaptureTime);
+            HoloPresenceDest = 1.0f;
+            CaptureTimer = Mathf.Max(CaptureTimer - Time.deltaTime * 0.1f, 0.0f);
+            AudioCapture.pitch = 0.0f;
         }
 
-        float holoPresence = Mathf.Clamp01(Mathf.Sin(progress * Mathf.PI) * 3.0f);
-        HoloColor.a = Mathf.Lerp(0.0f, HoloAlpha, holoPresence);
-        if (Light != null)
+        HoloPresence = Mathf.SmoothDamp(HoloPresence, HoloPresenceDest, ref HoloPresenceVel, HoloPresenceSpeed);
+        //HoloPresence = Mathf.Lerp(HoloPresence, HoloPresenceDest, Time.deltaTime * HoloPresenceSpeed);
+        if (HoloPresence != LastHoloPresence)
         {
-            Light.intensity = Mathf.Lerp(0.0f, LightIntensity, holoPresence);
-        }
-        if (HoloRay != null)
-        {
-            HoloRay.startWidth = Mathf.Lerp(0.0f, HoloWidthStart, holoPresence);
-            HoloRay.endWidth   = Mathf.Lerp(0.0f, HoloWidthEnd,   holoPresence);
-            HoloRay.material.SetColor("_UnlitColor", HoloColor);
+            HoloColor.a = Mathf.Lerp(0.0f, HoloAlpha, HoloPresence);
+            if (Light != null)
+            {
+                Light.intensity = Mathf.Lerp(0.0f, LightIntensity, HoloPresence);
+            }
+            if (HoloRay != null)
+            {
+                HoloRay.startWidth = Mathf.Lerp(0.0f, HoloWidthStart, HoloPresence);
+                HoloRay.endWidth   = Mathf.Lerp(0.0f, HoloWidthEnd, HoloPresence);
+                HoloRay.material.SetColor("_UnlitColor", HoloColor);
+            }
+            LastHoloPresence = HoloPresence;
         }
     }
 }
