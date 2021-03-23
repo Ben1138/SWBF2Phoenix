@@ -1,4 +1,4 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
@@ -53,6 +53,11 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimat
     Prop<float> CurHealth = new Prop<float>(100.0f);
 
     Animation Anim;
+    bool IsPlaying = false;
+    bool Loop = false;
+
+    Action OnAnimEndInternal;
+    public Action OnAnimEnd { get => OnAnimEndInternal; set => OnAnimEndInternal = value; }
 
     public override void Init()
     {
@@ -64,14 +69,16 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimat
         
     }
 
-    public void PlayAnimation(string animName)
+    public void PlayAnimation(string animName, bool bLoop)
     {
         AnimationClip clip = Anim.GetClip(animName);
         if (clip != null)
         {
             Anim.clip = clip;
             Anim.Play();
+            IsPlaying = true;
         }
+        Loop = bLoop;
     }
 
     // Start is called before the first frame update
@@ -83,7 +90,19 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimat
     // Update is called once per frame
     void Update()
     {
-
+        if (IsPlaying && !Anim.isPlaying)
+        {
+            if (Loop)
+            {
+                Anim.Rewind();
+                Anim.Play();
+            }
+            else
+            {
+                IsPlaying = false;
+                OnAnimEnd?.Invoke();
+            }
+        }
     }
 
 }

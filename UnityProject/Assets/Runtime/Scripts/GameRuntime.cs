@@ -255,8 +255,8 @@ public class GameRuntime : MonoBehaviour
             return;
         }
 
-        //EnterMainMenu(true);
-        EnterMap("geo1c_con");
+        EnterMainMenu(true);
+        //EnterMap("geo1c_con");
     }
 
     void ExploreAddons()

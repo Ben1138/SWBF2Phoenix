@@ -291,7 +291,7 @@ public class GameMatch
         {
             charSel.Add(cl.Unit);
         }
-        charSel.Add(Teams[0].HeroClass);
+        //charSel.Add(Teams[0].HeroClass);
     }
 
     void OnRemoveMenu()
