@@ -83,12 +83,12 @@ public sealed class Prop<T> : Ref
 ///     AmbientSound = "imp com_blg_commandpost_baddie defer"<br/>
 ///     AmbientSound = "rep com_blg_commandpost_goodie defer"
 /// </summary>
-public sealed class MultiProp : Ref, IEnumerator, IEnumerable
+public sealed class MultiProp : Ref
 {
     static RuntimeEnvironment ENV => GameRuntime.GetEnvironment();
 
 
-    List<object[]> Values = new List<object[]>();
+    public List<object[]> Values { get; private set; } = new List<object[]>();
     Type[] ExpectedTypes;
     int IterPos = -1;
 
@@ -138,27 +138,6 @@ public sealed class MultiProp : Ref, IEnumerator, IEnumerable
         }
         SetFromString(val as string);
     }
-
-    //IEnumerator and IEnumerable require these methods.
-    public IEnumerator GetEnumerator()
-    {
-        return this;
-    }
-
-    //IEnumerator
-    public bool MoveNext()
-    {
-        return (++IterPos < Values.Count);
-    }
-
-    //IEnumerable
-    public void Reset()
-    {
-        IterPos = 0;
-    }
-
-    //IEnumerable
-    public object Current => Values[IterPos];
 }
 
 /// <summary>
@@ -196,7 +175,7 @@ public sealed class PropertyDB
         Debug.LogWarningFormat("Could not find property '{0}'!", propName);
     }
 
-    public static void AssignProp<T>(T instOrClass, string propName, Ref value) where T : ISWBFProperties
+    public static void AssignProp(ISWBFProperties instOrClass, string propName, Ref value)
     {
         if (instOrClass.GetProperty(propName, out string[] outVal))
         {
@@ -250,7 +229,7 @@ public abstract class ISWBFInstance : MonoBehaviour
 {
     public PropertyDB P { get; private set; } = new PropertyDB();
 
-    public abstract void InitInstance(Instance inst, ISWBFClass classProperties);
+    public abstract void InitInstance(ISWBFProperties instOrClass, ISWBFClass classProperties);
 }
 
 public abstract class ISWBFInstance<T> : ISWBFInstance where T : ISWBFClass
@@ -267,7 +246,7 @@ public abstract class ISWBFInstance<T> : ISWBFInstance where T : ISWBFClass
     // the intended behaviour (e.g. Team.OnValueChanged)
     public abstract void BindEvents();
 
-    public override void InitInstance(Instance inst, ISWBFClass classProperties)
+    public override void InitInstance(ISWBFProperties instOrClass, ISWBFClass classProperties)
     {
         C = (T)classProperties;
 
@@ -294,7 +273,7 @@ public abstract class ISWBFInstance<T> : ISWBFInstance where T : ISWBFClass
             if (member.MemberType == MemberTypes.Field && typeof(Ref).IsAssignableFrom(type.GetField(member.Name).FieldType))
             {
                 Ref refValue = (Ref)type.GetField(member.Name).GetValue(this);
-                PropertyDB.AssignProp(inst, member.Name, refValue);
+                PropertyDB.AssignProp(instOrClass, member.Name, refValue);
             }
         }
     }
@@ -308,6 +287,7 @@ public abstract class ISWBFClass
     public string           Name { get; private set; }
     public EEntityClassType ClassType { get; private set; }
     public string           LocalizedName { get; private set; }
+    public EntityClass      EntityClass { get; private set; }
 
     public void InitClass(EntityClass ec)
     {
@@ -329,7 +309,6 @@ public abstract class ISWBFClass
             LocalizedName = ENV.GetLocalized(locPath);
         }
 
-
         Type type = GetType();
         MemberInfo[] members = type.GetMembers();
         foreach (MemberInfo member in members)
@@ -341,5 +320,7 @@ public abstract class ISWBFClass
                 PropertyDB.AssignProp(ec, member.Name, refValue);
             }
         }
+
+        EntityClass = ec;
     }
 }

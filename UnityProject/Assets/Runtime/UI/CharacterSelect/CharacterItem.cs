@@ -6,6 +6,8 @@ using UnityEngine.EventSystems;
 
 public class CharacterItem : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
+    static GameRuntime GAME => GameRuntime.Instance;
+
     [Header("References")]
     public RawImage TopBarLeft;
     public RawImage TopBarCenter;
@@ -20,6 +22,7 @@ public class CharacterItem : MonoBehaviour, IPointerClickHandler, IPointerEnterH
 
     public Action OnClicked;
 
+    AudioClip Sound;
     bool IsActive = false;
     bool IsHovering = false;
 
@@ -48,6 +51,7 @@ public class CharacterItem : MonoBehaviour, IPointerClickHandler, IPointerEnterH
     public void OnPointerClick(PointerEventData eventData)
     {
         OnClicked?.Invoke();
+        GAME.PlayUISound(Sound, 1.4f);
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -59,14 +63,7 @@ public class CharacterItem : MonoBehaviour, IPointerClickHandler, IPointerEnterH
     public void OnPointerEnter(PointerEventData eventData)
     {
         IsHovering = true;
-    }
-
-    Color Multiply(Color col, float m)
-    {
-        col.r *= m;
-        col.g *= m;
-        col.b *= m;
-        return col;
+        GAME.PlayUISound(Sound, 1.4f);
     }
 
     // Start is called before the first frame update
@@ -88,6 +85,8 @@ public class CharacterItem : MonoBehaviour, IPointerClickHandler, IPointerEnterH
         Texture2D boxTexDst = DetailBox.sprite.texture;
         boxTexDst.SetPixels32(boxTexSrc.GetPixels32());
         boxTexDst.Apply();
+
+        Sound = SoundLoader.LoadSound("ui_menumove");
     }
 
     void Update()

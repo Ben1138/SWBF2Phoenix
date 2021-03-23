@@ -158,6 +158,11 @@ public class RuntimeScene
         }
     }
 
+    public ISWBFInstance CreateInstance(ISWBFClass cl, string instName, Vector3 position, Quaternion rotation, Transform parent=null)
+    {
+        return CreateInstance(cl.EntityClass, instName, position, rotation, parent).GetComponent<ISWBFInstance>();
+    }
+
     public ISWBFClass GetClass(string odfClassName)
     {
         if (Classes.TryGetValue(odfClassName, out ISWBFClass odf))
@@ -189,36 +194,51 @@ public class RuntimeScene
         return odf;
     }
 
+    GameObject CreateInstance(ISWBFProperties instOrClass, string instName, Vector3 position, Quaternion rotation, Transform parent=null)
+    {
+        if (instOrClass == null) return null;
+
+        EntityClass ec = instOrClass.GetType() == typeof(Instance) ? ((Instance)instOrClass).EntityClass : ((EntityClass)instOrClass);
+
+        GameObject instanceObject = ClassLoader.Instance.Instantiate(instOrClass, instName);
+        EntityClass rootClass = ClassLoader.GetRootClass(ec);
+
+        if (rootClass == null)
+        {
+            Debug.LogWarning($"Could not find root class of '{ec.Name}'!");
+            return null;
+        }
+
+        Type instType = ClassRegister.GetInstanceType(rootClass.BaseClassName);
+        if (instType != null)
+        {
+            ISWBFClass odf = GetClass(ec);
+            ISWBFInstance script = (ISWBFInstance)instanceObject.AddComponent(instType);
+            script.InitInstance(instOrClass, odf);
+            Instances.Add(instanceObject.name, script);
+        }
+
+        instanceObject.transform.SetParent(parent);
+        instanceObject.transform.localRotation = rotation;
+        instanceObject.transform.localPosition = position;
+        instanceObject.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
+        return instanceObject;
+    }
+
     List<GameObject> ImportInstances(Instance[] instances)
     {
         List<GameObject> instanceObjects = new List<GameObject>();
-
         foreach (Instance inst in instances)
         {
-            GameObject instanceObject = ClassLoader.Instance.LoadInstance(inst);
-            EntityClass rootClass = ClassLoader.GetRootClass(inst.EntityClass);
-
-            if (rootClass == null)
-            {
-                Debug.LogWarning($"Could not find root class '{inst.EntityClassName}' for instance '{inst.Name}'!");
-                continue;
-            }
-
-            Type instType = ClassRegister.GetInstanceType(rootClass.BaseClassName);
-            if (instType != null)
-            {
-                ISWBFInstance script = (ISWBFInstance)instanceObject.AddComponent(instType);
-                ISWBFClass odf = GetClass(inst.EntityClass);
-                script.InitInstance(inst, odf);
-                Instances.Add(inst.Name, script);
-            }
-
-            instanceObject.transform.rotation = UnityUtils.QuatFromLibWorld(inst.Rotation);
-            instanceObject.transform.position = UnityUtils.Vec3FromLibWorld(inst.Position);
-            instanceObject.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
-            instanceObjects.Add(instanceObject);
+            instanceObjects.Add(
+                CreateInstance(
+                    inst,
+                    inst.Name,
+                    UnityUtils.Vec3FromLibWorld(inst.Position),
+                    UnityUtils.QuatFromLibWorld(inst.Rotation)
+                )
+            );
         }
-
         return instanceObjects;
     }
 }
