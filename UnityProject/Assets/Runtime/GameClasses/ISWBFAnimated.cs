@@ -1,8 +1,9 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public interface ISWBFAnimated
 {
-    public void PlayAnimation(string animName);
+    public Action OnAnimEnd { get; set; }
+    public void PlayAnimation(string animName, bool bLoop);
 }

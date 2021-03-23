@@ -97,7 +97,8 @@ public class CharacterSelect : IMenu
         ISWBFAnimated animPreview = preview as ISWBFAnimated;
         if (animPreview != null)
         {
-            animPreview.PlayAnimation("human_rifle_stand_idle_lookaround_full");
+            animPreview.PlayAnimation("human_rifle_stand_idle_lookaround_full", false);
+            animPreview.OnAnimEnd += () => animPreview.PlayAnimation("human_rifle_stand_idle_emote_full", true);
         }
     }
 
