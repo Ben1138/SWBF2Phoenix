@@ -16,20 +16,23 @@ public class GameRuntime : MonoBehaviour
     [Header("References")]
     public Loadscreen InitScreenPrefab;
     public Loadscreen LoadScreenPrefab;
-    public GameObject MainMenuPrefab;
-    public GameObject PauseMenuPrefab;
-    public GameObject CharacterSelectPrefab;
+    public IMenu      MainMenuPrefab;
+    public IMenu      PauseMenuPrefab;
+    public IMenu      CharacterSelectPrefab;
+    public Transform  CharSelectTransform;
+    public Volume     CharSelectPPVolume;
     public Volume     PostProcessingVolume;
     public AudioMixerGroup UIAudioMixer;
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMatchStart;
+    public Action OnRemoveMenu;
 
     RPath AddonPath => GamePath / "GameData/addon";
     RPath StdLVLPC;
 
     Loadscreen CurrentLS;
-    GameObject CurrentMenu;
+    IMenu      CurrentMenu;
 
     // ring buffer
     AudioSource[] UIAudio = new AudioSource[5];
@@ -39,7 +42,6 @@ public class GameRuntime : MonoBehaviour
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
 
     bool bInitMainMenu;
-    bool bAvailablePauseMenu;
 
     // contains mapluafile strings, e.g. cor1c_con
     List<string> MapRotation = new List<string>();
@@ -113,14 +115,13 @@ public class GameRuntime : MonoBehaviour
     public void EnterMainMenu(bool bInit = false)
     {
         Debug.Assert(Env == null || Env.IsLoaded);
-        bAvailablePauseMenu = false;
 
         MapRotation.Clear();
         MapRotationIdx = -1;
 
         bInitMainMenu = bInit;
         ShowLoadscreen(bInit);
-        RemoveMenu();
+        RemoveMenu(false);
 
         Env?.ClearScene();
         Env = RuntimeEnvironment.Create(StdLVLPC);
@@ -141,10 +142,9 @@ public class GameRuntime : MonoBehaviour
     public void EnterMap(string mapScript)
     {
         Debug.Assert(Env == null || Env.IsLoaded);
-        bAvailablePauseMenu = false;
 
         ShowLoadscreen();
-        RemoveMenu();
+        RemoveMenu(false);
 
         RPath envPath = StdLVLPC;
         if (RegisteredAddons.TryGetValue(mapScript, out string addonName))
@@ -161,22 +161,32 @@ public class GameRuntime : MonoBehaviour
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
     }
 
-    public GameObject ShowMenu(GameObject prefab)
+    public IMenu ShowMenu(IMenu prefab)
     {
         if (CurrentMenu != null)
         {
-            RemoveMenu();
+            RemoveMenu(false);
         }
-        CurrentMenu = Instantiate(prefab);
+        CurrentMenu = Instantiate(prefab.gameObject).GetComponent<IMenu>();
         return CurrentMenu;
     }
 
     public void RemoveMenu()
     {
+        RemoveMenu(true);
+    }
+
+    void RemoveMenu(bool bInvokeEvent)
+    {
         if (CurrentMenu != null)
         {
+            CurrentMenu.Clear();
             Destroy(CurrentMenu.gameObject);
             CurrentMenu = null;
+        }
+        if (bInvokeEvent)
+        {
+            OnRemoveMenu?.Invoke();
         }
     }
 
@@ -245,8 +255,8 @@ public class GameRuntime : MonoBehaviour
             return;
         }
 
-        EnterMainMenu(true);
-        //EnterMap("geo1c_con");
+        //EnterMainMenu(true);
+        EnterMap("geo1c_con");
     }
 
     void ExploreAddons()
@@ -306,7 +316,6 @@ public class GameRuntime : MonoBehaviour
     void OnMapLoaded(object sender, EventArgs e)
     {
         RemoveLoadscreen();
-        bAvailablePauseMenu = true;
         OnMatchStart?.Invoke();
     }
 
@@ -327,7 +336,10 @@ public class GameRuntime : MonoBehaviour
         Debug.Assert(LoadScreenPrefab     != null);
         Debug.Assert(MainMenuPrefab       != null);
         Debug.Assert(PauseMenuPrefab      != null);
+        Debug.Assert(CharSelectTransform  != null);
+        Debug.Assert(CharSelectPPVolume        != null);
         Debug.Assert(PostProcessingVolume != null);
+        Debug.Assert(UIAudioMixer         != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
         {
@@ -343,19 +355,6 @@ public class GameRuntime : MonoBehaviour
     void Update()
     {
         Env?.Update();
-
-        if (bAvailablePauseMenu && Input.GetButtonDown("Cancel"))
-        {
-            if (CurrentMenu != null)
-            {
-                RemoveMenu();
-            }
-            else
-            {
-                ShowMenu(PauseMenuPrefab);
-            }
-            PlayUISound(SoundLoader.LoadSound("ui_menuBack"), 1.2f);
-        }
     }
 
     void FixedUpdate()

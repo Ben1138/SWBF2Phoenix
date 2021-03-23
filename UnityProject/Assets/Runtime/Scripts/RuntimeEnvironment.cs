@@ -404,6 +404,8 @@ public class RuntimeEnvironment
             Stage = EnvStage.CreateScene;
             CreateScene();
         }
+
+        Match?.Update();
     }
 
     public void FixedUpdate(float deltaTime)

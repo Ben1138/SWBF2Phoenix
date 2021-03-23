@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GameMatch
 {
+    static GameRuntime GAME => GameRuntime.Instance;
     static RuntimeEnvironment ENV => GameRuntime.GetEnvironment();
     static RuntimeScene RTS => GameRuntime.GetScene();
 
@@ -14,8 +15,17 @@ public class GameMatch
     public Color LocalsColor   { get; private set; } = new Color(1.0f, 1.0f, 0.0f);
 
 
-    bool LVLsLoaded = false;
+    public enum PlayerState
+    {
+        CharacterSelection,
+        Spawned,
+        FreeCam
+    }
 
+    bool LVLsLoaded = false;
+    bool AvailablePauseMenu = false;
+    bool PauseMenuActive = false;
+    public PlayerState PlayerST { get; private set; } = PlayerState.CharacterSelection;
 
     public class UnitClass
     {
@@ -58,7 +68,24 @@ public class GameMatch
             Teams[i] = new Team();
         }
 
-        GameRuntime.Instance.OnMatchStart += StartMatch;
+        GAME.OnMatchStart += StartMatch;
+        GAME.OnRemoveMenu += OnRemoveMenu;
+    }
+
+    public void SetPlayerState(PlayerState st)
+    {
+        if (PlayerST == st) return;
+
+        PlayerST = st;
+        if (PlayerST == PlayerState.CharacterSelection)
+        {
+            ShowCharacterSelection();
+        }
+        else if (PlayerST == PlayerState.FreeCam && PauseMenuActive)
+        {
+            GAME.RemoveMenu();
+            PauseMenuActive = false;
+        }
     }
 
     // Since we're doing multithreaded loading, calling Lua stuff like "AddUnitClass" in "ScriptInit()"
@@ -97,7 +124,29 @@ public class GameMatch
 
     public void Clear()
     {
-        GameRuntime.Instance.OnMatchStart -= StartMatch;
+        GAME.OnMatchStart -= StartMatch;
+        GAME.OnRemoveMenu -= OnRemoveMenu;
+    }
+
+    public void Update()
+    {
+        if (AvailablePauseMenu && Input.GetButtonDown("Cancel"))
+        {
+            if (PauseMenuActive)
+            {
+                GAME.RemoveMenu();
+                if (PlayerST == PlayerState.CharacterSelection)
+                {
+                    ShowCharacterSelection();
+                }
+            }
+            else
+            {
+                GAME.ShowMenu(GAME.PauseMenuPrefab);
+                PauseMenuActive = true;
+            }
+            GAME.PlayUISound(SoundLoader.LoadSound("ui_menuBack"), 1.2f);
+        }
     }
 
 
@@ -163,6 +212,12 @@ public class GameMatch
             {
                 Teams[teamIdx].UnitClasses.Add(new UnitClass { Unit = odf, Count = unitCount });
             }
+
+            if (PlayerST == PlayerState.CharacterSelection)
+            {
+                // refresh
+                ShowCharacterSelection();
+            }
         }
     }
 
@@ -180,6 +235,12 @@ public class GameMatch
             if (odf != null)
             {
                 Teams[teamIdx].HeroClass = odf;
+            }
+
+            if (PlayerST == PlayerState.CharacterSelection)
+            {
+                // refresh
+                ShowCharacterSelection();
             }
         }
     }
@@ -222,13 +283,29 @@ public class GameMatch
         return CheckTeamIdx(teamIdx1) && CheckTeamIdx(teamIdx2);
     }
 
-    // player get's to choose a side and character unit
-    void StartMatch()
+    void ShowCharacterSelection()
     {
-        CharacterSelect charSel = GameRuntime.Instance.ShowMenu(GameRuntime.Instance.CharacterSelectPrefab).GetComponent<CharacterSelect>();
+        PauseMenuActive = false;
+        CharacterSelect charSel = GAME.ShowMenu(GAME.CharacterSelectPrefab).GetComponent<CharacterSelect>();
         foreach (UnitClass cl in Teams[0].UnitClasses)
         {
             charSel.Add(cl.Unit);
         }
+        charSel.Add(Teams[0].HeroClass);
+    }
+
+    void OnRemoveMenu()
+    {
+        if (PlayerST == PlayerState.CharacterSelection)
+        {
+            ShowCharacterSelection();
+        }
+    }
+
+    // player get's to choose a side and character unit
+    void StartMatch()
+    {
+        AvailablePauseMenu = true;
+        ShowCharacterSelection();
     }
 }

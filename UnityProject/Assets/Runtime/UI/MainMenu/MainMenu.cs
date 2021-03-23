@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class MainMenu : MonoBehaviour
+public class MainMenu : IMenu
 {
     static RuntimeEnvironment ENV { get { return GameRuntime.GetEnvironment(); } }
     static LuaRuntime RT { get { return GameRuntime.GetLuaRuntime(); } }
@@ -35,6 +35,11 @@ public class MainMenu : MonoBehaviour
     HashSet<string> LastCheckedModes = new HashSet<string>();
     HashSet<string> LastCheckedEras = new HashSet<string>();
 
+
+    public override void Clear()
+    {
+
+    }
 
     void OnMapSelectionChanged(int newIdx)
     {

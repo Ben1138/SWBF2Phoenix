@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 
-public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>
+public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimated
 {
     public class ClassProperties : ISWBFClass
     {
@@ -52,15 +52,26 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>
 
     Prop<float> CurHealth = new Prop<float>(100.0f);
 
+    Animation Anim;
 
     public override void Init()
     {
-        
+        Anim = GetComponent<Animation>();
     }
 
     public override void BindEvents()
     {
         
+    }
+
+    public void PlayAnimation(string animName)
+    {
+        AnimationClip clip = Anim.GetClip(animName);
+        if (clip != null)
+        {
+            Anim.clip = clip;
+            Anim.Play();
+        }
     }
 
     // Start is called before the first frame update
