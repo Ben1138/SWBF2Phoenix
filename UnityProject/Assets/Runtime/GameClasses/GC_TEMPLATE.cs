@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 
-public class GC_TEMPLATE : ISWBFInstance<GC_soldier.ClassProperties>
+public class GC_TEMPLATE : ISWBFInstance<GC_TEMPLATE.ClassProperties>
 {
     // ODF properties
     public class ClassProperties : ISWBFClass

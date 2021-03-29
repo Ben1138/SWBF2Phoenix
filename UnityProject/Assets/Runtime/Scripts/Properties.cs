@@ -234,6 +234,7 @@ public abstract class ISWBFInstance : MonoBehaviour
 
 public abstract class ISWBFInstance<T> : ISWBFInstance where T : ISWBFClass
 {
+    public bool IsInit => C != null;
     public T C { get; private set; } = null;
 
 
