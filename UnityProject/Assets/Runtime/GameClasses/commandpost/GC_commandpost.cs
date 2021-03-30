@@ -131,12 +131,12 @@ public class GC_commandpost : ISWBFInstance<GC_commandpost.ClassProperties>
         UpdateColor();
     }
 
-    void OnCaptureRegionEnter(GameObject other)
+    void OnCaptureRegionEnter(ISWBFInstance other)
     {
         //Debug.LogFormat("Capture Region '{0}' entered by '{1}'", CaptureRegion.Get().name, other.name);
     }
 
-    void OnCaptureRegionLeave(GameObject other)
+    void OnCaptureRegionLeave(ISWBFInstance other)
     {
         //Debug.LogFormat("Capture Region '{0}' exited by'{1}'", CaptureRegion.Get().name, other.name);
     }

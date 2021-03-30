@@ -7,6 +7,7 @@ public class CharacterSelect : IMenu
 {
     static GameRuntime GAME => GameRuntime.Instance;
     static RuntimeScene RTS => GameRuntime.GetScene();
+    static GameMatch MTC => GameRuntime.GetMatch();
 
     [Header("References")]
     public CharacterItem ItemPrefab;
@@ -94,11 +95,10 @@ public class CharacterSelect : IMenu
         }
         preview.gameObject.SetActive(true);
 
-        ISWBFAnimated animPreview = preview as ISWBFAnimated;
+        ISWBFSelectableCharacter animPreview = preview as ISWBFSelectableCharacter;
         if (animPreview != null)
         {
-            animPreview.PlayAnimation("human_rifle_stand_idle_lookaround_full", false);
-            animPreview.OnAnimEnd += () => animPreview.PlayAnimation("human_rifle_stand_idle_emote_full", true);
+            animPreview.PlayIntroAnim();
         }
     }
 
@@ -140,6 +140,6 @@ public class CharacterSelect : IMenu
     static int nameCounter = 0;
     void SpawnClicked()
     {
-        RTS.CreateInstance(CurrentSelection, "player" + nameCounter++, Camera.main.transform.position, Quaternion.identity);
+        MTC.SpawnPlayer(CurrentSelection);
     }
 }

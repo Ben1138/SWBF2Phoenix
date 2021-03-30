@@ -72,7 +72,6 @@ public class RuntimeEnvironment
     bool CanExecute  => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
 
     LuaRuntime  LuaRT;
-    SWBF2Handle CoreHandle;
     SWBF2Handle LoadscreenHandle;
 
     LibSWBF2.Wrappers.Container EnvCon;
@@ -140,7 +139,7 @@ public class RuntimeEnvironment
 
         GameLuaEvents.Clear();
         RuntimeEnvironment rt = new RuntimeEnvironment(envPath, fallbackPath);
-        rt.CoreHandle = rt.ScheduleLVLRel("core.lvl");
+        rt.ScheduleLVLRel("core.lvl");
         rt.ScheduleLVLRel("shell.lvl");
         rt.ScheduleLVLRel("common.lvl");
         rt.ScheduleLVLRel("mission.lvl");

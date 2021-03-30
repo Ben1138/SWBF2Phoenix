@@ -14,6 +14,8 @@ public class GameMatch
     public Color EnemyColor    { get; private set; } = new Color(1.0f, 0.0f, 0.0f);
     public Color LocalsColor   { get; private set; } = new Color(1.0f, 1.0f, 0.0f);
 
+    public PlayerController Player { get; private set; }
+
 
     public enum PlayerState
     {
@@ -22,10 +24,13 @@ public class GameMatch
         FreeCam
     }
 
+    public PlayerState PlayerST { get; private set; } = PlayerState.CharacterSelection;
+
     bool LVLsLoaded = false;
     bool AvailablePauseMenu = false;
     bool PauseMenuActive = false;
-    public PlayerState PlayerST { get; private set; } = PlayerState.CharacterSelection;
+    int NameCounter;
+
 
     public class UnitClass
     {
@@ -60,6 +65,8 @@ public class GameMatch
     Queue<(int, string)> TeamHeroClass = new Queue<(int, string)>();
     Queue<(int, string)> TeamIcon = new Queue<(int, string)>();
 
+    AudioClip UIBack;
+
 
     public GameMatch()
     {
@@ -70,6 +77,8 @@ public class GameMatch
 
         GAME.OnMatchStart += StartMatch;
         GAME.OnRemoveMenu += OnRemoveMenu;
+
+        Player = new PlayerController();
     }
 
     public void SetPlayerState(PlayerState st)
@@ -85,6 +94,10 @@ public class GameMatch
         {
             GAME.RemoveMenu();
             PauseMenuActive = false;
+        }
+        else
+        {
+            GAME.RemoveMenu();
         }
     }
 
@@ -130,7 +143,9 @@ public class GameMatch
 
     public void Update()
     {
-        if (AvailablePauseMenu && Input.GetButtonDown("Cancel"))
+        Player.Update(Time.deltaTime);
+
+        if (AvailablePauseMenu && Player.CancelPressed)
         {
             if (PauseMenuActive)
             {
@@ -145,10 +160,39 @@ public class GameMatch
                 GAME.ShowMenu(GAME.PauseMenuPrefab);
                 PauseMenuActive = true;
             }
-            GAME.PlayUISound(SoundLoader.LoadSound("ui_menuBack"), 1.2f);
+
+            if (UIBack == null)
+            {
+                UIBack = SoundLoader.LoadSound("ui_menuBack");
+            }
+            GAME.PlayUISound(UIBack, 1.2f);
         }
     }
 
+    public void SpawnPlayer(ISWBFClass cl)
+    {
+        GC_soldier player = RTS.CreateInstance(cl, "player" + NameCounter++, Camera.main.transform.position, Quaternion.identity) as GC_soldier;
+        if (player == null)
+        {
+            Debug.LogError($"Given spawn class '{cl.Name}' is not a soldier!");
+            return;
+        }
+
+        player.Controller = Player;
+        SetPlayerState(PlayerState.Spawned);
+    }
+
+    public void SpawnAI(ISWBFClass cl)
+    {
+        GC_soldier player = RTS.CreateInstance(cl, "AI" + NameCounter++, Camera.main.transform.position, Quaternion.identity) as GC_soldier;
+        if (player == null)
+        {
+            Debug.LogError($"Given spawn class '{cl.Name}' is not a soldier!");
+            return;
+        }
+
+        player.Controller = new AIController();
+    }
 
     // ====================================================================================
     // Lua API start

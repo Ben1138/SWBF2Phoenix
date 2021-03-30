@@ -69,6 +69,11 @@ public sealed class Prop<T> : Ref
         OnValueChanged?.Invoke(oldValue);
     }
 
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
+
     public static implicit operator T(Prop<T> refVal)
     {
         return refVal.Value;

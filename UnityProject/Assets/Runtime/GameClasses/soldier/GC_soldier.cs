@@ -1,10 +1,16 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using LibSWBF2.Wrappers;
+using UnityEngine.Animations;
+using LibSWBF2.Utils;
 
-public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimated
+public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelectableCharacter
 {
+    static GameRuntime GAME => GameRuntime.Instance;
+    static GameMatch MTC => GameRuntime.GetMatch();
+
+    static readonly string ANIM_CONTROLLER_NAME = "AnimController_soldier";
+
     public class ClassProperties : ISWBFClass
     {
         public Prop<Texture2D> MapTexture = new Prop<Texture2D>(null);
@@ -16,6 +22,12 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimat
 
         public Prop<string> HealthType = new Prop<string>("person");
         public Prop<float>  MaxHealth = new Prop<float>(100.0f);
+
+        // Default animation for soldier classes seems to be hardcoded to "human".
+        // For example, there's no "AnimationName" anywhere in the odf hierarchy:
+        //   rep_inf_ep3_rifleman -> rep_inf_default_rifleman -> rep_inf_default -> com_inf_default
+        public Prop<string> AnimationName = new Prop<string>("human");
+        public Prop<string> SkeletonName = new Prop<string>("human");
 
         public Prop<float> MaxSpeed = new Prop<float>(1.0f);
         public Prop<float> MaxStrafeSpeed = new Prop<float>(1.0f);
@@ -50,18 +62,74 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimat
         public MultiProp WeaponName = new MultiProp(typeof(string));
     }
 
-    Prop<float> CurHealth = new Prop<float>(100.0f);
+    public Prop<float> CurHealth = new Prop<float>(100.0f);
 
-    Animation Anim;
-    bool IsPlaying = false;
-    bool Loop = false;
+    public InstanceController Controller;
+    Animator Anim;
+    bool bHasLookaroundIdleAnim = false;
+    bool bHasCheckweaponIdleAnim = false;
+    const float IdleTime = 10f;
 
-    Action OnAnimEndInternal;
-    public Action OnAnimEnd { get => OnAnimEndInternal; set => OnAnimEndInternal = value; }
+    string[] IdleNames = new string[]
+    {
+        "IdleLookaround",
+        "IdleCheckweapon"
+    };
+
 
     public override void Init()
     {
-        Anim = GetComponent<Animation>();
+        Anim = gameObject.AddComponent<Animator>();
+        Anim.applyRootMotion = false;
+        RuntimeAnimatorController runtimeAnimController = Resources.Load<RuntimeAnimatorController>(ANIM_CONTROLLER_NAME);
+        if (runtimeAnimController == null)
+        {
+            Debug.LogError($"Could not get runtime animator controller '{ANIM_CONTROLLER_NAME}'!");
+            return;
+        }
+
+        AnimatorOverrideController animController = new AnimatorOverrideController(runtimeAnimController);
+        Anim.runtimeAnimatorController = animController;
+        Anim.cullingMode = AnimatorCullingMode.CullCompletely;
+
+        int numAnims = animController.animationClips.Length;
+        var overrides = new KeyValuePair<AnimationClip, AnimationClip>[numAnims];
+
+        for (int i = 0; i < numAnims; ++i)
+        {
+            AnimationClip src = animController.animationClips[i];
+            if (src == null)
+            {
+                Debug.LogError($"Found unassigned AnimationClip in AnimationController '{ANIM_CONTROLLER_NAME}'!");
+                continue;
+            }
+
+            string weaponAnimBankName = "rifle"; // TODO
+            string animName = $"{C.SkeletonName}_{weaponAnimBankName}_{src.name}";
+
+            // TODO: There's AnimationName and SkeletonName. Sometimes they mean the same thing !?
+            // For example: The super battle droid just has SkeletonName property, but no AnimationName property...
+            AnimationClip dst = GetClip(C.SkeletonName, animName, false);
+            if (dst == null)
+            {
+                dst = GetClip(C.AnimationName, animName, true);
+            }
+            if (dst == null)
+            {
+                if (src.name != "stand_idle_lookaround" && src.name != "stand_idle_checkweapon")
+                {
+                    Debug.LogError($"Cannot find Animation '{animName}' in AnimationBanks '{C.SkeletonName}' / '{C.AnimationName}'!");
+                }
+                continue;
+            }
+
+            bHasLookaroundIdleAnim  = bHasLookaroundIdleAnim  || src.name == "stand_idle_lookaround";
+            bHasCheckweaponIdleAnim = bHasCheckweaponIdleAnim || src.name == "stand_idle_checkweapon";
+
+            overrides[i] = new KeyValuePair<AnimationClip, AnimationClip>(src, dst);
+        }
+        
+        animController.ApplyOverrides(overrides);
     }
 
     public override void BindEvents()
@@ -69,40 +137,85 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFAnimat
         
     }
 
-    public void PlayAnimation(string animName, bool bLoop)
+    public void AddHealth(float amount)
     {
-        AnimationClip clip = Anim.GetClip(animName);
-        if (clip != null)
+        CurHealth.Set(Mathf.Clamp(CurHealth + amount, 0f, C.MaxHealth));
+    }
+
+    public void AddAmmo(float amount)
+    {
+        // TODO
+    }
+
+    public void PlayIntroAnim()
+    {
+        if (bHasLookaroundIdleAnim)
         {
-            Anim.clip = clip;
-            Anim.Play();
-            IsPlaying = true;
+            Anim.SetTrigger("IdleLookaround");
         }
-        Loop = bLoop;
+        else
+        {
+            Anim.SetTrigger("Reload");
+        }
     }
 
-    // Start is called before the first frame update
-    void Start()
+    AnimationClip GetClip(string bankName, string animName, bool bFallback)
     {
+        uint animCRC = HashUtils.GetCRC(animName);
+        AnimationClip clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false);
+        if (clip == null)
+        {
+            animCRC = HashUtils.GetCRC(animName + "_full");
+            clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false);
+            if (clip != null) return clip;
 
+            if (bFallback)
+            {
+                clip = GetClip("human_0", animName, false);
+                if (clip != null) return clip;
+
+                clip = GetClip("human_1", animName, false);
+                if (clip != null) return clip;
+
+                clip = GetClip("human_2", animName, false);
+                if (clip != null) return clip;
+
+                clip = GetClip("human_3", animName, false);
+                if (clip != null) return clip;
+
+                clip = GetClip("human_4", animName, false);
+                if (clip != null) return clip;
+
+                clip = GetClip("human_sabre", animName, false);
+                if (clip != null) return clip;
+            }
+        }
+        return clip;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (IsPlaying && !Anim.isPlaying)
+        if (Controller != null)
         {
-            if (Loop)
+            Anim.SetFloat("LeftRight", Controller.ControlState.WalkDirection.x);
+            Anim.SetFloat("Forward", Controller.ControlState.WalkDirection.y);
+
+            if (Controller.IdleTime >= IdleTime)
             {
-                Anim.Rewind();
-                Anim.Play();
-            }
-            else
-            {
-                IsPlaying = false;
-                OnAnimEnd?.Invoke();
+                if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+                {
+                    Anim.SetTrigger(IdleNames[0]);
+                }
+                else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                {
+                    Anim.SetTrigger(IdleNames[1]);
+                }
+                else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                {
+                    Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
+                }
+                Controller.ResetIdleTime();
             }
         }
     }
-
 }
