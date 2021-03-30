@@ -14,6 +14,7 @@ public class GC_cannon : ISWBFInstance<GC_soldier.ClassProperties>
     public override void Init()
     {
         // constructor
+        // Use this to create required components (AudioSource, Light, etc...)
     }
 
     public override void BindEvents()

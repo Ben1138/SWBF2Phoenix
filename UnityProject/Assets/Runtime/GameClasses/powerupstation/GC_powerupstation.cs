@@ -84,19 +84,20 @@ public class GC_powerupstation : ISWBFInstance<GC_powerupstation.ClassProperties
         }
     }
 
-    Prop<Region> EffectRegion = new Prop<Region>(null);
-    Prop<float>  Radius = new Prop<float>(1.0f);
+    public Prop<Region> EffectRegion = new Prop<Region>(null);
+    public Prop<float>  Radius = new Prop<float>(1.0f);
 
-    Transform DummyRoot;
     float IdleWaitTimer = -1.0f;
     RotateNode RootRotation;
     RotateNode ActiveSpinNode;
+    RotateNode[] ActiveRotateNodes;
     Transform IdleWobbleNode;
     Transform IdleWobbleLeftFoot;
     Transform IdleWobbleRightFoot;
-    RotateNode[] ActiveRotateNodes;
     Region PowerupRegion;
     float IdleWobble = 0.0f;        // 0f => Idle, 1f => Wobble
+    HashSet<GC_soldier> Soldiers = new HashSet<GC_soldier>();
+    float PowerupTimer;
 
     public override void Init()
     {
@@ -113,8 +114,6 @@ public class GC_powerupstation : ISWBFInstance<GC_powerupstation.ClassProperties
             string nodeName = C.ActiveRotateNode.Values[i][0] as string;
             ActiveRotateNodes[i] = CreateRotationNode(nodeName, new Vector3(140f, 0f, 0f), new Vector3(220f, 0f, 0f), 100f);
         }
-
-        UpdateEffectRegion();
     }
 
     public override void BindEvents()
@@ -152,14 +151,22 @@ public class GC_powerupstation : ISWBFInstance<GC_powerupstation.ClassProperties
         PowerupRegion.OnLeave += OnEffectRegionLeave;
     }
 
-    void OnEffectRegionEnter(GameObject other)
+    void OnEffectRegionEnter(ISWBFInstance other)
     {
-
+        GC_soldier soldier = other as GC_soldier;
+        if (soldier != null)
+        {
+            Soldiers.Add(soldier);
+        }
     }
 
-    void OnEffectRegionLeave(GameObject other)
+    void OnEffectRegionLeave(ISWBFInstance other)
     {
-
+        GC_soldier soldier = other as GC_soldier;
+        if (soldier != null)
+        {
+            Soldiers.Remove(soldier);
+        }
     }
 
     RotateNode CreateRotationNode(string nodeName, Vector3 minDegr, Vector3 maxDegr, float anglesPerSec)
@@ -180,8 +187,10 @@ public class GC_powerupstation : ISWBFInstance<GC_powerupstation.ClassProperties
     {
         if (!IsInit) return;
 
+        // -----------------------------------------------------------------------------------
+        // Animation
+        // -----------------------------------------------------------------------------------
         float wobble = Mathf.Sin(Time.realtimeSinceStartup * 4f);
-
         if (RootRotation != null)
         {
             if (IdleWaitTimer < 0.0f)
@@ -241,14 +250,29 @@ public class GC_powerupstation : ISWBFInstance<GC_powerupstation.ClassProperties
             }
         }
 
-        foreach (RotateNode node in ActiveRotateNodes)
+        for (int i = 0; i < ActiveRotateNodes.Length; ++i)
         {
-            if (node == null) continue;
+            if (ActiveRotateNodes[i] == null) continue;
 
-            if (node.Step(Time.deltaTime))
+            if (ActiveRotateNodes[i].Step(Time.deltaTime))
             {
-                node.SetRandomTarget(new Vector3(140f, 0f, 0f), new Vector3(220f, 0f, 0f));
+                ActiveRotateNodes[i].SetRandomTarget(new Vector3(140f, 0f, 0f), new Vector3(220f, 0f, 0f));
             }
+        }
+
+        // -----------------------------------------------------------------------------------
+        // Ammo / Healing
+        // -----------------------------------------------------------------------------------
+
+        PowerupTimer += Time.deltaTime;
+        if (PowerupTimer >= 1.0f)
+        {
+            foreach (GC_soldier soldier in Soldiers)
+            {
+                soldier.AddHealth(C.SoldierHealth);
+                soldier.AddAmmo(C.SoldierAmmo);
+            }
+            PowerupTimer = 0f;
         }
     }
 
