@@ -7,8 +7,8 @@ using UnityEngine;
 public class Region : MonoBehaviour
 {
     public Collider Collider { get; private set; }
-    public Action<GameObject> OnEnter;
-    public Action<GameObject> OnLeave;
+    public Action<ISWBFInstance> OnEnter;
+    public Action<ISWBFInstance> OnLeave;
 
     // Start is called before the first frame update
     void Start()
@@ -18,11 +18,19 @@ public class Region : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        OnEnter?.Invoke(other.gameObject);
+        ISWBFInstance inst = other.gameObject.GetComponent<ISWBFInstance>();
+        if (inst != null)
+        {
+            OnEnter?.Invoke(inst);
+        }
     }
 
     void OnTriggerExit(Collider other)
     {
-        OnLeave?.Invoke(other.gameObject);
+        ISWBFInstance inst = other.gameObject.GetComponent<ISWBFInstance>();
+        if (inst != null)
+        {
+            OnLeave?.Invoke(inst);
+        }
     }
 }
