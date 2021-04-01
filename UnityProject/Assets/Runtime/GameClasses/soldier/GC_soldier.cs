@@ -66,8 +66,13 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
 
     public InstanceController Controller;
     Animator Anim;
+    Rigidbody Body;
+
+    float CurrSpeed = 0f;
+
     bool bHasLookaroundIdleAnim = false;
     bool bHasCheckweaponIdleAnim = false;
+    bool LastIdle = false;
     const float IdleTime = 10f;
 
     string[] IdleNames = new string[]
@@ -79,6 +84,19 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
 
     public override void Init()
     {
+        Body = gameObject.AddComponent<Rigidbody>();
+        Body.mass = 80f;
+        Body.drag = 0f;
+        Body.angularDrag = 1f;
+        Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+        CapsuleCollider coll = gameObject.AddComponent<CapsuleCollider>();
+        coll.height = 2f;
+        coll.radius = 0.5f;
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Animation
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Anim = gameObject.AddComponent<Animator>();
         Anim.applyRootMotion = false;
         RuntimeAnimatorController runtimeAnimController = Resources.Load<RuntimeAnimatorController>(ANIM_CONTROLLER_NAME);
@@ -162,11 +180,11 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
     AnimationClip GetClip(string bankName, string animName, bool bFallback)
     {
         uint animCRC = HashUtils.GetCRC(animName);
-        AnimationClip clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false);
+        AnimationClip clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
         if (clip == null)
         {
             animCRC = HashUtils.GetCRC(animName + "_full");
-            clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false);
+            clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
             if (clip != null) return clip;
 
             if (bFallback)
@@ -193,6 +211,35 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
         return clip;
     }
 
+    void FixedUpdate()
+    {
+        if (Controller != null)
+        {
+            float forward = Controller.ControlState.WalkDirection.y;
+            float accStep = C.Acceleration * Time.fixedDeltaTime;
+            
+            if (forward > -0.05 && forward < 0.05)
+            {
+                if (CurrSpeed < 0f)
+                {
+                    CurrSpeed = Mathf.Clamp(CurrSpeed + accStep * 10f, CurrSpeed, 0f);
+                }
+                else if (CurrSpeed > 0f)
+                {
+                    CurrSpeed = Mathf.Clamp(CurrSpeed - accStep * 10f, 0f, CurrSpeed);
+                }
+            }
+            else
+            {
+                CurrSpeed = Mathf.Clamp(CurrSpeed + accStep * forward, -C.MaxStrafeSpeed, C.MaxSpeed);
+            }
+
+            Body.MovePosition(Body.position + transform.forward * CurrSpeed * Time.fixedDeltaTime);
+
+            Body.MoveRotation(Body.rotation * Quaternion.Euler(new Vector3()));
+        }
+    }
+
     void Update()
     {
         if (Controller != null)
@@ -216,6 +263,13 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
                 }
                 Controller.ResetIdleTime();
             }
+
+            if (!Controller.IsIdle && LastIdle)
+            {
+                Anim.SetTrigger("UnIdle");
+            }
+
+            LastIdle = Controller.IsIdle;
         }
     }
 }
