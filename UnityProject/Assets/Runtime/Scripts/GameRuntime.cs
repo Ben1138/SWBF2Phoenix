@@ -14,15 +14,16 @@ public class GameRuntime : MonoBehaviour
     public string Language = "english";
 
     [Header("References")]
-    public Loadscreen InitScreenPrefab;
-    public Loadscreen LoadScreenPrefab;
-    public IMenu      MainMenuPrefab;
-    public IMenu      PauseMenuPrefab;
-    public IMenu      CharacterSelectPrefab;
-    public Transform  CharSelectTransform;
-    public Volume     CharSelectPPVolume;
-    public Volume     PostProcessingVolume;
-    public AudioMixerGroup UIAudioMixer;
+    public Loadscreen       InitScreenPrefab;
+    public Loadscreen       LoadScreenPrefab;
+    public IMenu            MainMenuPrefab;
+    public IMenu            PauseMenuPrefab;
+    public IMenu            CharacterSelectPrefab;
+    public Transform        CharSelectTransform;
+    public Volume           CharSelectPPVolume;
+    public Volume           PostProcessingVolume;
+    public AudioMixerGroup  UIAudioMixer;
+    public SWBFCamera       Camera;
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMatchStart;
@@ -57,6 +58,11 @@ public class GameRuntime : MonoBehaviour
     public static RuntimeEnvironment GetEnvironment()
     {
         return Instance == null ? null : Instance.Env;
+    }
+
+    public static SWBFCamera GetCamera()
+    {
+        return Instance == null ? null : Instance.Camera;
     }
 
     public static RuntimeScene GetScene()
@@ -255,8 +261,8 @@ public class GameRuntime : MonoBehaviour
             return;
         }
 
-        EnterMainMenu(true);
-        //EnterMap("geo1c_con");
+        //EnterMainMenu(true);
+        EnterMap("geo1c_con");
     }
 
     void ExploreAddons()
@@ -337,9 +343,10 @@ public class GameRuntime : MonoBehaviour
         Debug.Assert(MainMenuPrefab       != null);
         Debug.Assert(PauseMenuPrefab      != null);
         Debug.Assert(CharSelectTransform  != null);
-        Debug.Assert(CharSelectPPVolume        != null);
+        Debug.Assert(CharSelectPPVolume   != null);
         Debug.Assert(PostProcessingVolume != null);
         Debug.Assert(UIAudioMixer         != null);
+        Debug.Assert(Camera               != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
         {

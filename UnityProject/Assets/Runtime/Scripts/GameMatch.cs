@@ -171,7 +171,10 @@ public class GameMatch
 
     public void SpawnPlayer(ISWBFClass cl)
     {
-        GC_soldier player = RTS.CreateInstance(cl, "player" + NameCounter++, Camera.main.transform.position, Quaternion.identity) as GC_soldier;
+        SWBFCamera cam = GameRuntime.GetCamera();
+        Vector3 spawnPos = cam.transform.position + cam.transform.rotation * (cam.PositionOffset * 2f);
+
+        GC_soldier player = RTS.CreateInstance(cl, "player" + NameCounter++, spawnPos, Quaternion.identity) as GC_soldier;
         if (player == null)
         {
             Debug.LogError($"Given spawn class '{cl.Name}' is not a soldier!");
@@ -180,6 +183,7 @@ public class GameMatch
 
         player.Controller = Player;
         SetPlayerState(PlayerState.Spawned);
+        cam.Follow(player.transform);
     }
 
     public void SpawnAI(ISWBFClass cl)
