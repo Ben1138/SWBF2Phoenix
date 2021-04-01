@@ -11,19 +11,12 @@ public abstract class InstanceController
         public Vector2 WalkDirection;
         public Vector3 ViewDirection;
 
-        public override bool Equals(object obj)
-        {
-            State other = (State)obj;
-            return
-                ShootPrimary == other.ShootPrimary &&
-                Crouch == other.Crouch &&
-                WalkDirection == other.WalkDirection &&
-                ViewDirection == other.ViewDirection;
-        }
+        public bool IsActive => ShootPrimary || Crouch || WalkDirection != Vector2.zero || ViewDirection != Vector3.zero;
     }
 
     public State ControlState { get; protected set; }
 
+    public bool IsIdle => !ControlState.IsActive;
     public float IdleTime { get; private set; }
 
     State OldState;
@@ -36,7 +29,7 @@ public abstract class InstanceController
 
     public virtual void Update(float deltaTime)
     {
-        if (ControlState.Equals(OldState))
+        if (!ControlState.IsActive)
         {
             IdleTime += deltaTime;
         }
