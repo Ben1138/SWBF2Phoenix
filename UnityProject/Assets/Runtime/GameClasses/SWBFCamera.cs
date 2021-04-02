@@ -4,11 +4,13 @@ using UnityEngine;
 
 public class SWBFCamera : MonoBehaviour
 {
+    PlayerController Player => GameRuntime.GetMatch().Player;
+
     public enum CamMode
     {
+        Fixed,
         Free,
-        Follow,
-        Snapshot
+        Follow
     }
                      
     public CamMode    Mode               = CamMode.Free;
@@ -19,18 +21,18 @@ public class SWBFCamera : MonoBehaviour
     public float      FollowSpeed        = 10.0f;
 
     Rigidbody Body;
-    Transform FollowTransform;
+    ISWBFInstance FollowInstance;
 
 
-    public void Follow(Transform follow)
+    public void Follow(ISWBFInstance follow)
     {
         Mode = CamMode.Follow;
-        FollowTransform = follow;
+        FollowInstance = follow;
     }
 
     public void ViewSnapshot(Vector3 pos, Quaternion rot)
     {
-        Mode = CamMode.Snapshot;
+        Mode = CamMode.Fixed;
         transform.position = pos;
         transform.rotation = rot;
     }
@@ -41,6 +43,13 @@ public class SWBFCamera : MonoBehaviour
         Body = GetComponent<Rigidbody>();
     }
 
+    public void RotateRigidBodyAroundPointBy(Rigidbody rb, Vector3 origin, Vector3 axis, float angle)
+    {
+        Quaternion q = Quaternion.AngleAxis(angle, axis);
+        rb.MovePosition(q * (rb.transform.position - origin) + origin);
+        rb.MoveRotation(rb.transform.rotation * q);
+    }
+
     void Update()
     { 
         if (Mode == CamMode.Free)
@@ -49,17 +58,21 @@ public class SWBFCamera : MonoBehaviour
             transform.position += transform.right   * Input.GetAxis("Horizontal") * Time.deltaTime * FreeMoveSpeed;
             transform.position += transform.up      * Input.GetAxis("UpDown")     * Time.deltaTime * FreeMoveSpeed;
 
-            if (Input.GetMouseButton(1))
-            {
-                float newRotationX = transform.localEulerAngles.y + Input.GetAxis("Mouse X") * FreeRotationSpeed;
-                float newRotationY = transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * FreeRotationSpeed;
-                transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
-            }
+            float newRotationX = transform.localEulerAngles.y + Input.GetAxis("Mouse X") * FreeRotationSpeed;
+            float newRotationY = transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * FreeRotationSpeed;
+            transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
         }
         else if (Mode == CamMode.Follow)
         {
-            Vector3 camPos = FollowTransform.position + FollowTransform.rotation * PositionOffset;
-            Quaternion camRot = FollowTransform.rotation * Quaternion.Euler(RotationOffset);
+            Vector3 rotPoint = FollowInstance.transform.position;
+            rotPoint.y += PositionOffset.y;
+
+            Vector3 viewDir = (Player.LookingAt - rotPoint).normalized;
+            Vector3 camPos = rotPoint + viewDir * PositionOffset.z;
+            Quaternion camRot = Quaternion.LookRotation(viewDir);
+
+            Debug.Log("Casm pos diff: " + (Body.position - camPos));
+
             Body.MovePosition(Vector3.Lerp(Body.position, camPos, Time.deltaTime * FollowSpeed));
             Body.MoveRotation(Quaternion.Slerp(Body.rotation, camRot, Time.deltaTime * FollowSpeed));
         }
