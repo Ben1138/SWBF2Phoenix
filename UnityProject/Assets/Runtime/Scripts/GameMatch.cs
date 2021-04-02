@@ -7,6 +7,7 @@ public class GameMatch
     static GameRuntime GAME => GameRuntime.Instance;
     static RuntimeEnvironment ENV => GameRuntime.GetEnvironment();
     static RuntimeScene RTS => GameRuntime.GetScene();
+    static SWBFCamera Cam => GameRuntime.GetCamera();
 
 
     public Color NeutralColor  { get; private set; } = new Color(1.0f, 1.0f, 1.0f);
@@ -89,15 +90,21 @@ public class GameMatch
         if (PlayerST == PlayerState.CharacterSelection)
         {
             ShowCharacterSelection();
+            Cam.Mode = SWBFCamera.CamMode.Fixed;
         }
-        else if (PlayerST == PlayerState.FreeCam && PauseMenuActive)
+        else if (PlayerST == PlayerState.FreeCam)
         {
-            GAME.RemoveMenu();
-            PauseMenuActive = false;
+            Cam.Mode = SWBFCamera.CamMode.Free;
+            if (PauseMenuActive)
+            {
+                GAME.RemoveMenu();
+                PauseMenuActive = false;
+            }
         }
         else
         {
             GAME.RemoveMenu();
+            Cam.Mode = SWBFCamera.CamMode.Fixed;
         }
     }
 
@@ -174,16 +181,18 @@ public class GameMatch
         SWBFCamera cam = GameRuntime.GetCamera();
         Vector3 spawnPos = cam.transform.position + cam.transform.rotation * (cam.PositionOffset * 2f);
 
-        GC_soldier player = RTS.CreateInstance(cl, "player" + NameCounter++, spawnPos, Quaternion.identity) as GC_soldier;
-        if (player == null)
+        GC_soldier pawn = RTS.CreateInstance(cl, "player" + NameCounter++, spawnPos, Quaternion.identity) as GC_soldier;
+        if (pawn == null)
         {
             Debug.LogError($"Given spawn class '{cl.Name}' is not a soldier!");
             return;
         }
 
-        player.Controller = Player;
+        pawn.gameObject.layer = 3;
+        pawn.Controller = Player;
+        Player.Pawn = pawn;
         SetPlayerState(PlayerState.Spawned);
-        cam.Follow(player.transform);
+        cam.Follow(pawn);
     }
 
     public void SpawnAI(ISWBFClass cl)
