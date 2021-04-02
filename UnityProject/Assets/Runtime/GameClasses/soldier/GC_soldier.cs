@@ -64,7 +64,7 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
 
     public Prop<float> CurHealth = new Prop<float>(100.0f);
 
-    public InstanceController Controller;
+    public PawnController Controller;
     Animator Anim;
     Rigidbody Body;
 
@@ -215,7 +215,7 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
     {
         if (Controller != null)
         {
-            float forward = Controller.ControlState.WalkDirection.y;
+            float forward = Controller.WalkDirection.y;
             float accStep = C.Acceleration * Time.fixedDeltaTime;
             
             if (forward > -0.05 && forward < 0.05)
@@ -236,7 +236,7 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
 
             Body.MovePosition(Body.position + transform.forward * CurrSpeed * Time.fixedDeltaTime);
 
-            Body.MoveRotation(Body.rotation * Quaternion.Euler(new Vector3()));
+            //Body.MoveRotation(Body.rotation * Quaternion.Euler(new Vector3(Controller.ControlState.ViewDirection)));
         }
     }
 
@@ -244,8 +244,8 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
     {
         if (Controller != null)
         {
-            Anim.SetFloat("LeftRight", Controller.ControlState.WalkDirection.x);
-            Anim.SetFloat("Forward", Controller.ControlState.WalkDirection.y);
+            Anim.SetFloat("LeftRight", Controller.WalkDirection.x);
+            Anim.SetFloat("Forward", Controller.WalkDirection.y);
 
             if (Controller.IdleTime >= IdleTime)
             {
