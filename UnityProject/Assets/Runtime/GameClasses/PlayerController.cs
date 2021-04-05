@@ -8,7 +8,7 @@ public class PlayerController : PawnController
 
     public ISWBFInstance Pawn;
     public bool CancelPressed { get; private set; }
-
+    public Vector2 MouseDiff;
 
     public override void Update(float deltaTime)
     {
@@ -17,8 +17,10 @@ public class PlayerController : PawnController
         WalkDirection.x = Input.GetAxis("Horizontal");
         WalkDirection.y = Input.GetAxis("Vertical");
 
-        Vector3 camForward = (Quaternion.Inverse(Cam.transform.rotation) * Quaternion.Euler(/*Input.GetAxis("Mouse Y")*10f*/0f, -Input.GetAxis("Mouse X")*10f, 0f)) * Cam.transform.forward;
+        MouseDiff.x = Input.GetAxis("Mouse X");
+        MouseDiff.y = Input.GetAxis("Mouse Y");
 
+        Vector3 camForward = Cam.transform.forward;
         if (Physics.Raycast(Cam.transform.position, camForward, out RaycastHit hit, 1000f, 3))
         {
             LookingAt = hit.point;
@@ -28,20 +30,16 @@ public class PlayerController : PawnController
             LookingAt = camForward * 1000f;
         }
 
-        Debug.Log("LookingAt: " + LookingAt);
+        Jump = Input.GetButtonDown("Jump");
+        Sprint = Input.GetButton("Sprint");
+        Reload = Input.GetButton("Reload");
+        ShootPrimary = Input.GetButton("Fire1");
+        ShootSecondary = Input.GetButton("Fire2");
 
-        //if (Cam.Mode == SWBFCamera.CamMode.Player)
-        //{
-        //    Vector3 rotPoint = Pawn.transform.position;
-        //    rotPoint.y += Cam.PositionOffset.y;
-
-        //    float rotX = Input.GetAxis("Mouse X");
-        //    float rotY = Input.GetAxis("Mouse Y");
-
-        //    //Cam.transform.RotateAround(rotPoint, new Vector3(1f, 0f, 0f), rotY);
-        //    Cam.transform.RotateAround(rotPoint, new Vector3(0f, 1f, 0f), rotX);
-
-        //}            
+        if (Input.GetButtonDown("Crouch"))
+        {
+            Crouch = !Crouch;
+        }
 
         CancelPressed = Input.GetButtonDown("Cancel");
     }

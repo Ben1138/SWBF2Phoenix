@@ -24,6 +24,7 @@ public class GameRuntime : MonoBehaviour
     public Volume           PostProcessingVolume;
     public AudioMixerGroup  UIAudioMixer;
     public SWBFCamera       Camera;
+    public LineRenderer     AimDebug;
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMatchStart;

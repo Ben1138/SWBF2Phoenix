@@ -67,6 +67,7 @@ public class GameMatch
     Queue<(int, string)> TeamIcon = new Queue<(int, string)>();
 
     AudioClip UIBack;
+    SWBFCamera.CamMode LastMode;
 
 
     public GameMatch()
@@ -100,6 +101,11 @@ public class GameMatch
                 GAME.RemoveMenu();
                 PauseMenuActive = false;
             }
+        }
+        else if (PlayerST == PlayerState.Spawned)
+        {
+            GAME.RemoveMenu();
+            Cam.Mode = SWBFCamera.CamMode.Control;
         }
         else
         {
@@ -157,15 +163,13 @@ public class GameMatch
             if (PauseMenuActive)
             {
                 GAME.RemoveMenu();
-                if (PlayerST == PlayerState.CharacterSelection)
-                {
-                    ShowCharacterSelection();
-                }
             }
             else
             {
                 GAME.ShowMenu(GAME.PauseMenuPrefab);
                 PauseMenuActive = true;
+                LastMode = Cam.Mode;
+                Cam.Mode = SWBFCamera.CamMode.Fixed;
             }
 
             if (UIBack == null)
@@ -192,7 +196,6 @@ public class GameMatch
         pawn.Controller = Player;
         Player.Pawn = pawn;
         SetPlayerState(PlayerState.Spawned);
-        cam.Follow(pawn);
     }
 
     public void SpawnAI(ISWBFClass cl)
@@ -353,6 +356,8 @@ public class GameMatch
 
     void OnRemoveMenu()
     {
+        PauseMenuActive = false;
+        Cam.Mode = LastMode;
         if (PlayerST == PlayerState.CharacterSelection)
         {
             ShowCharacterSelection();

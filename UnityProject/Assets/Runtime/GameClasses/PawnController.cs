@@ -5,7 +5,11 @@ using UnityEngine;
 public abstract class PawnController
 {
     public bool ShootPrimary;
+    public bool ShootSecondary;
     public bool Crouch;
+    public bool Jump;
+    public bool Sprint;
+    public bool Reload;
     public Vector2 WalkDirection;
     public Vector3 LookingAt;
 
