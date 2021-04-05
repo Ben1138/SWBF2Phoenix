@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using LibSWBF2.Utils;
+using System.Runtime.ExceptionServices;
 
 public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelectableCharacter
 {
     static GameRuntime GAME => GameRuntime.Instance;
     static GameMatch MTC => GameRuntime.GetMatch();
+    static SWBFCamera CAM => GameRuntime.GetCamera();
 
     static readonly string ANIM_CONTROLLER_NAME = "AnimController_soldier";
 
@@ -62,13 +64,55 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
         public MultiProp WeaponName = new MultiProp(typeof(string));
     }
 
+    enum ControlState
+    {
+        Stand,
+        Crouch,
+        Prone,
+        Sprint,
+        Jet,
+        Jump,
+        Roll,
+        Tumble
+    }
+
+
     public Prop<float> CurHealth = new Prop<float>(100.0f);
 
     public PawnController Controller;
+    Transform HpWeapons;
     Animator Anim;
+    Avatar Ava;
     Rigidbody Body;
 
-    float CurrSpeed = 0f;
+    ControlState State;
+
+    // Physical raycast downwards
+    bool Falling;
+    bool PrevFalling;
+
+    // how long to still be alerted after the last fire / hit
+    const float AlertTime = 3f;
+    float AlertTimer;
+
+    // Time we have to fail the raycast to be considered falling
+    const float FallTime = 0.5f;
+    float FallTimer;
+
+    // time when we start playing the full fall animation
+    const float FallAnimTime = 2f;
+    float FallAnimTimer;
+
+    // minimum time we're considered falling when jumping
+    const float JumpTime = 0.5f;
+    float JumpTimer;
+
+    // let's not depend on the animator state animation
+    // and measure it ourselfs
+    const float LandTime = 0.5f;
+    float LandTimer;
+
+    Vector3 CurrSpeed;
 
     bool bHasLookaroundIdleAnim = false;
     bool bHasCheckweaponIdleAnim = false;
@@ -81,9 +125,21 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
         "IdleCheckweapon"
     };
 
+    // <stance>, <thrustfactor> <strafefactor> <turnfactor>
+    float[][] ControlValues;
+
 
     public override void Init()
     {
+        ControlState[] states = (ControlState[])Enum.GetValues(typeof(ControlState));
+        ControlValues = new float[states.Length][];
+        for (int i = 0; i < states.Length; ++i)
+        {
+            ControlValues[i] = GetControlSpeed(states[i]);
+        }
+
+        HpWeapons = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_r_clavicle/bone_r_upperarm/bone_r_forearm/bone_r_hand/hp_weapons");
+
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 80f;
         Body.drag = 0f;
@@ -97,7 +153,9 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        Ava = AvatarBuilder.BuildGenericAvatar(gameObject, "dummyroot");
         Anim = gameObject.AddComponent<Animator>();
+        Anim.avatar = Ava;
         Anim.applyRootMotion = false;
         RuntimeAnimatorController runtimeAnimController = Resources.Load<RuntimeAnimatorController>(ANIM_CONTROLLER_NAME);
         if (runtimeAnimController == null)
@@ -123,20 +181,12 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
             }
 
             string weaponAnimBankName = "rifle"; // TODO
-            string animName = $"{C.SkeletonName}_{weaponAnimBankName}_{src.name}";
-
-            // TODO: There's AnimationName and SkeletonName. Sometimes they mean the same thing !?
-            // For example: The super battle droid just has SkeletonName property, but no AnimationName property...
-            AnimationClip dst = GetClip(C.SkeletonName, animName, false);
-            if (dst == null)
-            {
-                dst = GetClip(C.AnimationName, animName, true);
-            }
+            AnimationClip dst = GetClip(C.SkeletonName, weaponAnimBankName, src.name, "human_0", "tool");
             if (dst == null)
             {
                 if (src.name != "stand_idle_lookaround" && src.name != "stand_idle_checkweapon")
                 {
-                    Debug.LogError($"Cannot find Animation '{animName}' in AnimationBanks '{C.SkeletonName}' / '{C.AnimationName}'!");
+                    Debug.LogError($"Cannot find Animation '{src.name}' in AnimationBanks '{C.SkeletonName}' / '{C.AnimationName}'!");
                 }
                 continue;
             }
@@ -177,34 +227,64 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
         }
     }
 
-    AnimationClip GetClip(string bankName, string animName, bool bFallback)
+    // see: com_inf_default
+    float[] GetControlSpeed(ControlState state)
     {
-        uint animCRC = HashUtils.GetCRC(animName);
+        foreach (object[] values in C.ControlSpeed.Values)
+        {
+            string controlName = values[0] as string;
+            if (!string.IsNullOrEmpty(controlName) && controlName == state.ToString().ToLowerInvariant())
+            {
+                return new float[3]
+                {
+                    (float)values[1],
+                    (float)values[2],
+                    (float)values[3],
+                };
+            }
+        }
+        Debug.LogError($"Cannot find control state '{state}'!");
+        return null;
+    }
+
+    AnimationClip GetClip(string bankName, string weapName, string animName, string fallbackBankName=null, string fallbackWeaponName=null)
+    {
+        // TODO: There's AnimationName and SkeletonName. Sometimes they mean the same thing !?
+        // For example: The super battle droid just has SkeletonName property, but no AnimationName property...
+        string fullName = $"{C.SkeletonName}_{weapName}_{animName}";
+
+        uint animCRC = HashUtils.GetCRC(fullName);
         AnimationClip clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
         if (clip == null)
         {
-            animCRC = HashUtils.GetCRC(animName + "_full");
+            animCRC = HashUtils.GetCRC(fullName + "_full");
             clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
             if (clip != null) return clip;
 
-            if (bFallback)
+            if (fallbackBankName == "human_0")
             {
-                clip = GetClip("human_0", animName, false);
+                clip = GetClip("human_0", weapName, animName, null, fallbackWeaponName);
                 if (clip != null) return clip;
 
-                clip = GetClip("human_1", animName, false);
+                clip = GetClip("human_1", weapName, animName, null, fallbackWeaponName);
                 if (clip != null) return clip;
 
-                clip = GetClip("human_2", animName, false);
+                clip = GetClip("human_2", weapName, animName, null, fallbackWeaponName);
                 if (clip != null) return clip;
 
-                clip = GetClip("human_3", animName, false);
+                clip = GetClip("human_3", weapName, animName, null, fallbackWeaponName);
                 if (clip != null) return clip;
 
-                clip = GetClip("human_4", animName, false);
+                clip = GetClip("human_4", weapName, animName, null, fallbackWeaponName);
                 if (clip != null) return clip;
 
-                clip = GetClip("human_sabre", animName, false);
+                clip = GetClip("human_sabre", weapName, animName, null, fallbackWeaponName);
+                if (clip != null) return clip;
+            }
+
+            if (!string.IsNullOrEmpty(fallbackWeaponName))
+            {
+                clip = GetClip(bankName, fallbackWeaponName, animName, fallbackBankName, null);
                 if (clip != null) return clip;
             }
         }
@@ -213,63 +293,186 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
 
     void FixedUpdate()
     {
+        JumpTimer = Mathf.Max(JumpTimer - Time.fixedDeltaTime, 0f);
+        Falling = JumpTimer > 0f || !Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.4f);
+
+        if (PrevFalling && !Falling)
+        {
+            LandTimer = LandTime;
+            FallTimer = 0f;
+        }
+        else
+        {
+            if (PrevFalling && Falling)
+            {
+                //FallTimer +=
+            }
+            LandTimer -= Time.fixedDeltaTime;
+        }
+        PrevFalling = Falling;
+
         if (Controller != null)
         {
-            float forward = Controller.WalkDirection.y;
-            float accStep = C.Acceleration * Time.fixedDeltaTime;
-            
-            if (forward > -0.05 && forward < 0.05)
+            bool isLanding = LandTimer > 0f;
+
+            Vector3 lookWalkForward = Vector3.zero;
+            Vector3 moveDir = Vector3.zero;
+            Vector3 moveDirWorld = Vector3.zero;
+            if (!Falling && !isLanding)
             {
-                if (CurrSpeed < 0f)
+                lookWalkForward = new Vector3(CAM.transform.forward.x, 0f, CAM.transform.forward.z);
+                moveDir = new Vector3(Controller.WalkDirection.x, 0f, Controller.WalkDirection.y);
+                moveDirWorld = Quaternion.LookRotation(lookWalkForward) * moveDir;
+                float accStep = C.Acceleration * Time.fixedDeltaTime;
+
+                if (moveDir.magnitude == 0f)
                 {
-                    CurrSpeed = Mathf.Clamp(CurrSpeed + accStep * 10f, CurrSpeed, 0f);
+                    CurrSpeed *= 0.1f * Time.fixedDeltaTime;
                 }
-                else if (CurrSpeed > 0f)
+                else
                 {
-                    CurrSpeed = Mathf.Clamp(CurrSpeed - accStep * 10f, 0f, CurrSpeed);
+                    CurrSpeed += moveDirWorld * accStep;
+
+                    float thrustFactor = ControlValues[(int)State][0];
+                    float strafeFactor = ControlValues[(int)State][1];
+                    float turnFactor   = ControlValues[(int)State][2];
+
+                    float forwardFactor = moveDir.z <= 0f ? strafeFactor : thrustFactor;
+
+                    CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, C.MaxSpeed * forwardFactor);
                 }
             }
-            else
+            else if (isLanding)
             {
-                CurrSpeed = Mathf.Clamp(CurrSpeed + accStep * forward, -C.MaxStrafeSpeed, C.MaxSpeed);
+                CurrSpeed = Vector3.zero;
             }
 
-            Body.MovePosition(Body.position + transform.forward * CurrSpeed * Time.fixedDeltaTime);
+            Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
 
-            //Body.MoveRotation(Body.rotation * Quaternion.Euler(new Vector3(Controller.ControlState.ViewDirection)));
+            if (!Falling && moveDir.magnitude > 0f)
+            {
+                if (moveDir.z <= 0f)
+                {
+                    moveDir = -moveDir;
+                    moveDirWorld = Quaternion.LookRotation(lookWalkForward) * moveDir;
+                }
+
+                Body.MoveRotation(Quaternion.LookRotation(moveDirWorld));
+            }
         }
     }
 
     void Update()
     {
+        AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
+
         if (Controller != null)
         {
-            Anim.SetFloat("LeftRight", Controller.WalkDirection.x);
-            Anim.SetFloat("Forward", Controller.WalkDirection.y);
-
-            if (Controller.IdleTime >= IdleTime)
+            if (Falling)
             {
-                if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+                FallAnimTimer += Time.deltaTime;
+            }
+            else
+            {
+                FallAnimTimer = 0f;
+            }
+            Anim.SetBool("FallAnim", FallAnimTimer >= FallAnimTime);
+            Anim.SetBool("Falling", Falling);
+
+            if (!Falling)
+            {
+                float walk = Controller.WalkDirection.magnitude;
+                if (Controller.WalkDirection.y <= 0f)
                 {
-                    Anim.SetTrigger(IdleNames[0]);
+                    walk = -walk;
                 }
-                else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                Anim.SetFloat("Forward", walk);
+
+                if (Controller.IdleTime >= IdleTime)
                 {
-                    Anim.SetTrigger(IdleNames[1]);
+                    if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+                    {
+                        Anim.SetTrigger(IdleNames[0]);
+                    }
+                    else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                    {
+                        Anim.SetTrigger(IdleNames[1]);
+                    }
+                    else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                    {
+                        Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
+                    }
+                    Controller.ResetIdleTime();
                 }
-                else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+
+                if (!Controller.IsIdle && LastIdle)
                 {
-                    Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
+                    Anim.SetTrigger("UnIdle");
                 }
-                Controller.ResetIdleTime();
+
+                if (State != ControlState.Sprint)
+                {
+                    State = Controller.Crouch ? ControlState.Crouch : ControlState.Stand;
+                }
+
+                if (State != ControlState.Crouch)
+                {
+                    if (Controller.Jump)
+                    {
+                        Anim.SetTrigger("Jump");
+                        Body.AddForce(Vector3.up * C.JumpHeight * 200f, ForceMode.Acceleration);
+                        State = ControlState.Jump;
+                        JumpTimer = JumpTime;
+                    }
+                    else if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
+                    {
+                        State = ControlState.Sprint;
+                    }
+                    else if (Controller.WalkDirection.y < 0.2f || !Controller.Sprint)
+                    {
+                        State = ControlState.Stand;
+                    }
+                }
+
+                Anim.SetBool("Sprint", State == ControlState.Sprint);
+                Anim.SetBool("Crouch", State == ControlState.Crouch);
+
+                if (Controller.ShootPrimary)
+                {
+                    Anim.SetTrigger("ShootPrimary");
+                    AlertTimer = AlertTime;
+                }
+                else if (Controller.ShootSecondary)
+                {
+                    Anim.SetTrigger("ShootSecondary");
+                    AlertTimer = AlertTime;
+                }
+
+                Anim.SetBool("Alert", AlertTimer > 0f);
+                LastIdle = Controller.IsIdle;
+            }
+        }
+    }
+
+    void LateUpdate()
+    {
+        if ((State == ControlState.Stand || State == ControlState.Crouch) && AlertTimer > 0f)
+        {
+            Transform spine = transform.Find("dummyroot/bone_root/bone_a_spine");
+            if (spine == null)
+            {
+                Debug.LogError("Cannot find spine bone!");
+                return;
             }
 
-            if (!Controller.IsIdle && LastIdle)
-            {
-                Anim.SetTrigger("UnIdle");
-            }
+            Vector3 viewDir = (Controller.LookingAt - Body.position).normalized;
+            spine.rotation = Quaternion.LookRotation(viewDir) * Quaternion.Euler(0f, -60f, -90f);
 
-            LastIdle = Controller.IsIdle;
+            if (GameRuntime.Instance.AimDebug != null)
+            {
+                GameRuntime.Instance.AimDebug.SetPosition(0, HpWeapons.position);
+                GameRuntime.Instance.AimDebug.SetPosition(1, Controller.LookingAt);
+            }
         }
     }
 }

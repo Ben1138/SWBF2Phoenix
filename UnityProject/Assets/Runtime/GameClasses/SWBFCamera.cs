@@ -10,18 +10,23 @@ public class SWBFCamera : MonoBehaviour
     {
         Fixed,
         Free,
-        Follow
+        Follow,
+        Control
     }
                      
     public CamMode    Mode               = CamMode.Free;
     public float      FreeMoveSpeed      = 100.0f;
     public float      FreeRotationSpeed  = 5.0f;
     public Vector3    PositionOffset     = new Vector3(0f, 2f, -2f);
-    public Vector3    RotationOffset     = Vector3.zero;
     public float      FollowSpeed        = 10.0f;
 
-    Rigidbody Body;
+    const float RotVertMin = -45f;
+    const float RotVertMax = 45f;
+
+    Rigidbody     Body;
     ISWBFInstance FollowInstance;
+    Vector3       CamTargetPos;
+    Quaternion    CamTargetRot;
 
 
     public void Follow(ISWBFInstance follow)
@@ -41,6 +46,8 @@ public class SWBFCamera : MonoBehaviour
     void Start()
     {
         Body = GetComponent<Rigidbody>();
+        CamTargetPos = transform.position;
+        CamTargetRot = transform.rotation;
     }
 
     public void RotateRigidBodyAroundPointBy(Rigidbody rb, Vector3 origin, Vector3 axis, float angle)
@@ -50,31 +57,73 @@ public class SWBFCamera : MonoBehaviour
         rb.MoveRotation(rb.transform.rotation * q);
     }
 
-    void Update()
-    { 
-        if (Mode == CamMode.Free)
-        {
-            transform.position += transform.forward * Input.GetAxis("Vertical")   * Time.deltaTime * FreeMoveSpeed;
-            transform.position += transform.right   * Input.GetAxis("Horizontal") * Time.deltaTime * FreeMoveSpeed;
-            transform.position += transform.up      * Input.GetAxis("UpDown")     * Time.deltaTime * FreeMoveSpeed;
+    void SanitizeEuler(ref Vector3 euler)
+    {
+        while (euler.x > 180f) euler.x -= 360f;
+        while (euler.y > 180f) euler.y -= 360f;
+        while (euler.z > 180f) euler.z -= 360f;
+        while (euler.x < -180f) euler.x += 360f;
+        while (euler.y < -180f) euler.y += 360f;
+        while (euler.z < -180f) euler.z += 360f;
+    }
 
-            float newRotationX = transform.localEulerAngles.y + Input.GetAxis("Mouse X") * FreeRotationSpeed;
-            float newRotationY = transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * FreeRotationSpeed;
-            transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
-        }
-        else if (Mode == CamMode.Follow)
+    void Update()
+    {
+        if (Mode == CamMode.Follow)
         {
             Vector3 rotPoint = FollowInstance.transform.position;
             rotPoint.y += PositionOffset.y;
 
             Vector3 viewDir = (Player.LookingAt - rotPoint).normalized;
-            Vector3 camPos = rotPoint + viewDir * PositionOffset.z;
-            Quaternion camRot = Quaternion.LookRotation(viewDir);
+            CamTargetPos = rotPoint + viewDir * PositionOffset.z;
+            CamTargetRot = Quaternion.LookRotation(viewDir);
+            CamTargetPos += CamTargetRot * new Vector3(PositionOffset.x, 0f, 0f);
+        }
+        else if (Mode == CamMode.Control)
+        {
+            Vector3 rotPoint = Player.Pawn.transform.position;
+            rotPoint.y += PositionOffset.y;
 
-            Debug.Log("Casm pos diff: " + (Body.position - camPos));
+            Vector3 viewRight = CamTargetRot * Vector3.right;
+            //Quaternion targetRot = CamTargetRot * Quaternion.AngleAxis(Player.MouseDiff.y * -10f, viewRight) * Quaternion.AngleAxis(Player.MouseDiff.x * 10f, Vector3.up);
 
-            Body.MovePosition(Vector3.Lerp(Body.position, camPos, Time.deltaTime * FollowSpeed));
-            Body.MoveRotation(Quaternion.Slerp(Body.rotation, camRot, Time.deltaTime * FollowSpeed));
+            Vector3 viewDir = CamTargetRot * Vector3.forward;
+            viewDir = Quaternion.AngleAxis(Player.MouseDiff.y * -10f, viewRight) * viewDir;
+            viewDir = Quaternion.AngleAxis(Player.MouseDiff.x * 10f, Vector3.up) * viewDir;
+
+            // TODO: this is a dumb way of rotating on the local X axis
+            Quaternion targetRot = Quaternion.LookRotation(viewDir);
+
+            // clamp vertical rotation
+            Vector3 targetRotEuler = targetRot.eulerAngles;
+            SanitizeEuler(ref targetRotEuler);
+            targetRotEuler.x = Mathf.Clamp(targetRotEuler.x, RotVertMin, RotVertMax);
+            targetRotEuler.z = Mathf.Clamp(targetRotEuler.z, RotVertMin, RotVertMax);
+            targetRot = Quaternion.Euler(targetRotEuler);
+
+            viewDir = targetRot * Vector3.forward;
+            CamTargetPos = rotPoint + viewDir * PositionOffset.z;
+            CamTargetRot = Quaternion.LookRotation(viewDir);
+            CamTargetPos += CamTargetRot * new Vector3(PositionOffset.x, 0f, 0f);
+        }
+    }
+
+    void FixedUpdate()
+    { 
+        if (Mode == CamMode.Free)
+        {
+            transform.position += transform.forward * Input.GetAxis("Vertical")   * Time.fixedDeltaTime * FreeMoveSpeed;
+            transform.position += transform.right   * Input.GetAxis("Horizontal") * Time.fixedDeltaTime * FreeMoveSpeed;
+            transform.position += transform.up      * Input.GetAxis("UpDown")     * Time.fixedDeltaTime * FreeMoveSpeed;
+
+            float newRotationX = transform.localEulerAngles.y + Input.GetAxis("Mouse X") * FreeRotationSpeed;
+            float newRotationY = transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * FreeRotationSpeed;
+            transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
+        }
+        else if (Mode == CamMode.Follow || Mode == CamMode.Control)
+        {
+            Body.MovePosition(Vector3.Lerp(Body.position, CamTargetPos, Time.fixedDeltaTime * FollowSpeed));
+            Body.MoveRotation(Quaternion.Slerp(Body.rotation, CamTargetRot, Time.fixedDeltaTime * FollowSpeed));
         }
     }
 }

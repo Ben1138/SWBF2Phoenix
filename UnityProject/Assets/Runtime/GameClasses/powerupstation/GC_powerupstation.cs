@@ -144,6 +144,7 @@ public class GC_powerupstation : ISWBFInstance<GC_powerupstation.ClassProperties
         {
             SphereCollider coll = gameObject.AddComponent<SphereCollider>();
             coll.radius = Radius;
+            coll.isTrigger = true;
             PowerupRegion = gameObject.AddComponent<Region>();
         }
 
