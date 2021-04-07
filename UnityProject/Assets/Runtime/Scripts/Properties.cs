@@ -211,6 +211,10 @@ public sealed class PropertyDB
         {
             outVal = Convert.ChangeType(SoundLoader.LoadSound(value), destType, CultureInfo.InvariantCulture);
         }
+        else if (destType == typeof(SWBFPath))
+        {
+            outVal = Convert.ChangeType(WorldLoader.Instance.ImportPath(value), destType, CultureInfo.InvariantCulture);
+        }
         else if (destType == typeof(bool))
         {
             if (value == "0" || value == "1")

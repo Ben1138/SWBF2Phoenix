@@ -23,9 +23,10 @@ public class GC_commandpost : ISWBFInstance<GC_commandpost.ClassProperties>
     public HDAdditionalLightData Light;
 
     // SWBF Instance Properties
-    public Prop<Region> CaptureRegion = new Prop<Region>(null);
-    public Prop<Region> ControlRegion = new Prop<Region>(null);
-    public Prop<int>    Team          = new Prop<int>(0);
+    public Prop<Region>   CaptureRegion = new Prop<Region>(null);
+    public Prop<Region>   ControlRegion = new Prop<Region>(null);
+    public Prop<SWBFPath> SpawnPath     = new Prop<SWBFPath>(null);
+    public Prop<int>      Team          = new Prop<int>(0);
 
     AudioSource AudioAction;
     AudioSource AudioAmbient;
