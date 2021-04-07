@@ -88,8 +88,8 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
     ControlState State;
 
     // Physical raycast downwards
-    bool Falling;
-    bool PrevFalling;
+    bool Grounded;
+    bool PrevGrounded;
 
     // how long to still be alerted after the last fire / hit
     const float AlertTime = 3f;
@@ -104,7 +104,7 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
     float FallAnimTimer;
 
     // minimum time we're considered falling when jumping
-    const float JumpTime = 0.5f;
+    const float JumpTime = 0.2f;
     float JumpTimer;
 
     // let's not depend on the animator state animation
@@ -113,6 +113,9 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
     float LandTimer;
 
     Vector3 CurrSpeed;
+    Quaternion CurrDir;
+    Quaternion TargetDir;
+
 
     bool bHasLookaroundIdleAnim = false;
     bool bHasCheckweaponIdleAnim = false;
@@ -131,6 +134,9 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
 
     public override void Init()
     {
+        CurrDir = transform.rotation;
+        TargetDir = CurrDir;
+
         ControlState[] states = (ControlState[])Enum.GetValues(typeof(ControlState));
         ControlValues = new float[states.Length][];
         for (int i = 0; i < states.Length; ++i)
@@ -292,167 +298,215 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
         return clip;
     }
 
-    void FixedUpdate()
-    {
-        JumpTimer = Mathf.Max(JumpTimer - Time.fixedDeltaTime, 0f);
-        Falling = JumpTimer > 0f || !Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.4f);
-
-        if (PrevFalling && !Falling)
-        {
-            LandTimer = LandTime;
-            FallTimer = 0f;
-        }
-        else
-        {
-            if (PrevFalling && Falling)
-            {
-                //FallTimer +=
-            }
-            LandTimer -= Time.fixedDeltaTime;
-        }
-        PrevFalling = Falling;
-
-        if (Controller != null)
-        {
-            bool isLanding = LandTimer > 0f;
-
-            Vector3 lookWalkForward = Vector3.zero;
-            Vector3 moveDir = Vector3.zero;
-            Vector3 moveDirWorld = Vector3.zero;
-            if (!Falling && !isLanding)
-            {
-                lookWalkForward = new Vector3(CAM.transform.forward.x, 0f, CAM.transform.forward.z);
-                moveDir = new Vector3(Controller.WalkDirection.x, 0f, Controller.WalkDirection.y);
-                moveDirWorld = Quaternion.LookRotation(lookWalkForward) * moveDir;
-                float accStep = C.Acceleration * Time.fixedDeltaTime;
-
-                if (moveDir.magnitude == 0f)
-                {
-                    CurrSpeed *= 0.1f * Time.fixedDeltaTime;
-                }
-                else
-                {
-                    CurrSpeed += moveDirWorld * accStep;
-
-                    float thrustFactor = ControlValues[(int)State][0];
-                    float strafeFactor = ControlValues[(int)State][1];
-                    float turnFactor   = ControlValues[(int)State][2];
-
-                    float forwardFactor = moveDir.z <= 0f ? strafeFactor : thrustFactor;
-
-                    CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, C.MaxSpeed * forwardFactor);
-                }
-            }
-            else if (isLanding)
-            {
-                CurrSpeed = Vector3.zero;
-            }
-
-            Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
-
-            if (!Falling && moveDir.magnitude > 0f)
-            {
-                if (moveDir.z <= 0f)
-                {
-                    moveDir = -moveDir;
-                    moveDirWorld = Quaternion.LookRotation(lookWalkForward) * moveDir;
-                }
-
-                Body.MoveRotation(Quaternion.LookRotation(moveDirWorld));
-            }
-        }
-    }
-
     void Update()
     {
         AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
 
         if (Controller != null)
         {
-            if (Falling)
+            if (Grounded)
             {
-                FallAnimTimer += Time.deltaTime;
-            }
-            else
-            {
-                FallAnimTimer = 0f;
-            }
-            Anim.SetBool("FallAnim", FallAnimTimer >= FallAnimTime);
-            Anim.SetBool("Falling", Falling);
-
-            if (!Falling)
-            {
-                float walk = Controller.WalkDirection.magnitude;
-                if (Controller.WalkDirection.y <= 0f)
+                // Stand - Crouch - Sprint
+                if (State == ControlState.Stand || State == ControlState.Crouch || State == ControlState.Sprint)
                 {
-                    walk = -walk;
-                }
-                Anim.SetFloat("Forward", walk);
-
-                if (Controller.IdleTime >= IdleTime)
-                {
-                    if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+                    // ---------------------------------------------------------------------------------------------
+                    // Forward
+                    // ---------------------------------------------------------------------------------------------
+                    float walk = Controller.WalkDirection.magnitude;
+                    if (Controller.WalkDirection.y <= 0f)
                     {
-                        Anim.SetTrigger(IdleNames[0]);
+                        walk = -walk;
                     }
-                    else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-                    {
-                        Anim.SetTrigger(IdleNames[1]);
-                    }
-                    else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-                    {
-                        Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
-                    }
-                    Controller.ResetIdleTime();
+                    Anim.SetFloat("Forward", walk);
+                    // ---------------------------------------------------------------------------------------------
                 }
 
-                if (!Controller.IsIdle && LastIdle)
+                // Stand - Crouch
+                if (State == ControlState.Stand || State == ControlState.Crouch)
                 {
-                    Anim.SetTrigger("UnIdle");
-                }
+                    // ---------------------------------------------------------------------------------------------
+                    // Idle
+                    // ---------------------------------------------------------------------------------------------
+                    if (Controller.IdleTime >= IdleTime)
+                    {
+                        if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+                        {
+                            Anim.SetTrigger(IdleNames[0]);
+                        }
+                        else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                        {
+                            Anim.SetTrigger(IdleNames[1]);
+                        }
+                        else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                        {
+                            Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
+                        }
+                        Controller.ResetIdleTime();
+                    }
+                    if (!Controller.IsIdle && LastIdle)
+                    {
+                        Anim.SetTrigger("UnIdle");
+                    }
+                    // ---------------------------------------------------------------------------------------------
 
-                if (State != ControlState.Sprint)
-                {
+
+                    // ---------------------------------------------------------------------------------------------
+                    // Shooting
+                    // ---------------------------------------------------------------------------------------------
+                    if (Controller.ShootPrimary)
+                    {
+                        Anim.SetTrigger("ShootPrimary");
+                        AlertTimer = AlertTime;
+                    }
+                    else if (Controller.ShootSecondary)
+                    {
+                        Anim.SetTrigger("ShootSecondary");
+                        AlertTimer = AlertTime;
+                    }
+                    else if (Controller.Reload)
+                    {
+                        Anim.SetTrigger("Reload");
+                    }
+                    // ---------------------------------------------------------------------------------------------
+
+
                     State = Controller.Crouch ? ControlState.Crouch : ControlState.Stand;
                 }
 
-                if (State != ControlState.Crouch)
+                // Stand - Sprint
+                if (State == ControlState.Stand || State == ControlState.Sprint)
                 {
+                    // ---------------------------------------------------------------------------------------------
+                    // Jumping
+                    // ---------------------------------------------------------------------------------------------
                     if (Controller.Jump)
                     {
-                        Anim.SetTrigger("Jump");
-                        Body.AddForce(Vector3.up * C.JumpHeight * 200f, ForceMode.Acceleration);
+                        Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
                         State = ControlState.Jump;
                         JumpTimer = JumpTime;
                     }
+                    // ---------------------------------------------------------------------------------------------
+                }
+
+                // Stand
+                if (State == ControlState.Stand)
+                {
+                    if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
+                    {
+                        State = ControlState.Sprint;
+                    }
+                }
+
+                // Crouch
+                if (State == ControlState.Crouch)
+                {
+                    if (Controller.Jump)
+                    {
+                        State = ControlState.Stand;
+                    }
+
+                    // TODO: verify
                     else if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
                     {
                         State = ControlState.Sprint;
                     }
-                    else if (Controller.WalkDirection.y < 0.2f || !Controller.Sprint)
+                }
+
+                // Sprint
+                if (State == ControlState.Sprint)
+                {
+                    if (Controller.WalkDirection.y < 0.8f || !Controller.Sprint)
                     {
                         State = ControlState.Stand;
                     }
                 }
 
-                Anim.SetBool("Sprint", State == ControlState.Sprint);
-                Anim.SetBool("Crouch", State == ControlState.Crouch);
-
-                if (Controller.ShootPrimary)
+                // Jump
+                if (State == ControlState.Jump)
                 {
-                    Anim.SetTrigger("ShootPrimary");
-                    AlertTimer = AlertTime;
-                }
-                else if (Controller.ShootSecondary)
-                {
-                    Anim.SetTrigger("ShootSecondary");
-                    AlertTimer = AlertTime;
+                    JumpTimer -= Time.deltaTime;
+                    if (Grounded && JumpTimer < 0f)
+                    {
+                        State = ControlState.Stand;
+                    }
                 }
 
                 Anim.SetBool("Alert", AlertTimer > 0f);
                 LastIdle = Controller.IsIdle;
+
+                FallAnimTimer = 0f;
             }
+            else
+            {
+                FallAnimTimer += Time.deltaTime;
+            }
+
+            Anim.SetInteger("State", (int)State);
+            Anim.SetBool("Falling", FallAnimTimer >= FallAnimTime);
         }
+    }
+
+    void FixedUpdate()
+    {
+        Grounded = Physics.CheckSphere(transform.position, 0.4f, GameRuntime.PlayerMask, QueryTriggerInteraction.Ignore);
+
+        if (!PrevGrounded && Grounded)
+        {
+            LandTimer = LandTime;
+            FallTimer = 0f;
+        }
+        else
+        {
+            LandTimer -= Time.fixedDeltaTime;
+        }
+        PrevGrounded = Grounded;
+
+        if (Controller != null)
+        {
+            Vector3 lookWalkForward = Controller.LookingAt - Body.position;
+            lookWalkForward.y = 0f;
+            Vector3 moveDirLocal = new Vector3(Controller.WalkDirection.x, 0f, Controller.WalkDirection.y);
+            Vector3 moveDirWorld = CurrDir * moveDirLocal;
+
+            float accStep      = C.Acceleration * Time.fixedDeltaTime;
+            float thrustFactor = ControlValues[(int)State][0];
+            float strafeFactor = ControlValues[(int)State][1];
+            float turnFactor   = ControlValues[(int)State][2];
+
+            if (moveDirLocal.magnitude == 0f)
+            {
+                CurrSpeed *= 0.1f * Time.fixedDeltaTime;
+            }
+            else
+            {
+                CurrSpeed += moveDirWorld * accStep;
+
+                float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
+                CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, C.MaxSpeed * forwardFactor);
+            }
+
+            //if (moveDirLocal.magnitude > 0f)
+            //{
+            //    if (moveDirLocal.z <= 0f)
+            //    {
+            //        moveDirLocal = -moveDirLocal;
+            //        moveDirWorld = CurrDir * moveDirLocal;
+            //    }
+            //}
+            //else
+            //{
+            //    moveDirWorld = transform.forward;
+            //}
+
+            TargetDir = Quaternion.LookRotation(lookWalkForward);
+
+            float angleDiff = Quaternion.Angle(CurrDir, TargetDir);
+            float t = Mathf.Clamp01(C.MaxTurnSpeed * turnFactor / angleDiff);
+            CurrDir = Quaternion.Slerp(CurrDir, TargetDir, t);
+        }
+
+        Body.MoveRotation(CurrDir);
+        Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
     }
 
     void LateUpdate()
