@@ -7,6 +7,8 @@ using UnityEngine.Rendering;
 
 public class GameRuntime : MonoBehaviour
 {
+    public const int PlayerMask = 3;
+
     public static GameRuntime Instance { get; private set; } = null;
     public RPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
 

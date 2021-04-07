@@ -19,6 +19,7 @@ public class SWBFCamera : MonoBehaviour
     public float      FreeRotationSpeed  = 5.0f;
     public Vector3    PositionOffset     = new Vector3(0f, 2f, -2f);
     public float      FollowSpeed        = 10.0f;
+    public float      MouseSensitivity   = 5f;
 
     const float RotVertMin = -45f;
     const float RotVertMax = 45f;
@@ -69,6 +70,11 @@ public class SWBFCamera : MonoBehaviour
 
     void Update()
     {
+
+    }
+
+    void FixedUpdate()
+    {
         if (Mode == CamMode.Follow)
         {
             Vector3 rotPoint = FollowInstance.transform.position;
@@ -88,8 +94,8 @@ public class SWBFCamera : MonoBehaviour
             //Quaternion targetRot = CamTargetRot * Quaternion.AngleAxis(Player.MouseDiff.y * -10f, viewRight) * Quaternion.AngleAxis(Player.MouseDiff.x * 10f, Vector3.up);
 
             Vector3 viewDir = CamTargetRot * Vector3.forward;
-            viewDir = Quaternion.AngleAxis(Player.MouseDiff.y * -10f, viewRight) * viewDir;
-            viewDir = Quaternion.AngleAxis(Player.MouseDiff.x * 10f, Vector3.up) * viewDir;
+            viewDir = Quaternion.AngleAxis(-Player.MouseDiff.y * MouseSensitivity, viewRight) * viewDir;
+            viewDir = Quaternion.AngleAxis(Player.MouseDiff.x * MouseSensitivity, Vector3.up) * viewDir;
 
             // TODO: this is a dumb way of rotating on the local X axis
             Quaternion targetRot = Quaternion.LookRotation(viewDir);
@@ -106,10 +112,7 @@ public class SWBFCamera : MonoBehaviour
             CamTargetRot = Quaternion.LookRotation(viewDir);
             CamTargetPos += CamTargetRot * new Vector3(PositionOffset.x, 0f, 0f);
         }
-    }
 
-    void FixedUpdate()
-    { 
         if (Mode == CamMode.Free)
         {
             transform.position += transform.forward * Input.GetAxis("Vertical")   * Time.fixedDeltaTime * FreeMoveSpeed;
