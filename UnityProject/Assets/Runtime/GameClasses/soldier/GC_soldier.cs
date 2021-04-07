@@ -144,6 +144,7 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
         Body.mass = 80f;
         Body.drag = 0f;
         Body.angularDrag = 1f;
+        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         CapsuleCollider coll = gameObject.AddComponent<CapsuleCollider>();
