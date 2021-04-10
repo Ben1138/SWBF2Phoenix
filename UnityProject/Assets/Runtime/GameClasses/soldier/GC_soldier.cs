@@ -485,20 +485,20 @@ public class GC_soldier : ISWBFInstance<GC_soldier.ClassProperties>, ISWBFSelect
                 CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, C.MaxSpeed * forwardFactor);
             }
 
-            //if (moveDirLocal.magnitude > 0f)
-            //{
-            //    if (moveDirLocal.z <= 0f)
-            //    {
-            //        moveDirLocal = -moveDirLocal;
-            //        moveDirWorld = CurrDir * moveDirLocal;
-            //    }
-            //}
-            //else
-            //{
-            //    moveDirWorld = transform.forward;
-            //}
+            if (moveDirLocal.magnitude > 0f)
+            {
+                if (moveDirLocal.z <= 0f)
+                {
+                    moveDirLocal = -moveDirLocal;
+                    moveDirWorld = CurrDir * moveDirLocal;
+                }
+            }
+            else
+            {
+                moveDirWorld = transform.forward;
+            }
 
-            TargetDir = Quaternion.LookRotation(lookWalkForward);
+            TargetDir = Quaternion.LookRotation(moveDirWorld);
 
             float angleDiff = Quaternion.Angle(CurrDir, TargetDir);
             float t = Mathf.Clamp01(C.MaxTurnSpeed * turnFactor / angleDiff);

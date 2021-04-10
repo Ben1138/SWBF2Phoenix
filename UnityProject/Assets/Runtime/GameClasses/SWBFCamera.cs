@@ -20,17 +20,18 @@ public class SWBFCamera : MonoBehaviour
     public Vector3    PositionOffset     = new Vector3(0f, 2f, -2f);
     public float      FollowSpeed        = 10.0f;
     public float      MouseSensitivity   = 5f;
+    //public bool       ClampToTurnSpeed   = false;
 
     const float RotVertMin = -45f;
     const float RotVertMax = 45f;
 
     Rigidbody     Body;
-    ISWBFInstance FollowInstance;
+    GC_soldier    FollowInstance;
     Vector3       CamTargetPos;
     Quaternion    CamTargetRot;
 
 
-    public void Follow(ISWBFInstance follow)
+    public void Follow(GC_soldier follow)
     {
         Mode = CamMode.Follow;
         FollowInstance = follow;
