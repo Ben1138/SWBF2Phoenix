@@ -17,7 +17,7 @@ public class PhxLuaEditor : EditorWindow
     TableTreeView TreeView;
 
 
-    [MenuItem("Runtime/Lua Editor")]
+    [MenuItem("Phoenix/Lua Editor")]
     public static void OpenLuaEditor()
     {
         PhxLuaEditor window = GetWindow<PhxLuaEditor>();

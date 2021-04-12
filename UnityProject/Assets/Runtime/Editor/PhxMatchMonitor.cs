@@ -8,7 +8,7 @@ public class PhxMatchMonitor : EditorWindow
 {
     Vector2 ScrollPos;
 
-    [MenuItem("Runtime/Match Monitor")]
+    [MenuItem("Phoenix/Match Monitor")]
     public static void OpenLuaEditor()
     {
         PhxMatchMonitor window = GetWindow<PhxMatchMonitor>();
