@@ -15,7 +15,7 @@ public class PhxEnvironmentMonitor : EditorWindow
         FallbackLVLStyle.normal.textColor = Color.yellow;
     }
 
-    [MenuItem("Runtime/Environment Monitor")]
+    [MenuItem("Phoenix/Environment Monitor")]
     public static void OpenEnvironmentMonitor()
     {
         PhxEnvironmentMonitor window = GetWindow<PhxEnvironmentMonitor>();
