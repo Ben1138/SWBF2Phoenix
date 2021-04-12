@@ -8,7 +8,7 @@ public class PhxTimerMonitor : EditorWindow
 {
     Vector2 ScrollPos;
 
-    [MenuItem("Runtime/Timer Monitor")]
+    [MenuItem("Phoenix/Timer Monitor")]
     public static void OpenLuaEditor()
     {
         PhxTimerMonitor window = GetWindow<PhxTimerMonitor>();
