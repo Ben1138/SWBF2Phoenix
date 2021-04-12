@@ -46,6 +46,7 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+*.vsconfig
 
 # Unity3D generated meta files
 *.pidb.meta
@@ -73,3 +74,6 @@ crashlytics-build.properties
 # Ignore compiled libs
 *.dll
 *.pdb
+
+# Ignore build folder
+.Build
