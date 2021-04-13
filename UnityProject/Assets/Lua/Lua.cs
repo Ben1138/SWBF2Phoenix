@@ -2,6 +2,8 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Reflection.Emit;
 
 
 using lua_State_ptr = System.IntPtr;
@@ -13,8 +15,26 @@ using luaL_reg_ptr = System.IntPtr;
 using luaL_Buffer_ptr = System.IntPtr;
 
 
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+public struct LuaDebug
+{
+	int Event;
+	string Name;
+	string Namewhat;
+	string What;
+	string Source;
+	int CurrentLine;
+	int Nups;
+	int LineDefined;
+
+	[MarshalAs(UnmanagedType.ByValArray, SizeConst = Lua.LUA_IDSIZE)]
+	byte[] Short_src;
+
+	int I_ci;
+}
+
 // Don't permanently store references of these! 
-public class Lua
+public sealed class Lua
 {
 	/* 
 	** ===============================================================
@@ -25,7 +45,7 @@ public class Lua
 	public delegate int CFunction(Lua L);
 	//public delegate byte[] Chunkreader(Lua L, void_ptr ud, out size_t sz);
 	//public delegate int Chunkwriter(Lua L, void_ptr p, size_t sz, void_ptr ud);
-	public delegate void Hook(Lua L, out Debug ar);
+	public delegate void Hook(Lua L, LuaDebug ar);
 
 	public enum ValueType : int
 	{
@@ -74,35 +94,32 @@ public class Lua
 	public const int LUA_REGISTRYINDEX = -10000;
 	public const int LUA_GLOBALSINDEX = -10001;
 
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-	public struct Debug
-	{
-		int Event;
-		string Name;
-		string Namewhat;
-		string What;
-		string Source;
-		int CurrentLine;
-		int Nups;
-		int LineDefined;
-
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst = LUA_IDSIZE)]
-		byte[] Short_src;
-
-		int I_ci;
-	}
-
 	readonly lua_State_ptr L;
-	static Dictionary<lua_State_ptr, Lua> LuaInstances = new Dictionary<lua_State_ptr, Lua>();
+	static Dictionary<lua_State_ptr, WeakReference<Lua>> LuaInstances = new Dictionary<lua_State_ptr, WeakReference<Lua>>();
 
-	// These exist merely to keep references to all lua lambdas, so they don't get GC'd, which
-	// will lead to a crash otherwise when lua tries to call a deleted C# callback
-	List<LuaWrapper.lua_CFunction> LuaCFunctions = new List<LuaWrapper.lua_CFunction>();
+	// This is an utterly disgusting solution...
+	// Since IL2CPP does NOT support marshalling non-static functions, we cannot create lambda callbacks. 
+	// (which would've made this 100 times easier and is in fact how this was handled before I tried to actually build this project...)
+	// Since we only can marshal static functions, we cannot provide just one single static function, since that'll be called
+	// for ALL callbacks ever registered and we don't have a way to differentiate.
+	// So in order to map some static C# function pointer to any other kind of method (static, instance, lambda),
+	// we provide an arbitrary pool of predefined static functions, which only executes the associated function provided in this map below.
+	//static List<CFunction> CallbackMap = new List<CFunction>();
+
+	List<LuaWrapper.lua_CFunction> CreatedCallbacks = new List<LuaWrapper.lua_CFunction>();
+	static Dictionary<int, CFunction> CallbackInstanceMap = new Dictionary<int, CFunction>();
+	static int CallbackCounter;
 
 	public Lua()
 	{
 		L = LuaWrapper.lua_open();
-		LuaInstances.Add(L, this);
+		LuaInstances.Add(L, new WeakReference<Lua>(this));
+	}
+
+	Lua(lua_State_ptr l)
+    {
+		L = l;
+		LuaInstances.Add(L, new WeakReference<Lua>(this));
 	}
 
 	~Lua()
@@ -111,19 +128,58 @@ public class Lua
 		LuaInstances.Remove(L);
 	}
 
-	LuaWrapper.lua_CFunction CB_Function(CFunction fn)
+	static Lua GetLuaInstance(lua_State_ptr l)
 	{
-		LuaWrapper.lua_CFunction cb = (lua_State_ptr L) =>
+		if (LuaInstances.TryGetValue(l, out WeakReference<Lua> luaRef))
 		{
-			return fn(LuaInstances[L]);
-		};
-		LuaCFunctions.Add(cb);
-		return cb;
+			if (luaRef.TryGetTarget(out Lua lua))
+            {
+				return lua;
+            }
+			LuaInstances.Remove(l);
+		}
+		return new Lua(l);
 	}
 
-	CFunction CB_Function(LuaWrapper.lua_CFunction fn)
+	static int CallCallback(lua_State_ptr l, int idx)
+    {
+		if (CallbackInstanceMap.TryGetValue(idx, out CFunction fn))
+        {
+			Lua lua = GetLuaInstance(l);
+			return fn(lua);
+        }
+		// Error!
+		return 0;
+	}
+
+	LuaWrapper.lua_CFunction CB_Function(CFunction fn)
+    {
+		int idx = CallbackCounter++;
+		CallbackInstanceMap.Add(idx, fn);
+
+		DynamicMethod staticCallback = new DynamicMethod(
+			$"CBFunc{idx}_{fn.GetMethodInfo().Name}", 
+			MethodAttributes.Public | MethodAttributes.Static, 
+			CallingConventions.Standard,
+			typeof(int),									// return type
+			new Type[] { typeof(lua_State_ptr) },			// parameter types
+			typeof(Lua),									// who is the owner of this static method
+			false
+		);
+
+		ILGenerator gen = staticCallback.GetILGenerator();
+		gen.Emit(OpCodes.Ldarg_0);
+		gen.Emit(OpCodes.Ldc_I4, idx);
+		gen.EmitCall(OpCodes.Call, typeof(Lua).GetMethod("CallCallback", BindingFlags.NonPublic | BindingFlags.Static), new Type[] { typeof(lua_State_ptr), typeof(int) });
+		gen.Emit(OpCodes.Ret);
+
+		LuaWrapper.lua_CFunction cb = (LuaWrapper.lua_CFunction)staticCallback.CreateDelegate(typeof(LuaWrapper.lua_CFunction));
+		CreatedCallbacks.Add(cb);
+		return cb;
+    }
+
+    CFunction CB_Function(LuaWrapper.lua_CFunction fn)
 	{
-		LuaCFunctions.Add(fn);
 		return (Lua L) =>
 		{
 			return fn(L.L);
@@ -139,13 +195,10 @@ public class Lua
 	//	};
 	//}
 
-	LuaWrapper.lua_Hook CB_Hook(Hook fn)
+	static Hook HookFn = null;
+	static void CB_Hook(lua_State_ptr l, lua_Debug_ptr ar)
 	{
-		return (lua_State_ptr L, lua_Debug_ptr ar) => 
-		{
-			Debug d = Marshal.PtrToStructure<Debug>(ar);
-			fn(LuaInstances[L], out d); 
-		};
+		HookFn?.Invoke(GetLuaInstance(l), Marshal.PtrToStructure<LuaDebug>(ar));
 	}
 
 	//Hook CB_Hook(LuaWrapper.lua_Hook fn)
@@ -226,7 +279,7 @@ public class Lua
 	}
 	public string TypeName(int tp)
 	{
-		return Marshal.PtrToStringAnsi(LuaWrapper.lua_typename(L, tp));
+		return LuaWrapper.lua_typename(L, tp);
 	}
 
 	public bool Equal(int idx1, int idx2)
@@ -256,7 +309,7 @@ public class Lua
 	}
 	public string ToStringUnicode(int idx)
 	{
-		IntPtr uniPtr = LuaWrapper.lua_tostring(L, idx);
+		char_ptr uniPtr = LuaWrapper.lua_tostring(L, idx);
 		int len = (int)LuaWrapper.lua_strlen(L, idx);
 		byte[] uniChars = new byte[len];
 		Marshal.Copy(uniPtr, uniChars, 0, len);
@@ -298,9 +351,7 @@ public class Lua
 	}
 	public void PushString(string s)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(s);
-		LuaWrapper.lua_pushstring(L, str);
-		Marshal.FreeHGlobal(str);
+		LuaWrapper.lua_pushstring(L, s);
 	}
 	public void PushStringUnicode(string s)
 	{
@@ -445,7 +496,7 @@ public class Lua
 
 	public static string Version()
 	{
-		return Marshal.PtrToStringAnsi(LuaWrapper.lua_version());
+		return LuaWrapper.lua_version();
 	}
 
 	public int Error()
@@ -474,31 +525,29 @@ public class Lua
 	}
 	public bool GetInfo(string what, lua_Debug_ptr ar)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(what);
-		int res = LuaWrapper.lua_getinfo(L, str, ar);
-		Marshal.FreeHGlobal(str);
-		return res != 0;
+		return LuaWrapper.lua_getinfo(L, what, ar) != 0;
 	}
 	public string GetLocal(lua_Debug_ptr ar, int n)
 	{
-		return Marshal.PtrToStringAnsi(LuaWrapper.lua_getlocal(L, ar, n));
+		return LuaWrapper.lua_getlocal(L, ar, n);
 	}
 	public string SetLocal(lua_Debug_ptr ar, int n)
 	{
-		return Marshal.PtrToStringAnsi(LuaWrapper.lua_setlocal(L, ar, n));
+		return LuaWrapper.lua_setlocal(L, ar, n);
 	}
 	public string GetUpValue(int funcindex, int n)
 	{
-		return Marshal.PtrToStringAnsi(LuaWrapper.lua_getupvalue(L, funcindex, n));
+		return LuaWrapper.lua_getupvalue(L, funcindex, n);
 	}
 	public string SetUpValue(int funcindex, int n)
 	{
-		return Marshal.PtrToStringAnsi(LuaWrapper.lua_setupvalue(L, funcindex, n));
+		return LuaWrapper.lua_setupvalue(L, funcindex, n);
 	}
 
 	public int SetHook(Hook func, HookMask mask, int count)
 	{
-		return LuaWrapper.lua_sethook(L, CB_Hook(func), (int)mask, count);
+		HookFn = func;
+		return LuaWrapper.lua_sethook(L, CB_Hook, (int)mask, count);
 	}
 	//public Hook GetHook()
 	//{
@@ -598,48 +647,31 @@ public class Lua
 
 	public void OpenLib(string libname, luaL_reg_ptr l, int nup)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(libname);
-		LuaWrapper.luaL_openlib(L, str, l, nup);
-		Marshal.FreeHGlobal(str);
+		LuaWrapper.luaL_openlib(L, libname, l, nup);
 	}
 	public int GetMetaField(int obj, string e)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(e);
-		int res = LuaWrapper.luaL_getmetafield(L, obj, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_getmetafield(L, obj, e);
 	}
 	public int CallMeta(int obj, string e)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(e);
-		int res = LuaWrapper.luaL_callmeta(L, obj, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_callmeta(L, obj, e);
 	}
 	public int TypError(int narg, string tname)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
-		int res = LuaWrapper.luaL_typerror(L, narg, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_typerror(L, narg, tname);
 	}
 	public int ArgError(int numarg, string extramsg)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(extramsg);
-		int res = LuaWrapper.luaL_argerror(L, numarg, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_argerror(L, numarg, extramsg);
 	}
 	public string CheckLString(int numArg, out size_t l)
 	{
-		return Marshal.PtrToStringAnsi(LuaWrapper.luaL_checklstring(L, numArg, out l));
+		return LuaWrapper.luaL_checklstring(L, numArg, out l);
 	}
 	public string OptLString(int numArg, string def, out size_t l)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(def);
-		char_ptr res = LuaWrapper.luaL_optlstring(L, numArg, str, out l);
-		Marshal.FreeHGlobal(str);
-		return Marshal.PtrToStringAnsi(res);
+		return LuaWrapper.luaL_optlstring(L, numArg, def, out l);
 	}
 	public float CheckNumber(int numArg)
 	{
@@ -652,9 +684,7 @@ public class Lua
 
 	public void CheckStack(int sz, string msg)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(msg);
-		LuaWrapper.luaL_checkstack(L, sz, str);
-		Marshal.FreeHGlobal(str);
+		LuaWrapper.luaL_checkstack(L, sz, msg);
 	}
 	public void CheckType(int narg, int t)
 	{
@@ -667,23 +697,15 @@ public class Lua
 
 	public int NewMetaTable(string tname)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
-		int res = LuaWrapper.luaL_newmetatable(L, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_newmetatable(L, tname);
 	}
 	public void GetMetaTable(string tname)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
-		LuaWrapper.luaL_getmetatable(L, str);
-		Marshal.FreeHGlobal(str);
+		LuaWrapper.luaL_getmetatable(L, tname);
 	}
 	public void_ptr CheckUData(int ud, string tname)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(tname);
-		void_ptr res = LuaWrapper.luaL_checkudata(L, ud, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_checkudata(L, ud, tname);
 	}
 
 	public void Where(int lvl)
@@ -711,17 +733,11 @@ public class Lua
 
 	public int LoadFile(string filename)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(filename);
-		int res = LuaWrapper.luaL_loadfile(L, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_loadfile(L, filename);
 	}
 	public int LoadBuffer(void_ptr buff, size_t sz, string name)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(name);
-		int res = LuaWrapper.luaL_loadbuffer(L, buff, sz, str);
-		Marshal.FreeHGlobal(str);
-		return res;
+		return LuaWrapper.luaL_loadbuffer(L, buff, sz, name);
 	}
 
 	public void BuffInit(luaL_Buffer_ptr B)
@@ -738,9 +754,7 @@ public class Lua
 	//}
 	public static void AddString(luaL_Buffer_ptr B, string s)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(s);
-		LuaWrapper.luaL_addstring(B, str);
-		Marshal.FreeHGlobal(str);
+		LuaWrapper.luaL_addstring(B, s);
 	}
 	public static void AddValue(luaL_Buffer_ptr B)
 	{
@@ -753,24 +767,15 @@ public class Lua
 
 	public ErrorCode DoFile(string filename)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(filename);
-		int res = LuaWrapper.lua_dofile(L, str);
-		Marshal.FreeHGlobal(str);
-		return (ErrorCode)res;
+		return (ErrorCode)LuaWrapper.lua_dofile(L, filename);
 	}
 	public ErrorCode DoString(string str)
 	{
-		char_ptr s = Marshal.StringToHGlobalAnsi(str);
-		int res = LuaWrapper.lua_dostring(L, s);
-		Marshal.FreeHGlobal(s);
-		return (ErrorCode)res;
+		return (ErrorCode)LuaWrapper.lua_dostring(L, str);
 	}
-	public ErrorCode DoBuffer(IntPtr buff, ulong sz, string n)
+	public ErrorCode DoBuffer(void_ptr buff, ulong sz, string n)
 	{
-		char_ptr str = Marshal.StringToHGlobalAnsi(n);
-		int res = LuaWrapper.lua_dobuffer(L, buff, sz, str);
-		Marshal.FreeHGlobal(str);
-		return (ErrorCode)res;
+		return (ErrorCode)LuaWrapper.lua_dobuffer(L, buff, sz, n);
 	}
 
 	/*
@@ -792,4 +797,216 @@ public class Lua
 	public long CheckLong(int n) => (long)CheckNumber(n);
 	public int OptInt(int n, float d) => (int)OptNumber(n, d);
 	public long OptLong(int n, float d) => (long)OptNumber(n, d);
+
+
+
+
+
+	//LuaWrapper.lua_CFunction[] ProvidedCallbacks = new LuaWrapper.lua_CFunction[]
+	//{
+	//	CBFunc0,  CBFunc1,  CBFunc2,  CBFunc3,  CBFunc4,  CBFunc5,  CBFunc6,  CBFunc7,  CBFunc8,  CBFunc9,
+	//	CBFunc10, CBFunc11, CBFunc12, CBFunc13, CBFunc14, CBFunc15, CBFunc16, CBFunc17, CBFunc18, CBFunc19,
+	//	CBFunc20, CBFunc21, CBFunc22, CBFunc23, CBFunc24, CBFunc25, CBFunc26, CBFunc27, CBFunc28, CBFunc29,
+	//};
+
+	//static int CBFunc0(lua_State_ptr l) => CallbackMap[0].Invoke(GetLuaInstance(l));
+	//static int CBFunc1(lua_State_ptr l) => CallbackMap[1].Invoke(GetLuaInstance(l));
+	//static int CBFunc2(lua_State_ptr l) => CallbackMap[2].Invoke(GetLuaInstance(l));
+	//static int CBFunc3(lua_State_ptr l) => CallbackMap[3].Invoke(GetLuaInstance(l));
+	//static int CBFunc4(lua_State_ptr l) => CallbackMap[4].Invoke(GetLuaInstance(l));
+	//static int CBFunc5(lua_State_ptr l) => CallbackMap[5].Invoke(GetLuaInstance(l));
+	//static int CBFunc6(lua_State_ptr l) => CallbackMap[6].Invoke(GetLuaInstance(l));
+	//static int CBFunc7(lua_State_ptr l) => CallbackMap[7].Invoke(GetLuaInstance(l));
+	//static int CBFunc8(lua_State_ptr l) => CallbackMap[8].Invoke(GetLuaInstance(l));
+	//static int CBFunc9(lua_State_ptr l) => CallbackMap[9].Invoke(GetLuaInstance(l));
+	//static int CBFunc10(lua_State_ptr l) => CallbackMap[10].Invoke(GetLuaInstance(l));
+	//static int CBFunc11(lua_State_ptr l) => CallbackMap[11].Invoke(GetLuaInstance(l));
+	//static int CBFunc12(lua_State_ptr l) => CallbackMap[12].Invoke(GetLuaInstance(l));
+	//static int CBFunc13(lua_State_ptr l) => CallbackMap[13].Invoke(GetLuaInstance(l));
+	//static int CBFunc14(lua_State_ptr l) => CallbackMap[14].Invoke(GetLuaInstance(l));
+	//static int CBFunc15(lua_State_ptr l) => CallbackMap[15].Invoke(GetLuaInstance(l));
+	//static int CBFunc16(lua_State_ptr l) => CallbackMap[16].Invoke(GetLuaInstance(l));
+	//static int CBFunc17(lua_State_ptr l) => CallbackMap[17].Invoke(GetLuaInstance(l));
+	//static int CBFunc18(lua_State_ptr l) => CallbackMap[18].Invoke(GetLuaInstance(l));
+	//static int CBFunc19(lua_State_ptr l) => CallbackMap[19].Invoke(GetLuaInstance(l));
+	//static int CBFunc20(lua_State_ptr l) => CallbackMap[20].Invoke(GetLuaInstance(l));
+	//static int CBFunc21(lua_State_ptr l) => CallbackMap[21].Invoke(GetLuaInstance(l));
+	//static int CBFunc22(lua_State_ptr l) => CallbackMap[22].Invoke(GetLuaInstance(l));
+	//static int CBFunc23(lua_State_ptr l) => CallbackMap[23].Invoke(GetLuaInstance(l));
+	//static int CBFunc24(lua_State_ptr l) => CallbackMap[24].Invoke(GetLuaInstance(l));
+	//static int CBFunc25(lua_State_ptr l) => CallbackMap[25].Invoke(GetLuaInstance(l));
+	//static int CBFunc26(lua_State_ptr l) => CallbackMap[26].Invoke(GetLuaInstance(l));
+	//static int CBFunc27(lua_State_ptr l) => CallbackMap[27].Invoke(GetLuaInstance(l));
+	//static int CBFunc28(lua_State_ptr l) => CallbackMap[28].Invoke(GetLuaInstance(l));
+	//static int CBFunc29(lua_State_ptr l) => CallbackMap[29].Invoke(GetLuaInstance(l));
+	//static int CBFunc30(lua_State_ptr l) => CallbackMap[30].Invoke(GetLuaInstance(l));
+	//static int CBFunc31(lua_State_ptr l) => CallbackMap[31].Invoke(GetLuaInstance(l));
+	//static int CBFunc32(lua_State_ptr l) => CallbackMap[32].Invoke(GetLuaInstance(l));
+	//static int CBFunc33(lua_State_ptr l) => CallbackMap[33].Invoke(GetLuaInstance(l));
+	//static int CBFunc34(lua_State_ptr l) => CallbackMap[34].Invoke(GetLuaInstance(l));
+	//static int CBFunc35(lua_State_ptr l) => CallbackMap[35].Invoke(GetLuaInstance(l));
+	//static int CBFunc36(lua_State_ptr l) => CallbackMap[36].Invoke(GetLuaInstance(l));
+	//static int CBFunc37(lua_State_ptr l) => CallbackMap[37].Invoke(GetLuaInstance(l));
+	//static int CBFunc38(lua_State_ptr l) => CallbackMap[38].Invoke(GetLuaInstance(l));
+	//static int CBFunc39(lua_State_ptr l) => CallbackMap[39].Invoke(GetLuaInstance(l));
+	//static int CBFunc40(lua_State_ptr l) => CallbackMap[40].Invoke(GetLuaInstance(l));
+	//static int CBFunc41(lua_State_ptr l) => CallbackMap[41].Invoke(GetLuaInstance(l));
+	//static int CBFunc42(lua_State_ptr l) => CallbackMap[42].Invoke(GetLuaInstance(l));
+	//static int CBFunc43(lua_State_ptr l) => CallbackMap[43].Invoke(GetLuaInstance(l));
+	//static int CBFunc44(lua_State_ptr l) => CallbackMap[44].Invoke(GetLuaInstance(l));
+	//static int CBFunc45(lua_State_ptr l) => CallbackMap[45].Invoke(GetLuaInstance(l));
+	//static int CBFunc46(lua_State_ptr l) => CallbackMap[46].Invoke(GetLuaInstance(l));
+	//static int CBFunc47(lua_State_ptr l) => CallbackMap[47].Invoke(GetLuaInstance(l));
+	//static int CBFunc48(lua_State_ptr l) => CallbackMap[48].Invoke(GetLuaInstance(l));
+	//static int CBFunc49(lua_State_ptr l) => CallbackMap[49].Invoke(GetLuaInstance(l));
+	//static int CBFunc50(lua_State_ptr l) => CallbackMap[50].Invoke(GetLuaInstance(l));
+	//static int CBFunc51(lua_State_ptr l) => CallbackMap[51].Invoke(GetLuaInstance(l));
+	//static int CBFunc52(lua_State_ptr l) => CallbackMap[52].Invoke(GetLuaInstance(l));
+	//static int CBFunc53(lua_State_ptr l) => CallbackMap[53].Invoke(GetLuaInstance(l));
+	//static int CBFunc54(lua_State_ptr l) => CallbackMap[54].Invoke(GetLuaInstance(l));
+	//static int CBFunc55(lua_State_ptr l) => CallbackMap[55].Invoke(GetLuaInstance(l));
+	//static int CBFunc56(lua_State_ptr l) => CallbackMap[56].Invoke(GetLuaInstance(l));
+	//static int CBFunc57(lua_State_ptr l) => CallbackMap[57].Invoke(GetLuaInstance(l));
+	//static int CBFunc58(lua_State_ptr l) => CallbackMap[58].Invoke(GetLuaInstance(l));
+	//static int CBFunc59(lua_State_ptr l) => CallbackMap[59].Invoke(GetLuaInstance(l));
+	//static int CBFunc60(lua_State_ptr l) => CallbackMap[60].Invoke(GetLuaInstance(l));
+	//static int CBFunc61(lua_State_ptr l) => CallbackMap[61].Invoke(GetLuaInstance(l));
+	//static int CBFunc62(lua_State_ptr l) => CallbackMap[62].Invoke(GetLuaInstance(l));
+	//static int CBFunc63(lua_State_ptr l) => CallbackMap[63].Invoke(GetLuaInstance(l));
+	//static int CBFunc64(lua_State_ptr l) => CallbackMap[64].Invoke(GetLuaInstance(l));
+	//static int CBFunc65(lua_State_ptr l) => CallbackMap[65].Invoke(GetLuaInstance(l));
+	//static int CBFunc66(lua_State_ptr l) => CallbackMap[66].Invoke(GetLuaInstance(l));
+	//static int CBFunc67(lua_State_ptr l) => CallbackMap[67].Invoke(GetLuaInstance(l));
+	//static int CBFunc68(lua_State_ptr l) => CallbackMap[68].Invoke(GetLuaInstance(l));
+	//static int CBFunc69(lua_State_ptr l) => CallbackMap[69].Invoke(GetLuaInstance(l));
+	//static int CBFunc70(lua_State_ptr l) => CallbackMap[70].Invoke(GetLuaInstance(l));
+	//static int CBFunc71(lua_State_ptr l) => CallbackMap[71].Invoke(GetLuaInstance(l));
+	//static int CBFunc72(lua_State_ptr l) => CallbackMap[72].Invoke(GetLuaInstance(l));
+	//static int CBFunc73(lua_State_ptr l) => CallbackMap[73].Invoke(GetLuaInstance(l));
+	//static int CBFunc74(lua_State_ptr l) => CallbackMap[74].Invoke(GetLuaInstance(l));
+	//static int CBFunc75(lua_State_ptr l) => CallbackMap[75].Invoke(GetLuaInstance(l));
+	//static int CBFunc76(lua_State_ptr l) => CallbackMap[76].Invoke(GetLuaInstance(l));
+	//static int CBFunc77(lua_State_ptr l) => CallbackMap[77].Invoke(GetLuaInstance(l));
+	//static int CBFunc78(lua_State_ptr l) => CallbackMap[78].Invoke(GetLuaInstance(l));
+	//static int CBFunc79(lua_State_ptr l) => CallbackMap[79].Invoke(GetLuaInstance(l));
+	//static int CBFunc80(lua_State_ptr l) => CallbackMap[80].Invoke(GetLuaInstance(l));
+	//static int CBFunc81(lua_State_ptr l) => CallbackMap[81].Invoke(GetLuaInstance(l));
+	//static int CBFunc82(lua_State_ptr l) => CallbackMap[82].Invoke(GetLuaInstance(l));
+	//static int CBFunc83(lua_State_ptr l) => CallbackMap[83].Invoke(GetLuaInstance(l));
+	//static int CBFunc84(lua_State_ptr l) => CallbackMap[84].Invoke(GetLuaInstance(l));
+	//static int CBFunc85(lua_State_ptr l) => CallbackMap[85].Invoke(GetLuaInstance(l));
+	//static int CBFunc86(lua_State_ptr l) => CallbackMap[86].Invoke(GetLuaInstance(l));
+	//static int CBFunc87(lua_State_ptr l) => CallbackMap[87].Invoke(GetLuaInstance(l));
+	//static int CBFunc88(lua_State_ptr l) => CallbackMap[88].Invoke(GetLuaInstance(l));
+	//static int CBFunc89(lua_State_ptr l) => CallbackMap[89].Invoke(GetLuaInstance(l));
+	//static int CBFunc90(lua_State_ptr l) => CallbackMap[90].Invoke(GetLuaInstance(l));
+	//static int CBFunc91(lua_State_ptr l) => CallbackMap[91].Invoke(GetLuaInstance(l));
+	//static int CBFunc92(lua_State_ptr l) => CallbackMap[92].Invoke(GetLuaInstance(l));
+	//static int CBFunc93(lua_State_ptr l) => CallbackMap[93].Invoke(GetLuaInstance(l));
+	//static int CBFunc94(lua_State_ptr l) => CallbackMap[94].Invoke(GetLuaInstance(l));
+	//static int CBFunc95(lua_State_ptr l) => CallbackMap[95].Invoke(GetLuaInstance(l));
+	//static int CBFunc96(lua_State_ptr l) => CallbackMap[96].Invoke(GetLuaInstance(l));
+	//static int CBFunc97(lua_State_ptr l) => CallbackMap[97].Invoke(GetLuaInstance(l));
+	//static int CBFunc98(lua_State_ptr l) => CallbackMap[98].Invoke(GetLuaInstance(l));
+	//static int CBFunc99(lua_State_ptr l) => CallbackMap[99].Invoke(GetLuaInstance(l));
+	//static int CBFunc100(lua_State_ptr l) => CallbackMap[100].Invoke(GetLuaInstance(l));
+	//static int CBFunc101(lua_State_ptr l) => CallbackMap[101].Invoke(GetLuaInstance(l));
+	//static int CBFunc102(lua_State_ptr l) => CallbackMap[102].Invoke(GetLuaInstance(l));
+	//static int CBFunc103(lua_State_ptr l) => CallbackMap[103].Invoke(GetLuaInstance(l));
+	//static int CBFunc104(lua_State_ptr l) => CallbackMap[104].Invoke(GetLuaInstance(l));
+	//static int CBFunc105(lua_State_ptr l) => CallbackMap[105].Invoke(GetLuaInstance(l));
+	//static int CBFunc106(lua_State_ptr l) => CallbackMap[106].Invoke(GetLuaInstance(l));
+	//static int CBFunc107(lua_State_ptr l) => CallbackMap[107].Invoke(GetLuaInstance(l));
+	//static int CBFunc108(lua_State_ptr l) => CallbackMap[108].Invoke(GetLuaInstance(l));
+	//static int CBFunc109(lua_State_ptr l) => CallbackMap[109].Invoke(GetLuaInstance(l));
+	//static int CBFunc110(lua_State_ptr l) => CallbackMap[110].Invoke(GetLuaInstance(l));
+	//static int CBFunc111(lua_State_ptr l) => CallbackMap[111].Invoke(GetLuaInstance(l));
+	//static int CBFunc112(lua_State_ptr l) => CallbackMap[112].Invoke(GetLuaInstance(l));
+	//static int CBFunc113(lua_State_ptr l) => CallbackMap[113].Invoke(GetLuaInstance(l));
+	//static int CBFunc114(lua_State_ptr l) => CallbackMap[114].Invoke(GetLuaInstance(l));
+	//static int CBFunc115(lua_State_ptr l) => CallbackMap[115].Invoke(GetLuaInstance(l));
+	//static int CBFunc116(lua_State_ptr l) => CallbackMap[116].Invoke(GetLuaInstance(l));
+	//static int CBFunc117(lua_State_ptr l) => CallbackMap[117].Invoke(GetLuaInstance(l));
+	//static int CBFunc118(lua_State_ptr l) => CallbackMap[118].Invoke(GetLuaInstance(l));
+	//static int CBFunc119(lua_State_ptr l) => CallbackMap[119].Invoke(GetLuaInstance(l));
+	//static int CBFunc120(lua_State_ptr l) => CallbackMap[120].Invoke(GetLuaInstance(l));
+	//static int CBFunc121(lua_State_ptr l) => CallbackMap[121].Invoke(GetLuaInstance(l));
+	//static int CBFunc122(lua_State_ptr l) => CallbackMap[122].Invoke(GetLuaInstance(l));
+	//static int CBFunc123(lua_State_ptr l) => CallbackMap[123].Invoke(GetLuaInstance(l));
+	//static int CBFunc124(lua_State_ptr l) => CallbackMap[124].Invoke(GetLuaInstance(l));
+	//static int CBFunc125(lua_State_ptr l) => CallbackMap[125].Invoke(GetLuaInstance(l));
+	//static int CBFunc126(lua_State_ptr l) => CallbackMap[126].Invoke(GetLuaInstance(l));
+	//static int CBFunc127(lua_State_ptr l) => CallbackMap[127].Invoke(GetLuaInstance(l));
+	//static int CBFunc128(lua_State_ptr l) => CallbackMap[128].Invoke(GetLuaInstance(l));
+	//static int CBFunc129(lua_State_ptr l) => CallbackMap[129].Invoke(GetLuaInstance(l));
+	//static int CBFunc130(lua_State_ptr l) => CallbackMap[130].Invoke(GetLuaInstance(l));
+	//static int CBFunc131(lua_State_ptr l) => CallbackMap[131].Invoke(GetLuaInstance(l));
+	//static int CBFunc132(lua_State_ptr l) => CallbackMap[132].Invoke(GetLuaInstance(l));
+	//static int CBFunc133(lua_State_ptr l) => CallbackMap[133].Invoke(GetLuaInstance(l));
+	//static int CBFunc134(lua_State_ptr l) => CallbackMap[134].Invoke(GetLuaInstance(l));
+	//static int CBFunc135(lua_State_ptr l) => CallbackMap[135].Invoke(GetLuaInstance(l));
+	//static int CBFunc136(lua_State_ptr l) => CallbackMap[136].Invoke(GetLuaInstance(l));
+	//static int CBFunc137(lua_State_ptr l) => CallbackMap[137].Invoke(GetLuaInstance(l));
+	//static int CBFunc138(lua_State_ptr l) => CallbackMap[138].Invoke(GetLuaInstance(l));
+	//static int CBFunc139(lua_State_ptr l) => CallbackMap[139].Invoke(GetLuaInstance(l));
+	//static int CBFunc140(lua_State_ptr l) => CallbackMap[140].Invoke(GetLuaInstance(l));
+	//static int CBFunc141(lua_State_ptr l) => CallbackMap[141].Invoke(GetLuaInstance(l));
+	//static int CBFunc142(lua_State_ptr l) => CallbackMap[142].Invoke(GetLuaInstance(l));
+	//static int CBFunc143(lua_State_ptr l) => CallbackMap[143].Invoke(GetLuaInstance(l));
+	//static int CBFunc144(lua_State_ptr l) => CallbackMap[144].Invoke(GetLuaInstance(l));
+	//static int CBFunc145(lua_State_ptr l) => CallbackMap[145].Invoke(GetLuaInstance(l));
+	//static int CBFunc146(lua_State_ptr l) => CallbackMap[146].Invoke(GetLuaInstance(l));
+	//static int CBFunc147(lua_State_ptr l) => CallbackMap[147].Invoke(GetLuaInstance(l));
+	//static int CBFunc148(lua_State_ptr l) => CallbackMap[148].Invoke(GetLuaInstance(l));
+	//static int CBFunc149(lua_State_ptr l) => CallbackMap[149].Invoke(GetLuaInstance(l));
+	//static int CBFunc150(lua_State_ptr l) => CallbackMap[150].Invoke(GetLuaInstance(l));
+	//static int CBFunc151(lua_State_ptr l) => CallbackMap[151].Invoke(GetLuaInstance(l));
+	//static int CBFunc152(lua_State_ptr l) => CallbackMap[152].Invoke(GetLuaInstance(l));
+	//static int CBFunc153(lua_State_ptr l) => CallbackMap[153].Invoke(GetLuaInstance(l));
+	//static int CBFunc154(lua_State_ptr l) => CallbackMap[154].Invoke(GetLuaInstance(l));
+	//static int CBFunc155(lua_State_ptr l) => CallbackMap[155].Invoke(GetLuaInstance(l));
+	//static int CBFunc156(lua_State_ptr l) => CallbackMap[156].Invoke(GetLuaInstance(l));
+	//static int CBFunc157(lua_State_ptr l) => CallbackMap[157].Invoke(GetLuaInstance(l));
+	//static int CBFunc158(lua_State_ptr l) => CallbackMap[158].Invoke(GetLuaInstance(l));
+	//static int CBFunc159(lua_State_ptr l) => CallbackMap[159].Invoke(GetLuaInstance(l));
+	//static int CBFunc160(lua_State_ptr l) => CallbackMap[160].Invoke(GetLuaInstance(l));
+	//static int CBFunc161(lua_State_ptr l) => CallbackMap[161].Invoke(GetLuaInstance(l));
+	//static int CBFunc162(lua_State_ptr l) => CallbackMap[162].Invoke(GetLuaInstance(l));
+	//static int CBFunc163(lua_State_ptr l) => CallbackMap[163].Invoke(GetLuaInstance(l));
+	//static int CBFunc164(lua_State_ptr l) => CallbackMap[164].Invoke(GetLuaInstance(l));
+	//static int CBFunc165(lua_State_ptr l) => CallbackMap[165].Invoke(GetLuaInstance(l));
+	//static int CBFunc166(lua_State_ptr l) => CallbackMap[166].Invoke(GetLuaInstance(l));
+	//static int CBFunc167(lua_State_ptr l) => CallbackMap[167].Invoke(GetLuaInstance(l));
+	//static int CBFunc168(lua_State_ptr l) => CallbackMap[168].Invoke(GetLuaInstance(l));
+	//static int CBFunc169(lua_State_ptr l) => CallbackMap[169].Invoke(GetLuaInstance(l));
+	//static int CBFunc170(lua_State_ptr l) => CallbackMap[170].Invoke(GetLuaInstance(l));
+	//static int CBFunc171(lua_State_ptr l) => CallbackMap[171].Invoke(GetLuaInstance(l));
+	//static int CBFunc172(lua_State_ptr l) => CallbackMap[172].Invoke(GetLuaInstance(l));
+	//static int CBFunc173(lua_State_ptr l) => CallbackMap[173].Invoke(GetLuaInstance(l));
+	//static int CBFunc174(lua_State_ptr l) => CallbackMap[174].Invoke(GetLuaInstance(l));
+	//static int CBFunc175(lua_State_ptr l) => CallbackMap[175].Invoke(GetLuaInstance(l));
+	//static int CBFunc176(lua_State_ptr l) => CallbackMap[176].Invoke(GetLuaInstance(l));
+	//static int CBFunc177(lua_State_ptr l) => CallbackMap[177].Invoke(GetLuaInstance(l));
+	//static int CBFunc178(lua_State_ptr l) => CallbackMap[178].Invoke(GetLuaInstance(l));
+	//static int CBFunc179(lua_State_ptr l) => CallbackMap[179].Invoke(GetLuaInstance(l));
+	//static int CBFunc180(lua_State_ptr l) => CallbackMap[180].Invoke(GetLuaInstance(l));
+	//static int CBFunc181(lua_State_ptr l) => CallbackMap[181].Invoke(GetLuaInstance(l));
+	//static int CBFunc182(lua_State_ptr l) => CallbackMap[182].Invoke(GetLuaInstance(l));
+	//static int CBFunc183(lua_State_ptr l) => CallbackMap[183].Invoke(GetLuaInstance(l));
+	//static int CBFunc184(lua_State_ptr l) => CallbackMap[184].Invoke(GetLuaInstance(l));
+	//static int CBFunc185(lua_State_ptr l) => CallbackMap[185].Invoke(GetLuaInstance(l));
+	//static int CBFunc186(lua_State_ptr l) => CallbackMap[186].Invoke(GetLuaInstance(l));
+	//static int CBFunc187(lua_State_ptr l) => CallbackMap[187].Invoke(GetLuaInstance(l));
+	//static int CBFunc188(lua_State_ptr l) => CallbackMap[188].Invoke(GetLuaInstance(l));
+	//static int CBFunc189(lua_State_ptr l) => CallbackMap[189].Invoke(GetLuaInstance(l));
+	//static int CBFunc190(lua_State_ptr l) => CallbackMap[190].Invoke(GetLuaInstance(l));
+	//static int CBFunc191(lua_State_ptr l) => CallbackMap[191].Invoke(GetLuaInstance(l));
+	//static int CBFunc192(lua_State_ptr l) => CallbackMap[192].Invoke(GetLuaInstance(l));
+	//static int CBFunc193(lua_State_ptr l) => CallbackMap[193].Invoke(GetLuaInstance(l));
+	//static int CBFunc194(lua_State_ptr l) => CallbackMap[194].Invoke(GetLuaInstance(l));
+	//static int CBFunc195(lua_State_ptr l) => CallbackMap[195].Invoke(GetLuaInstance(l));
+	//static int CBFunc196(lua_State_ptr l) => CallbackMap[196].Invoke(GetLuaInstance(l));
+	//static int CBFunc197(lua_State_ptr l) => CallbackMap[197].Invoke(GetLuaInstance(l));
+	//static int CBFunc198(lua_State_ptr l) => CallbackMap[198].Invoke(GetLuaInstance(l));
+	//static int CBFunc199(lua_State_ptr l) => CallbackMap[199].Invoke(GetLuaInstance(l));
 }
