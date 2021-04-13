@@ -16,16 +16,16 @@ public class PhxGameRuntime : MonoBehaviour
     public string Language = "english";
 
     [Header("References")]
-    public PhxLoadscreen       InitScreenPrefab;
-    public PhxLoadscreen       LoadScreenPrefab;
-    public PhxMenuInterface            MainMenuPrefab;
-    public PhxMenuInterface            PauseMenuPrefab;
-    public PhxMenuInterface            CharacterSelectPrefab;
+    public PhxLoadscreen    InitScreenPrefab;
+    public PhxLoadscreen    LoadScreenPrefab;
+    public PhxMenuInterface MainMenuPrefab;
+    public PhxMenuInterface PauseMenuPrefab;
+    public PhxMenuInterface CharacterSelectPrefab;
     public Transform        CharSelectTransform;
     public Volume           CharSelectPPVolume;
     public Volume           PostProcessingVolume;
     public AudioMixerGroup  UIAudioMixer;
-    public PhxCamera       Camera;
+    public PhxCamera        Camera;
     public LineRenderer     AimDebug;
     public PhysicMaterial   GroundPhyMat;
 
@@ -36,8 +36,8 @@ public class PhxGameRuntime : MonoBehaviour
     PhxPath AddonPath => GamePath / "GameData/addon";
     PhxPath StdLVLPC;
 
-    PhxLoadscreen CurrentLS;
-    PhxMenuInterface      CurrentMenu;
+    PhxLoadscreen    CurrentLS;
+    PhxMenuInterface CurrentMenu;
 
     // ring buffer
     AudioSource[] UIAudio = new AudioSource[5];
@@ -252,11 +252,11 @@ public class PhxGameRuntime : MonoBehaviour
         WorldLoader.UseHDRP = true;
 
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
-        if (GamePath.IsFile() || 
-            !GamePath.Exists() || 
-            !CheckExistence("common.lvl") ||
-            !CheckExistence("core.lvl") ||
-            !CheckExistence("ingame.lvl") ||
+        if (GamePath.IsFile()              || 
+            !GamePath.Exists()             || 
+            !CheckExistence("common.lvl")  ||
+            !CheckExistence("core.lvl")    ||
+            !CheckExistence("ingame.lvl")  ||
             !CheckExistence("inshell.lvl") ||
             !CheckExistence("mission.lvl") ||
             !CheckExistence("shell.lvl"))
