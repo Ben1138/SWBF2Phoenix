@@ -98,6 +98,7 @@ public class PhxLuaEditor : EditorWindow
         GUILayout.Space(20);
         EditorGUILayout.LabelField("GC Count", L.GetGCCount().ToString());
         EditorGUILayout.LabelField("GC Threshold", L.GetGCThreshold().ToString());
+        EditorGUILayout.LabelField("Used callbacks", L.UsedCallbackCount.ToString() + "/200");
         GUILayout.EndVertical();
         GUILayout.EndHorizontal();
         

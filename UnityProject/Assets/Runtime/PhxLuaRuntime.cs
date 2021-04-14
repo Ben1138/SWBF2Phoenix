@@ -162,13 +162,13 @@ public class PhxLuaRuntime
     public PhxLuaRuntime()
     {
         L = new Lua();
+        L.OnError += (string msg) => Debug.LogError("[LUA] " + msg);
         L.AtPanic(Panic);
         L.OpenBase();
         L.OpenMath();
         L.OpenString();
         L.OpenTable();
         RegisterLuaFunctions(typeof(PhxLuaAPI));
-        
         Register<Action<object[]>>(Print);
     }
 
