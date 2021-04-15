@@ -7,3 +7,6 @@
 [submodule "UnityProject/Assets/LVLImport"]
 	path = UnityProject/Assets/LVLImport
 url=https://github.com/Ben1138/SWBF2-.lvl-Extraction-Tools-for-Unity3D
+[submodule "UnityProject/Assets/CraUnity"]
+	path = UnityProject/Assets/CraUnity
+	url = https://github.com/Ben1138/CraUnity
