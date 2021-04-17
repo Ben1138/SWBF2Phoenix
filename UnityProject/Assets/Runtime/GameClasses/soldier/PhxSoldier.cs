@@ -81,8 +81,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
     public PhxPawnController Controller;
     Transform HpWeapons;
-    Animator Anim;
-    Avatar Ava;
+    PhxSoldierAnimator Anim;
     Rigidbody Body;
 
     ControlState State;
@@ -160,51 +159,8 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        Ava = AvatarBuilder.BuildGenericAvatar(gameObject, "dummyroot");
-        Anim = gameObject.AddComponent<Animator>();
-        Anim.avatar = Ava;
-        Anim.applyRootMotion = false;
-        RuntimeAnimatorController runtimeAnimController = Resources.Load<RuntimeAnimatorController>(ANIM_CONTROLLER_NAME);
-        if (runtimeAnimController == null)
-        {
-            Debug.LogError($"Could not get runtime animator controller '{ANIM_CONTROLLER_NAME}'!");
-            return;
-        }
-
-        AnimatorOverrideController animController = new AnimatorOverrideController(runtimeAnimController);
-        Anim.runtimeAnimatorController = animController;
-        Anim.cullingMode = AnimatorCullingMode.CullCompletely;
-
-        int numAnims = animController.animationClips.Length;
-        var overrides = new KeyValuePair<AnimationClip, AnimationClip>[numAnims];
-
-        for (int i = 0; i < numAnims; ++i)
-        {
-            AnimationClip src = animController.animationClips[i];
-            if (src == null)
-            {
-                Debug.LogError($"Found unassigned AnimationClip in AnimationController '{ANIM_CONTROLLER_NAME}'!");
-                continue;
-            }
-
-            string weaponAnimBankName = "rifle"; // TODO
-            AnimationClip dst = GetClip(C.SkeletonName, weaponAnimBankName, src.name, "human_0", "tool");
-            if (dst == null)
-            {
-                if (src.name != "stand_idle_lookaround" && src.name != "stand_idle_checkweapon")
-                {
-                    Debug.LogError($"Cannot find Animation '{src.name}' in AnimationBanks '{C.SkeletonName}' / '{C.AnimationName}'!");
-                }
-                continue;
-            }
-
-            bHasLookaroundIdleAnim  = bHasLookaroundIdleAnim  || src.name == "stand_idle_lookaround";
-            bHasCheckweaponIdleAnim = bHasCheckweaponIdleAnim || src.name == "stand_idle_checkweapon";
-
-            overrides[i] = new KeyValuePair<AnimationClip, AnimationClip>(src, dst);
-        }
-        
-        animController.ApplyOverrides(overrides);
+        Anim = gameObject.AddComponent<PhxSoldierAnimator>();
+        Anim.Init();
     }
 
     public override void BindEvents()
@@ -224,14 +180,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
     public void PlayIntroAnim()
     {
-        if (bHasLookaroundIdleAnim)
-        {
-            Anim.SetTrigger("IdleLookaround");
-        }
-        else
-        {
-            Anim.SetTrigger("Reload");
-        }
+        
     }
 
     // see: com_inf_default
@@ -302,148 +251,148 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
     {
         AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
 
-        if (Controller != null)
-        {
-            if (Grounded)
-            {
-                // Stand - Crouch - Sprint
-                if (State == ControlState.Stand || State == ControlState.Crouch || State == ControlState.Sprint)
-                {
-                    // ---------------------------------------------------------------------------------------------
-                    // Forward
-                    // ---------------------------------------------------------------------------------------------
-                    float walk = Controller.WalkDirection.magnitude;
-                    if (Controller.WalkDirection.y <= 0f)
-                    {
-                        walk = -walk;
-                    }
-                    Anim.SetFloat("Forward", walk);
-                    // ---------------------------------------------------------------------------------------------
-                }
+        //if (Controller != null)
+        //{
+        //    if (Grounded)
+        //    {
+        //        // Stand - Crouch - Sprint
+        //        if (State == ControlState.Stand || State == ControlState.Crouch || State == ControlState.Sprint)
+        //        {
+        //            // ---------------------------------------------------------------------------------------------
+        //            // Forward
+        //            // ---------------------------------------------------------------------------------------------
+        //            float walk = Controller.WalkDirection.magnitude;
+        //            if (Controller.WalkDirection.y <= 0f)
+        //            {
+        //                walk = -walk;
+        //            }
+        //            Anim.SetFloat("Forward", walk);
+        //            // ---------------------------------------------------------------------------------------------
+        //        }
 
-                // Stand - Crouch
-                if (State == ControlState.Stand || State == ControlState.Crouch)
-                {
-                    // ---------------------------------------------------------------------------------------------
-                    // Idle
-                    // ---------------------------------------------------------------------------------------------
-                    if (Controller.IdleTime >= IdleTime)
-                    {
-                        if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
-                        {
-                            Anim.SetTrigger(IdleNames[0]);
-                        }
-                        else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-                        {
-                            Anim.SetTrigger(IdleNames[1]);
-                        }
-                        else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-                        {
-                            Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
-                        }
-                        Controller.ResetIdleTime();
-                    }
-                    if (!Controller.IsIdle && LastIdle)
-                    {
-                        Anim.SetTrigger("UnIdle");
-                    }
-                    // ---------------------------------------------------------------------------------------------
-
-
-                    // ---------------------------------------------------------------------------------------------
-                    // Shooting
-                    // ---------------------------------------------------------------------------------------------
-                    if (Controller.ShootPrimary)
-                    {
-                        Anim.SetTrigger("ShootPrimary");
-                        AlertTimer = AlertTime;
-                    }
-                    else if (Controller.ShootSecondary)
-                    {
-                        Anim.SetTrigger("ShootSecondary");
-                        AlertTimer = AlertTime;
-                    }
-                    else if (Controller.Reload)
-                    {
-                        Anim.SetTrigger("Reload");
-                    }
-                    // ---------------------------------------------------------------------------------------------
+        //        // Stand - Crouch
+        //        if (State == ControlState.Stand || State == ControlState.Crouch)
+        //        {
+        //            // ---------------------------------------------------------------------------------------------
+        //            // Idle
+        //            // ---------------------------------------------------------------------------------------------
+        //            if (Controller.IdleTime >= IdleTime)
+        //            {
+        //                if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+        //                {
+        //                    Anim.SetTrigger(IdleNames[0]);
+        //                }
+        //                else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+        //                {
+        //                    Anim.SetTrigger(IdleNames[1]);
+        //                }
+        //                else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+        //                {
+        //                    Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
+        //                }
+        //                Controller.ResetIdleTime();
+        //            }
+        //            if (!Controller.IsIdle && LastIdle)
+        //            {
+        //                Anim.SetTrigger("UnIdle");
+        //            }
+        //            // ---------------------------------------------------------------------------------------------
 
 
-                    State = Controller.Crouch ? ControlState.Crouch : ControlState.Stand;
-                }
+        //            // ---------------------------------------------------------------------------------------------
+        //            // Shooting
+        //            // ---------------------------------------------------------------------------------------------
+        //            if (Controller.ShootPrimary)
+        //            {
+        //                Anim.SetTrigger("ShootPrimary");
+        //                AlertTimer = AlertTime;
+        //            }
+        //            else if (Controller.ShootSecondary)
+        //            {
+        //                Anim.SetTrigger("ShootSecondary");
+        //                AlertTimer = AlertTime;
+        //            }
+        //            else if (Controller.Reload)
+        //            {
+        //                Anim.SetTrigger("Reload");
+        //            }
+        //            // ---------------------------------------------------------------------------------------------
 
-                // Stand - Sprint
-                if (State == ControlState.Stand || State == ControlState.Sprint)
-                {
-                    // ---------------------------------------------------------------------------------------------
-                    // Jumping
-                    // ---------------------------------------------------------------------------------------------
-                    if (Controller.Jump)
-                    {
-                        Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
-                        State = ControlState.Jump;
-                        JumpTimer = JumpTime;
-                    }
-                    // ---------------------------------------------------------------------------------------------
-                }
 
-                // Stand
-                if (State == ControlState.Stand)
-                {
-                    if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
-                    {
-                        State = ControlState.Sprint;
-                    }
-                }
+        //            State = Controller.Crouch ? ControlState.Crouch : ControlState.Stand;
+        //        }
 
-                // Crouch
-                if (State == ControlState.Crouch)
-                {
-                    if (Controller.Jump)
-                    {
-                        State = ControlState.Stand;
-                    }
+        //        // Stand - Sprint
+        //        if (State == ControlState.Stand || State == ControlState.Sprint)
+        //        {
+        //            // ---------------------------------------------------------------------------------------------
+        //            // Jumping
+        //            // ---------------------------------------------------------------------------------------------
+        //            if (Controller.Jump)
+        //            {
+        //                Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
+        //                State = ControlState.Jump;
+        //                JumpTimer = JumpTime;
+        //            }
+        //            // ---------------------------------------------------------------------------------------------
+        //        }
 
-                    // TODO: verify
-                    else if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
-                    {
-                        State = ControlState.Sprint;
-                    }
-                }
+        //        // Stand
+        //        if (State == ControlState.Stand)
+        //        {
+        //            if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
+        //            {
+        //                State = ControlState.Sprint;
+        //            }
+        //        }
 
-                // Sprint
-                if (State == ControlState.Sprint)
-                {
-                    if (Controller.WalkDirection.y < 0.8f || !Controller.Sprint)
-                    {
-                        State = ControlState.Stand;
-                    }
-                }
+        //        // Crouch
+        //        if (State == ControlState.Crouch)
+        //        {
+        //            if (Controller.Jump)
+        //            {
+        //                State = ControlState.Stand;
+        //            }
 
-                // Jump
-                if (State == ControlState.Jump)
-                {
-                    JumpTimer -= Time.deltaTime;
-                    if (Grounded && JumpTimer < 0f)
-                    {
-                        State = ControlState.Stand;
-                    }
-                }
+        //            // TODO: verify
+        //            else if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
+        //            {
+        //                State = ControlState.Sprint;
+        //            }
+        //        }
 
-                Anim.SetBool("Alert", AlertTimer > 0f);
-                LastIdle = Controller.IsIdle;
+        //        // Sprint
+        //        if (State == ControlState.Sprint)
+        //        {
+        //            if (Controller.WalkDirection.y < 0.8f || !Controller.Sprint)
+        //            {
+        //                State = ControlState.Stand;
+        //            }
+        //        }
 
-                FallAnimTimer = 0f;
-            }
-            else
-            {
-                FallAnimTimer += Time.deltaTime;
-            }
+        //        // Jump
+        //        if (State == ControlState.Jump)
+        //        {
+        //            JumpTimer -= Time.deltaTime;
+        //            if (Grounded && JumpTimer < 0f)
+        //            {
+        //                State = ControlState.Stand;
+        //            }
+        //        }
 
-            Anim.SetInteger("State", (int)State);
-            Anim.SetBool("Falling", FallAnimTimer >= FallAnimTime);
-        }
+        //        Anim.SetBool("Alert", AlertTimer > 0f);
+        //        LastIdle = Controller.IsIdle;
+
+        //        FallAnimTimer = 0f;
+        //    }
+        //    else
+        //    {
+        //        FallAnimTimer += Time.deltaTime;
+        //    }
+
+        //    Anim.SetInteger("State", (int)State);
+        //    Anim.SetBool("Falling", FallAnimTimer >= FallAnimTime);
+        //}
     }
 
     void FixedUpdate()
