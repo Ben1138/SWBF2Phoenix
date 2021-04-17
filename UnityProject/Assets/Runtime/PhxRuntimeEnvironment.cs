@@ -127,7 +127,9 @@ public class PhxRuntimeEnvironment
         }
         Debug.Assert(fallbackPath.Exists());
 
+        PhxAnimationLoader.ClearDB();
         GameLuaEvents.Clear();
+
         PhxRuntimeEnvironment rt = new PhxRuntimeEnvironment(envPath, fallbackPath);
         rt.ScheduleLVLRel("core.lvl");
         rt.ScheduleLVLRel("shell.lvl");
@@ -138,6 +140,8 @@ public class PhxRuntimeEnvironment
         rt.RTScene = new PhxRuntimeScene(rt.EnvCon);
         rt.Match = new PhxGameMatch();
         rt.Timers = new PhxTimerDB();
+
+        PhxAnimationLoader.Con = rt.EnvCon;
 
         return rt;
     }
