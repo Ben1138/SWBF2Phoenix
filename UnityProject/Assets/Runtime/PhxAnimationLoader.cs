@@ -21,7 +21,7 @@ public static class PhxAnimationLoader
 
     static PhxAnimationLoader()
     {
-        CraPlayer.BoneHashFunction = (string str) => (int)HashUtils.GetCRC(str);
+        CraSettings.BoneHashFunction = (string str) => (int)HashUtils.GetCRC(str);
     }
 
     public static void ClearDB()
@@ -61,6 +61,7 @@ public static class PhxAnimationLoader
         clip.Name = string.IsNullOrEmpty(clipNaming) ? animNameCRC.ToString() : clipNaming;
 
         uint[] boneCRCs = bank.GetBoneCRCs();
+        clip.Bones = new CraBone[boneCRCs.Length];
         for (int i = 0; i < boneCRCs.Length; ++i)
         {
             CraBone bone = new CraBone();
@@ -87,7 +88,7 @@ public static class PhxAnimationLoader
                 }
             }
 
-            clip.Bones.Add(bone);
+            clip.Bones[i] = bone;
         }
         clip.Bake(60f);
         ClipDB.Add(animID, clip);
