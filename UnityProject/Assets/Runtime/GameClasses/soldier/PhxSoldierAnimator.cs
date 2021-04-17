@@ -4,32 +4,55 @@ using UnityEngine;
 
 public class PhxSoldierAnimator : CraAnimator
 {
-    CraPlayer StandRunForward = new CraPlayer();
-    CraPlayer StandWalkForward = new CraPlayer();
-    CraPlayer StandIdle = new CraPlayer();
-    CraPlayer StandWalkBackward = new CraPlayer();
+    static CraMask UpperBody = new CraMask(true, "");
+    static CraMask LowerBody = new CraMask(true, "");
 
-    bool IsInit = false;
+    int Idle;
+    int Reload;
 
 
     public void Init()
     {
-        StandIdle.SetClip(PhxAnimationLoader.Import("human_0", "human_rifle_stand_idle_emote_full"));
-        StandIdle.Assign(transform);
-        StandIdle.Looping = true;
-        StandIdle.Play();
-        IsInit = true;
+        Idle = AddState(CreateState("human_0", "human_rifle_stand_idle_emote_full", true));
+        Reload = AddState(CreateState("human_0", "human_rifle_stand_reload_full", false));
+        ConnectStates(Idle, Reload);
+        SetState(Idle);
+
+        OnStateFinished += () =>
+        {
+            if (CurrentStateIdx != Idle)
+            {
+                SetState(Idle);
+            }
+        };
     }
 
     public void PlayIntroAnim()
     {
-        
+        SetState(Reload);
+    }
+
+    CraState CreateState(string animBank, string animName, bool loop, string maskBone=null)
+    {
+        CraPlayer anim = new CraPlayer();
+        anim.SetClip(PhxAnimationLoader.Import(animBank, animName));
+
+        if (string.IsNullOrEmpty(maskBone))
+        {
+            anim.Assign(transform);
+        }
+        else
+        {
+            anim.Assign(transform, new CraMask(true, maskBone));
+        }
+
+        anim.Looping = loop;
+        return new CraState(anim);
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (!IsInit) return;
-        StandIdle.Update(Time.deltaTime);
+        Tick(Time.deltaTime);
     }
 }

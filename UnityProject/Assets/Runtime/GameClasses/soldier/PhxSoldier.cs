@@ -180,7 +180,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
     public void PlayIntroAnim()
     {
-        
+        Anim.PlayIntroAnim();
     }
 
     // see: com_inf_default
