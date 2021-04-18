@@ -60,10 +60,15 @@ public static class PhxAnimationLoader
         clip = new CraClip();
         clip.Name = string.IsNullOrEmpty(clipNaming) ? animNameCRC.ToString() : clipNaming;
 
+        uint dummyroot = HashUtils.GetCRC("dummyroot");
+
         uint[] boneCRCs = bank.GetBoneCRCs();
-        clip.Bones = new CraBone[boneCRCs.Length];
+        List<CraBone> bones = new List<CraBone>();
         for (int i = 0; i < boneCRCs.Length; ++i)
         {
+            // no root motion
+            if (boneCRCs[i] == dummyroot) continue;
+
             CraBone bone = new CraBone();
             bone.BoneHash = (int)boneCRCs[i];
             bone.Curve = new CraTransformCurve();
@@ -88,10 +93,29 @@ public static class PhxAnimationLoader
                 }
             }
 
-            clip.Bones[i] = bone;
+            bones.Add(bone);
         }
+        clip.Bones = bones.ToArray();
         clip.Bake(60f);
         ClipDB.Add(animID, clip);
         return clip;
+    }
+
+    public static CraState CreateState(Transform root, string animBank, string animName, bool loop, string maskBone = null)
+    {
+        CraPlayer anim = new CraPlayer();
+        anim.SetClip(Import(animBank, animName));
+
+        if (string.IsNullOrEmpty(maskBone))
+        {
+            anim.Assign(root);
+        }
+        else
+        {
+            anim.Assign(root, new CraMask(true, maskBone));
+        }
+
+        anim.Looping = loop;
+        return new CraState(anim);
     }
 }
