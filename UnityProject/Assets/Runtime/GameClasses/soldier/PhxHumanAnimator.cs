@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 using UnityEngine.EventSystems;
 
 public static class PhxAnimationBanks
@@ -19,6 +20,7 @@ public static class PhxAnimationBanks
 
 public class PhxHumanAnimator : CraAnimator
 {
+    [Range(-1f, 1f)]
     public float Forward;
     public bool Sprinting;
 
@@ -46,7 +48,7 @@ public class PhxHumanAnimator : CraAnimator
         ConnectStates(0, StandIdle, StandRunBackward);
         //ConnectStates(StandIdle, StandReload);
 
-        //ConnectStates(StandRunForward, StandWalkForward);
+        ConnectStates(0, StandWalkForward, StandRunForward);
 
         SetState(0, StandIdle);
         SetState(1, CraSettings.STATE_NONE);
@@ -70,6 +72,7 @@ public class PhxHumanAnimator : CraAnimator
     // Update is called once per frame
     void Update()
     {
+        BlendTo(0, CraSettings.STATE_NONE, 0f);
         if (Sprinting)
         {
             SetState(0, StandSprintFull);
@@ -81,8 +84,9 @@ public class PhxHumanAnimator : CraAnimator
         }
         else if (Forward > 0.5f)
         {
-            SetState(0, StandRunForward);
-            SetPlaybackSpeed(0, StandRunForward, Forward / 1f);
+            SetState(0, StandWalkForward);
+            BlendTo(0, StandRunForward, (Forward - 0.5f) / 0.5f);
+            //SetPlaybackSpeed(0, StandRunForward, Forward / 1f);
         }
         else if (Forward < 0f)
         {
@@ -98,3 +102,31 @@ public class PhxHumanAnimator : CraAnimator
         LastForward = Forward;
     }
 }
+
+//[CustomEditor(typeof(PhxHumanAnimator))]
+//[CanEditMultipleObjects]
+//public class CraAnimatorEditor : Editor
+//{
+//    int ChosenLayer = 0;
+
+//    void OnEnable()
+//    {
+
+//    }
+
+//    public override void OnInspectorGUI()
+//    {
+//        DrawDefaultInspector();
+
+//        PhxHumanAnimator anim = (PhxHumanAnimator)target;
+
+//        ChosenLayer = EditorGUILayout.IntField(ChosenLayer);
+//        if (ChosenLayer >= 0 && ChosenLayer < anim.Layers.Length)
+//        {
+//            CraLayer layer = anim.Layers[ChosenLayer];
+//            layer.CurrentStateIdx = EditorGUILayout.IntField(layer.CurrentStateIdx);
+//            layer.BlendStateIdx = EditorGUILayout.IntField(layer.BlendStateIdx);
+//            layer.BlendValue = EditorGUILayout.FloatField(layer.BlendValue);
+//        }
+//    }
+//}
