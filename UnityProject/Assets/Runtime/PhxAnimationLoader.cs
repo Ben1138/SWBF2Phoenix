@@ -96,7 +96,7 @@ public static class PhxAnimationLoader
             bones.Add(bone);
         }
         clip.Bones = bones.ToArray();
-        clip.Bake(60f);
+        clip.Bake(120f);
         ClipDB.Add(animID, clip);
         return clip;
     }
