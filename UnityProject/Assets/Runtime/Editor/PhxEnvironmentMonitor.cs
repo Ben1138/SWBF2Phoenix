@@ -51,22 +51,5 @@ public class PhxEnvironmentMonitor : EditorWindow
         {
             EditorGUILayout.LabelField(lvl.PathPartial, string.Format("{0:0.} %", env.GetProgress(lvl.Handle) * 100.0f), lvl.bIsFallback ? FallbackLVLStyle : EnvLVLStyle);
         }
-        EditorGUILayout.Space();
-
-        string memStr = "";
-        if (CraClip.GlobalBakeMemoryConsumption >= 1000)
-        {
-            memStr = (CraClip.GlobalBakeMemoryConsumption / 1000f).ToString() + " KB";
-        }
-        else if (CraClip.GlobalBakeMemoryConsumption >= 1000000)
-        {
-            memStr = (CraClip.GlobalBakeMemoryConsumption / 1000000f).ToString() + " MB";
-        }
-        else
-        {
-            memStr = CraClip.GlobalBakeMemoryConsumption.ToString() + " Bytes";
-        }
-
-        EditorGUILayout.LabelField("Animation Memory", memStr);
     }
 }

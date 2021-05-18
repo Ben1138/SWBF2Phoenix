@@ -85,7 +85,7 @@ public static class PhxAnimationLoader
 
                 for (int k = 0; k < indices.Length; ++k)
                 {
-                    int index = (int)indices[k];
+                    int index = indices[k];
                     float time = index < numFrames ? index / 30.0f : numFrames / 30.0f;
                     float value = values[k] * ComponentMultipliers[j];
 
@@ -95,27 +95,45 @@ public static class PhxAnimationLoader
 
             bones.Add(bone);
         }
-        clip.Bones = bones.ToArray();
+        clip.SetBones(bones.ToArray());
         clip.Bake(120f);
         ClipDB.Add(animID, clip);
         return clip;
     }
 
-    public static CraState CreateState(Transform root, string animBank, string animName, bool loop, string maskBone = null)
+    public static CraPlayer CreateState(Transform root, string animBank, string animName, bool loop, string maskBone = null)
     {
-        CraPlayer anim = new CraPlayer();
-        anim.SetClip(Import(animBank, animName));
+        CraPlayer state = new CraPlayer();
+        state.SetClip(Import(animBank, animName));
 
         if (string.IsNullOrEmpty(maskBone))
         {
-            anim.Assign(root);
+            state.Assign(root);
         }
         else
         {
-            anim.Assign(root, new CraMask(true, maskBone));
+            state.Assign(root, new CraMask(true, maskBone));
         }
 
-        anim.Looping = loop;
-        return new CraState(anim);
+        state.Looping = loop;
+        return state;
+    }
+
+    public static CraPlayer CreateState(Transform root, string animBank1, string animName1, string animBank2, string animName2, bool loop, string maskBone = null)
+    {
+        CraPlayer state = new CraPlayer();
+        state.SetClips(Import(animBank1, animName1), Import(animBank2, animName2));
+
+        if (string.IsNullOrEmpty(maskBone))
+        {
+            state.Assign(root);
+        }
+        else
+        {
+            state.Assign(root, new CraMask(true, maskBone));
+        }
+
+        state.Looping = loop;
+        return state;
     }
 }
