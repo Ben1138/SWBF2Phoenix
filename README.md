@@ -1,4 +1,4 @@
-# SWBF2 Unity Runtime
+# SWBF2 Phoenix Project
 
 This project is a re-implementation of the old Star Wars Battlefront II (2005) game, utilizing the Unity game engine.<br/>
 It does so by loading all assets and scripts from the original game files at runtime, providing a compatible API layer for the compiled Lua scripts.<br/>
