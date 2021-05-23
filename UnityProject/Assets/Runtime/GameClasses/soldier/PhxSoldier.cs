@@ -79,9 +79,9 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
+    public PhxHumanAnimator Animator { get; private set; }
     public PhxPawnController Controller;
     Transform HpWeapons;
-    PhxHumanAnimator Anim;
     Rigidbody Body;
 
     ControlState State;
@@ -159,8 +159,8 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        Anim = gameObject.AddComponent<PhxHumanAnimator>();
-        Anim.Init();
+        Animator = gameObject.AddComponent<PhxHumanAnimator>();
+        Animator.Init();
     }
 
     public override void BindEvents()
@@ -180,7 +180,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
     public void PlayIntroAnim()
     {
-        Anim.PlayIntroAnim();
+        Animator.PlayIntroAnim();
     }
 
     // see: com_inf_default
@@ -267,7 +267,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
                         walk = -walk;
                     }
                     //Anim.SetFloat("Forward", walk);
-                    Anim.Forward = walk;
+                    Animator.Forward = walk;
                     // ---------------------------------------------------------------------------------------------
                 }
 
@@ -391,7 +391,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
                 FallAnimTimer += Time.deltaTime;
             }
 
-            Anim.Sprinting = State == ControlState.Sprint;
+            Animator.Sprinting = State == ControlState.Sprint;
             //Anim.SetInteger("State", (int)State);
             //Anim.SetBool("Falling", FallAnimTimer >= FallAnimTime);
         }
