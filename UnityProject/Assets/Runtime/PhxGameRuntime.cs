@@ -10,7 +10,7 @@ public class PhxGameRuntime : MonoBehaviour
     public const int PlayerMask = 3;
 
     public static PhxGameRuntime Instance { get; private set; } = null;
-    public PhxPath GamePath { get; private set; } = @"C:\Program Files (x86)\Steam\steamapps\common\Star Wars Battlefront II";
+    public static PhxPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
 
     [Header("Settings")]
     public string Language = "english";

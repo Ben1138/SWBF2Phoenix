@@ -6,8 +6,6 @@ using LibSWBF2.Enums;
 
 public class PhxRuntimeScene
 {
-    static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
-
     struct RTTransform
     {
         public Vector3    Position;
@@ -17,6 +15,7 @@ public class PhxRuntimeScene
     Dictionary<string, PhxClass>    Classes   = new Dictionary<string, PhxClass>();
     Dictionary<string, PhxInstance> Instances = new Dictionary<string, PhxInstance>();
 
+    PhxRuntimeEnvironment ENV;
     Container EnvCon;
     bool bTerrainImported = false;
 
@@ -26,8 +25,9 @@ public class PhxRuntimeScene
     List<GameObject> WorldRoots = new List<GameObject>();
     List<RTTransform> CameraShots = new List<RTTransform>();
 
-    public PhxRuntimeScene(Container c)
+    public PhxRuntimeScene(PhxRuntimeEnvironment env, Container c)
     {
+        ENV = env;
         EnvCon = c;
     }
 
@@ -195,7 +195,11 @@ public class PhxRuntimeScene
 
     GameObject CreateInstance(ISWBFProperties instOrClass, string instName, Vector3 position, Quaternion rotation, Transform parent=null)
     {
-        if (instOrClass == null) return null;
+        if (instOrClass == null)
+        {
+            Debug.LogWarning("Called 'CreateInstance' with NULL!");
+            return null;
+        }
 
         EntityClass ec = instOrClass.GetType() == typeof(Instance) ? ((Instance)instOrClass).EntityClass : ((EntityClass)instOrClass);
 

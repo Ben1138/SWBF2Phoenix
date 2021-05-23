@@ -24,22 +24,24 @@ public class PhxHumanAnimator : CraAnimator
     public float Forward;
     public bool Sprinting;
 
-    int StandRunSprint;
-    int StandWalkRun;
-    int StandIdleWalk;
-    int StandIdleBackward;
+    int StandSprint;
+    int StandRun;
+    int StandWalk;
+    int StandIdle;
+    int StandBackward;
     int StandReload;
 
 
     public void Init()
     {
-        StandRunSprint    = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_runforward",      "human_1", "human_rifle_sprint_full",       true));
-        StandWalkRun      = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_walkforward",     "human_0", "human_rifle_stand_runforward",  true));
-        StandIdleWalk     = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_idle_emote_full", "human_0", "human_rifle_stand_walkforward", true));
-        StandIdleBackward = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_idle_emote_full", "human_0", "human_rifle_stand_runbackward", true));
-        StandReload       = AddState(1, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_reload_full",      false,    "bone_a_spine"));
+        StandSprint   = AddState(0, PhxAnimationLoader.CreateState(transform, "human_1", "human_rifle_sprint_full", true));
+        StandRun      = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_runforward", true));
+        StandWalk     = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_walkforward", true));
+        StandIdle     = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_idle_emote_full", true));
+        StandBackward = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_runbackward", true));
+        StandReload   = AddState(1, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_reload_full", false, "bone_a_spine"));
 
-        SetState(0, StandIdleWalk);
+        SetState(0, StandIdle);
         SetState(1, CraSettings.STATE_NONE);
 
         OnStateFinished += StateFinished;
@@ -50,9 +52,9 @@ public class PhxHumanAnimator : CraAnimator
         SetState(1, StandReload);
     }
 
-    void StateFinished(int level)
+    void StateFinished(int layer)
     {
-        if (level == 1 && Layers[1].CurrentStateIdx != CraSettings.STATE_NONE)
+        if (layer == 1)
         {
             SetState(1, CraSettings.STATE_NONE);
         }
@@ -60,29 +62,29 @@ public class PhxHumanAnimator : CraAnimator
 
     void Update()
     {
-        //if (Sprinting)
-        //{
-        //    SetState(0, StandRunSprint);
-        //}
-        //else if (Forward > 0 && Forward <= 0.5f)
-        //{
-        //    SetState(0, StandIdleWalk);
-        //    SetPlaybackSpeed(0, StandIdleWalk, Forward / 0.5f);
-        //}
-        //else if (Forward > 0.5f)
-        //{
-        //    SetState(0, StandIdleWalk);
-        //    //SetPlaybackSpeed(0, StandRunForward, Forward / 1f);
-        //}
-        //else if (Forward < 0f)
-        //{
-        //    SetState(0, StandIdleBackward);
-        //    SetPlaybackSpeed(0, StandIdleBackward, -Forward / 1f);
-        //}
-        //else
-        //{
-        //    SetState(0, StandIdleWalk);
-        //}
+        if (Sprinting)
+        {
+            SetState(0, StandSprint);
+        }
+        else if (Forward > 0.2f && Forward <= 0.75f)
+        {
+            SetState(0, StandWalk);
+            SetPlaybackSpeed(0, StandWalk, Forward / 0.75f);
+        }
+        else if (Forward > 0.75f)
+        {
+            SetState(0, StandRun);
+            SetPlaybackSpeed(0, StandRun, Forward / 1f);
+        }
+        else if (Forward < -0.2f)
+        {
+            SetState(0, StandBackward);
+            SetPlaybackSpeed(0, StandBackward, -Forward / 1f);
+        }
+        else
+        {
+            SetState(0, StandIdle);
+        }
 
         Tick(Time.deltaTime);
     }

@@ -118,22 +118,4 @@ public static class PhxAnimationLoader
         state.Looping = loop;
         return state;
     }
-
-    public static CraPlayer CreateState(Transform root, string animBank1, string animName1, string animBank2, string animName2, bool loop, string maskBone = null)
-    {
-        CraPlayer state = new CraPlayer();
-        state.SetClips(Import(animBank1, animName1), Import(animBank2, animName2));
-
-        if (string.IsNullOrEmpty(maskBone))
-        {
-            state.Assign(root);
-        }
-        else
-        {
-            state.Assign(root, new CraMask(true, maskBone));
-        }
-
-        state.Looping = loop;
-        return state;
-    }
 }
