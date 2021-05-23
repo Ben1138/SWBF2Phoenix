@@ -120,9 +120,12 @@ public class PhxCamera : MonoBehaviour
             transform.position += transform.right   * Input.GetAxis("Horizontal") * Time.fixedDeltaTime * FreeMoveSpeed;
             transform.position += transform.up      * Input.GetAxis("UpDown")     * Time.fixedDeltaTime * FreeMoveSpeed;
 
-            float newRotationX = transform.localEulerAngles.y + Input.GetAxis("Mouse X") * FreeRotationSpeed;
-            float newRotationY = transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * FreeRotationSpeed;
-            transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
+            if (Input.GetMouseButton(1))
+            { 
+                float newRotationX = transform.localEulerAngles.y + Input.GetAxis("Mouse X") * FreeRotationSpeed;
+                float newRotationY = transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * FreeRotationSpeed;
+                transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
+            }
         }
         else if (Mode == CamMode.Follow || Mode == CamMode.Control)
         {

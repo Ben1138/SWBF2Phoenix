@@ -23,14 +23,14 @@ public abstract class PhxClass
             string locPath = "weapons.";
             int splitIdx = Name.IndexOf('_');
             locPath += Name.Substring(0, splitIdx) + ".weap." + Name.Substring(splitIdx + 1).Replace("weap_", "");
-            LocalizedName = ENV.GetLocalized(locPath);
+            LocalizedName = ENV?.GetLocalized(locPath);
         }
         else
         {
             string locPath = "entity.";
             int splitIdx = Name.IndexOf('_');
             locPath += Name.Substring(0, splitIdx) + '.' + Name.Substring(splitIdx + 1);
-            LocalizedName = ENV.GetLocalized(locPath);
+            LocalizedName = ENV?.GetLocalized(locPath);
         }
 
         Type type = GetType();

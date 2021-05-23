@@ -113,7 +113,7 @@ public class PhxRuntimeEnvironment
         return Timers;
     }
 
-    public static PhxRuntimeEnvironment Create(PhxPath envPath, PhxPath fallbackPath = null)
+    public static PhxRuntimeEnvironment Create(PhxPath envPath, PhxPath fallbackPath = null, bool initMatch=true)
     {
         if (!envPath.Exists())
         {
@@ -137,8 +137,8 @@ public class PhxRuntimeEnvironment
         rt.ScheduleLVLRel("mission.lvl");
         rt.ScheduleSoundBankRel("sound/common.bnk");
 
-        rt.RTScene = new PhxRuntimeScene(rt.EnvCon);
-        rt.Match = new PhxGameMatch();
+        rt.RTScene = new PhxRuntimeScene(rt, rt.EnvCon);
+        rt.Match = initMatch ? new PhxGameMatch() : null;
         rt.Timers = new PhxTimerDB();
 
         PhxAnimationLoader.Con = rt.EnvCon;
@@ -392,7 +392,7 @@ public class PhxRuntimeEnvironment
             }
 
             // apply queued Lua calls like "AddUnitClass"
-            Match.ApplySchedule();
+            Match?.ApplySchedule();
 
             Stage = EnvStage.CreateScene;
             CreateScene();
@@ -461,10 +461,13 @@ public class PhxRuntimeEnvironment
     PhxPath GetLoadscreenPath()
     {
         // First, try grab loadscreen for standard maps
-        PhxPath loadscreenLVL = new PhxPath("load") / (InitScriptName.Substring(0, 4) + ".lvl");
-        if ((Path / loadscreenLVL).Exists() || (FallbackPath / loadscreenLVL).Exists())
+        if (!string.IsNullOrEmpty(InitScriptName))
         {
-            return loadscreenLVL;
+            PhxPath loadscreenLVL = new PhxPath("load") / (InitScriptName.Substring(0, 4) + ".lvl");
+            if ((Path / loadscreenLVL).Exists() || (FallbackPath / loadscreenLVL).Exists())
+            {
+                return loadscreenLVL;
+            } 
         }
         return "load/common.lvl";
     }
@@ -474,7 +477,7 @@ public class PhxRuntimeEnvironment
         Debug.Assert(Stage == EnvStage.ExecuteMain);
 
         // 1 - execute the main script
-        if (!Execute(InitScriptName))
+        if (!string.IsNullOrEmpty(InitScriptName) && !Execute(InitScriptName))
         {
             Debug.LogErrorFormat("Executing lua main script '{0}' failed!", InitScriptName);
             return;
