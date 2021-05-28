@@ -38,7 +38,7 @@ public class PhxMatchMonitor : EditorWindow
         ScrollPos = EditorGUILayout.BeginScrollView(ScrollPos);
         for (int i = 0; i < PhxGameMatch.MAX_TEAMS; ++i)
         {
-            PhxGameMatch.Team t = gm.Teams[i];
+            PhxGameMatch.PhxTeam t = gm.Teams[i];
 
             EditorGUILayout.LabelField("Team ID", (i+1).ToString());
             EditorGUILayout.LabelField("Name", t.Name);
@@ -49,7 +49,7 @@ public class PhxMatchMonitor : EditorWindow
             EditorGUILayout.LabelField("Spawn Delay", t.SpawnDelay.ToString());
             EditorGUILayout.LabelField("Hero Class", t.HeroClass?.Name);
             GUILayout.Label("Unit Classes:");
-            foreach (PhxGameMatch.UnitClass unitClass in t.UnitClasses)
+            foreach (PhxGameMatch.PhxUnitClass unitClass in t.UnitClasses)
             {
                 EditorGUILayout.LabelField("    " + unitClass.Unit.Name, unitClass.Count.ToString());
             }

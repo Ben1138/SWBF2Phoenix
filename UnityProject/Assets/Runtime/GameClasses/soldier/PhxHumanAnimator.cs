@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using UnityEngine.EventSystems;
+using UnityEngine.Profiling;
 
 public static class PhxAnimationBanks
 {
@@ -62,6 +62,7 @@ public class PhxHumanAnimator : CraAnimator
 
     void Update()
     {
+        Profiler.BeginSample("PhxHumanAnimator State Update");
         if (Sprinting)
         {
             SetState(0, StandSprint);
@@ -85,7 +86,10 @@ public class PhxHumanAnimator : CraAnimator
         {
             SetState(0, StandIdle);
         }
+        Profiler.EndSample();
 
+        Profiler.BeginSample("PhxHumanAnimator Tick");
         Tick(Time.deltaTime);
+        Profiler.EndSample();
     }
 }
