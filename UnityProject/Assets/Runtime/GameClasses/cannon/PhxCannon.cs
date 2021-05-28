@@ -14,7 +14,7 @@ public class PhxCannon : PhxInstance<PhxSoldier.ClassProperties>
     public override void Init()
     {
         // constructor
-        // Use this to create required components (AudioSource, Light, etc...)
+        // Use this to create required Unity components (like AudioSource, SpotLight, Rigidbody, etc...)
     }
 
     public override void BindEvents()

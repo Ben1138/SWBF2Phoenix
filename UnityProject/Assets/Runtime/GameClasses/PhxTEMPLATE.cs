@@ -20,6 +20,7 @@ public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
     public override void Init()
     {
         // constructor
+        // Use this to create required Unity components (like AudioSource, SpotLight, Rigidbody, etc...)
     }
 
     public override void BindEvents()
