@@ -101,21 +101,21 @@ public static class PhxAnimationLoader
         return clip;
     }
 
-    public static CraPlayer CreateState(Transform root, string animBank, string animName, bool loop, string maskBone = null)
+    public static CraPlayer CreatePlayer(Transform root, string animBank, string animName, bool loop, string maskBone = null)
     {
-        CraPlayer state = CraPlayer.CreateNew();
-        state.SetClip(Import(animBank, animName));
+        CraPlayer player = CraPlayer.CreateNew();
+        player.SetClip(Import(animBank, animName));
 
         if (string.IsNullOrEmpty(maskBone))
         {
-            state.Assign(root);
+            player.Assign(root);
         }
         else
         {
-            state.Assign(root, new CraMask(true, maskBone));
+            player.Assign(root, new CraMask(true, maskBone));
         }
 
-        state.SetLooping(loop);
-        return state;
+        player.SetLooping(loop);
+        return player;
     }
 }

@@ -17,12 +17,20 @@ public static class PhxAnimationBanks
     };
 }
 
+public enum PhxAnimState
+{
+    Walking,
+    Sprinting,
+    Jumping,
+    Falling,
+    Landing
+}
 
 public class PhxHumanAnimator : CraAnimator
 {
     [Range(-1f, 1f)]
     public float Forward;
-    public bool Sprinting;
+    public PhxAnimState State;
 
     int StandSprint;
     int StandRun;
@@ -30,16 +38,20 @@ public class PhxHumanAnimator : CraAnimator
     int StandIdle;
     int StandBackward;
     int StandReload;
+    int Jump;
+    int Land;
 
 
     public void Init()
     {
-        StandSprint   = AddState(0, PhxAnimationLoader.CreateState(transform, "human_1", "human_rifle_sprint_full", true));
-        StandRun      = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_runforward", true));
-        StandWalk     = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_walkforward", true));
-        StandIdle     = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_idle_emote_full", true));
-        StandBackward = AddState(0, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_runbackward", true));
-        StandReload   = AddState(1, PhxAnimationLoader.CreateState(transform, "human_0", "human_rifle_stand_reload_full", false, "bone_a_spine"));
+        StandSprint   = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_sprint_full", true));
+        StandRun      = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_runforward", true));
+        StandWalk     = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_walkforward", true));
+        StandIdle     = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_idle_emote_full", true));
+        StandBackward = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_runbackward", true));
+        StandReload   = AddState(1, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_reload_full", false, "bone_a_spine"));
+        Jump          = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_jump", true));
+        Land          = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_landsoft", true));
 
         SetState(0, StandIdle);
         SetState(1, CraSettings.STATE_NONE);
@@ -63,9 +75,17 @@ public class PhxHumanAnimator : CraAnimator
     void Update()
     {
         Profiler.BeginSample("PhxHumanAnimator State Update");
-        if (Sprinting)
+        if (State == PhxAnimState.Sprinting)
         {
             SetState(0, StandSprint);
+        }
+        else if (State == PhxAnimState.Jumping)
+        {
+            SetState(0, Jump);
+        }
+        else if (State == PhxAnimState.Landing)
+        {
+            SetState(0, Land);
         }
         else if (Forward > 0.2f && Forward <= 0.75f)
         {

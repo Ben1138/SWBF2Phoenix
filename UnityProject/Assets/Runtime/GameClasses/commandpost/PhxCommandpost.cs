@@ -23,10 +23,10 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
     public HDAdditionalLightData Light;
 
     // SWBF Instance Properties
-    public PhxProp<PhxRegion>   CaptureRegion = new PhxProp<PhxRegion>(null);
-    public PhxProp<PhxRegion>   ControlRegion = new PhxProp<PhxRegion>(null);
-    public PhxProp<SWBFPath> SpawnPath     = new PhxProp<SWBFPath>(null);
-    public PhxProp<int>      Team          = new PhxProp<int>(0);
+    public PhxProp<PhxRegion> CaptureRegion = new PhxProp<PhxRegion>(null);
+    public PhxProp<PhxRegion> ControlRegion = new PhxProp<PhxRegion>(null);
+    public PhxProp<SWBFPath>  SpawnPath     = new PhxProp<SWBFPath>(null);
+    public PhxProp<int>       Team          = new PhxProp<int>(0);
 
     AudioSource AudioAction;
     AudioSource AudioAmbient;
