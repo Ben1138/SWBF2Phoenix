@@ -28,7 +28,7 @@ public class PhxPauseMenu : PhxMenuInterface
         Debug.Assert(BtnBackToMainMenu != null);
         Debug.Assert(BtnQuit           != null);
 
-        BtnFreeCam.GetComponentInChildren<Text>().text = MTC.PlayerST != PhxGameMatch.PlayerState.FreeCam ? "Free Cam" : "Character Selection";
+        BtnFreeCam.GetComponentInChildren<Text>().text = MTC.PlayerST != PhxGameMatch.PhxPlayerState.FreeCam ? "Free Cam" : "Character Selection";
 
         BtnContinue.onClick.AddListener(Continue);
         BtnFreeCam.onClick.AddListener(FreeCam);
@@ -44,13 +44,13 @@ public class PhxPauseMenu : PhxMenuInterface
 
     void FreeCam()
     {
-        if (MTC.PlayerST == PhxGameMatch.PlayerState.CharacterSelection)
+        if (MTC.PlayerST == PhxGameMatch.PhxPlayerState.CharacterSelection)
         {
-            MTC.SetPlayerState(PhxGameMatch.PlayerState.FreeCam);
+            MTC.SetPlayerState(PhxGameMatch.PhxPlayerState.FreeCam);
         }
-        else if (MTC.PlayerST == PhxGameMatch.PlayerState.FreeCam)
+        else if (MTC.PlayerST == PhxGameMatch.PhxPlayerState.FreeCam)
         {
-            MTC.SetPlayerState(PhxGameMatch.PlayerState.CharacterSelection);
+            MTC.SetPlayerState(PhxGameMatch.PhxPlayerState.CharacterSelection);
         }
     }
 

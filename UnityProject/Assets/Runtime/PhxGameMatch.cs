@@ -18,14 +18,14 @@ public class PhxGameMatch
     public PhxPlayerController Player { get; private set; }
 
 
-    public enum PlayerState
+    public enum PhxPlayerState
     {
         CharacterSelection,
         Spawned,
         FreeCam
     }
 
-    public PlayerState PlayerST { get; private set; } = PlayerState.CharacterSelection;
+    public PhxPlayerState PlayerST { get; private set; } = PhxPlayerState.CharacterSelection;
 
     bool LVLsLoaded = false;
     bool AvailablePauseMenu = false;
@@ -33,7 +33,7 @@ public class PhxGameMatch
     int NameCounter;
 
 
-    public class UnitClass
+    public class PhxUnitClass
     {
         public PhxClass Unit = null;
         public int Count = 0;
@@ -47,7 +47,7 @@ public class PhxGameMatch
     // TODO: verify if enough
     public const int MAX_TEAMS = 20;
 
-    public class Team
+    public class PhxTeam
     {
         public string Name = "UNKNOWN TEAM";
         public float Aggressiveness = 1.0f;
@@ -55,12 +55,12 @@ public class PhxGameMatch
         public int UnitCount = 0;
         public int ReinforcementCount = -1; // default is infinite
         public float SpawnDelay = 1.0f;
-        public HashSet<UnitClass> UnitClasses = new HashSet<UnitClass>();
+        public HashSet<PhxUnitClass> UnitClasses = new HashSet<PhxUnitClass>();
         public PhxClass HeroClass = null;
         public bool[] Friends = new bool[MAX_TEAMS];
     }
 
-    public Team[] Teams { get; private set; } = new Team[MAX_TEAMS];
+    public PhxTeam[] Teams { get; private set; } = new PhxTeam[MAX_TEAMS];
 
     Queue<(int, string, int)> TeamUnits = new Queue<(int, string, int)>();
     Queue<(int, string)> TeamHeroClass = new Queue<(int, string)>();
@@ -74,7 +74,7 @@ public class PhxGameMatch
     {
         for (int i = 0; i < MAX_TEAMS; ++i)
         {
-            Teams[i] = new Team();
+            Teams[i] = new PhxTeam();
         }
 
         GAME.OnMatchStart += StartMatch;
@@ -83,17 +83,17 @@ public class PhxGameMatch
         Player = new PhxPlayerController();
     }
 
-    public void SetPlayerState(PlayerState st)
+    public void SetPlayerState(PhxPlayerState st)
     {
         if (PlayerST == st) return;
 
         PlayerST = st;
-        if (PlayerST == PlayerState.CharacterSelection)
+        if (PlayerST == PhxPlayerState.CharacterSelection)
         {
             ShowCharacterSelection();
             Cam.Mode = PhxCamera.CamMode.Fixed;
         }
-        else if (PlayerST == PlayerState.FreeCam)
+        else if (PlayerST == PhxPlayerState.FreeCam)
         {
             Cam.Mode = PhxCamera.CamMode.Free;
             if (PauseMenuActive)
@@ -102,7 +102,7 @@ public class PhxGameMatch
                 PauseMenuActive = false;
             }
         }
-        else if (PlayerST == PlayerState.Spawned)
+        else if (PlayerST == PhxPlayerState.Spawned)
         {
             GAME.RemoveMenu();
             Cam.Mode = PhxCamera.CamMode.Control;
@@ -125,7 +125,7 @@ public class PhxGameMatch
             PhxClass odf = RTS.GetClass(addTeamUnit.Item2);
             if (odf != null)
             {
-                Teams[addTeamUnit.Item1].UnitClasses.Add(new UnitClass { Unit = odf, Count = addTeamUnit.Item3 });
+                Teams[addTeamUnit.Item1].UnitClasses.Add(new PhxUnitClass { Unit = odf, Count = addTeamUnit.Item3 });
             }
         }
 
@@ -195,7 +195,7 @@ public class PhxGameMatch
         pawn.gameObject.layer = 3;
         pawn.Controller = Player;
         Player.Pawn = pawn;
-        SetPlayerState(PlayerState.Spawned);
+        SetPlayerState(PhxPlayerState.Spawned);
     }
 
     public void SpawnAI(PhxClass cl)
@@ -270,10 +270,10 @@ public class PhxGameMatch
             PhxClass odf = RTS.GetClass(className);
             if (odf != null)
             {
-                Teams[teamIdx].UnitClasses.Add(new UnitClass { Unit = odf, Count = unitCount });
+                Teams[teamIdx].UnitClasses.Add(new PhxUnitClass { Unit = odf, Count = unitCount });
             }
 
-            if (PlayerST == PlayerState.CharacterSelection)
+            if (PlayerST == PhxPlayerState.CharacterSelection)
             {
                 // refresh
                 ShowCharacterSelection();
@@ -297,7 +297,7 @@ public class PhxGameMatch
                 Teams[teamIdx].HeroClass = odf;
             }
 
-            if (PlayerST == PlayerState.CharacterSelection)
+            if (PlayerST == PhxPlayerState.CharacterSelection)
             {
                 // refresh
                 ShowCharacterSelection();
@@ -347,7 +347,7 @@ public class PhxGameMatch
     {
         PauseMenuActive = false;
         PhxCharacterSelect charSel = GAME.ShowMenu(GAME.CharacterSelectPrefab).GetComponent<PhxCharacterSelect>();
-        foreach (UnitClass cl in Teams[0].UnitClasses)
+        foreach (PhxUnitClass cl in Teams[0].UnitClasses)
         {
             charSel.Add(cl.Unit);
         }
@@ -358,7 +358,7 @@ public class PhxGameMatch
     {
         PauseMenuActive = false;
         Cam.Mode = LastMode;
-        if (PlayerST == PlayerState.CharacterSelection)
+        if (PlayerST == PhxPlayerState.CharacterSelection)
         {
             ShowCharacterSelection();
         }
