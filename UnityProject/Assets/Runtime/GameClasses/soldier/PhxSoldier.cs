@@ -64,7 +64,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
         public PhxMultiProp WeaponName = new PhxMultiProp(typeof(string));
     }
 
-    enum ControlState
+    public enum ControlState
     {
         Stand,
         Crouch,
@@ -391,7 +391,26 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
                 FallAnimTimer += Time.deltaTime;
             }
 
-            Animator.Sprinting = State == ControlState.Sprint;
+            if (FallAnimTimer > 1f)
+            {
+                Animator.State = PhxAnimState.Falling;
+            }
+            else if (LandTimer > 0f)
+            {
+                Animator.State = PhxAnimState.Landing;
+            }
+            else if (State == ControlState.Jump)
+            {
+                Animator.State = PhxAnimState.Jumping;
+            }
+            else if (State == ControlState.Sprint)
+            {
+                Animator.State = PhxAnimState.Sprinting;
+            }
+            else
+            {
+                Animator.State = PhxAnimState.Walking;
+            }
             //Anim.SetInteger("State", (int)State);
             //Anim.SetBool("Falling", FallAnimTimer >= FallAnimTime);
         }

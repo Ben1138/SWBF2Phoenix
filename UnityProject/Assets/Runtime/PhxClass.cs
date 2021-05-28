@@ -3,6 +3,9 @@ using System.Reflection;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Enums;
 
+/// <summary>
+/// Represents an ODF class. Needs specific implementation
+/// </summary>
 public abstract class PhxClass
 {
     static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();

@@ -88,7 +88,8 @@ public static class PhxLuaAPI
 
 	public static int ScriptCB_GetNumCameras()
     {
-		// Apparently used to determine split screen. One camera per split screen
+		// Apparently used to determine number of view ports in split screen
+		// 1 = no split screen
 		return 1;
     }
 
