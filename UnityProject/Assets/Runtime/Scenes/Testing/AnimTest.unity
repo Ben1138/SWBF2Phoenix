@@ -399,8 +399,6 @@ GameObject:
   - component: {fileID: 1172482691}
   - component: {fileID: 1172482690}
   - component: {fileID: 1172482689}
-  - component: {fileID: 1172482688}
-  - component: {fileID: 1172482687}
   - component: {fileID: 1172482686}
   m_Layer: 0
   m_Name: Camera
@@ -421,41 +419,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 138b1956cf468f64badbf2c9b79f3bc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Mode: 1
   FreeMoveSpeed: 10
   FreeRotationSpeed: 2
   PositionOffset: {x: 0.4, y: 2.2, z: -2.5}
   FollowSpeed: 10
   MouseSensitivity: 2
---- !u!54 &1172482687
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1172482685}
-  serializedVersion: 2
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!135 &1172482688
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1172482685}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1172482689
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -661,7 +629,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1194345874}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 14.347614, y: -7.9343657, z: 12.361554}
+  m_LocalPosition: {x: 1, y: 0, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -679,9 +647,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aaa1281ecc99f104c92760ed94f6e696, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Cam: {fileID: 1172482686}
   Width: 32
   Height: 32
   Padding: 1.5
+  SpawnPlayer: 1
+  SpawnMobs: 1
   EnableReload: 1
   ForwardMultiplier: 0.5
 --- !u!114 &1194345877

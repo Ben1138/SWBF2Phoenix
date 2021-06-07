@@ -57,3 +57,42 @@ public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
         }
     }
 }
+
+public interface IPhxControlableInstance
+{
+    public PhxInstance GetInstance();
+    public Vector2 GetViewConstraint();
+    public Vector2 GetMaxTurnSpeed();
+    public Vector3 GetTargetPosition();
+}
+
+public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlableInstance where T : PhxClass
+{
+    public PhxPawnController Controller;
+    protected Vector3 TargetPos;
+    protected Vector2 ViewConstraint = Vector2.positiveInfinity;
+
+    // degrees per second
+    protected Vector2 MaxTurnSpeed = Vector2.positiveInfinity;
+
+
+    public PhxInstance GetInstance()
+    {
+        return this;
+    }
+
+    public Vector2 GetViewConstraint()
+    {
+        return ViewConstraint;
+    }
+
+    public Vector2 GetMaxTurnSpeed()
+    {
+        return MaxTurnSpeed;
+    }
+
+    public Vector3 GetTargetPosition()
+    {
+        return TargetPos;
+    }
+}

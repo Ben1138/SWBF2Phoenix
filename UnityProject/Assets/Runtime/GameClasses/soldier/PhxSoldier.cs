@@ -5,7 +5,7 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectableCharacterInterface
+public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, PhxSelectableCharacterInterface
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxGameMatch MTC => PhxGameRuntime.GetMatch();
@@ -80,9 +80,12 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
     public PhxHumanAnimator Animator { get; private set; }
-    public PhxPawnController Controller;
-    Transform HpWeapons;
     Rigidbody Body;
+
+    // Important skeleton bones
+    Transform HpWeapons;
+    Transform Spine;
+    Transform Neck;
 
     ControlState State;
 
@@ -112,8 +115,8 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
     float LandTimer;
 
     Vector3 CurrSpeed;
-    Quaternion CurrDir;
-    Quaternion TargetDir;
+    //Quaternion CurrDir;
+    //Quaternion TargetDir;
 
 
     bool bHasLookaroundIdleAnim = false;
@@ -133,8 +136,13 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
     public override void Init()
     {
-        CurrDir = transform.rotation;
-        TargetDir = CurrDir;
+        ViewConstraint.x = 45f;
+
+        // TODO: base turn speed in degreees/sec really 45?
+        MaxTurnSpeed.y = 45f * C.MaxTurnSpeed;
+
+        //CurrDir = transform.rotation;
+        //TargetDir = CurrDir;
 
         ControlState[] states = (ControlState[])Enum.GetValues(typeof(ControlState));
         ControlValues = new float[states.Length][];
@@ -144,6 +152,11 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
         }
 
         HpWeapons = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_r_clavicle/bone_r_upperarm/bone_r_forearm/bone_r_hand/hp_weapons");
+        Neck = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_neck");
+        Spine = transform.Find("dummyroot/bone_root/bone_a_spine");
+        Debug.Assert(HpWeapons != null);
+        Debug.Assert(Neck != null);
+        Debug.Assert(Spine != null);
 
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 80f;
@@ -153,8 +166,8 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         CapsuleCollider coll = gameObject.AddComponent<CapsuleCollider>();
-        coll.height = 2f;
-        coll.radius = 0.5f;
+        coll.height = 1.9f;
+        coll.radius = 0.4f;
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
@@ -203,49 +216,49 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
         return null;
     }
 
-    AnimationClip GetClip(string bankName, string weapName, string animName, string fallbackBankName=null, string fallbackWeaponName=null)
-    {
-        // TODO: There's AnimationName and SkeletonName. Sometimes they mean the same thing !?
-        // For example: The super battle droid just has SkeletonName property, but no AnimationName property...
-        string fullName = $"{C.SkeletonName}_{weapName}_{animName}";
+    //AnimationClip GetClip(string bankName, string weapName, string animName, string fallbackBankName=null, string fallbackWeaponName=null)
+    //{
+    //    // TODO: There's AnimationName and SkeletonName. Sometimes they mean the same thing !?
+    //    // For example: The super battle droid just has SkeletonName property, but no AnimationName property...
+    //    string fullName = $"{C.SkeletonName}_{weapName}_{animName}";
 
-        uint animCRC = HashUtils.GetCRC(fullName);
-        AnimationClip clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
-        if (clip == null)
-        {
-            animCRC = HashUtils.GetCRC(fullName + "_full");
-            clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
-            if (clip != null) return clip;
+    //    uint animCRC = HashUtils.GetCRC(fullName);
+    //    AnimationClip clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
+    //    if (clip == null)
+    //    {
+    //        animCRC = HashUtils.GetCRC(fullName + "_full");
+    //        clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
+    //        if (clip != null) return clip;
 
-            if (fallbackBankName == "human_0")
-            {
-                clip = GetClip("human_0", weapName, animName, null, fallbackWeaponName);
-                if (clip != null) return clip;
+    //        if (fallbackBankName == "human_0")
+    //        {
+    //            clip = GetClip("human_0", weapName, animName, null, fallbackWeaponName);
+    //            if (clip != null) return clip;
 
-                clip = GetClip("human_1", weapName, animName, null, fallbackWeaponName);
-                if (clip != null) return clip;
+    //            clip = GetClip("human_1", weapName, animName, null, fallbackWeaponName);
+    //            if (clip != null) return clip;
 
-                clip = GetClip("human_2", weapName, animName, null, fallbackWeaponName);
-                if (clip != null) return clip;
+    //            clip = GetClip("human_2", weapName, animName, null, fallbackWeaponName);
+    //            if (clip != null) return clip;
 
-                clip = GetClip("human_3", weapName, animName, null, fallbackWeaponName);
-                if (clip != null) return clip;
+    //            clip = GetClip("human_3", weapName, animName, null, fallbackWeaponName);
+    //            if (clip != null) return clip;
 
-                clip = GetClip("human_4", weapName, animName, null, fallbackWeaponName);
-                if (clip != null) return clip;
+    //            clip = GetClip("human_4", weapName, animName, null, fallbackWeaponName);
+    //            if (clip != null) return clip;
 
-                clip = GetClip("human_sabre", weapName, animName, null, fallbackWeaponName);
-                if (clip != null) return clip;
-            }
+    //            clip = GetClip("human_sabre", weapName, animName, null, fallbackWeaponName);
+    //            if (clip != null) return clip;
+    //        }
 
-            if (!string.IsNullOrEmpty(fallbackWeaponName))
-            {
-                clip = GetClip(bankName, fallbackWeaponName, animName, fallbackBankName, null);
-                if (clip != null) return clip;
-            }
-        }
-        return clip;
-    }
+    //        if (!string.IsNullOrEmpty(fallbackWeaponName))
+    //        {
+    //            clip = GetClip(bankName, fallbackWeaponName, animName, fallbackBankName, null);
+    //            if (clip != null) return clip;
+    //        }
+    //    }
+    //    return clip;
+    //}
 
     void Update()
     {
@@ -253,6 +266,17 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
         if (Controller != null)
         {
+            if (Physics.Raycast(Neck.position, Controller.ViewDirection, out RaycastHit hit, 1000f))
+            {
+                TargetPos = hit.point;
+                Debug.DrawLine(Neck.position, TargetPos, Color.blue);
+            }
+            else
+            {
+                TargetPos = Neck.position + Controller.ViewDirection * 1000f;
+                Debug.DrawRay(Neck.position, Controller.ViewDirection * 1000f, Color.blue);
+            }
+
             if (Grounded)
             {
                 // Stand - Crouch - Sprint
@@ -261,8 +285,8 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
                     // ---------------------------------------------------------------------------------------------
                     // Forward
                     // ---------------------------------------------------------------------------------------------
-                    float walk = Controller.WalkDirection.magnitude;
-                    if (Controller.WalkDirection.y <= 0f)
+                    float walk = Controller.MoveDirection.magnitude;
+                    if (Controller.MoveDirection.y <= 0f)
                     {
                         walk = -walk;
                     }
@@ -341,7 +365,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
                 // Stand
                 if (State == ControlState.Stand)
                 {
-                    if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
+                    if (Controller.MoveDirection.y > 0.2f && Controller.Sprint)
                     {
                         State = ControlState.Sprint;
                     }
@@ -356,7 +380,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
                     }
 
                     // TODO: verify
-                    else if (Controller.WalkDirection.y > 0.2f && Controller.Sprint)
+                    else if (Controller.MoveDirection.y > 0.8f && Controller.Sprint)
                     {
                         State = ControlState.Sprint;
                     }
@@ -365,7 +389,7 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
                 // Sprint
                 if (State == ControlState.Sprint)
                 {
-                    if (Controller.WalkDirection.y < 0.8f || !Controller.Sprint)
+                    if (Controller.MoveDirection.y < 0.8f || !Controller.Sprint)
                     {
                         State = ControlState.Stand;
                     }
@@ -433,10 +457,12 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
         if (Controller != null && LandTimer <= 0f)
         {
-            Vector3 lookWalkForward = Controller.LookingAt - Body.position;
+            Vector3 lookWalkForward = Controller.ViewDirection;
             lookWalkForward.y = 0f;
-            Vector3 moveDirLocal = new Vector3(Controller.WalkDirection.x, 0f, Controller.WalkDirection.y);
-            Vector3 moveDirWorld = CurrDir * moveDirLocal;
+            Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
+
+            Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x, 0f, Controller.MoveDirection.y);
+            Vector3 moveDirWorld = lookRot * moveDirLocal;
 
             float accStep      = C.Acceleration * Time.fixedDeltaTime;
             float thrustFactor = ControlValues[(int)State][0];
@@ -446,6 +472,17 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
             if (moveDirLocal.magnitude == 0f)
             {
                 CurrSpeed *= 0.1f * Time.fixedDeltaTime;
+
+                Vector3 currForward = transform.forward;
+                currForward.y = 0f;
+
+                Quaternion currRot = Quaternion.LookRotation(currForward);
+
+                float rotDiff = Quaternion.Angle(currRot, lookRot);
+                if (rotDiff < 30f)
+                {
+                    lookRot = currRot;
+                }
             }
             else
             {
@@ -453,50 +490,41 @@ public class PhxSoldier : PhxInstance<PhxSoldier.ClassProperties>, PhxSelectable
 
                 float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
                 CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, C.MaxSpeed * forwardFactor);
-            }
 
-            if (moveDirLocal.magnitude > 0f)
-            {
                 if (moveDirLocal.z <= 0f)
                 {
-                    moveDirLocal = -moveDirLocal;
-                    moveDirWorld = CurrDir * moveDirLocal;
+                    // invert look direction when strafing left/right
+                    moveDirWorld = -moveDirWorld;
                 }
-            }
-            else
-            {
-                moveDirWorld = transform.forward;
+
+                lookRot = Quaternion.LookRotation(moveDirWorld);
             }
 
-            TargetDir = Quaternion.LookRotation(moveDirWorld);
+            //TargetDir = Quaternion.LookRotation(moveDirWorld);
 
-            float angleDiff = Quaternion.Angle(CurrDir, TargetDir);
-            float t = Mathf.Clamp01(C.MaxTurnSpeed * turnFactor / angleDiff);
-            CurrDir = Quaternion.Slerp(CurrDir, TargetDir, t);
+            //float angleDiff = Quaternion.Angle(CurrDir, TargetDir);
+            //float t = Mathf.Clamp01(C.MaxTurnSpeed * turnFactor / angleDiff);
+            //CurrDir = Quaternion.Slerp(CurrDir, TargetDir, t);
+
+            Body.MoveRotation(lookRot);
+            Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
         }
-
-        Body.MoveRotation(CurrDir);
-        Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
     }
+
+    public Vector3 RotAlt1 = new Vector3(7f, -78f, -130f);
+    public Vector3 RotAlt2 = new Vector3(0f, -90f, -90f);
 
     void LateUpdate()
     {
-        if ((State == ControlState.Stand || State == ControlState.Crouch) && AlertTimer > 0f)
+        if (Controller == null) return;
+
+        if (State == ControlState.Stand || State == ControlState.Crouch)
         {
-            Transform spine = transform.Find("dummyroot/bone_root/bone_a_spine");
-            if (spine == null)
-            {
-                Debug.LogError("Cannot find spine bone!");
-                return;
-            }
+            Neck.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt1);
 
-            Vector3 viewDir = (Controller.LookingAt - Body.position).normalized;
-            spine.rotation = Quaternion.LookRotation(viewDir) * Quaternion.Euler(0f, -60f, -90f);
-
-            if (PhxGameRuntime.Instance.AimDebug != null)
+            if (AlertTimer > 0f)
             {
-                PhxGameRuntime.Instance.AimDebug.SetPosition(0, HpWeapons.position);
-                PhxGameRuntime.Instance.AimDebug.SetPosition(1, Controller.LookingAt);
+                Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt2);
             }
         }
     }
