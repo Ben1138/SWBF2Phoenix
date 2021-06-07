@@ -4,31 +4,48 @@ using UnityEngine;
 
 public class PhxPlayerController : PhxPawnController
 {
-    PhxCamera Cam => PhxGameRuntime.GetCamera();
+    public static PhxPlayerController Instance { get; private set; }
 
-    public PhxInstance Pawn;
     public bool CancelPressed { get; private set; }
-    public Vector2 MouseDiff;
+
+
+    public PhxPlayerController()
+    {
+        Instance = this;
+    }
 
     public override void Update(float deltaTime)
     {
         base.Update(deltaTime);
 
-        WalkDirection.x = Input.GetAxis("Horizontal");
-        WalkDirection.y = Input.GetAxis("Vertical");
+        // nothing to do
+        if (Pawn == null)
+        {
+            return;
+        }
 
-        MouseDiff.x = Input.GetAxis("Mouse X");
-        MouseDiff.y = Input.GetAxis("Mouse Y");
+        MoveDirection.x = Input.GetAxis("Horizontal");
+        MoveDirection.y = Input.GetAxis("Vertical");
 
-        Vector3 camForward = Cam.transform.forward;
-        //if (Physics.Raycast(Cam.transform.position, camForward, out RaycastHit hit, 1000f, 3))
-        //{
-        //    LookingAt = hit.point;
-        //}
-        //else
-        //{
-            LookingAt = camForward * 1000f;
-        //}
+        float mouseX = Input.GetAxis("Mouse X");
+        float mouseY = -Input.GetAxis("Mouse Y");
+
+        Vector2 rotConstraints = Pawn.GetViewConstraint();
+        Vector2 maxTurnSpeed = Pawn.GetMaxTurnSpeed();
+
+        // max turn degrees per frame
+        Vector2 maxTurn = maxTurnSpeed * deltaTime;
+        float turnX = Mathf.Clamp(mouseY * 2f, -maxTurn.x, maxTurn.x);
+        float turnY = Mathf.Clamp(mouseX * 2f, -maxTurn.y, maxTurn.y);
+
+        Quaternion rot = Quaternion.LookRotation(ViewDirection);
+        Vector3 euler = rot.eulerAngles;
+        SanitizeEuler(ref euler);
+        euler.x = Mathf.Clamp(euler.x + turnX, -rotConstraints.x, rotConstraints.x);
+        euler.y = Mathf.Clamp(euler.y + turnY, -rotConstraints.y, rotConstraints.y);
+
+        rot = Quaternion.Euler(euler);
+        ViewDirection = rot * Vector3.forward;
 
         Jump = Input.GetButtonDown("Jump");
         Sprint = Input.GetButton("Sprint");
@@ -42,5 +59,15 @@ public class PhxPlayerController : PhxPawnController
         }
 
         CancelPressed = Input.GetButtonDown("Cancel");
+    }
+
+    void SanitizeEuler(ref Vector3 euler)
+    {
+        while (euler.x > 180f) euler.x -= 360f;
+        while (euler.y > 180f) euler.y -= 360f;
+        while (euler.z > 180f) euler.z -= 360f;
+        while (euler.x < -180f) euler.x += 360f;
+        while (euler.y < -180f) euler.y += 360f;
+        while (euler.z < -180f) euler.z += 360f;
     }
 }

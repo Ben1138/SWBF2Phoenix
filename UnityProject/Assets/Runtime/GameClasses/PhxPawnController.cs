@@ -4,16 +4,18 @@ using UnityEngine;
 
 public abstract class PhxPawnController
 {
+    public IPhxControlableInstance Pawn;
+
     public bool ShootPrimary;
     public bool ShootSecondary;
     public bool Crouch;
     public bool Jump;
     public bool Sprint;
     public bool Reload;
-    public Vector2 WalkDirection;
-    public Vector3 LookingAt;
+    public Vector2 MoveDirection;
+    public Vector3 ViewDirection;
 
-    public bool IsIdle => !ShootPrimary && !Crouch && WalkDirection == Vector2.zero;
+    public bool IsIdle => !ShootPrimary && !Crouch && MoveDirection == Vector2.zero;
     public float IdleTime { get; private set; }
 
 

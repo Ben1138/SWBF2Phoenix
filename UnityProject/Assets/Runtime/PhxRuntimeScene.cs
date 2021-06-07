@@ -157,6 +157,7 @@ public class PhxRuntimeScene
         }
     }
 
+    // TODO: implement object pooling
     public PhxInstance CreateInstance(PhxClass cl, string instName, Vector3 position, Quaternion rotation, Transform parent=null)
     {
         return CreateInstance(cl.EntityClass, instName, position, rotation, parent).GetComponent<PhxInstance>();
