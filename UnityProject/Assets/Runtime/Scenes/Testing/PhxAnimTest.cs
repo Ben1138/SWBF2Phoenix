@@ -2,10 +2,14 @@ using UnityEngine;
 
 public class PhxAnimTest : MonoBehaviour
 {
+    public PhxCamera Cam;
+
     public int Width;
     public int Height;
     public float Padding;
 
+    public bool SpawnPlayer;
+    public bool SpawnMobs;
     public bool EnableReload = true;
     public float ForwardMultiplier;
 
@@ -62,25 +66,43 @@ public class PhxAnimTest : MonoBehaviour
             }
         }
 
-        Instances = new PhxSoldier[Width * Height];
-        ReloadTimers = new float[Width * Height];
-        ForwardOffset = new float[Width * Height];
-
-        for (int x = 0; x < Width; ++x)
+        if (SpawnMobs)
         {
-            for (int y = 0; y < Height; ++y)
+            Instances = new PhxSoldier[Width * Height];
+            ReloadTimers = new float[Width * Height];
+            ForwardOffset = new float[Width * Height];
+
+            for (int x = 0; x < Width; ++x)
             {
-                Vector3 pos = new Vector3(x * -Padding, 0f, y * -Padding);
-                pos.x += Random.Range(-0.2f, 0.2f);
-                pos.y += Random.Range(-0.2f, 0.2f);
+                for (int y = 0; y < Height; ++y)
+                {
+                    Vector3 pos = new Vector3(x * -Padding, 0f, y * -Padding);
+                    pos.x += Random.Range(-0.2f, 0.2f);
+                    pos.y += Random.Range(-0.2f, 0.2f);
 
-                PhxClass spawnClass = classes[Random.Range(0, classes.Length)];
+                    PhxClass spawnClass = classes[Random.Range(0, classes.Length)];
 
-                int idx = x + (Width * y);
-                Instances[idx] = scene.CreateInstance(spawnClass, "instance" + NameCounter++, pos, Quaternion.identity) as PhxSoldier;
-                ReloadTimers[idx] = Random.Range(1.0f, 10f);
-                ForwardOffset[idx] = Random.Range(0f, 3.1416f * 2f);
+                    int idx = x + (Width * y);
+                    Instances[idx] = scene.CreateInstance(spawnClass, "instance" + NameCounter++, pos, Quaternion.identity) as PhxSoldier;
+                    ReloadTimers[idx] = Random.Range(1.0f, 10f);
+                    ForwardOffset[idx] = Random.Range(0f, 3.1416f * 2f);
+                }
             }
+        }
+
+        if (SpawnPlayer)
+        {
+            PhxSoldier pawn = Env.GetScene().CreateInstance(classes[5], "player" + NameCounter++, transform.position, Quaternion.identity) as PhxSoldier;
+            if (pawn == null)
+            {
+                Debug.LogError($"Given spawn class '{classes[5].Name}' is not a soldier!");
+                return;
+            }
+
+            pawn.gameObject.layer = 3;
+            pawn.Controller = new PhxPlayerController();
+            pawn.Controller.Pawn = pawn;
+            Cam.Follow(pawn);
         }
     }
 
@@ -104,6 +126,8 @@ public class PhxAnimTest : MonoBehaviour
                 Instances[i].Animator.Forward = Mathf.Sin(Time.timeSinceLevelLoad * ForwardMultiplier + ForwardOffset[i]);
             }
         }
+
+        PhxPlayerController.Instance?.Update(Time.deltaTime);
     }
 
     void FixedUpdate()

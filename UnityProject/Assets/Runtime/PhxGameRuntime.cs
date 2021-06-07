@@ -26,7 +26,6 @@ public class PhxGameRuntime : MonoBehaviour
     public Volume           PostProcessingVolume;
     public AudioMixerGroup  UIAudioMixer;
     public PhxCamera        Camera;
-    public LineRenderer     AimDebug;
     public PhysicMaterial   GroundPhyMat;
 
     // This will only fire for maps, NOT for the main menu!

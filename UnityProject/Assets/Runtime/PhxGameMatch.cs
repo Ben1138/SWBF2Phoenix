@@ -91,11 +91,11 @@ public class PhxGameMatch
         if (PlayerST == PhxPlayerState.CharacterSelection)
         {
             ShowCharacterSelection();
-            Cam.Mode = PhxCamera.CamMode.Fixed;
+            Cam.Fixed();
         }
         else if (PlayerST == PhxPlayerState.FreeCam)
         {
-            Cam.Mode = PhxCamera.CamMode.Free;
+            Cam.Free();
             if (PauseMenuActive)
             {
                 GAME.RemoveMenu();
@@ -105,12 +105,12 @@ public class PhxGameMatch
         else if (PlayerST == PhxPlayerState.Spawned)
         {
             GAME.RemoveMenu();
-            Cam.Mode = PhxCamera.CamMode.Control;
+            Cam.Follow(Player.Pawn);
         }
         else
         {
             GAME.RemoveMenu();
-            Cam.Mode = PhxCamera.CamMode.Fixed;
+            Cam.Fixed();
         }
     }
 
@@ -168,8 +168,6 @@ public class PhxGameMatch
             {
                 GAME.ShowMenu(GAME.PauseMenuPrefab);
                 PauseMenuActive = true;
-                LastMode = Cam.Mode;
-                Cam.Mode = PhxCamera.CamMode.Fixed;
             }
 
             if (UIBack == null)
@@ -357,7 +355,6 @@ public class PhxGameMatch
     void OnRemoveMenu()
     {
         PauseMenuActive = false;
-        Cam.Mode = LastMode;
         if (PlayerST == PhxPlayerState.CharacterSelection)
         {
             ShowCharacterSelection();
