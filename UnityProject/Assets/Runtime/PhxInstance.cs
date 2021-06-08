@@ -64,11 +64,21 @@ public interface IPhxControlableInstance
     public Vector2 GetViewConstraint();
     public Vector2 GetMaxTurnSpeed();
     public Vector3 GetTargetPosition();
+
+    PhxPawnController GetController();
+    void Assign(PhxPawnController controller);
+
+    // Makes this instance immovable
+    // Useful for testing and character selection
+    public void Fixate();
+
+    public void PlayIntroAnim();
 }
 
 public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlableInstance where T : PhxClass
 {
-    public PhxPawnController Controller;
+    protected PhxPawnController Controller;
+    
     protected Vector3 TargetPos;
     protected Vector2 ViewConstraint = Vector2.positiveInfinity;
 
@@ -95,4 +105,18 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
     {
         return TargetPos;
     }
+
+    public PhxPawnController GetController()
+    {
+        return Controller;
+    }
+
+    public void Assign(PhxPawnController controller)
+    {
+        Controller = controller;
+        controller.SetPawn(this);
+    }
+
+    public abstract void Fixate();
+    public abstract void PlayIntroAnim();
 }

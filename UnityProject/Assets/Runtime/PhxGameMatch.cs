@@ -17,6 +17,8 @@ public class PhxGameMatch
 
     public PhxPlayerController Player { get; private set; }
 
+    List<PhxPawnController> AIControllers = new List<PhxPawnController>();
+
 
     public enum PhxPlayerState
     {
@@ -153,9 +155,13 @@ public class PhxGameMatch
         GAME.OnRemoveMenu -= OnRemoveMenu;
     }
 
-    public void Update()
+    public void Update(float deltaTime)
     {
-        Player.Update(Time.deltaTime);
+        Player.Update(deltaTime);
+        for (int i = 0; i < AIControllers.Count; ++i)
+        {
+            AIControllers[i].Update(deltaTime);
+        }
 
         if (AvailablePauseMenu && Player.CancelPressed)
         {
@@ -177,40 +183,41 @@ public class PhxGameMatch
         }
     }
 
-    public void SpawnPlayer(PhxClass cl)
+    public IPhxControlableInstance SpawnPlayer(PhxClass cl, Vector3 position, Quaternion rotation)
     {
         if (Player.Pawn != null)
         {
             Debug.LogWarning("Player already spawned!");
-            return;
+            return null;
         }
 
-        PhxCamera cam = PhxGameRuntime.GetCamera();
-        Vector3 spawnPos = cam.transform.position + cam.transform.rotation * (cam.PositionOffset * 2f);
-
-        PhxSoldier pawn = RTS.CreateInstance(cl, "player" + NameCounter++, spawnPos, Quaternion.identity) as PhxSoldier;
+        IPhxControlableInstance pawn = RTS.CreateInstance(cl, "player" + NameCounter++, position, rotation) as IPhxControlableInstance;
         if (pawn == null)
         {
-            Debug.LogError($"Given spawn class '{cl.Name}' is not a soldier!");
-            return;
+            Debug.LogError($"Given spawn class '{cl.Name}' is not a IPhxControlableInstance!");
+            return null;
         }
 
-        pawn.gameObject.layer = 3;
-        pawn.Controller = Player;
-        Player.Pawn = pawn;
+        pawn.GetInstance().gameObject.layer = 3;
+        pawn.Assign(Player);
         SetPlayerState(PhxPlayerState.Spawned);
+
+        return pawn;
     }
 
-    public void SpawnAI(PhxClass cl)
+    public IPhxControlableInstance SpawnAI<T>(PhxClass cl, Vector3 position, Quaternion rotation) where T : PhxPawnController, new()
     {
-        PhxSoldier player = RTS.CreateInstance(cl, "AI" + NameCounter++, Camera.main.transform.position, Quaternion.identity) as PhxSoldier;
+        IPhxControlableInstance player = RTS.CreateInstance(cl, "AI" + NameCounter++, position, rotation) as IPhxControlableInstance;
         if (player == null)
         {
-            Debug.LogError($"Given spawn class '{cl.Name}' is not a soldier!");
-            return;
+            Debug.LogError($"Given spawn class '{cl.Name}' is not a IPhxControlableInstance!");
+            return null;
         }
 
-        player.Controller = new PhxAIController();
+        PhxPawnController controller = new T();
+        AIControllers.Add(controller);
+        player.Assign(controller);
+        return player;
     }
 
     // ====================================================================================

@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class PhxAnimTest : PhxUnityScene
 {
+    static PhxGameMatch MATCH => PhxGameRuntime.GetMatch();
+
     public int Width;
     public int Height;
     public float Padding;
@@ -13,9 +15,7 @@ public class PhxAnimTest : PhxUnityScene
 
     int NameCounter;
 
-    PhxSoldier[] Instances;
-    float[] ReloadTimers;
-    float[] ForwardOffset;
+    IPhxControlableInstance[] Instances;
 
 
     void Awake()
@@ -64,9 +64,6 @@ public class PhxAnimTest : PhxUnityScene
         if (SpawnMobs)
         {
             Instances = new PhxSoldier[Width * Height];
-            ReloadTimers = new float[Width * Height];
-            ForwardOffset = new float[Width * Height];
-
             for (int x = 0; x < Width; ++x)
             {
                 for (int y = 0; y < Height; ++y)
@@ -78,16 +75,15 @@ public class PhxAnimTest : PhxUnityScene
                     PhxClass spawnClass = classes[Random.Range(0, classes.Length)];
 
                     int idx = x + (Width * y);
-                    Instances[idx] = scene.CreateInstance(spawnClass, "instance" + NameCounter++, pos, Quaternion.identity) as PhxSoldier;
-                    ReloadTimers[idx] = Random.Range(1.0f, 10f);
-                    ForwardOffset[idx] = Random.Range(0f, 3.1416f * 2f);
+                    Instances[idx] = MATCH.SpawnAI<PhxAnimTestController>(spawnClass, pos, Quaternion.identity);
+                    Instances[idx].Fixate();
                 }
             }
         }
 
         if (SpawnPlayer)
         {
-            PhxGameRuntime.GetMatch().SpawnPlayer(classes[5]);
+            MATCH.SpawnPlayer(classes[5], transform.position, Quaternion.identity);
         }
     }
 

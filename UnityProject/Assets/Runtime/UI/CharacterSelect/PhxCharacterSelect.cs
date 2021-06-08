@@ -20,15 +20,15 @@ public class PhxCharacterSelect : PhxMenuInterface
 
     List<PhxCharacterItem> Items   = new List<PhxCharacterItem>();
     PhxClass CurrentSelection = null;
-    List<PhxInstance> UnitPreviews = new List<PhxInstance>();
+    List<IPhxControlableInstance> UnitPreviews = new List<IPhxControlableInstance>();
 
 
     public override void Clear()
     {
         for (int i = 0; i < UnitPreviews.Count; ++i)
         {
-            UnitPreviews[i].gameObject.SetActive(false);
-            Destroy(UnitPreviews[i]);
+            UnitPreviews[i].GetInstance().gameObject.SetActive(false);
+            Destroy(UnitPreviews[i].GetInstance());
         }
         UnitPreviews.Clear();
     }
@@ -40,9 +40,10 @@ public class PhxCharacterSelect : PhxMenuInterface
             Debug.LogError($"Cannot add odf class '{cl.Name}' as item to character selection!");
             return;
         }
-
+         
         // CSP = Char Select Preview
-        PhxInstance preview = RTS.CreateInstance(cl, cl.Name+"_CSP" + nameCounter++, Vector3.zero, Quaternion.identity, GAME.CharSelectTransform);
+        IPhxControlableInstance preview = RTS.CreateInstance(cl, cl.Name+"_CSP" + nameCounter++, Vector3.zero, Quaternion.identity, GAME.CharSelectTransform) as IPhxControlableInstance;
+        preview.Fixate();
         UnitPreviews.Add(preview);
 
         PhxCharacterItem item = Instantiate(ItemPrefab, ListContents);
@@ -74,13 +75,13 @@ public class PhxCharacterSelect : PhxMenuInterface
         else
         {
             item.SetActive(false);
-            preview.gameObject.SetActive(false);
+            preview.GetInstance().gameObject.SetActive(false);
         }
 
         ReCalcItemSize();
     }
 
-    void SetActive(PhxCharacterItem item, PhxClass cl, PhxInstance preview)
+    void SetActive(PhxCharacterItem item, PhxClass cl, IPhxControlableInstance preview)
     {
         foreach (PhxCharacterItem it in Items)
         {
@@ -93,9 +94,9 @@ public class PhxCharacterSelect : PhxMenuInterface
         {
             inst.gameObject.SetActive(false);
         }
-        preview.gameObject.SetActive(true);
+        preview.GetInstance().gameObject.SetActive(true);
 
-        PhxSelectableCharacterInterface animPreview = preview as PhxSelectableCharacterInterface;
+        IPhxControlableInstance animPreview = preview as IPhxControlableInstance;
         if (animPreview != null)
         {
             animPreview.PlayIntroAnim();
@@ -140,6 +141,6 @@ public class PhxCharacterSelect : PhxMenuInterface
     static int nameCounter = 0;
     void SpawnClicked()
     {
-        MTC.SpawnPlayer(CurrentSelection);
+        MTC.SpawnPlayer(CurrentSelection, GAME.Camera.transform.position, GAME.Camera.transform.rotation);
     }
 }

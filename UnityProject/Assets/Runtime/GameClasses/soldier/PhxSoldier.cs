@@ -5,7 +5,7 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, PhxSelectableCharacterInterface
+public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxGameMatch MTC => PhxGameRuntime.GetMatch();
@@ -117,7 +117,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     const float TurnTime = 0.2f;
     float TurnTimer;
     Quaternion TurnStart;
-    Quaternion TurnEnd;
 
     Vector3 CurrSpeed;
 
@@ -131,6 +130,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     // <stance>, <thrustfactor> <strafefactor> <turnfactor>
     float[][] ControlValues;
 
+
+    PhxCannon Weap;
+    int FireCounter;
 
     public override void Init()
     {
@@ -170,7 +172,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
 
         // Weapons
         PhxClass rifleClass = SCENE.GetClass("rep_weap_inf_rifle");
-        SCENE.CreateInstance(rifleClass, HpWeapons);
+        Weap = SCENE.CreateInstance(rifleClass, HpWeapons) as PhxCannon;
+        Weap.Shot += () => 
+        {
+            Animator.SetState(1, Animator.StandShootPrimary);
+            Animator.RestartState(1);
+
+            Debug.Log("Fire " + FireCounter++);
+        };
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
@@ -183,6 +192,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     public override void BindEvents()
     {
         
+    }
+
+    public override void Fixate()
+    {
+        Destroy(Body);
+        Body = null;
+
+        Destroy(GetComponent<CapsuleCollider>());
     }
 
     public void AddHealth(float amount)
@@ -207,7 +224,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
         // TODO
     }
 
-    public void PlayIntroAnim()
+    public override void PlayIntroAnim()
     {
         Animator.PlayIntroAnim();
     }
@@ -242,7 +259,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
 
     void Update()
     {
-        //AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
+        AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
 
         if (Controller != null)
         {
@@ -358,7 +375,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
                     // ---------------------------------------------------------------------------------------------
                     if (Controller.Jump)
                     {
-                        Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
+                        Body?.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
                         State = PhxControlState.Jump;
                         JumpTimer = JumpTime;
 
@@ -415,6 +432,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
 
                 FallTimer = 0f;
             }
+
+            // weapons
+            Weap.Fire = Controller.ShootPrimary;
         }
     }
 
@@ -484,7 +504,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
                         {
                             TurnTimer = TurnTime;
                             TurnStart = transform.rotation;
-                            TurnEnd = lookRot;
                             Animator.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
                             Animator.RestartState(0);
                         }
@@ -516,15 +535,15 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
                     {
                         Animator.SetState(0, Animator.Fall);
                         State = PhxControlState.Jump;
-                        Body.AddForce(CurrSpeed, ForceMode.VelocityChange);
+                        Body?.AddForce(CurrSpeed, ForceMode.VelocityChange);
                     }
                 }
                 else
                 {
-                    Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
+                    Body?.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
                 }
 
-                Body.MoveRotation(lookRot);
+                Body?.MoveRotation(lookRot);
             }
 
             TurnTimer = Mathf.Max(TurnTimer - Time.fixedDeltaTime, 0f);
@@ -533,7 +552,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
 
     public Vector3 RotAlt1 = new Vector3(7f, -78f, -130f);
     public Vector3 RotAlt2 = new Vector3(0f, -50f, -75f);
-    public Vector3 RotAlt3 = new Vector3(0f, -50f, -75f);
+    public Vector3 RotAlt3 = new Vector3(0f, -68f, -81f);
 
     void LateUpdate()
     {
@@ -543,7 +562,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
         {
             if (AlertTimer > 0f)
             {
-                if (Controller.MoveDirection.magnitude > 0.6f)
+                if (Controller.MoveDirection.magnitude > 0.1f)
                 {
                     Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt3);
                 }

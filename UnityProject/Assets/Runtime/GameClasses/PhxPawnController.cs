@@ -4,7 +4,7 @@ using UnityEngine;
 
 public abstract class PhxPawnController
 {
-    public IPhxControlableInstance Pawn;
+    public IPhxControlableInstance Pawn { get; private set; }
 
     public bool ShootPrimary;
     public bool ShootSecondary;
@@ -18,6 +18,15 @@ public abstract class PhxPawnController
     public bool IsIdle => !ShootPrimary && !Crouch && MoveDirection == Vector2.zero;
     public float IdleTime { get; private set; }
 
+
+    // For assignment, use IPhxControlableInstance.Assign()!
+    public void SetPawn(IPhxControlableInstance pawn)
+    {
+        Debug.Assert(pawn.GetController() == this);
+
+        Pawn = pawn;
+        ViewDirection = Pawn.GetInstance().transform.forward;
+    }
 
     public void ResetIdleTime()
     {

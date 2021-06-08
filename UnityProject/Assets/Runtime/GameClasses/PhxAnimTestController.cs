@@ -4,6 +4,13 @@ using UnityEngine;
 public class PhxAnimTestController : PhxPawnController
 {
     float ReloadTimer;
+    float ForwardOffset;
+
+
+    public PhxAnimTestController()
+    {
+        ForwardOffset = Random.Range(0f, 3.1416f * 2f);
+    }
 
     public override void Update(float deltaTime)
     {
@@ -18,7 +25,7 @@ public class PhxAnimTestController : PhxPawnController
         ReloadTimer -= deltaTime;
         if (ReloadTimer < 0f)
         {
-            ReloadTimer = Random.Range(0.5f, 5f);
+            ReloadTimer = Random.Range(1f, 10f);
             Reload = true;
         }
         else
@@ -26,10 +33,10 @@ public class PhxAnimTestController : PhxPawnController
             Reload = false;
         }
 
-        MoveDirection.x = Mathf.Sin(Time.timeSinceLevelLoad);
-        MoveDirection.y = Mathf.Sin(Time.timeSinceLevelLoad);
+        MoveDirection.x = Mathf.Sin(ForwardOffset + Time.timeSinceLevelLoad);
+        MoveDirection.y = Mathf.Sin(ForwardOffset + Time.timeSinceLevelLoad);
         ViewDirection = Vector3.forward;
 
-        ShootPrimary = true;
+        //ShootPrimary = true;
     }
 }
