@@ -34,8 +34,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 768, y: 768}
+  m_AnchoredPosition: {x: -58.201813, y: 69.82955}
+  m_SizeDelta: {x: 900, y: 900}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2002244360727640790
 CanvasRenderer:
@@ -286,7 +286,7 @@ GameObject:
   - component: {fileID: 6995189895682071400}
   - component: {fileID: 7016272864020001571}
   m_Layer: 0
-  m_Name: CharacterSelect
+  m_Name: PhxCharacterSelectPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

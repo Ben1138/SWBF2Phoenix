@@ -9,6 +9,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxGameMatch MTC => PhxGameRuntime.GetMatch();
+    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
     static readonly string ANIM_CONTROLLER_NAME = "AnimController_soldier";
@@ -64,7 +65,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
         public PhxMultiProp WeaponName = new PhxMultiProp(typeof(string));
     }
 
-    public enum ControlState
+    // Original SWBF2 Control States, see: com_inf_default.odf
+    enum PhxControlState
     {
         Stand,
         Crouch,
@@ -87,7 +89,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     Transform Spine;
     Transform Neck;
 
-    ControlState State;
+    PhxControlState State;
 
     // Physical raycast downwards
     bool Grounded;
@@ -98,25 +100,26 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     float AlertTimer;
 
     // Time we have to fail the raycast to be considered falling
-    const float FallTime = 0.5f;
-    float FallTimer;
+    //const float FallTime = 0.5f;
+    //float FallTimer;
 
-    // time when we start playing the full fall animation
-    const float FallAnimTime = 2f;
-    float FallAnimTimer;
+    // count time while not grounded
+    float FallTimer;
 
     // minimum time we're considered falling when jumping
     const float JumpTime = 0.2f;
     float JumpTimer;
 
-    // let's not depend on the animator state animation
-    // and measure it ourselfs
-    const float LandTime = 0.5f;
+    // when > 0, we're currently landing
     float LandTimer;
 
+    // time it takes to turn left/right when idle (not walking)
+    const float TurnTime = 0.2f;
+    float TurnTimer;
+    Quaternion TurnStart;
+    Quaternion TurnEnd;
+
     Vector3 CurrSpeed;
-    //Quaternion CurrDir;
-    //Quaternion TargetDir;
 
 
     bool bHasLookaroundIdleAnim = false;
@@ -124,11 +127,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     bool LastIdle = false;
     const float IdleTime = 10f;
 
-    string[] IdleNames = new string[]
-    {
-        "IdleLookaround",
-        "IdleCheckweapon"
-    };
 
     // <stance>, <thrustfactor> <strafefactor> <turnfactor>
     float[][] ControlValues;
@@ -144,7 +142,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
         //CurrDir = transform.rotation;
         //TargetDir = CurrDir;
 
-        ControlState[] states = (ControlState[])Enum.GetValues(typeof(ControlState));
+        PhxControlState[] states = (PhxControlState[])Enum.GetValues(typeof(PhxControlState));
         ControlValues = new float[states.Length][];
         for (int i = 0; i < states.Length; ++i)
         {
@@ -168,11 +166,17 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
         CapsuleCollider coll = gameObject.AddComponent<CapsuleCollider>();
         coll.height = 1.9f;
         coll.radius = 0.4f;
+        coll.center = new Vector3(0f, 0.9f, 0f);
+
+        // Weapons
+        PhxClass rifleClass = SCENE.GetClass("rep_weap_inf_rifle");
+        SCENE.CreateInstance(rifleClass, HpWeapons);
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Animator = gameObject.AddComponent<PhxHumanAnimator>();
+        Animator.OnStateFinished += StateFinished;
         Animator.Init();
     }
 
@@ -183,7 +187,19 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
 
     public void AddHealth(float amount)
     {
-        CurHealth.Set(Mathf.Clamp(CurHealth + amount, 0f, C.MaxHealth));
+        if (amount < 0)
+        {
+            // we got hit! alert!
+            AlertTimer = AlertTime;
+        }
+
+        float health = CurHealth + amount;
+        if (health <= 0f)
+        {
+            health = 0;
+            // TODO: dead!
+        }
+        CurHealth.Set(Mathf.Min(health, C.MaxHealth));
     }
 
     public void AddAmmo(float amount)
@@ -197,7 +213,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     }
 
     // see: com_inf_default
-    float[] GetControlSpeed(ControlState state)
+    float[] GetControlSpeed(PhxControlState state)
     {
         foreach (object[] values in C.ControlSpeed.Values)
         {
@@ -216,53 +232,17 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
         return null;
     }
 
-    //AnimationClip GetClip(string bankName, string weapName, string animName, string fallbackBankName=null, string fallbackWeaponName=null)
-    //{
-    //    // TODO: There's AnimationName and SkeletonName. Sometimes they mean the same thing !?
-    //    // For example: The super battle droid just has SkeletonName property, but no AnimationName property...
-    //    string fullName = $"{C.SkeletonName}_{weapName}_{animName}";
-
-    //    uint animCRC = HashUtils.GetCRC(fullName);
-    //    AnimationClip clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
-    //    if (clip == null)
-    //    {
-    //        animCRC = HashUtils.GetCRC(fullName + "_full");
-    //        clip = AnimationLoader.Instance.LoadAnimationClip(bankName, animCRC, transform, false, false);
-    //        if (clip != null) return clip;
-
-    //        if (fallbackBankName == "human_0")
-    //        {
-    //            clip = GetClip("human_0", weapName, animName, null, fallbackWeaponName);
-    //            if (clip != null) return clip;
-
-    //            clip = GetClip("human_1", weapName, animName, null, fallbackWeaponName);
-    //            if (clip != null) return clip;
-
-    //            clip = GetClip("human_2", weapName, animName, null, fallbackWeaponName);
-    //            if (clip != null) return clip;
-
-    //            clip = GetClip("human_3", weapName, animName, null, fallbackWeaponName);
-    //            if (clip != null) return clip;
-
-    //            clip = GetClip("human_4", weapName, animName, null, fallbackWeaponName);
-    //            if (clip != null) return clip;
-
-    //            clip = GetClip("human_sabre", weapName, animName, null, fallbackWeaponName);
-    //            if (clip != null) return clip;
-    //        }
-
-    //        if (!string.IsNullOrEmpty(fallbackWeaponName))
-    //        {
-    //            clip = GetClip(bankName, fallbackWeaponName, animName, fallbackBankName, null);
-    //            if (clip != null) return clip;
-    //        }
-    //    }
-    //    return clip;
-    //}
+    void StateFinished(int layer)
+    {
+        if (layer == 1)
+        {
+            Animator.SetState(1, CraSettings.STATE_NONE);
+        }
+    }
 
     void Update()
     {
-        AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
+        //AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
 
         if (Controller != null)
         {
@@ -277,10 +257,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
                 Debug.DrawRay(Neck.position, Controller.ViewDirection * 1000f, Color.blue);
             }
 
-            if (Grounded)
+            if (Grounded && LandTimer <= 0f && TurnTimer <= 0f)
             {
                 // Stand - Crouch - Sprint
-                if (State == ControlState.Stand || State == ControlState.Crouch || State == ControlState.Sprint)
+                if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
                 {
                     // ---------------------------------------------------------------------------------------------
                     // Forward
@@ -288,15 +268,38 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
                     float walk = Controller.MoveDirection.magnitude;
                     if (Controller.MoveDirection.y <= 0f)
                     {
+                        // invert animation direction for strafing (left/right)
                         walk = -walk;
                     }
-                    //Anim.SetFloat("Forward", walk);
-                    Animator.Forward = walk;
+
+                    if (State == PhxControlState.Sprint)
+                    {
+                        Animator.SetState(0, Animator.StandSprint);
+                    }
+                    else if (walk > 0.2f && walk <= 0.75f)
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertWalk : Animator.StandWalk);
+                        Animator.SetPlaybackSpeed(0, Animator.StandWalk, walk / 0.75f);
+                    }
+                    else if (walk > 0.75f)
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
+                        Animator.SetPlaybackSpeed(0, Animator.StandRun, walk / 1f);
+                    }
+                    else if (walk < -0.2f)
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
+                        Animator.SetPlaybackSpeed(0, Animator.StandBackward, -walk / 1f);
+                    }
+                    else
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertIdle : Animator.StandIdle);
+                    }
                     // ---------------------------------------------------------------------------------------------
                 }
 
                 // Stand - Crouch
-                if (State == ControlState.Stand || State == ControlState.Crouch)
+                if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
                 {
                     // ---------------------------------------------------------------------------------------------
                     // Idle
@@ -344,11 +347,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
                     // ---------------------------------------------------------------------------------------------
 
 
-                    State = Controller.Crouch ? ControlState.Crouch : ControlState.Stand;
+                    State = Controller.Crouch ? PhxControlState.Crouch : PhxControlState.Stand;
                 }
 
                 // Stand - Sprint
-                if (State == ControlState.Stand || State == ControlState.Sprint)
+                if (State == PhxControlState.Stand || State == PhxControlState.Sprint)
                 {
                     // ---------------------------------------------------------------------------------------------
                     // Jumping
@@ -356,87 +359,62 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
                     if (Controller.Jump)
                     {
                         Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
-                        State = ControlState.Jump;
+                        State = PhxControlState.Jump;
                         JumpTimer = JumpTime;
+
+                        Animator.SetState(0, Animator.Jump);
                     }
                     // ---------------------------------------------------------------------------------------------
                 }
 
                 // Stand
-                if (State == ControlState.Stand)
+                if (State == PhxControlState.Stand)
                 {
                     if (Controller.MoveDirection.y > 0.2f && Controller.Sprint)
                     {
-                        State = ControlState.Sprint;
+                        State = PhxControlState.Sprint;
                     }
                 }
 
                 // Crouch
-                if (State == ControlState.Crouch)
+                if (State == PhxControlState.Crouch)
                 {
                     if (Controller.Jump)
                     {
-                        State = ControlState.Stand;
+                        State = PhxControlState.Stand;
                     }
 
                     // TODO: verify
                     else if (Controller.MoveDirection.y > 0.8f && Controller.Sprint)
                     {
-                        State = ControlState.Sprint;
+                        State = PhxControlState.Sprint;
                     }
                 }
 
                 // Sprint
-                if (State == ControlState.Sprint)
+                if (State == PhxControlState.Sprint)
                 {
                     if (Controller.MoveDirection.y < 0.8f || !Controller.Sprint)
                     {
-                        State = ControlState.Stand;
+                        State = PhxControlState.Stand;
                     }
                 }
 
                 // Jump
-                if (State == ControlState.Jump)
+                if (State == PhxControlState.Jump)
                 {
                     JumpTimer -= Time.deltaTime;
                     if (Grounded && JumpTimer < 0f)
                     {
-                        State = ControlState.Stand;
+                        State = PhxControlState.Stand;
                     }
                 }
 
                 //Anim.SetBool("Alert", AlertTimer > 0f);
                 LastIdle = Controller.IsIdle;
 
-                FallAnimTimer = 0f;
+                FallTimer = 0f;
             }
-            else
-            {
-                FallAnimTimer += Time.deltaTime;
-            }
-
-            if (FallAnimTimer > 1f)
-            {
-                Animator.State = PhxAnimState.Falling;
-            }
-            else if (LandTimer > 0f)
-            {
-                Animator.State = PhxAnimState.Landing;
-            }
-            else if (State == ControlState.Jump)
-            {
-                Animator.State = PhxAnimState.Jumping;
-            }
-            else if (State == ControlState.Sprint)
-            {
-                Animator.State = PhxAnimState.Sprinting;
-            }
-            else
-            {
-                Animator.State = PhxAnimState.Walking;
-            }
-            //Anim.SetInteger("State", (int)State);
-            //Anim.SetBool("Falling", FallAnimTimer >= FallAnimTime);
         }
     }
 
@@ -444,87 +422,139 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, Ph
     {
         Grounded = Physics.CheckSphere(transform.position, 0.4f, PhxGameRuntime.PlayerMask, QueryTriggerInteraction.Ignore);
 
-        if (!PrevGrounded && Grounded)
+        if (Controller != null)
         {
-            LandTimer = LandTime;
-            FallTimer = 0f;
-        }
-        else
-        {
-            LandTimer -= Time.fixedDeltaTime;
-        }
-        PrevGrounded = Grounded;
-
-        if (Controller != null && LandTimer <= 0f)
-        {
-            Vector3 lookWalkForward = Controller.ViewDirection;
-            lookWalkForward.y = 0f;
-            Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
-
-            Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x, 0f, Controller.MoveDirection.y);
-            Vector3 moveDirWorld = lookRot * moveDirLocal;
-
-            float accStep      = C.Acceleration * Time.fixedDeltaTime;
-            float thrustFactor = ControlValues[(int)State][0];
-            float strafeFactor = ControlValues[(int)State][1];
-            float turnFactor   = ControlValues[(int)State][2];
-
-            if (moveDirLocal.magnitude == 0f)
+            if (!PrevGrounded && Grounded)
             {
-                CurrSpeed *= 0.1f * Time.fixedDeltaTime;
-
-                Vector3 currForward = transform.forward;
-                currForward.y = 0f;
-
-                Quaternion currRot = Quaternion.LookRotation(currForward);
-
-                float rotDiff = Quaternion.Angle(currRot, lookRot);
-                if (rotDiff < 30f)
+                if (FallTimer > 1.5f)
                 {
-                    lookRot = currRot;
+                    LandTimer = 0.9f;
+                    Animator.SetState(0, Animator.LandHard);
+                    //Debug.Log($"Land HARD {FallTimer}");
+                }
+                else if (FallTimer > 1.1f || Controller.MoveDirection.magnitude < 0.1f)
+                {
+                    LandTimer = 0.6f;
+                    Animator.SetState(0, Animator.LandSoft);
+                    //Debug.Log($"Land Soft {FallTimer}");
+                }
+                else
+                {
+                    LandTimer = 0.05f;
+                    Animator.SetState(0, Animator.LandSoft);
+                    //Debug.Log($"Land very Soft {FallTimer}");
                 }
             }
             else
             {
-                CurrSpeed += moveDirWorld * accStep;
+                LandTimer = Mathf.Max(LandTimer - Time.fixedDeltaTime, 0f);
+            }
+            PrevGrounded = Grounded;
 
-                float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
-                CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, C.MaxSpeed * forwardFactor);
+            if (LandTimer <= 0f)
+            {
+                Vector3 lookWalkForward = Controller.ViewDirection;
+                lookWalkForward.y = 0f;
+                Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
 
-                if (moveDirLocal.z <= 0f)
+                float accStep      = C.Acceleration * Time.fixedDeltaTime;
+                float thrustFactor = ControlValues[(int)State][0];
+                float strafeFactor = ControlValues[(int)State][1];
+                float turnFactor   = ControlValues[(int)State][2];
+
+                Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
+                Vector3 moveDirWorld = lookRot * moveDirLocal;
+
+                // TODO: base turn speed in degreees/sec really 45?
+                MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
+
+                if (moveDirLocal.magnitude == 0f)
                 {
-                    // invert look direction when strafing left/right
-                    moveDirWorld = -moveDirWorld;
+                    CurrSpeed *= 0.1f * Time.fixedDeltaTime;
+
+                    if (TurnTimer > 0f)
+                    {
+                        lookRot = Quaternion.Slerp(lookRot, TurnStart, TurnTimer / TurnTime);
+                    }
+                    else
+                    {
+                        //float rotDiff = Quaternion.Angle(transform.rotation, lookRot);
+                        float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, lookRot.eulerAngles.y);
+                        if (rotDiff < -40f || rotDiff > 60f)
+                        {
+                            TurnTimer = TurnTime;
+                            TurnStart = transform.rotation;
+                            TurnEnd = lookRot;
+                            Animator.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
+                            Animator.RestartState(0);
+                        }
+
+                        lookRot = transform.rotation;
+                    }
+                }
+                else
+                {
+                    CurrSpeed += moveDirWorld * accStep;
+
+                    float maxSpeed = moveDirLocal.z < 0.2f ? C.MaxStrafeSpeed : C.MaxSpeed;
+                    float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
+                    CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
+
+                    if (moveDirLocal.z <= 0f)
+                    {
+                        // invert look direction when strafing left/right
+                        moveDirWorld = -moveDirWorld;
+                    }
+
+                    lookRot = Quaternion.LookRotation(moveDirWorld);
                 }
 
-                lookRot = Quaternion.LookRotation(moveDirWorld);
+                if (!Grounded)
+                {
+                    FallTimer += Time.fixedDeltaTime;
+                    if (FallTimer > 0.1f && State != PhxControlState.Jump)
+                    {
+                        Animator.SetState(0, Animator.Fall);
+                        State = PhxControlState.Jump;
+                        Body.AddForce(CurrSpeed, ForceMode.VelocityChange);
+                    }
+                }
+                else
+                {
+                    Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
+                }
+
+                Body.MoveRotation(lookRot);
             }
 
-            //TargetDir = Quaternion.LookRotation(moveDirWorld);
-
-            //float angleDiff = Quaternion.Angle(CurrDir, TargetDir);
-            //float t = Mathf.Clamp01(C.MaxTurnSpeed * turnFactor / angleDiff);
-            //CurrDir = Quaternion.Slerp(CurrDir, TargetDir, t);
-
-            Body.MoveRotation(lookRot);
-            Body.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
+            TurnTimer = Mathf.Max(TurnTimer - Time.fixedDeltaTime, 0f);
         }
     }
 
     public Vector3 RotAlt1 = new Vector3(7f, -78f, -130f);
-    public Vector3 RotAlt2 = new Vector3(0f, -90f, -90f);
+    public Vector3 RotAlt2 = new Vector3(0f, -50f, -75f);
+    public Vector3 RotAlt3 = new Vector3(0f, -50f, -75f);
 
     void LateUpdate()
     {
         if (Controller == null) return;
 
-        if (State == ControlState.Stand || State == ControlState.Crouch)
+        if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
         {
-            Neck.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt1);
-
             if (AlertTimer > 0f)
             {
-                Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt2);
+                if (Controller.MoveDirection.magnitude > 0.6f)
+                {
+                    Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt3);
+                }
+                else
+                {
+                    Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt2);
+                }
+            }
+            else
+            {
+                Neck.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt1);
             }
         }
     }

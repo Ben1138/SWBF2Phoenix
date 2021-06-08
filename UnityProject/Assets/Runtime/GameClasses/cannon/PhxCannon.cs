@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 
-public class PhxCannon : PhxInstance<PhxSoldier.ClassProperties>
+public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>
 {
     public class ClassProperties : PhxClass
     {
