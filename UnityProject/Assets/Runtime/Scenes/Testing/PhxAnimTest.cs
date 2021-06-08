@@ -1,9 +1,7 @@
 using UnityEngine;
 
-public class PhxAnimTest : MonoBehaviour
+public class PhxAnimTest : PhxUnityScene
 {
-    public PhxCamera Cam;
-
     public int Width;
     public int Height;
     public float Padding;
@@ -13,24 +11,21 @@ public class PhxAnimTest : MonoBehaviour
     public bool EnableReload = true;
     public float ForwardMultiplier;
 
-    PhxRuntimeEnvironment Env;
     int NameCounter;
 
     PhxSoldier[] Instances;
     float[] ReloadTimers;
     float[] ForwardOffset;
 
-    void Start()
-    {
-        WorldLoader.UseHDRP = true;
-        MaterialLoader.UseHDRP = true;
 
-        Env = PhxRuntimeEnvironment.Create(PhxGameRuntime.GamePath / "GameData/data/_lvl_pc", null, false);
-        Env.ScheduleLVLRel("load/common.lvl");
-        Env.ScheduleLVLRel("side/rep.lvl");
-        Env.ScheduleLVLRel("ingame.lvl");
-        Env.OnLoaded += Loaded;
-        Env.Run(null);
+    void Awake()
+    {
+        ScheduleLVLs = new string[]
+        {
+            "side/rep.lvl"
+        };
+
+        PhxGameRuntime.Instance.OnMapLoaded += Loaded;
     }
 
     void Loaded()
@@ -53,7 +48,7 @@ public class PhxAnimTest : MonoBehaviour
             "rep_inf_ep3_jettrooper",
         };
 
-        PhxRuntimeScene scene = Env.GetScene();
+        PhxRuntimeScene scene = PhxGameRuntime.GetScene();
         PhxClass[] classes = new PhxClass[classNames.Length];
 
         for (int i = 0; i < classes.Length; ++i)
@@ -92,47 +87,18 @@ public class PhxAnimTest : MonoBehaviour
 
         if (SpawnPlayer)
         {
-            PhxSoldier pawn = Env.GetScene().CreateInstance(classes[5], "player" + NameCounter++, transform.position, Quaternion.identity) as PhxSoldier;
-            if (pawn == null)
-            {
-                Debug.LogError($"Given spawn class '{classes[5].Name}' is not a soldier!");
-                return;
-            }
-
-            pawn.gameObject.layer = 3;
-            pawn.Controller = new PhxPlayerController();
-            pawn.Controller.Pawn = pawn;
-            Cam.Follow(pawn);
+            PhxGameRuntime.GetMatch().SpawnPlayer(classes[5]);
         }
     }
 
     void Update()
     {
-        Env.Update();
 
-        if (Instances != null)
-        {
-            for (int i = 0; i < Instances.Length; ++i)
-            {
-                if (EnableReload)
-                {
-                    ReloadTimers[i] -= Time.deltaTime;
-                    if (ReloadTimers[i] < 0f)
-                    {
-                        ReloadTimers[i] = Random.Range(0.5f, 5f);
-                        Instances[i].Animator.SetState(1, 0);
-                    }
-                }
-                Instances[i].Animator.Forward = Mathf.Sin(Time.timeSinceLevelLoad * ForwardMultiplier + ForwardOffset[i]);
-            }
-        }
-
-        PhxPlayerController.Instance?.Update(Time.deltaTime);
     }
 
     void FixedUpdate()
     {
-        Env.FixedUpdate(Time.fixedDeltaTime);        
+          
     }
 }
 

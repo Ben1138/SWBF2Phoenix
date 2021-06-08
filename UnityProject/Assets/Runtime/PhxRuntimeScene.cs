@@ -25,6 +25,8 @@ public class PhxRuntimeScene
     List<GameObject> WorldRoots = new List<GameObject>();
     List<RTTransform> CameraShots = new List<RTTransform>();
 
+    int InstanceCounter;
+
     public PhxRuntimeScene(PhxRuntimeEnvironment env, Container c)
     {
         ENV = env;
@@ -78,7 +80,6 @@ public class PhxRuntimeScene
             return;
         }
 
-        MaterialLoader.UseHDRP = true;
         Loader.ResetAllLoaders();
 
         foreach (World world in worldLayers)
@@ -161,6 +162,11 @@ public class PhxRuntimeScene
     public PhxInstance CreateInstance(PhxClass cl, string instName, Vector3 position, Quaternion rotation, Transform parent=null)
     {
         return CreateInstance(cl.EntityClass, instName, position, rotation, parent).GetComponent<PhxInstance>();
+    }
+
+    public PhxInstance CreateInstance(PhxClass cl, Transform parent = null)
+    {
+        return CreateInstance(cl.EntityClass, cl.Name + InstanceCounter++, Vector3.zero, Quaternion.identity, parent).GetComponent<PhxInstance>();
     }
 
     public PhxClass GetClass(string odfClassName)

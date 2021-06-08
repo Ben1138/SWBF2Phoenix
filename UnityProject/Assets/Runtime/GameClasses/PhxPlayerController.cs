@@ -4,15 +4,9 @@ using UnityEngine;
 
 public class PhxPlayerController : PhxPawnController
 {
-    public static PhxPlayerController Instance { get; private set; }
-
     public bool CancelPressed { get; private set; }
 
 
-    public PhxPlayerController()
-    {
-        Instance = this;
-    }
 
     public override void Update(float deltaTime)
     {
@@ -59,15 +53,5 @@ public class PhxPlayerController : PhxPawnController
         }
 
         CancelPressed = Input.GetButtonDown("Cancel");
-    }
-
-    void SanitizeEuler(ref Vector3 euler)
-    {
-        while (euler.x > 180f) euler.x -= 360f;
-        while (euler.y > 180f) euler.y -= 360f;
-        while (euler.z > 180f) euler.z -= 360f;
-        while (euler.x < -180f) euler.x += 360f;
-        while (euler.y < -180f) euler.y += 360f;
-        while (euler.z < -180f) euler.z += 360f;
     }
 }
