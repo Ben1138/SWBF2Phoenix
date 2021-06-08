@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 
 public class PhxGameRuntime : MonoBehaviour
@@ -12,8 +13,20 @@ public class PhxGameRuntime : MonoBehaviour
     public static PhxGameRuntime Instance { get; private set; } = null;
     public static PhxPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
 
+
+    public enum PhxStartupBehaviour
+    {
+        MainMenu,
+        SWBF2Map,
+        UnityScene
+    }
+
+
     [Header("Settings")]
     public string Language = "english";
+    public PhxStartupBehaviour StartupBehaviour;
+    public string StartupSWBF2Map;
+    public string StartupUnityScene;
 
     [Header("References")]
     public PhxLoadscreen    InitScreenPrefab;
@@ -23,13 +36,12 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxMenuInterface CharacterSelectPrefab;
     public Transform        CharSelectTransform;
     public Volume           CharSelectPPVolume;
-    public Volume           PostProcessingVolume;
     public AudioMixerGroup  UIAudioMixer;
     public PhxCamera        Camera;
     public PhysicMaterial   GroundPhyMat;
 
     // This will only fire for maps, NOT for the main menu!
-    public Action OnMatchStart;
+    public Action OnMapLoaded;
     public Action OnRemoveMenu;
 
     PhxPath AddonPath => GamePath / "GameData/addon";
@@ -46,6 +58,7 @@ public class PhxGameRuntime : MonoBehaviour
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
 
     bool bInitMainMenu;
+    string UnitySceneName = null;
 
     // contains mapluafile strings, e.g. cor1c_con
     List<string> MapRotation = new List<string>();
@@ -108,7 +121,7 @@ public class PhxGameRuntime : MonoBehaviour
             MapRotationIdx = 0;
         }
 
-        EnterMap(MapRotation[MapRotationIdx]);
+        EnterSWBF2Map(MapRotation[MapRotationIdx]);
     }
 
     public void RegisterAddonScript(string scriptName, string addonName)
@@ -132,6 +145,12 @@ public class PhxGameRuntime : MonoBehaviour
         ShowLoadscreen(bInit);
         RemoveMenu(false);
 
+        if (UnitySceneName != null)
+        {
+            SceneManager.UnloadSceneAsync(UnitySceneName);
+            UnitySceneName = null;
+        }
+
         Env?.ClearScene();
         Env = PhxRuntimeEnvironment.Create(StdLVLPC);
 
@@ -148,7 +167,7 @@ public class PhxGameRuntime : MonoBehaviour
         Env.Run("missionlist");
     }
 
-    public void EnterMap(string mapScript)
+    public void EnterSWBF2Map(string mapScript)
     {
         Debug.Assert(Env == null || Env.IsLoaded);
 
@@ -161,13 +180,64 @@ public class PhxGameRuntime : MonoBehaviour
             envPath = AddonPath / addonName / "data/_lvl_pc";
         }
 
+        if (UnitySceneName != null)
+        {
+            SceneManager.UnloadSceneAsync(UnitySceneName);
+            UnitySceneName = null;
+        }
+
         Env?.ClearScene();
         Env = PhxRuntimeEnvironment.Create(envPath, StdLVLPC);
         Env.ScheduleLVLRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
-        Env.OnLoaded += OnMapLoaded;
-        Env.OnExecuteMain += OnMapExecution;
+        Env.OnLoaded += OnEnvLoaded;
+        Env.OnExecuteMain += OnEnvExecutionMain;
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
+    }
+
+    public void EnterUnityScene(string sceneName)
+    {
+        Debug.Assert(Env == null || Env.IsLoaded);
+
+        ShowLoadscreen();
+        RemoveMenu(false);
+
+        if (UnitySceneName != null)
+        {
+            SceneManager.UnloadSceneAsync(UnitySceneName);
+            UnitySceneName = null;
+        }
+
+        SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+        UnitySceneName = sceneName;
+
+        SceneManager.sceneLoaded += (Scene scene, LoadSceneMode mode) =>
+        {
+            PhxUnityScene sceneInit = FindObjectOfType<PhxUnityScene>();
+
+            // for some reason, this event fires twice...
+            // and only the second time, the script is found
+            if (sceneInit == null)
+            {
+                return;
+            }
+
+            Env?.ClearScene();
+            Env = PhxRuntimeEnvironment.Create(StdLVLPC);
+            Env.ScheduleLVLRel("load/common.lvl");
+            Env.ScheduleLVLRel("ingame.lvl");
+            if (sceneInit.ScheduleLVLs != null)
+            {
+                for (int i = 0; i < sceneInit.ScheduleLVLs.Length; ++i)
+                {
+                    Env.ScheduleLVLRel(sceneInit.ScheduleLVLs[i]);
+                }
+            }
+            Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
+            Env.OnLoaded += OnEnvLoaded;
+            Env.OnExecuteMain += OnEnvExecutionMain;
+            Env.Run(null);
+        };
     }
 
     public PhxMenuInterface ShowMenu(PhxMenuInterface prefab)
@@ -249,6 +319,7 @@ public class PhxGameRuntime : MonoBehaviour
     {
         Instance = this;
         WorldLoader.UseHDRP = true;
+        MaterialLoader.UseHDRP = true;
 
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
         if (GamePath.IsFile()              || 
@@ -264,8 +335,20 @@ public class PhxGameRuntime : MonoBehaviour
             return;
         }
 
-        //EnterMainMenu(true);
-        EnterMap("geo1c_con");
+        if (StartupBehaviour == PhxStartupBehaviour.MainMenu)
+        {
+            EnterMainMenu(true);
+        }
+        else if (StartupBehaviour == PhxStartupBehaviour.SWBF2Map)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(StartupSWBF2Map));
+            EnterSWBF2Map(StartupSWBF2Map);
+        }
+        else if (StartupBehaviour == PhxStartupBehaviour.UnityScene)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(StartupUnityScene));
+            EnterUnityScene(StartupUnityScene);
+        }
     }
 
     void ExploreAddons()
@@ -313,19 +396,19 @@ public class PhxGameRuntime : MonoBehaviour
     void OnMainMenuLoaded()
     {
         RemoveLoadscreen();
-        //EnterMap("geo1c_con");
         ShowMenu(MainMenuPrefab);
     }
 
-    void OnMapExecution()
+    void OnEnvExecutionMain()
     {
         // after script execution, but BEFORE map conversion
     }
 
-    void OnMapLoaded()
+    void OnEnvLoaded()
     {
         RemoveLoadscreen();
-        OnMatchStart?.Invoke();
+        Env.GetMatch().StartMatch();
+        OnMapLoaded?.Invoke();
     }
 
     bool CheckExistence(string lvlName)
@@ -339,7 +422,7 @@ public class PhxGameRuntime : MonoBehaviour
         return bExists;
     }
 
-    void Start()
+    void Awake()
     {
         Debug.Assert(InitScreenPrefab     != null);
         Debug.Assert(LoadScreenPrefab     != null);
@@ -347,7 +430,6 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(PauseMenuPrefab      != null);
         Debug.Assert(CharSelectTransform  != null);
         Debug.Assert(CharSelectPPVolume   != null);
-        Debug.Assert(PostProcessingVolume != null);
         Debug.Assert(UIAudioMixer         != null);
         Debug.Assert(Camera               != null);
         Debug.Assert(GroundPhyMat         != null);

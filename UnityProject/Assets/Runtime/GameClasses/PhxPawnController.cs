@@ -35,4 +35,14 @@ public abstract class PhxPawnController
             IdleTime = 0f;
         }
     }
+
+    protected static void SanitizeEuler(ref Vector3 euler)
+    {
+        while (euler.x > 180f) euler.x -= 360f;
+        while (euler.y > 180f) euler.y -= 360f;
+        while (euler.z > 180f) euler.z -= 360f;
+        while (euler.x < -180f) euler.x += 360f;
+        while (euler.y < -180f) euler.y += 360f;
+        while (euler.z < -180f) euler.z += 360f;
+    }
 }

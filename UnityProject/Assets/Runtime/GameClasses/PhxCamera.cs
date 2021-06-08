@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class PhxCamera : MonoBehaviour
 {
-    PhxPlayerController Player => PhxPlayerController.Instance;
-
     public enum CamMode
     {
         Fixed,
@@ -92,7 +90,7 @@ public class PhxCamera : MonoBehaviour
 
 
             //Vector3 viewDir = (FollowInstance.GetTargetPosition() - rotPoint).normalized;
-            Vector3 viewDir = Player.ViewDirection;
+            Vector3 viewDir = PhxGameRuntime.GetMatch().Player.ViewDirection;
             Vector3 camTargetPos = rotPoint + viewDir * PositionOffset.z;
             Quaternion camTargetRot = Quaternion.LookRotation(viewDir);
             camTargetPos += camTargetRot * new Vector3(PositionOffset.x, 0f, 0f);

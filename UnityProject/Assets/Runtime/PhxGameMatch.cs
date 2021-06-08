@@ -77,7 +77,6 @@ public class PhxGameMatch
             Teams[i] = new PhxTeam();
         }
 
-        GAME.OnMatchStart += StartMatch;
         GAME.OnRemoveMenu += OnRemoveMenu;
 
         Player = new PhxPlayerController();
@@ -150,7 +149,7 @@ public class PhxGameMatch
 
     public void Clear()
     {
-        GAME.OnMatchStart -= StartMatch;
+        GAME.OnMapLoaded -= StartMatch;
         GAME.OnRemoveMenu -= OnRemoveMenu;
     }
 
@@ -180,6 +179,12 @@ public class PhxGameMatch
 
     public void SpawnPlayer(PhxClass cl)
     {
+        if (Player.Pawn != null)
+        {
+            Debug.LogWarning("Player already spawned!");
+            return;
+        }
+
         PhxCamera cam = PhxGameRuntime.GetCamera();
         Vector3 spawnPos = cam.transform.position + cam.transform.rotation * (cam.PositionOffset * 2f);
 
@@ -341,6 +346,13 @@ public class PhxGameMatch
         return CheckTeamIdx(teamIdx1) && CheckTeamIdx(teamIdx2);
     }
 
+    // player get's to choose a side and character unit
+    public void StartMatch()
+    {
+        AvailablePauseMenu = true;
+        ShowCharacterSelection();
+    }
+
     void ShowCharacterSelection()
     {
         PauseMenuActive = false;
@@ -359,12 +371,5 @@ public class PhxGameMatch
         {
             ShowCharacterSelection();
         }
-    }
-
-    // player get's to choose a side and character unit
-    void StartMatch()
-    {
-        AvailablePauseMenu = true;
-        ShowCharacterSelection();
     }
 }

@@ -6,17 +6,17 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
     public class ClassProperties : PhxClass
     {
         public PhxProp<Texture2D> MapTexture          = new PhxProp<Texture2D>(null);
-        public PhxProp<float>     MapScale            = new PhxProp<float>(1.0f);
-        public PhxProp<float>     MaxHealth           = new PhxProp<float>(1.0f);
-        public PhxProp<float>     PowerupDelay        = new PhxProp<float>(1.0f);
-        public PhxProp<float>     SoldierAmmo         = new PhxProp<float>(0.0f);
-        public PhxProp<float>     SoldierHealth       = new PhxProp<float>(0.0f);
-        public PhxProp<float>     IdleRotateSpeed     = new PhxProp<float>(0.0f);
-        public PhxProp<float>     IdleWaitTime        = new PhxProp<float>(0.0f);
+        public PhxProp<float>     MapScale            = new PhxProp<float>(1f);
+        public PhxProp<float>     MaxHealth           = new PhxProp<float>(1f);
+        public PhxProp<float>     PowerupDelay        = new PhxProp<float>(1f);
+        public PhxProp<float>     SoldierAmmo         = new PhxProp<float>(0f);
+        public PhxProp<float>     SoldierHealth       = new PhxProp<float>(0f);
+        public PhxProp<float>     IdleRotateSpeed     = new PhxProp<float>(0f);
+        public PhxProp<float>     IdleWaitTime        = new PhxProp<float>(0f);
         public PhxMultiProp       ActiveRotateNode    = new PhxMultiProp(typeof(string));
         public PhxProp<string>    ActiveSpinNode      = new PhxProp<string>(null);
         public PhxProp<string>    IdleWobbleNode      = new PhxProp<string>(null);
-        public PhxProp<float>     IdleWobbleFactor    = new PhxProp<float>(0.0f);
+        public PhxProp<float>     IdleWobbleFactor    = new PhxProp<float>(0f);
         public PhxProp<string>    IdleWobbleLeftFoot  = new PhxProp<string>(null);
         public PhxProp<string>    IdleWobbleRightFoot = new PhxProp<string>(null);
     }
@@ -250,7 +250,10 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
 
         for (int i = 0; i < ActiveRotateNodes.Length; ++i)
         {
-            if (ActiveRotateNodes[i] == null) continue;
+            if (ActiveRotateNodes[i] == null)
+            {
+                continue;
+            }
 
             if (ActiveRotateNodes[i].Step(Time.deltaTime))
             {
