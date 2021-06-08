@@ -40,6 +40,8 @@ public class PhxHumanAnimator : CraAnimator
     public int StandIdle { get; private set; }
     public int StandBackward { get; private set; }
     public int StandReload { get; private set; }
+    public int StandShootPrimary { get; private set; }
+    public int StandShootSecondary { get; private set; }
 
     public int StandAlertIdle { get; private set; }
     public int StandAlertWalk { get; private set; }
@@ -55,22 +57,24 @@ public class PhxHumanAnimator : CraAnimator
 
     public void Init()
     {
-        StandIdle          = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_idle_emote_full", true));
-        StandWalk          = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_walkforward", true));
-        StandRun           = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_runforward", true));
-        StandSprint        = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_sprint_full", true));
-        StandBackward      = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_runbackward", true));
-        StandReload        = AddState(1, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_reload_full", false, "bone_a_spine"));
-        StandAlertIdle     = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_idle_emote_full", true));
-        StandAlertWalk     = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_walkforward", true));
-        StandAlertRun      = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_runforward", true));
-        StandAlertBackward = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_runbackward", true));
-        Jump               = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_jump", false));
-        Fall               = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_fall", true));
-        LandSoft           = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_landsoft", false));
-        LandHard           = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_landhard", false));
-        TurnLeft           = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_turnleft", false));
-        TurnRight          = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_turnright", false));
+        StandIdle           = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_idle_emote_full", true));
+        StandWalk           = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_walkforward", true));
+        StandRun            = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_runforward", true));
+        StandSprint         = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_sprint_full", true));
+        StandBackward       = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_runbackward", true));
+        StandReload         = AddState(1, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_reload_full", false, "bone_a_spine"));
+        StandShootPrimary   = AddState(1, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_shoot_full", false, "bone_a_spine"));
+        StandShootSecondary = AddState(1, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_shoot_secondary_full", false, "bone_a_spine"));
+        StandAlertIdle      = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_idle_emote_full", true));
+        StandAlertWalk      = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_walkforward", true));
+        StandAlertRun       = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_runforward", true));
+        StandAlertBackward  = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_standalert_runbackward", true));
+        Jump                = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_jump", false));
+        Fall                = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_fall", true));
+        LandSoft            = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_landsoft", false));
+        LandHard            = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_1", "human_rifle_landhard", false));
+        TurnLeft            = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_turnleft", false));
+        TurnRight           = AddState(0, PhxAnimationLoader.CreatePlayer(transform, "human_0", "human_rifle_stand_turnright", false));
 
         SetState(0, StandIdle);
         SetState(1, CraSettings.STATE_NONE);
