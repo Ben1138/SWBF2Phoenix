@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 11784, g: 11784, b: 11784, a: 1}
+  m_IndirectSpecularColor: {r: Infinity, g: 65504, b: Infinity, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -478,11 +478,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ScheduleLVLs: []
-  Width: 32
-  Height: 32
+  Width: 1
+  Height: 1
   Padding: 1.5
   SpawnPlayer: 1
-  SpawnMobs: 0
+  SpawnMobs: 1
   EnableReload: 1
   ForwardMultiplier: 0.5
 --- !u!1 &1415198234

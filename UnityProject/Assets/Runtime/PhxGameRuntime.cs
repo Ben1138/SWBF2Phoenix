@@ -447,7 +447,7 @@ public class PhxGameRuntime : MonoBehaviour
 
     void Update()
     {
-        Env?.Update();
+        Env?.Update(Time.deltaTime);
     }
 
     void FixedUpdate()

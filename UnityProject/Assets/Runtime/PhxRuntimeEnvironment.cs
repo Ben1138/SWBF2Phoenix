@@ -307,7 +307,7 @@ public class PhxRuntimeEnvironment
         return EnvCon.GetProgress(handle);
     }
 
-    public void Update()
+    public void Update(float deltaTime)
     {
         for (int i = 0; i < LoadingLVLs.Count; ++i)
         {
@@ -398,7 +398,7 @@ public class PhxRuntimeEnvironment
             CreateScene();
         }
 
-        Match?.Update();
+        Match?.Update(deltaTime);
     }
 
     public void FixedUpdate(float deltaTime)
