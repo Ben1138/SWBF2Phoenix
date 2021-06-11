@@ -178,7 +178,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
             Animator.SetState(1, Animator.StandShootPrimary);
             Animator.RestartState(1);
 
-            Debug.Log("Fire " + FireCounter++);
+            //Debug.Log("Fire " + FireCounter++);
         };
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,6 +260,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     void Update()
     {
         AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
+        Weap.Fire = false;
 
         if (Controller != null)
         {
@@ -349,7 +350,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                     // ---------------------------------------------------------------------------------------------
                     if (Controller.ShootPrimary)
                     {
-                        //Anim.SetTrigger("ShootPrimary");
+                        // only fire when not currently turning
+                        Weap.Fire = TurnTimer <= 0f;
                         AlertTimer = AlertTime;
                     }
                     else if (Controller.ShootSecondary)
@@ -380,6 +382,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                         JumpTimer = JumpTime;
 
                         Animator.SetState(0, Animator.Jump);
+                        Animator.SetState(1, CraSettings.STATE_NONE);
                     }
                     // ---------------------------------------------------------------------------------------------
                 }
@@ -432,9 +435,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
                 FallTimer = 0f;
             }
-
-            // weapons
-            Weap.Fire = Controller.ShootPrimary;
         }
     }
 
@@ -450,18 +450,21 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 {
                     LandTimer = 0.9f;
                     Animator.SetState(0, Animator.LandHard);
+                    Animator.SetState(1, CraSettings.STATE_NONE);
                     //Debug.Log($"Land HARD {FallTimer}");
                 }
                 else if (FallTimer > 1.1f || Controller.MoveDirection.magnitude < 0.1f)
                 {
                     LandTimer = 0.6f;
                     Animator.SetState(0, Animator.LandSoft);
+                    Animator.SetState(1, CraSettings.STATE_NONE);
                     //Debug.Log($"Land Soft {FallTimer}");
                 }
                 else
                 {
                     LandTimer = 0.05f;
                     Animator.SetState(0, Animator.LandSoft);
+                    Animator.SetState(1, CraSettings.STATE_NONE);
                     //Debug.Log($"Land very Soft {FallTimer}");
                 }
             }
@@ -505,6 +508,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                             TurnTimer = TurnTime;
                             TurnStart = transform.rotation;
                             Animator.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
+                            Animator.SetState(1, CraSettings.STATE_NONE);
                             Animator.RestartState(0);
                         }
 
@@ -534,6 +538,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                     if (FallTimer > 0.1f && State != PhxControlState.Jump)
                     {
                         Animator.SetState(0, Animator.Fall);
+                        Animator.SetState(1, CraSettings.STATE_NONE);
                         State = PhxControlState.Jump;
                         Body?.AddForce(CurrSpeed, ForceMode.VelocityChange);
                     }
