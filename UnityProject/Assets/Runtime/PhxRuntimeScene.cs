@@ -159,14 +159,14 @@ public class PhxRuntimeScene
     }
 
     // TODO: implement object pooling
-    public PhxInstance CreateInstance(PhxClass cl, string instName, Vector3 position, Quaternion rotation, Transform parent=null)
+    public PhxInstance CreateInstance(PhxClass cl, string instName, Vector3 position, Quaternion rotation, bool withCollision=true, Transform parent =null)
     {
         return CreateInstance(cl.EntityClass, instName, position, rotation, parent).GetComponent<PhxInstance>();
     }
 
-    public PhxInstance CreateInstance(PhxClass cl, Transform parent = null)
+    public PhxInstance CreateInstance(PhxClass cl, bool withCollision=true, Transform parent=null)
     {
-        return CreateInstance(cl.EntityClass, cl.Name + InstanceCounter++, Vector3.zero, Quaternion.identity, parent).GetComponent<PhxInstance>();
+        return CreateInstance(cl.EntityClass, cl.Name + InstanceCounter++, Vector3.zero, Quaternion.identity, withCollision, parent).GetComponent<PhxInstance>();
     }
 
     public PhxClass GetClass(string odfClassName)
@@ -200,7 +200,7 @@ public class PhxRuntimeScene
         return odf;
     }
 
-    GameObject CreateInstance(ISWBFProperties instOrClass, string instName, Vector3 position, Quaternion rotation, Transform parent=null)
+    GameObject CreateInstance(ISWBFProperties instOrClass, string instName, Vector3 position, Quaternion rotation, bool withCollision=true, Transform parent =null)
     {
         if (instOrClass == null)
         {

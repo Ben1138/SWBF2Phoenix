@@ -12,7 +12,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
-    static readonly string ANIM_CONTROLLER_NAME = "AnimController_soldier";
 
     public class ClassProperties : PhxClass
     {
@@ -60,9 +59,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         public PhxProp<float> AimFactorStrafe = new PhxProp<float>(0.0f);
         public PhxProp<float> AimFactorMove = new PhxProp<float>(1.0f);
 
-        public PhxProp<string> AISizeType = new PhxProp<string>("SOLDIER");
+        public PhxPropertySection Weapons = new PhxPropertySection(
+            "WEAPONSECTION",
+            ("WeaponName",    new PhxProp<string>(null)),
+            ("WeaponAmmo",    new PhxProp<int>(0)),
+            ("WeaponChannel", new PhxProp<int>(0))
+        );
 
-        public PhxMultiProp WeaponName = new PhxMultiProp(typeof(string));
+        public PhxProp<string> AISizeType = new PhxProp<string>("SOLDIER");
     }
 
     // Original SWBF2 Control States, see: com_inf_default.odf
@@ -126,13 +130,15 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     bool LastIdle = false;
     const float IdleTime = 10f;
 
-
     // <stance>, <thrustfactor> <strafefactor> <turnfactor>
     float[][] ControlValues;
 
+    // First array index is whether:
+    // - 0 : Primary Weapon
+    // - 1 : Secondary Weapon
+    IPhxWeapon[][] Weapons = new IPhxWeapon[2][];
+    int[] WeaponIdx = new int[2] { -1, -1 };
 
-    PhxCannon Weap;
-    int FireCounter;
 
     public override void Init()
     {
@@ -170,23 +176,92 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         coll.radius = 0.4f;
         coll.center = new Vector3(0f, 0.9f, 0f);
 
-        // Weapons
-        PhxClass rifleClass = SCENE.GetClass("rep_weap_inf_rifle");
-        Weap = SCENE.CreateInstance(rifleClass, HpWeapons) as PhxCannon;
-        Weap.Shot += () => 
-        {
-            Animator.SetState(1, Animator.StandShootPrimary);
-            Animator.RestartState(1);
 
-            //Debug.Log("Fire " + FireCounter++);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Weapons
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        var weapons = new List<IPhxWeapon>[2]
+        {
+            new List<IPhxWeapon>(),
+            new List<IPhxWeapon>()
         };
+
+        HashSet<string> weaponAnimBanks = new HashSet<string>();
+
+        foreach (Dictionary<string, IPhxPropRef> section in C.Weapons)
+        {
+            int channel = 0;
+            if (section.TryGetValue("WeaponChannel", out IPhxPropRef chVal))
+            {
+                PhxProp<int> weapCh = (PhxProp<int>)chVal;
+                channel = weapCh;
+            }
+            Debug.Assert(channel >= 0 && channel < 2);
+
+            if (section.TryGetValue("WeaponName", out IPhxPropRef nameVal))
+            {
+                PhxProp<string> weapCh = (PhxProp<string>)nameVal;
+                PhxClass weapClass = SCENE.GetClass(weapCh);
+                if (weapClass != null)
+                {
+                    PhxProp<int> medalProp = weapClass.P.Get<PhxProp<int>>("MedalsTypeToUnlock");
+                    if (medalProp != null && medalProp != 0)
+                    {
+                        // Skip medal/award weapons for now
+                        continue;
+                    }
+
+                    // do not attach grenates to skeleton, will fail because of collision!
+                    Transform attach = weapClass is PhxGrenade ? null : HpWeapons;
+
+                    IPhxWeapon weap = SCENE.CreateInstance(weapClass, false, HpWeapons) as IPhxWeapon;
+                    if (weap != null)
+                    {
+                        string weapAnimName = weap.GetAnimBankName();
+                        if (!string.IsNullOrEmpty(weapAnimName))
+                        {
+                            weaponAnimBanks.Add(weapAnimName);
+                        }
+
+                        weapons[channel].Add(weap);
+
+                        // init weapon as inactive
+                        weap.GetInstance().gameObject.SetActive(false);
+                        weap.OnShot(() => FireAnimation(channel == 0));
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Instantiation of weapon class '{weapCh}' failed!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"Cannot find weapon class '{weapCh}'!");
+                }
+            }
+
+            // TODO: weapon ammo
+        }
+
+        Weapons[0] = weapons[0].Count == 0 ? new IPhxWeapon[1] { null } : weapons[0].ToArray();
+        Weapons[1] = weapons[1].Count == 0 ? new IPhxWeapon[1] { null } : weapons[1].ToArray();
+
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         Animator = gameObject.AddComponent<PhxHumanAnimator>();
         Animator.OnStateFinished += StateFinished;
-        Animator.Init();
+
+        string[] weapAnimBanks = new string[weaponAnimBanks.Count];
+        weaponAnimBanks.CopyTo(weapAnimBanks);
+        Animator.Init(weapAnimBanks);
+
+
+        // this needs to happen after the Animator is initialized, since swicthing
+        // will weapons will most likely cause an animation bank change aswell
+        NextWeapon(0);
+        NextWeapon(1);
     }
 
     public override void BindEvents()
@@ -224,9 +299,38 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         // TODO
     }
 
+    public void NextWeapon(int channel)
+    {
+        Debug.Assert(channel >= 0 && channel < 2);
+
+        if (WeaponIdx[channel] >= 0 && Weapons[channel][WeaponIdx[channel]] != null)
+        {
+            Weapons[channel][WeaponIdx[channel]].GetInstance().gameObject.SetActive(false);
+        }
+        if (++WeaponIdx[channel] >= Weapons[channel].Length)
+        {
+            WeaponIdx[channel] = 0;
+        }
+        if (Weapons[channel][WeaponIdx[channel]] != null)
+        {
+            Weapons[channel][WeaponIdx[channel]].GetInstance().gameObject.SetActive(true);
+            Animator.SetAnimBank(Weapons[channel][WeaponIdx[channel]].GetAnimBankName());
+        }
+        else
+        {
+            Debug.LogWarning($"Encountered NULL weapon at channel {channel} and weapon index {WeaponIdx[channel]}!");
+        }
+    }
+
     public override void PlayIntroAnim()
     {
         Animator.PlayIntroAnim();
+    }
+
+    void FireAnimation(bool primary)
+    {
+        Animator.SetState(1, Animator.StandShootPrimary);
+        Animator.RestartState(1);
     }
 
     // see: com_inf_default
@@ -260,10 +364,27 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     void Update()
     {
         AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
-        Weap.Fire = false;
+        //Weap.Fire = false;
 
         if (Controller != null)
         {
+            if (Controller.ShootPrimary)
+            {
+                Weapons[0][WeaponIdx[0]].Fire();
+            }
+            if (Controller.ShootSecondary)
+            {
+                Weapons[1][WeaponIdx[1]].Fire();
+            }
+            if (Controller.NextPrimaryWeapon)
+            {
+                NextWeapon(0);
+            }
+            if (Controller.NextSecondaryWeapon)
+            {
+                NextWeapon(1);
+            }
+
             if (Physics.Raycast(Neck.position, Controller.ViewDirection, out RaycastHit hit, 1000f))
             {
                 TargetPos = hit.point;
@@ -351,7 +472,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                     if (Controller.ShootPrimary)
                     {
                         // only fire when not currently turning
-                        Weap.Fire = TurnTimer <= 0f;
+                        //Weap.Fire = TurnTimer <= 0f;
                         AlertTimer = AlertTime;
                     }
                     else if (Controller.ShootSecondary)

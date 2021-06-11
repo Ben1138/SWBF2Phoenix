@@ -12,26 +12,26 @@ public sealed class PhxPropertyDB
 {
     static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
 
-    Dictionary<string, PhxPropRef> Properties = new Dictionary<string, PhxPropRef>();
+    Dictionary<string, IPhxPropRef> Properties = new Dictionary<string, IPhxPropRef>();
 
 
-    public T Get<T>(string propName) where T : PhxPropRef
+    public T Get<T>(string propName) where T : IPhxPropRef
     {
-        if (Properties.TryGetValue(propName.ToLowerInvariant(), out PhxPropRef value))
+        if (Properties.TryGetValue(propName.ToLowerInvariant(), out IPhxPropRef value))
         {
             return (T)value;
         }
         return default;
     }
 
-    public void Register<T>(string propName, T variable) where T : PhxPropRef
+    public void Register<T>(string propName, T variable) where T : IPhxPropRef
     {
         Properties.Add(propName.ToLowerInvariant(), variable);
     }
 
     public void SetProperty(string propName, object propValue)
     {
-        if (Properties.TryGetValue(propName.ToLowerInvariant(), out PhxPropRef variable))
+        if (Properties.TryGetValue(propName.ToLowerInvariant(), out IPhxPropRef variable))
         {
             variable.Set(propValue);
             return;
@@ -39,7 +39,7 @@ public sealed class PhxPropertyDB
         Debug.LogWarningFormat("Could not find property '{0}'!", propName);
     }
 
-    public static void AssignProp(ISWBFProperties instOrClass, string propName, PhxPropRef value)
+    public static void AssignProp(ISWBFProperties instOrClass, string propName, IPhxPropRef value)
     {
         if (instOrClass.GetProperty(propName, out string[] outVal))
         {
