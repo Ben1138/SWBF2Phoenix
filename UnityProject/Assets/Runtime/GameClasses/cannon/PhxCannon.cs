@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 
-public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>
+
+
+
+public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
 {
-    public bool Fire;
-    public Action Shot;
+    Action ShotCallback;
 
     AudioSource Audio;
     float FireDelay;
@@ -16,6 +18,11 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>
         public PhxProp<string> AnimationBank = new PhxProp<string>("rifle");
         public PhxProp<float>  ShotDelay = new PhxProp<float>(0.2f);
         public PhxProp<float>  ReloadTime = new PhxProp<float>(1.0f);
+
+        public PhxProp<int> MedalsTypeToUnlock = new PhxProp<int>(0);
+        public PhxProp<int> ScoreForMedalsType = new PhxProp<int>(0);
+
+        // Sound
         public PhxProp<float>  PitchSpread = new PhxProp<float>(0.1f);
         public PhxProp<string> FireSound = new PhxProp<string>(null);
     }
@@ -26,6 +33,7 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>
         if (C.FireSound.Get() != null)
         {
             Audio = gameObject.AddComponent<AudioSource>();
+            Audio.playOnAwake = false;
             Audio.spatialBlend = 1.0f;
             Audio.rolloffMode = AudioRolloffMode.Linear;
             Audio.minDistance = 2.0f;
@@ -42,10 +50,14 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>
         
     }
 
-    void Update()
+    public PhxInstance GetInstance()
     {
-        FireDelay -= Time.deltaTime;
-        if (FireDelay <= 0f && Fire)
+        return this;
+    }
+
+    public void Fire()
+    {
+        if (FireDelay <= 0f)
         {
             if (Audio != null)
             {
@@ -53,8 +65,23 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>
                 Audio.pitch = UnityEngine.Random.Range(1f - half, 1f + half);
                 Audio.Play();
             }
-            Shot?.Invoke();
+            ShotCallback?.Invoke();
             FireDelay = C.ShotDelay;
         }
+    }
+
+    public void OnShot(Action callback)
+    {
+        ShotCallback += callback;
+    }
+
+    public string GetAnimBankName()
+    {
+        return C.AnimationBank;
+    }
+
+    void Update()
+    {
+        FireDelay -= Time.deltaTime;
     }
 }
