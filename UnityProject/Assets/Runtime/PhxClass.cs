@@ -1,7 +1,10 @@
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Enums;
+using LibSWBF2.Utils;
+using UnityEngine;
 
 /// <summary>
 /// Represents an ODF class. Needs specific implementation
@@ -19,8 +22,8 @@ public abstract class PhxClass
     public void InitClass(EntityClass ec)
     {
         Name = ec.Name;
-
         ClassType = ec.ClassType;
+
         if (ClassType == EEntityClassType.WeaponClass)
         {
             string locPath = "weapons.";
@@ -40,11 +43,54 @@ public abstract class PhxClass
         MemberInfo[] members = type.GetMembers();
         foreach (MemberInfo member in members)
         {
-            if (member.MemberType == MemberTypes.Field && typeof(PhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
+            if (member.MemberType == MemberTypes.Field)
             {
-                PhxPropRef refValue = type.GetField(member.Name).GetValue(this) as PhxPropRef;
-                P.Register(member.Name, refValue);
-                PhxPropertyDB.AssignProp(ec, member.Name, refValue);
+                if (typeof(IPhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
+                {
+                    IPhxPropRef refValue = type.GetField(member.Name).GetValue(this) as IPhxPropRef;
+                    P.Register(member.Name, refValue);
+                    PhxPropertyDB.AssignProp(ec, member.Name, refValue);
+                }
+                else if (typeof(PhxPropertySection).IsAssignableFrom(type.GetField(member.Name).FieldType))
+                {
+                    PhxPropertySection section = type.GetField(member.Name).GetValue(this) as PhxPropertySection;
+
+                    // Read properties from top to bottom to fill property sections
+                    ec.GetAllProperties(out uint[] propHashes, out string[] propValues);
+                    Debug.Assert(propHashes.Length == propValues.Length);
+
+                    var foundSections = new List<Dictionary<string, IPhxPropRef>>();
+                    Dictionary<string, IPhxPropRef> currSection = null;
+
+                    for (int i = 0; i < propHashes.Length; ++i)
+                    {
+                        // Every time we encounter the section header, start a new section
+                        if (propHashes[i] == section.NameHash)
+                        {
+                            foundSections.Add(new Dictionary<string, IPhxPropRef>());
+                            currSection = foundSections[foundSections.Count - 1];
+                        }
+
+                        if (currSection != null)
+                        {
+                            for (int j = 0; j < section.Properties.Length; ++j)
+                            {
+                                string propName = section.Properties[j].Item1;
+                                uint propNameHash = HashUtils.GetFNV(propName);
+
+                                // if we encounter a matching property, grab it
+                                if (propHashes[i] == propNameHash)
+                                {                 
+                                    IPhxPropRef prop = section.Properties[j].Item2.ShallowCopy();
+                                    prop.SetFromString(propValues[i]);
+                                    currSection.Add(propName, prop);
+                                }
+                            }
+                        }
+                    }
+
+                    section.SetSections(foundSections.ToArray());
+                }
             }
         }
 

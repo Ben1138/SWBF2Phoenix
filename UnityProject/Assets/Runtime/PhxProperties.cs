@@ -8,16 +8,18 @@ using LibSWBF2.Enums;
 using JetBrains.Annotations;
 using System.Collections;
 
-public interface PhxPropRef
+public interface IPhxPropRef
 {
     void SetFromString(string val);
     void Set(object val);
+
+    IPhxPropRef ShallowCopy();
 }
 
 /// <summary>
 /// Encapsulates a value to be passable as reference.
 /// </summary>
-public sealed class PhxProp<T> : PhxPropRef
+public sealed class PhxProp<T> : IPhxPropRef
 {
     public Action<T> OnValueChanged;
     T Value;
@@ -71,6 +73,11 @@ public sealed class PhxProp<T> : PhxPropRef
         return Value.ToString();
     }
 
+    public IPhxPropRef ShallowCopy()
+    {
+        return (IPhxPropRef)MemberwiseClone();
+    }
+
     public static implicit operator T(PhxProp<T> refVal)
     {
         return refVal.Value;
@@ -85,7 +92,7 @@ public sealed class PhxProp<T> : PhxPropRef
 ///     AmbientSound = "imp com_blg_commandpost_baddie defer"<br/>
 ///     AmbientSound = "rep com_blg_commandpost_goodie defer"
 /// </summary>
-public sealed class PhxMultiProp : PhxPropRef
+public sealed class PhxMultiProp : IPhxPropRef
 {
     public List<object[]> Values { get; private set; } = new List<object[]>();
     Type[] ExpectedTypes;
@@ -135,5 +142,42 @@ public sealed class PhxMultiProp : PhxPropRef
             return;
         }
         SetFromString(val as string);
+    }
+
+    public IPhxPropRef ShallowCopy()
+    {
+        return (IPhxPropRef)MemberwiseClone();
+    }
+}
+
+
+/// <summary>
+/// Properties within a property section are NOT registered to the 
+/// properties database and are as such not setable fromn lua!
+/// </summary>
+public class PhxPropertySection : IEnumerable
+{
+    public (string, IPhxPropRef)[] Properties { get; private set; }
+    public uint NameHash { get; private set; }
+
+    Dictionary<string, IPhxPropRef>[] Sections;
+
+    public PhxPropertySection(string name, params (string, IPhxPropRef)[] properties)
+    {
+        NameHash = LibSWBF2.Utils.HashUtils.GetFNV(name);
+        Properties = properties;
+    }
+
+    public void SetSections(Dictionary<string, IPhxPropRef>[] sections)
+    {
+        Sections = sections;
+    }
+
+    public IEnumerator GetEnumerator()
+    {
+        for (int i = 0; i < Sections.Length; ++i)
+        {
+            yield return Sections[i];
+        }
     }
 }

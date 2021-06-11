@@ -36,9 +36,9 @@ public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
 
         foreach (MemberInfo member in members)
         {
-            if (member.MemberType == MemberTypes.Field && typeof(PhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
+            if (member.MemberType == MemberTypes.Field && typeof(IPhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
             {
-                PhxPropRef refValue = (PhxPropRef)type.GetField(member.Name).GetValue(this);
+                IPhxPropRef refValue = (IPhxPropRef)type.GetField(member.Name).GetValue(this);
                 P.Register(member.Name, refValue);
             }
         }
@@ -49,9 +49,9 @@ public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
 
         foreach (MemberInfo member in members)
         {
-            if (member.MemberType == MemberTypes.Field && typeof(PhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
+            if (member.MemberType == MemberTypes.Field && typeof(IPhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
             {
-                PhxPropRef refValue = (PhxPropRef)type.GetField(member.Name).GetValue(this);
+                IPhxPropRef refValue = (IPhxPropRef)type.GetField(member.Name).GetValue(this);
                 PhxPropertyDB.AssignProp(instOrClass, member.Name, refValue);
             }
         }
@@ -119,4 +119,12 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
 
     public abstract void Fixate();
     public abstract void PlayIntroAnim();
+}
+
+public interface IPhxWeapon
+{
+    public PhxInstance GetInstance();
+    public void Fire();
+    public void OnShot(Action callback);
+    public string GetAnimBankName();
 }

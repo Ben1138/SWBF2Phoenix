@@ -53,7 +53,7 @@ public static class PhxAnimationLoader
 
         if (!bank.GetAnimationMetadata(animNameCRC, out int numFrames, out int numBones))
         {
-            Debug.LogError($"Cannot find Animation '{animNameCRC}' in AnimationBank '{bankName}'!");
+            //Debug.LogError($"Cannot find Animation '{animNameCRC}' in AnimationBank '{bankName}'!");
             return null;
         }
 
@@ -103,8 +103,48 @@ public static class PhxAnimationLoader
 
     public static CraPlayer CreatePlayer(Transform root, string animBank, string animName, bool loop, string maskBone = null)
     {
+        CraClip clip = Import(animBank, animName);
+        if (clip == null)
+        {
+            Debug.LogWarning($"Cannot find animation clip '{animName}' in bank '{animBank}'!");
+            return null;
+        }
+
         CraPlayer player = CraPlayer.CreateNew();
-        player.SetClip(Import(animBank, animName));
+        player.SetClip(clip);
+
+        if (string.IsNullOrEmpty(maskBone))
+        {
+            player.Assign(root);
+        }
+        else
+        {
+            player.Assign(root, new CraMask(true, maskBone));
+        }
+
+        player.SetLooping(loop);
+        return player;
+    }
+
+    public static CraPlayer CreatePlayer(Transform root, string[] animBanks, string animName, bool loop, string maskBone = null)
+    {
+        CraClip clip = null;
+        for (int i = 0; i < animBanks.Length; ++i)
+        {
+            clip = Import(animBanks[i], animName);
+            if (clip != null)
+            {
+                break;
+            }
+        }
+        if (clip == null)
+        {
+            Debug.LogWarning($"Cannot find animation clip '{animName}' in any of the specified banks '{animBanks}'!");
+            return null;
+        }
+
+        CraPlayer player = CraPlayer.CreateNew();
+        player.SetClip(clip);
 
         if (string.IsNullOrEmpty(maskBone))
         {
