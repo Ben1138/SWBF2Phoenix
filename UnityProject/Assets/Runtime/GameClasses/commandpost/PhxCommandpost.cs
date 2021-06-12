@@ -15,6 +15,9 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         public PhxMultiProp   CapturedSound  = new PhxMultiProp(typeof(AudioClip), typeof(string));
         public PhxMultiProp   DischargeSound = new PhxMultiProp(typeof(AudioClip), typeof(string));
         public PhxMultiProp   LostSound      = new PhxMultiProp(typeof(AudioClip), typeof(string));
+
+        public PhxProp<Texture2D> MapTexture = new PhxProp<Texture2D>(null);
+        public PhxProp<float>     MapScale   = new PhxProp<float>(1.0f);
     }
 
     [Header("References")]
@@ -144,7 +147,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
 
     void UpdateColor()
     {
-        HoloColor = PhxGameRuntime.Instance.GetTeamColor(Team);
+        HoloColor = PhxGameRuntime.GetMatch().GetTeamColor(Team);
         HoloRay?.material.SetColor("_EmissiveColor", HoloColor);
         if (Light != null)
         {

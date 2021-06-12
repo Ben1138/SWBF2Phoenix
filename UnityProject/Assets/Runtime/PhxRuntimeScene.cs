@@ -6,6 +6,8 @@ using LibSWBF2.Enums;
 
 public class PhxRuntimeScene
 {
+    public Texture2D MapTexture { get; private set; }
+
     struct RTTransform
     {
         public Vector3    Position;
@@ -15,14 +17,16 @@ public class PhxRuntimeScene
     Dictionary<string, PhxClass>    Classes   = new Dictionary<string, PhxClass>();
     Dictionary<string, PhxInstance> Instances = new Dictionary<string, PhxInstance>();
 
+    List<PhxCommandpost>            CommandPosts = new List<PhxCommandpost>();
+
     PhxRuntimeEnvironment ENV;
     Container EnvCon;
     bool bTerrainImported = false;
 
     Dictionary<string, GameObject> LoadedSkydomes = new Dictionary<string, GameObject>();
-    Dictionary<string, PhxRegion>     Regions  = new Dictionary<string, PhxRegion>();
+    Dictionary<string, PhxRegion>  Regions  = new Dictionary<string, PhxRegion>();
 
-    List<GameObject> WorldRoots = new List<GameObject>();
+    List<GameObject>  WorldRoots = new List<GameObject>();
     List<RTTransform> CameraShots = new List<RTTransform>();
 
     int InstanceCounter;
@@ -84,6 +88,11 @@ public class PhxRuntimeScene
 
         foreach (World world in worldLayers)
         {
+            if (MapTexture == null)
+            {
+                MapTexture = TextureLoader.Instance.ImportUITexture(world.Name + "_map", false);
+            }
+
             GameObject worldRoot = new GameObject(world.Name);
 
             //Regions
@@ -183,6 +192,11 @@ public class PhxRuntimeScene
         return null;
     }
 
+    public PhxCommandpost[] GetCommandPosts()
+    {
+        return CommandPosts.ToArray();
+    }
+
     PhxClass GetClass(EntityClass ec)
     {
         PhxClass odf = null;
@@ -226,6 +240,11 @@ public class PhxRuntimeScene
             PhxInstance script = (PhxInstance)instanceObject.AddComponent(instType);
             script.InitInstance(instOrClass, odf);
             Instances.Add(instanceObject.name, script);
+
+            if (script is PhxCommandpost)
+            {
+                CommandPosts.Add((PhxCommandpost)script);
+            }
         }
 
         instanceObject.transform.SetParent(parent);

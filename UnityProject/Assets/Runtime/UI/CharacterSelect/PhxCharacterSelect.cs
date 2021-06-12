@@ -55,15 +55,15 @@ public class PhxCharacterSelect : PhxMenuInterface
         item.SetHeaderText(cl.LocalizedName);
 
         string detailText = "";
-        PhxMultiProp weapons = cl.P.Get<PhxMultiProp>("WeaponName");
-        foreach (object[] weap in weapons.Values)
-        {
-            PhxClass weapClass = RTS.GetClass(weap[0] as string);
-            if (weapClass != null)
-            {
-                detailText += weapClass.LocalizedName + '\n';
-            }
-        }
+        //PhxMultiProp weapons = cl.P.Get<PhxMultiProp>("WeaponName");
+        //foreach (object[] weap in weapons.Values)
+        //{
+        //    PhxClass weapClass = RTS.GetClass(weap[0] as string);
+        //    if (weapClass != null)
+        //    {
+        //        detailText += weapClass.LocalizedName + '\n';
+        //    }
+        //}
         item.SetDetailText(detailText);
 
         Items.Add(item);

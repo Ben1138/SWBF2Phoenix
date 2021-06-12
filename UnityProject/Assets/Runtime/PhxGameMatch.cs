@@ -69,7 +69,6 @@ public class PhxGameMatch
     Queue<(int, string)> TeamIcon = new Queue<(int, string)>();
 
     AudioClip UIBack;
-    PhxCamera.CamMode LastMode;
 
 
     public PhxGameMatch()
@@ -82,6 +81,23 @@ public class PhxGameMatch
         GAME.OnRemoveMenu += OnRemoveMenu;
 
         Player = new PhxPlayerController();
+    }
+
+    public Color GetTeamColor(int teamId)
+    {
+        if (teamId == 0)
+        {
+            return Color.white;
+        }
+        else if (teamId == Player.Team || IsFriend(Player.Team, teamId))
+        {
+            return Color.green;
+        }
+        else if (teamId >= 3)
+        {
+            return Color.yellow;
+        }
+        return Color.red;
     }
 
     public void SetPlayerState(PhxPlayerState st)
