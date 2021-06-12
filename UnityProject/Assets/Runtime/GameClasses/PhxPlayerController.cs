@@ -8,6 +8,11 @@ public class PhxPlayerController : PhxPawnController
 
 
 
+    public PhxPlayerController()
+    {
+        Team = 1;
+    }
+
     public override void Update(float deltaTime)
     {
         base.Update(deltaTime);
