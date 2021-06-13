@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: PhxMapMaterial
+  m_Name: PhxUIMapMaterial
   m_Shader: {fileID: 4800000, guid: f37cab934dcdb99458f0f2ca2722fdb4, type: 3}
   m_ShaderKeywords: _DISABLE_SSR_TRANSPARENT _NORMALMAP_TANGENT_SPACE
   m_LightmapFlags: 4
@@ -199,8 +199,8 @@ Material:
     - _IridescenceMask: 1
     - _IridescenceThickness: 1
     - _LinkDetailsWithBase: 1
-    - _MapOffsetX: 0
-    - _MapOffsetY: 0
+    - _MapOffsetX: -35.15057
+    - _MapOffsetY: 118.582565
     - _MaterialID: 1
     - _Metallic: 0
     - _MetallicRemapMax: 1
@@ -213,6 +213,7 @@ Material:
     - _PPDMinSamples: 5
     - _PPDPrimitiveLength: 1
     - _PPDPrimitiveWidth: 1
+    - _Radius: 0.9
     - _RayTracing: 0
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
@@ -258,7 +259,7 @@ Material:
     - _ZTestModeDistortion: 4
     - _ZTestTransparent: 4
     - _ZWrite: 1
-    - _Zoom: 100
+    - _Zoom: 562.31757
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
