@@ -1,4 +1,4 @@
-Shader "Phoenix/PhxMapShader"
+Shader "Phoenix/PhxUIMapShader"
 {
     Properties
     {
@@ -8,6 +8,8 @@ Shader "Phoenix/PhxMapShader"
         _MapOffsetY("Map Offset Y", Float) = 0
         _Zoom("Zoom", Float) = 200
         _Alpha("Alpha", Float) = 0.8
+
+        _Radius("Radius", Float) = 0.8
     }
     SubShader
     {
@@ -26,13 +28,14 @@ Shader "Phoenix/PhxMapShader"
 
             float4 _CPPositions[32];
             float4 _CPColors[64];
+            float _CPSelected[64];
             int _CPCount;
-            //uniform float2 MapOffset;
 
             float _MapOffsetX;
             float _MapOffsetY;
             float _Zoom;
             float _Alpha;
+            float _Radius;
 
             struct appdata
             {
@@ -57,6 +60,19 @@ Shader "Phoenix/PhxMapShader"
             sampler2D _MapTex;
             sampler2D _CPTex;
 
+            float circle(float2 st, float radius, float smoothRadius)
+            {
+                float2 dist = st + float2(-0.5, -0.5);
+                return 1. - smoothstep(radius - (radius * smoothRadius),
+                    radius + (radius * smoothRadius),
+                    dot(dist, dist) * 4.0);
+            }
+
+            float ring(float2 st, float radius, float smoothRadius, float thickness)
+            {
+                return circle(st, radius, smoothRadius) - circle(st, radius - thickness, smoothRadius);
+            }
+
             fixed4 fragment(v2f frag) : SV_Target
             {
                 fixed4 col = tex2D(_MapTex, frag.uv);
@@ -74,11 +90,11 @@ Shader "Phoenix/PhxMapShader"
                     float2 cpMapPos = ((cpWorldPos + float2(_MapOffsetX, _MapOffsetY)) / _Zoom) + float2(0.5, 0.5);
                     float2 diff = abs(frag.uv - cpMapPos);
 
+                    float2 cpUVMin = cpMapPos - CPMapSize;
+                    float2 cpUV = ((frag.uv - cpUVMin) / CPMapSize) / 2;
+
                     if (diff.x < CPMapSize.x && diff.y < CPMapSize.y)
                     {
-                        float2 cpUVMin = cpMapPos - CPMapSize;
-                        float2 cpUV = ((frag.uv - cpUVMin) / CPMapSize) / 2;
-
                         //col = fixed4(cpUV, 0, 1);
                         //col = tex2D(_MapTex, cpUV);
                         fixed4 cpCol = tex2D(_CPTex, cpUV);
@@ -87,7 +103,18 @@ Shader "Phoenix/PhxMapShader"
                         // display CPs always full opaque
                         col.a = lerp(_Alpha, 1, cpCol.a);
                     }
+
+                    if (_CPSelected[i] > 0.2)
+                    {
+                        float2 cpRingUV = cpUV;
+
+                        float c = ring(cpRingUV, _CPSelected[i] * 3, 0.1, 0.5);
+                        col = lerp(col, _CPColors[i], c);
+                    }
                 }
+
+                float c = circle(frag.uv, _Radius, 0.05);
+                col.a = lerp(0, col.a, c);
 
                 return col;
             }

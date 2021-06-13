@@ -321,6 +321,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1526a3159b1e72f4189477ea1fd8bd33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Map: {fileID: 1887592316975950426}
   ItemPrefab: {fileID: 4936491860935558699, guid: b4e10455167d386448c1371ae959242b, type: 3}
   ListContents: {fileID: 6753680857866946770}
   BtnSpawn: {fileID: 7938638486910586633}
@@ -452,7 +453,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 7505224339537349954, guid: 8cc20cfcd5e356c4a9811fa08290f61a, type: 3}
       propertyPath: m_Name
-      value: PhxMap
+      value: Map
       objectReference: {fileID: 0}
     - target: {fileID: 7505224339537349955, guid: 8cc20cfcd5e356c4a9811fa08290f61a, type: 3}
       propertyPath: m_Pivot.x
@@ -550,6 +551,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7505224339537349958, guid: 8cc20cfcd5e356c4a9811fa08290f61a, type: 3}
+      propertyPath: ClipableCPs
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7505224339537349958, guid: 8cc20cfcd5e356c4a9811fa08290f61a, type: 3}
+      propertyPath: CPSelectAnimSpeed
+      value: 0.1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8cc20cfcd5e356c4a9811fa08290f61a, type: 3}
 --- !u!224 &1887592316975950431 stripped
@@ -557,3 +566,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7505224339537349955, guid: 8cc20cfcd5e356c4a9811fa08290f61a, type: 3}
   m_PrefabInstance: {fileID: 8220752619164329756}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1887592316975950426 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7505224339537349958, guid: 8cc20cfcd5e356c4a9811fa08290f61a, type: 3}
+  m_PrefabInstance: {fileID: 8220752619164329756}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d17194d20c42ea941be3a4efc81ba67f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

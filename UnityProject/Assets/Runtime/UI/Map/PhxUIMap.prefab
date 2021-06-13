@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 7505224339537349952}
   - component: {fileID: 7505224339537349958}
   m_Layer: 5
-  m_Name: PhxMap
+  m_Name: PhxUIMap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -35,7 +35,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.000030518, y: 0.0000038147}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1024, y: 1024}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7505224339537349953
@@ -85,3 +85,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d17194d20c42ea941be3a4efc81ba67f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  CPButtonPrefab: {fileID: 7264752958408131541, guid: 7f85f29bf9b52e849b27bd9d90c9cb37, type: 3}
+  ClipableCPs: 0
+  UpdateCPs: 1

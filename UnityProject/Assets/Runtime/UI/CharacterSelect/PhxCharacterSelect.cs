@@ -10,6 +10,7 @@ public class PhxCharacterSelect : PhxMenuInterface
     static PhxGameMatch MTC => PhxGameRuntime.GetMatch();
 
     [Header("References")]
+    public PhxUIMap Map;
     public PhxCharacterItem ItemPrefab;
     public RectTransform ListContents;
     public Button BtnSpawn;
@@ -21,6 +22,9 @@ public class PhxCharacterSelect : PhxMenuInterface
     List<PhxCharacterItem> Items   = new List<PhxCharacterItem>();
     PhxClass CurrentSelection = null;
     List<IPhxControlableInstance> UnitPreviews = new List<IPhxControlableInstance>();
+    PhxCommandpost SpawnCP;
+
+    static int nameCounter = 0;
 
 
     public override void Clear()
@@ -123,6 +127,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         Debug.Assert(ItemPrefab   != null);
         Debug.Assert(ListContents != null);
         Debug.Assert(BtnSpawn     != null);
+        Debug.Assert(Map          != null);
 
         // For soem reason, we have to trigger the volume in order
         // for it to be actually active...
@@ -130,6 +135,17 @@ public class PhxCharacterSelect : PhxMenuInterface
         GAME.CharSelectPPVolume.gameObject.SetActive(true);
 
         BtnSpawn.onClick.AddListener(SpawnClicked);
+        Map.OnCPSelect += OnCPSelected;
+
+        PhxCommandpost[] cps = RTS.GetCommandPosts();
+        for (int i = 0; i < cps.Length; ++i)
+        {
+            if (cps[i].Team == MTC.Player.Team)
+            {
+                Map.SelectCP(cps[i]);
+                break;
+            }
+        }
     }
 
     // Update is called once per frame
@@ -138,9 +154,17 @@ public class PhxCharacterSelect : PhxMenuInterface
         
     }
 
-    static int nameCounter = 0;
+    void OnCPSelected(PhxCommandpost cp)
+    {
+        Debug.Log($"Selected CP '{cp.name}'");
+        SpawnCP = cp;
+    }
+    
     void SpawnClicked()
     {
-        MTC.SpawnPlayer(CurrentSelection, GAME.Camera.transform.position, GAME.Camera.transform.rotation);
+        if (SpawnCP != null)
+        {
+            MTC.SpawnPlayer(CurrentSelection, SpawnCP);
+        }
     }
 }
