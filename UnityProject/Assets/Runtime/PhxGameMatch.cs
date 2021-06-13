@@ -199,6 +199,17 @@ public class PhxGameMatch
         }
     }
 
+    public IPhxControlableInstance SpawnPlayer(PhxClass cl, PhxCommandpost cp)
+    {
+        if (cp.SpawnPath.Get() == null)
+        {
+            Debug.LogWarning($"Cannot spawn on CP '{cp.name}', since it has no spawn path!");
+            return null;
+        }
+        SWBFPath.Node spawnNode = cp.SpawnPath.Get().GetRandom();
+        return SpawnPlayer(cl, spawnNode.Position, spawnNode.Rotation);
+    }
+
     public IPhxControlableInstance SpawnPlayer(PhxClass cl, Vector3 position, Quaternion rotation)
     {
         if (Player.Pawn != null)
@@ -219,6 +230,17 @@ public class PhxGameMatch
         SetPlayerState(PhxPlayerState.Spawned);
 
         return pawn;
+    }
+
+    public IPhxControlableInstance SpawnAI<T>(PhxClass cl, PhxCommandpost cp) where T : PhxPawnController, new()
+    {
+        if (cp.SpawnPath.Get() == null)
+        {
+            Debug.LogWarning($"Cannot spawn on CP '{cp.name}', since it has no spawn path!");
+            return null;
+        }
+        SWBFPath.Node spawnNode = cp.SpawnPath.Get().GetRandom();
+        return SpawnAI<T>(cl, spawnNode.Position, spawnNode.Rotation);
     }
 
     public IPhxControlableInstance SpawnAI<T>(PhxClass cl, Vector3 position, Quaternion rotation) where T : PhxPawnController, new()
