@@ -133,6 +133,19 @@ public static class PhxLuaAPI
 		return res;
 	}
 
+	public static void ScriptCB_PlayInGameMovie(string mvsName, string movieName)
+    {
+
+    }
+
+	public static void ScriptCB_SetGameRules(string ruleName)
+    {
+		// Known values are:
+		// - "campaign"
+		// - "instantaction"
+		// - "mp"
+	}
+
 	public static void ScriptCB_DoFile(string scriptName)
 	{
 		ENV.Execute(scriptName);
@@ -192,6 +205,18 @@ public static class PhxLuaAPI
 
     }
 
+	public static void SetAIDifficulty(int teamIdx, int unkwn1, string difficulty)
+    {
+		// values for the difficulty string:
+		// - "medium"
+		// - "hard"
+	}
+
+	public static void AllowAISpawn(int teamIdx, bool allow)
+    {
+
+    }
+
 	public static void SetSpawnDelay(float unkwn1, float unkwn2)
 	{
 		
@@ -201,6 +226,11 @@ public static class PhxLuaAPI
 	{
 		MT.SetHeroClass(teamIdx, className);
 	}
+
+	public static void EnableSPScriptedHeroes()
+    {
+
+    }
 
 	public static void SetTeamAsEnemy(int teamIdx1, int teamIdx2)
 	{
@@ -400,6 +430,11 @@ public static class PhxLuaAPI
     {
 		SetProperty(instName, "Team", teamIdx);
 	}
+
+	public static float GetObjectHealth(string instName)
+    {
+		return 0f;
+    }
 
 	public static void DisableBarriers(string barrierName)
 	{

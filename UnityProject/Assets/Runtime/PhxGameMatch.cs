@@ -167,8 +167,19 @@ public class PhxGameMatch
 
     public void Clear()
     {
+        Cam.Fixed();
+
         GAME.OnMapLoaded -= StartMatch;
         GAME.OnRemoveMenu -= OnRemoveMenu;
+
+        IPhxControlableInstance pawn = Player.Pawn;
+        if (pawn != null)
+        {
+            pawn.UnAssign();
+            UnityEngine.Object.Destroy(pawn.GetInstance().gameObject);
+        }
+
+        // TODO: kill AI, clear all pools
     }
 
     public void Update(float deltaTime)
@@ -201,6 +212,8 @@ public class PhxGameMatch
 
     public void KillPlayer()
     {
+        Cam.Fixed();
+
         IPhxControlableInstance pawn = Player.Pawn;
         if (pawn != null)
         {
@@ -229,7 +242,7 @@ public class PhxGameMatch
             return null;
         }
 
-        IPhxControlableInstance pawn = RTS.CreateInstance(cl, "player" + NameCounter++, position, rotation) as IPhxControlableInstance;
+        IPhxControlableInstance pawn = RTS.CreateInstance(cl, "player" + NameCounter++, position, rotation, false) as IPhxControlableInstance;
         if (pawn == null)
         {
             Debug.LogError($"Given spawn class '{cl.Name}' is not a IPhxControlableInstance!");
@@ -258,7 +271,7 @@ public class PhxGameMatch
 
     public IPhxControlableInstance SpawnAI<T>(PhxClass cl, Vector3 position, Quaternion rotation) where T : PhxPawnController, new()
     {
-        IPhxControlableInstance player = RTS.CreateInstance(cl, "AI" + NameCounter++, position, rotation) as IPhxControlableInstance;
+        IPhxControlableInstance player = RTS.CreateInstance(cl, "AI" + NameCounter++, position, rotation, false) as IPhxControlableInstance;
         if (player == null)
         {
             Debug.LogError($"Given spawn class '{cl.Name}' is not a IPhxControlableInstance!");
