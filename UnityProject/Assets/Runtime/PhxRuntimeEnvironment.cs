@@ -65,9 +65,9 @@ public class PhxRuntimeEnvironment
     PhxLuaRuntime  LuaRT;
     SWBF2Handle LoadscreenHandle;
 
-    LibSWBF2.Wrappers.Container EnvCon;
-    LibSWBF2.Wrappers.Level     WorldLevel;     // points to level inside 'LVLs'
-    LibSWBF2.Wrappers.Level     LoadscreenLVL;  // points to level inside 'LVLs'
+    Container EnvCon;
+    Level     WorldLevel;     // points to level inside 'LVLs'
+    Level     LoadscreenLVL;  // points to level inside 'LVLs'
 
     string InitScriptName;
     string InitFunctionName;
@@ -77,8 +77,12 @@ public class PhxRuntimeEnvironment
     PhxGameMatch Match;
     PhxTimerDB Timers;
 
-    List<LibSWBF2.Wrappers.Localization> Localizations = new List<LibSWBF2.Wrappers.Localization>();
-    Dictionary<string, List<LibSWBF2.Wrappers.Localization>> LocalizationLookup = new Dictionary<string, List<LibSWBF2.Wrappers.Localization>>();
+    List<Localization> Localizations = new List<Localization>();
+    Dictionary<string, List<Localization>> LocalizationLookup = new Dictionary<string, List<Localization>>();
+
+    // To prevent loading an lvl more than once.
+    // The path here always describes the relative 2-leaf lvl path
+    Dictionary<PhxPath, SWBF2Handle> PathToHandle = new Dictionary<PhxPath, SWBF2Handle>();
 
 
     PhxRuntimeEnvironment(PhxPath path, PhxPath fallbackPath)
@@ -96,7 +100,16 @@ public class PhxRuntimeEnvironment
 
     ~PhxRuntimeEnvironment()
     {
-        EnvCon.Delete();
+        Delete();
+    }
+
+    public void Delete()
+    {
+        WorldLevel = null;
+        ClearScene();
+        LuaRT?.Close();
+        EnvCon?.Delete();
+        PathToHandle.Clear();
     }
 
     public PhxRuntimeScene GetScene()
@@ -152,7 +165,7 @@ public class PhxRuntimeEnvironment
         return LuaRT;
     }
 
-    public T Find<T>(string name) where T : LibSWBF2.Wrappers.NativeWrapper, new()
+    public T Find<T>(string name) where T : NativeWrapper, new()
     {
         return EnvCon.Get<T>(name);
     }
@@ -160,7 +173,7 @@ public class PhxRuntimeEnvironment
     public bool Execute(string scriptName)
     {
         Debug.Assert(CanExecute);
-        LibSWBF2.Wrappers.Script script = EnvCon.Get<LibSWBF2.Wrappers.Script>(scriptName);
+        Script script = EnvCon.Get<Script>(scriptName);
         if (script == null || !script.IsValid())
         {
             Debug.LogErrorFormat("Couldn't find script '{0}'!", scriptName);
@@ -169,7 +182,7 @@ public class PhxRuntimeEnvironment
         return Execute(script);
     }
 
-    public bool Execute(LibSWBF2.Wrappers.Script script)
+    public bool Execute(Script script)
     {
         Debug.Assert(CanExecute);
         if (script == null || !script.IsValid())
@@ -219,13 +232,19 @@ public class PhxRuntimeEnvironment
     {
         Debug.Assert(CanSchedule);
 
+        PhxPath leafPath = absoluteLVLPath.GetLeafs(2);
+        if (PathToHandle.TryGetValue(leafPath, out SWBF2Handle handle))
+        {
+            return handle;
+        }
+
         if (absoluteLVLPath.Exists() && absoluteLVLPath.IsFile())
         {
-            SWBF2Handle handle = EnvCon.AddLevel(absoluteLVLPath, subLVLs);
+            handle = EnvCon.AddLevel(absoluteLVLPath, subLVLs);
             LoadingLVLs.Add(new LoadST
             {
                 Handle = handle,
-                PathPartial = absoluteLVLPath.GetLeafs(2),
+                PathPartial = leafPath,
                 bIsFallback = false,
                 bIsSoundBank = false
             });
@@ -241,15 +260,21 @@ public class PhxRuntimeEnvironment
     {
         Debug.Assert(CanSchedule);
 
+        PhxPath leafPath = relativeLVLPath.GetLeafs(2);
+        if (PathToHandle.TryGetValue(leafPath, out SWBF2Handle handle))
+        {
+            return handle;
+        }
+
         PhxPath envLVLPath = Path / relativeLVLPath;
         PhxPath fallbackLVLPath = FallbackPath / relativeLVLPath;
         if (envLVLPath.Exists() && envLVLPath.IsFile())
         {
-            SWBF2Handle handle = EnvCon.AddLevel(envLVLPath, subLVLs);
+            handle = EnvCon.AddLevel(envLVLPath, subLVLs);
             LoadingLVLs.Add(new LoadST
             { 
                 Handle = handle,
-                PathPartial = relativeLVLPath.GetLeafs(2),
+                PathPartial = leafPath,
                 bIsFallback = false,
                 bIsSoundBank = false
             });
@@ -257,11 +282,11 @@ public class PhxRuntimeEnvironment
         }
         if (fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
         {
-            SWBF2Handle handle = EnvCon.AddLevel(fallbackLVLPath, subLVLs);
+            handle = EnvCon.AddLevel(fallbackLVLPath, subLVLs);
             LoadingLVLs.Add(new LoadST
             {
                 Handle = handle,
-                PathPartial = relativeLVLPath.GetLeafs(2),
+                PathPartial = leafPath,
                 bIsFallback = true,
                 bIsSoundBank = false
             });
@@ -277,15 +302,21 @@ public class PhxRuntimeEnvironment
     {
         Debug.Assert(CanSchedule);
 
+        PhxPath leafPath = relativeLVLPath.GetLeafs(2);
+        if (PathToHandle.TryGetValue(leafPath, out SWBF2Handle handle))
+        {
+            return handle;
+        }
+
         PhxPath envLVLPath = Path / relativeLVLPath;
         PhxPath fallbackLVLPath = FallbackPath / relativeLVLPath;
         if (envLVLPath.Exists() && envLVLPath.IsFile())
         {
-            SWBF2Handle handle = EnvCon.AddSoundBank(envLVLPath);
+            handle = EnvCon.AddSoundBank(envLVLPath);
             LoadingLVLs.Add(new LoadST
             {
                 Handle = handle,
-                PathPartial = relativeLVLPath.GetLeafs(2),
+                PathPartial = leafPath,
                 bIsFallback = false,
                 bIsSoundBank = true
             });
@@ -293,11 +324,11 @@ public class PhxRuntimeEnvironment
         }
         if (fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
         {
-            SWBF2Handle handle = EnvCon.AddSoundBank(fallbackLVLPath);
+            handle = EnvCon.AddSoundBank(fallbackLVLPath);
             LoadingLVLs.Add(new LoadST
             {
                 Handle = handle,
-                PathPartial = relativeLVLPath.GetLeafs(2),
+                PathPartial = leafPath,
                 bIsFallback = true,
                 bIsSoundBank = true
             });
@@ -412,18 +443,6 @@ public class PhxRuntimeEnvironment
         Timers?.Update(deltaTime);
     }
 
-    public void ClearScene()
-    {
-        RTScene.Clear();
-        RTScene = null;
-        Match.Clear();
-        Match = null;
-        Timers = null;
-        OnLoadscreenLoaded = null;
-        OnExecuteMain = null;
-        OnLoaded = null;
-    }
-
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)
     {
         if (GetLocalized(PhxGameRuntime.Instance.Language, localizedPath, out string localizedUnicode))
@@ -435,6 +454,18 @@ public class PhxRuntimeEnvironment
             return localizedUnicode;
         }
         return bReturnNullIfNotFound ? null : localizedPath;
+    }
+
+    void ClearScene()
+    {
+        RTScene.Clear();
+        RTScene = null;
+        Match.Clear();
+        Match = null;
+        Timers = null;
+        OnLoadscreenLoaded = null;
+        OnExecuteMain = null;
+        OnLoaded = null;
     }
 
     bool GetLocalized(string language, string localizedPath, out string localizedUnicode)

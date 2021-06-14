@@ -196,12 +196,13 @@ public class PhxRuntimeScene
         {
             UnityEngine.Object.Destroy(WorldRoots[i]);
         }
+        WorldRoots.Clear();
     }
 
     // TODO: implement object pooling
     public PhxInstance CreateInstance(PhxClass cl, string instName, Vector3 position, Quaternion rotation, bool withCollision=true, Transform parent =null)
     {
-        return CreateInstance(cl.EntityClass, instName, position, rotation, parent).GetComponent<PhxInstance>();
+        return CreateInstance(cl.EntityClass, instName, position, rotation, withCollision, parent).GetComponent<PhxInstance>();
     }
 
     public PhxInstance CreateInstance(PhxClass cl, bool withCollision=true, Transform parent=null)
@@ -254,15 +255,26 @@ public class PhxRuntimeScene
         }
 
         EntityClass ec = instOrClass.GetType() == typeof(Instance) ? ((Instance)instOrClass).EntityClass : ((EntityClass)instOrClass);
+        if (ec == null)
+        {
+            // this can only happen if 'instOrClass' is an instance!
+            Instance inst = (Instance)instOrClass;
+            Debug.LogWarning($"Cannot find EnityClass '{inst.EntityClassName}' of given Instance '{inst.Name}'!");
+            return null;
+        }
 
-        GameObject instanceObject = ClassLoader.Instance.Instantiate(instOrClass, instName);
         EntityClass rootClass = ClassLoader.GetRootClass(ec);
-
         if (rootClass == null)
         {
             Debug.LogWarning($"Could not find root class of '{ec.Name}'!");
             return null;
         }
+
+        GameObject instanceObject = ClassLoader.Instance.Instantiate(instOrClass, instName);
+        instanceObject.transform.SetParent(parent);
+        instanceObject.transform.localRotation = rotation;
+        instanceObject.transform.localPosition = position;
+        instanceObject.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
 
         Type instType = PhxClassRegister.GetPhxInstanceType(rootClass.BaseClassName);
         if (instType != null)
@@ -278,10 +290,6 @@ public class PhxRuntimeScene
             }
         }
 
-        instanceObject.transform.SetParent(parent);
-        instanceObject.transform.localRotation = rotation;
-        instanceObject.transform.localPosition = position;
-        instanceObject.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
         return instanceObject;
     }
 
@@ -292,14 +300,16 @@ public class PhxRuntimeScene
         List<GameObject> instanceObjects = new List<GameObject>();
         foreach (Instance inst in instances)
         {
-            instanceObjects.Add(
-                CreateInstance(
-                    inst,
-                    inst.Name,
-                    UnityUtils.Vec3FromLibWorld(inst.Position),
-                    UnityUtils.QuatFromLibWorld(inst.Rotation)
-                )
+            GameObject instGO = CreateInstance(
+                inst,
+                inst.Name,
+                UnityUtils.Vec3FromLibWorld(inst.Position),
+                UnityUtils.QuatFromLibWorld(inst.Rotation)
             );
+            if (instGO != null)
+            {
+                instanceObjects.Add(instGO);
+            }
         }
         return instanceObjects;
     }

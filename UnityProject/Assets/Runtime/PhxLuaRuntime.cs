@@ -172,6 +172,21 @@ public class PhxLuaRuntime
         Register<Action<object[]>>(Print);
     }
 
+    ~PhxLuaRuntime()
+    {
+        Close();
+    }
+
+    public void Close()
+    {
+        if (L != null)
+        {
+            L.Close();
+            L = null;
+            MethodOverloads.Clear();
+        }
+    }
+
     public Lua GetLua()
     {
         return L;

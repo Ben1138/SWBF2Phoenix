@@ -31,8 +31,7 @@ public class PhxCharacterSelect : PhxMenuInterface
     {
         for (int i = 0; i < UnitPreviews.Count; ++i)
         {
-            UnitPreviews[i].GetInstance().gameObject.SetActive(false);
-            Destroy(UnitPreviews[i].GetInstance());
+            Destroy(UnitPreviews[i].GetInstance().gameObject);
         }
         UnitPreviews.Clear();
     }
@@ -46,7 +45,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         }
          
         // CSP = Char Select Preview
-        IPhxControlableInstance preview = RTS.CreateInstance(cl, cl.Name+"_CSP" + nameCounter++, Vector3.zero, Quaternion.identity, GAME.CharSelectTransform) as IPhxControlableInstance;
+        IPhxControlableInstance preview = RTS.CreateInstance(cl, cl.Name+"_CSP" + nameCounter++, Vector3.zero, Quaternion.identity, false, GAME.CharSelectTransform) as IPhxControlableInstance;
         preview.Fixate();
         UnitPreviews.Add(preview);
 
@@ -156,7 +155,7 @@ public class PhxCharacterSelect : PhxMenuInterface
 
     void OnCPSelected(PhxCommandpost cp)
     {
-        Debug.Log($"Selected CP '{cp.name}'");
+        //Debug.Log($"Selected CP '{cp.name}'");
         SpawnCP = cp;
     }
     
