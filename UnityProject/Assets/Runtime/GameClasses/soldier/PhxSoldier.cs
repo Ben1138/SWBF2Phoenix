@@ -160,7 +160,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     public override void Init()
     {
         // soldier
-        gameObject.layer = 10;
+        gameObject.layer = LayerMask.NameToLayer("SoldierAll");
 
         ViewConstraint.x = 45f;
 
@@ -185,7 +185,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Debug.Assert(Spine != null);
 
         Body = gameObject.AddComponent<Rigidbody>();
-        Body.mass = 80f;
+        Body.mass = 0.1f;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
         Body.interpolation = RigidbodyInterpolation.Interpolate;

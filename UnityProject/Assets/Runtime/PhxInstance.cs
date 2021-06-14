@@ -144,12 +144,26 @@ public interface IPhxWeapon
 {
     public PhxInstance GetInstance();
     public bool Fire(PhxPawnController owner, Vector3 targetPos);
+
     public void Reload();
     public void OnShot(Action callback);
     public void OnReload(Action callback);
     public string GetAnimBankName();
 
+    public void SetFirePoint(Transform FirePoint);
+
+    public Transform GetFirePoint();
+    public void GetFirePoint(out Vector3 Pos, out Quaternion Rot);
+
+
     public void SetIgnoredColliders(List<Collider> Colliders);
+    public List<Collider> GetIgnoredColliders();
+
+    public PhxPawnController GetOwnerController();
+    public bool IsFiring();
+
+
+
 
     public int GetMagazineSize();
     public int GetTotalAmmo();

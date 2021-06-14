@@ -95,7 +95,7 @@ public abstract class PhxClass
 
                                     if (currSection.ContainsKey(propName))
                                     {
-                                        Debug.LogErrorFormat("Section already contains key: {0} (in PhxClass: {1}, Section index: {2})", propName, ec.Name, foundSections.Count - 1);
+                                        Debug.LogErrorFormat("Section already contains key: {0} value: {3} (in PhxClass: {1}, Section index: {2})", propName, ec.Name, foundSections.Count - 1, propValues[i]);
                                     }
                                     else
                                     {

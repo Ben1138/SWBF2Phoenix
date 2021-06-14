@@ -125,9 +125,6 @@ public class PhxHover : PhxVehicle
         public PhxProp<float> OmegaZSpring   = new PhxProp<float>(1.7f);
         public PhxProp<float> OmegaZDamp     = new PhxProp<float>(1.7f);
     }
-    
-    public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
-
 
 
     Rigidbody Body;
@@ -147,9 +144,6 @@ public class PhxHover : PhxVehicle
 
     AudioSource AudioAmbient;
 
-
-    List<int> CollisionMasks;
-    List<GameObject> CollisionNodes;
 
 
 
@@ -177,35 +171,11 @@ public class PhxHover : PhxVehicle
     public List<SpringForce> SpringForces;
 
 
-    void ResetCollisionLayer()
-    {
-        int i = 0;
-        foreach (GameObject Node in CollisionNodes)
-        {
-            Node.layer = CollisionMasks[i++];
-        }
-    }
-
-    void SetCollisionLayer(int layer)
-    {
-        foreach (GameObject Node in CollisionNodes)
-        {
-            Node.layer = layer;
-        }
-    }
-
-
-
-    HashSet<Collider> ObjectColliders;
-
-
-
-    // for debugging
-    bool DBG = false;
-
 
     public override void Init()
     {
+        base.Init();
+
         H = C as PhxHover.ClassProperties;
         if (H == null) return;
 
@@ -213,40 +183,11 @@ public class PhxHover : PhxVehicle
 
 
         /*
-        COLLISION
-        */
-
-        ModelMapping = ModelLoader.Instance.GetModelMapping(gameObject, C.GeometryName); 
-        ModelMapping.StripMeshCollider();
-
-        void SetODFCollision(PhxMultiProp Props, ECollisionMaskFlags Flag)
-        {
-            foreach (object[] values in Props.Values)
-            {
-                ModelMapping.SetColliderMask(values[0] as string, Flag);
-            }
-        }
-
-        SetODFCollision(C.SoldierCollision,  ECollisionMaskFlags.Soldier);
-        SetODFCollision(C.BuildingCollision, ECollisionMaskFlags.Building);
-        SetODFCollision(C.OrdnanceCollision, ECollisionMaskFlags.Ordnance);
-        SetODFCollision(C.VehicleCollision,  ECollisionMaskFlags.Vehicle);
-
-        foreach (object[] TCvalues in C.TargetableCollision.Values)
-        {
-            ModelMapping.EnableCollider(TCvalues[0] as string, false);
-        }
-
-        ModelMapping.ExpandMultiLayerColliders();
-        ModelMapping.SetColliderLayerFromMaskAll();
-
-
-        /*
         RIGIDBODY
         */
 
         Body = gameObject.AddComponent<Rigidbody>();
-        Body.mass = H.GravityScale;
+        Body.mass = H.GravityScale * 10f;
         Body.useGravity = true;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
@@ -287,20 +228,21 @@ public class PhxHover : PhxVehicle
         {
             if (properties[i] == HashUtils.GetFNV("FLYERSECTION"))
             {
-                if (values[i] == "BODY")
+                if (values[i].Equals("BODY", StringComparison.OrdinalIgnoreCase))
                 {
-                    DriverSection = new PhxHoverMainSection(properties, values, ref i, this, EC.Name == "rep_hover_fightertank");
+                    DriverSection = new PhxHoverMainSection(this);
+                    DriverSection.InitManual(EC, i, "FLYERSECTION", "BODY");
                     Sections.Add(DriverSection);                
                 }
                 else 
                 {
-                    Sections.Add(new PhxVehicleTurret(properties, values, ref i, this, TurretIndex++));
+                    PhxVehicleTurret Turret = new PhxVehicleTurret(this, TurretIndex++);
+                    Turret.InitManual(EC, i, "FLYERSECTION", values[i]);
+                    Sections.Add(Turret);
                 }
             }
-            else 
-            {
-                i++;
-            }
+
+            i++;
         }
 
 
@@ -321,12 +263,14 @@ public class PhxHover : PhxVehicle
                 CurrSpring = new PhxHoverSpring(PhxUtils.Vec4FromString(values[i]));
                 Springs.Add(CurrSpring);
                 
-                
+                /*
+                // For visualization
                 var sc = gameObject.AddComponent<SphereCollider>();
                 sc.radius = CurrSpring.Scale;
                 sc.center = CurrSpring.Position;
                 sc.isTrigger = true;
                 sc.enabled = false;
+                */
                 
                 
                 SpringForces.Add(new SpringForce());
@@ -364,21 +308,6 @@ public class PhxHover : PhxVehicle
         if (H.AnimationName.Get() != "" && H.FinAnimation.Get() != "")
         {
             Poser = new PhxPoser(H.AnimationName.Get(), H.FinAnimation.Get(), transform);
-        }
-
-        List<Transform> Nodes = UnityUtils.GetChildTransforms(transform);
-        Nodes.Add(transform);
-
-        CollisionNodes = new List<GameObject>();
-        CollisionMasks = new List<int>();
-
-        foreach (Transform Node in Nodes)
-        {
-            if (Node.gameObject.GetComponent<Collider>() != null)
-            {
-                CollisionNodes.Add(Node.gameObject);
-                CollisionMasks.Add(Node.gameObject.layer);
-            }
         }
 
 
@@ -568,8 +497,6 @@ public class PhxHover : PhxVehicle
             Physics.OverlapSphere and Physics.ComputePenetration.  Springs ingame are
             spherical, though I bet a downward raycast will be sufficient.  
             
-            - Maybe use actual Unity springs?  Haven't bothered, seemed unnecessary.
-
         Confusion on parameters remains:
 
             - OmegaXSpringFactor is used to compensate for an imbalance of springs.  Eg, when two have
@@ -582,16 +509,20 @@ public class PhxHover : PhxVehicle
 
             - How are the various global spring parameters like LiftSpring/Damp and VelocitySpring/Damp used and
             combined with the local ones? 
-    */  
+    */ 
+
+    int SpringUpdatesPerFrame = 2; 
 
     void UpdateSprings(float deltaTime)
     {
         Vector3 netForce = Vector3.zero;
         Vector3 netPos = Vector3.zero;
 
-        // Terrain = 11
-        LayerMask Mask = 1 << 11;
-        SetCollisionLayer(2);
+        LayerMask Mask = (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
+
+        // Set all colliders to RaycastIgnore
+        ModelMapping.SetColliderLayerAll(2);
+
 
         for (int CurrSpringIndex = 0; CurrSpringIndex < Springs.Count; CurrSpringIndex++)
         {
@@ -611,21 +542,21 @@ public class PhxHover : PhxVehicle
 
                     float XRotCoeff = 2f * H.OmegaXSpring * CurrSpring.OmegaXFactor;
                     float XDampRotCoeff = .3f * H.OmegaXDamp * -Vector3.Dot(Body.angularVelocity, transform.right);
-                    Body.AddRelativeTorque(600f * Penetration * deltaTime * Vector3.right * (XRotCoeff + XDampRotCoeff));
+                    Body.AddRelativeTorque(60f * Penetration * deltaTime * Vector3.right * (XRotCoeff + XDampRotCoeff), ForceMode.Acceleration);
 
                     SpringForces[CurrSpringIndex].XRot = XRotCoeff;
                     SpringForces[CurrSpringIndex].XDamp = XDampRotCoeff;
 
                     float ZRotCoeff = H.OmegaZSpring * CurrSpring.OmegaZFactor;
                     float ZRotDampCoeff = .5f * H.OmegaZDamp * -Vector3.Dot(Body.angularVelocity, transform.forward);
-                    Body.AddRelativeTorque(800f * Penetration * deltaTime * Vector3.forward * (ZRotCoeff + ZRotDampCoeff));
+                    Body.AddRelativeTorque(80f * Penetration * deltaTime * Vector3.forward * (ZRotCoeff + ZRotDampCoeff), ForceMode.Acceleration);
                     
                     SpringForces[CurrSpringIndex].ZRot = ZRotCoeff;
                     SpringForces[CurrSpringIndex].ZDamp = ZRotDampCoeff;
 
                     Vector3 VelSpringForce = Vector3.up * H.VelocitySpring;
                     Vector3 VelDampForce = .3f * Vector3.up * H.VelocityDamp * -Body.velocity.y;
-                    Body.AddForce(800f * Penetration * deltaTime * (VelSpringForce + VelDampForce), ForceMode.Acceleration);                
+                    Body.AddForce(80f * Penetration * deltaTime * (VelSpringForce + VelDampForce), ForceMode.Acceleration);                
 
                     SpringForces[CurrSpringIndex].VelForce = VelSpringForce.y;
                     SpringForces[CurrSpringIndex].VelDamp = VelDampForce.y;
@@ -642,7 +573,8 @@ public class PhxHover : PhxVehicle
             }
         }
 
-        ResetCollisionLayer();
+        // Reset all colliders to their mask's layers
+        ModelMapping.SetColliderLayerFromMaskAll();
     }
 
 
@@ -698,7 +630,7 @@ public class PhxHover : PhxVehicle
         }
 
         // engine accel, don't add force here because we want to limit local velocity manually
-        LocalVel += 2f * deltaTime * new Vector3(strafeForce, 0f, forwardForce) / Body.mass;
+        LocalVel += 2f * deltaTime * new Vector3(strafeForce, 0f, forwardForce) / H.GravityScale;
 
         // clamp speeds by ODF vals, for now doesn't damp
         LocalVel.x = Mathf.Clamp(LocalVel.x, -H.StrafeSpeed, H.StrafeSpeed);

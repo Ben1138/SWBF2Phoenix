@@ -49,8 +49,6 @@ public class PhxRuntimeScene
         Cra = new CraMain();
 
         ModelLoader.Instance.PhyMat = PhxGameRuntime.Instance.GroundPhyMat;
-        ModelLoader.Instance.CollFlagToUnityLayer[ECollisionMaskFlags.Vehicle] = 7;
-        ModelLoader.Instance.CollFlagToUnityLayer[ECollisionMaskFlags.Soldier] = 10;
     }
 
     public void SetProperty(string instName, string propName, object propValue)
@@ -162,14 +160,10 @@ public class PhxRuntimeScene
         return camShot;
     }
 
-    public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
-    {
-        Projectiles.FireProjectile(owner, pos, rot, bolt);
-    }
 
-    public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt, List<Collider> colliders)
+    public void FireProjectile(IPhxWeapon WeaponOfOrigin, PhxClass OrdnanceClass)
     {
-        Projectiles.FireProjectile(owner, pos, rot, bolt, colliders);
+        Projectiles.FireProjectile(WeaponOfOrigin, OrdnanceClass);
     }
 
 
@@ -230,7 +224,7 @@ public class PhxRuntimeScene
                 terrainGameObject = WorldLoader.Instance.ImportTerrainAsMesh(terrain, "terrain");
 
                 terrainGameObject.transform.parent = worldRoot.transform;
-                terrainGameObject.layer = 11;
+                terrainGameObject.layer = LayerMask.NameToLayer("TerrainAll");
                 bTerrainImported = true;
             }
 
@@ -419,7 +413,22 @@ public class PhxRuntimeScene
             script.InitInstance(instOrClass, odf);
 
             Instances.Add(script);
-            InstanceMap.Add(instanceObject.name, Instances.Count - 1);
+
+            if (!string.IsNullOrEmpty(instanceObject.name))
+            {
+                if (!InstanceMap.ContainsKey(instanceObject.name))
+                {
+                    InstanceMap.Add(instanceObject.name, Instances.Count - 1);
+                }
+                else
+                {
+                    Debug.LogError($"Instance with name '{instanceObject.name}' is already registered in scene!");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Encountered instance of type '{odf.Name}' with no Name!");
+            }
 
             if (script is PhxCommandpost)
             {

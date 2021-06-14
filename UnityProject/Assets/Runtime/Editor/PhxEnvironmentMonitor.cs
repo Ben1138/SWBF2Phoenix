@@ -5,14 +5,14 @@ using UnityEditor;
 
 public class PhxEnvironmentMonitor : EditorWindow
 {
-    GUIStyle EnvLVLStyle = new GUIStyle();
-    GUIStyle FallbackLVLStyle = new GUIStyle();
+    GUIStyle StdStyle = new GUIStyle();
+    GUIStyle AddonStyle = new GUIStyle();
 
 
     void OnEnable()
     {
-        EnvLVLStyle.normal.textColor = Color.green;
-        FallbackLVLStyle.normal.textColor = Color.yellow;
+        StdStyle.normal.textColor = Color.green;
+        AddonStyle.normal.textColor = Color.yellow;
     }
 
     [MenuItem("Phoenix/Environment Monitor")]
@@ -43,13 +43,13 @@ public class PhxEnvironmentMonitor : EditorWindow
         EditorGUILayout.LabelField("Environment Stage", env.Stage.ToString());
         EditorGUILayout.Space();
 
-        foreach (var lvl in env.LVLs)
+        foreach (var lvl in env.Loaded)
         {
-            EditorGUILayout.LabelField(lvl.RelativePath, "Loaded", lvl.bIsFallback ? FallbackLVLStyle : EnvLVLStyle);
+            EditorGUILayout.LabelField(lvl.DisplayPath, "Loaded", lvl.bIsAddon ? AddonStyle : StdStyle);
         }
-        foreach (var lvl in env.LoadingLVLs)
+        foreach (var lvl in env.Loading)
         {
-            EditorGUILayout.LabelField(lvl.PathPartial, string.Format("{0:0.} %", env.GetProgress(lvl.Handle) * 100.0f), lvl.bIsFallback ? FallbackLVLStyle : EnvLVLStyle);
+            EditorGUILayout.LabelField(lvl.DisplayPath, string.Format("{0:0.} %", env.GetProgress(lvl.Handle) * 100.0f), lvl.bIsAddon ? AddonStyle : StdStyle);
         }
     }
 }
