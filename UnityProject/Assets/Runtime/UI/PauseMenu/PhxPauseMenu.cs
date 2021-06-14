@@ -9,6 +9,7 @@ public class PhxPauseMenu : PhxMenuInterface
 
     [Header("References")]
     public Button BtnContinue;
+    public Button BtnRespawn;
     public Button BtnFreeCam;
     public Button BtnNextMap;
     public Button BtnBackToMainMenu;
@@ -31,6 +32,7 @@ public class PhxPauseMenu : PhxMenuInterface
         BtnFreeCam.GetComponentInChildren<Text>().text = MTC.PlayerST != PhxGameMatch.PhxPlayerState.FreeCam ? "Free Cam" : "Character Selection";
 
         BtnContinue.onClick.AddListener(Continue);
+        BtnRespawn.onClick.AddListener(Respawn);
         BtnFreeCam.onClick.AddListener(FreeCam);
         BtnNextMap.onClick.AddListener(NextMap);
         BtnBackToMainMenu.onClick.AddListener(BackToMainMenu);
@@ -40,6 +42,11 @@ public class PhxPauseMenu : PhxMenuInterface
     void Continue()
     {
         PhxGameRuntime.Instance.RemoveMenu();
+    }
+
+    void Respawn()
+    {
+        MTC.KillPlayer();
     }
 
     void FreeCam()

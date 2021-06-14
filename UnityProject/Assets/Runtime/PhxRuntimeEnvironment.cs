@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2;
 using LibSWBF2.Enums;
+using LibSWBF2.Wrappers;
 
 
 /*
@@ -209,6 +210,11 @@ public class PhxRuntimeEnvironment
         return stageProgress + stageContribution * EnvCon.GetOverallProgress();
     }
 
+    public Level GetWorldLevel()
+    {
+        return WorldLevel;
+    }
+
     public SWBF2Handle ScheduleLVLAbs(PhxPath absoluteLVLPath, string[] subLVLs = null, bool bForceLocal = false)
     {
         Debug.Assert(CanSchedule);
@@ -227,7 +233,7 @@ public class PhxRuntimeEnvironment
         }
 
         Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", absoluteLVLPath);
-        return new SWBF2Handle(uint.MaxValue);
+        return new SWBF2Handle(ushort.MaxValue);
     }
 
     // relativeLVLPath: relative to Environment!
@@ -263,7 +269,7 @@ public class PhxRuntimeEnvironment
         }
 
         Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relativeLVLPath);
-        return new SWBF2Handle(uint.MaxValue);
+        return new SWBF2Handle(ushort.MaxValue);
     }
 
     // relativeLVLPath: relative to Environment!
@@ -299,7 +305,7 @@ public class PhxRuntimeEnvironment
         }
 
         Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relativeLVLPath);
-        return new SWBF2Handle(uint.MaxValue);
+        return new SWBF2Handle(ushort.MaxValue);
     }
 
     public float GetProgress(SWBF2Handle handle)

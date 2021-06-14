@@ -199,6 +199,17 @@ public class PhxGameMatch
         }
     }
 
+    public void KillPlayer()
+    {
+        IPhxControlableInstance pawn = Player.Pawn;
+        if (pawn != null)
+        {
+            pawn.UnAssign();
+            UnityEngine.Object.Destroy(pawn.GetInstance().gameObject);
+            SetPlayerState(PhxPlayerState.CharacterSelection);
+        }
+    }
+
     public IPhxControlableInstance SpawnPlayer(PhxClass cl, PhxCommandpost cp)
     {
         if (cp.SpawnPath.Get() == null)
@@ -207,7 +218,7 @@ public class PhxGameMatch
             return null;
         }
         SWBFPath.Node spawnNode = cp.SpawnPath.Get().GetRandom();
-        return SpawnPlayer(cl, spawnNode.Position, spawnNode.Rotation);
+        return SpawnPlayer(cl, spawnNode.Position, Quaternion.identity);
     }
 
     public IPhxControlableInstance SpawnPlayer(PhxClass cl, Vector3 position, Quaternion rotation)
@@ -229,6 +240,8 @@ public class PhxGameMatch
         pawn.Assign(Player);
         SetPlayerState(PhxPlayerState.Spawned);
 
+        Debug.Log($"Spawned player at pos: {position} - rot: {rotation}");
+
         return pawn;
     }
 
@@ -240,7 +253,7 @@ public class PhxGameMatch
             return null;
         }
         SWBFPath.Node spawnNode = cp.SpawnPath.Get().GetRandom();
-        return SpawnAI<T>(cl, spawnNode.Position, spawnNode.Rotation);
+        return SpawnAI<T>(cl, spawnNode.Position, Quaternion.identity);
     }
 
     public IPhxControlableInstance SpawnAI<T>(PhxClass cl, Vector3 position, Quaternion rotation) where T : PhxPawnController, new()
