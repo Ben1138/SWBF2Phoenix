@@ -4,6 +4,12 @@ using UnityEngine;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Enums;
 
+#if UNITY_EDITOR
+using UnityEditor;
+using System.Reflection;
+#endif
+
+
 public class PhxRuntimeScene
 {
     public Texture2D MapTexture { get; private set; }
@@ -159,6 +165,31 @@ public class PhxRuntimeScene
         }
     }
 
+    public SWBFPath GetPath(string pathName)
+    {
+        Level level = ENV.GetWorldLevel();
+        if (level != null)
+        {
+            SWBFPath path = WorldLoader.Instance.ImportPath(level, pathName);
+#if UNITY_EDITOR
+            if (path != null)
+            {
+                GameObject pathGO = new GameObject(pathName);
+                for (int i = 0; i < path.Nodes.Length; ++i)
+                {
+                    GameObject node = new GameObject($"Node{i}");
+                    node.transform.position = path.Nodes[i].Position;
+                    node.transform.rotation = path.Nodes[i].Rotation;
+                    node.transform.SetParent(pathGO.transform);
+                    DrawIcon(node, 0);
+                }
+            }
+#endif
+            return path;
+        }
+        return null;
+    }
+
     public void Clear()
     {
         for (int i = 0; i < WorldRoots.Count; ++i)
@@ -272,4 +303,26 @@ public class PhxRuntimeScene
         }
         return instanceObjects;
     }
+
+#if UNITY_EDITOR
+    void DrawIcon(GameObject gameObject, int idx)
+    {
+        var largeIcons = GetTextures("sv_label_", string.Empty, 0, 8);
+        var icon = largeIcons[idx];
+        var egu = typeof(EditorGUIUtility);
+        var flags = BindingFlags.InvokeMethod | BindingFlags.Static | BindingFlags.NonPublic;
+        var args = new object[] { gameObject, icon.image };
+        var setIcon = egu.GetMethod("SetIconForObject", flags, null, new Type[] { typeof(UnityEngine.Object), typeof(Texture2D) }, null);
+        setIcon.Invoke(null, args);
+    }
+    GUIContent[] GetTextures(string baseName, string postFix, int startIndex, int count)
+    {
+        GUIContent[] array = new GUIContent[count];
+        for (int i = 0; i < count; i++)
+        {
+            array[i] = EditorGUIUtility.IconContent(baseName + (startIndex + i) + postFix);
+        }
+        return array;
+    }
+#endif
 }

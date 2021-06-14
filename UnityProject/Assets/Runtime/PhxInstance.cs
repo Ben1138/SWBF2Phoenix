@@ -67,6 +67,7 @@ public interface IPhxControlableInstance
 
     PhxPawnController GetController();
     void Assign(PhxPawnController controller);
+    void UnAssign();
 
     // Makes this instance immovable
     // Useful for testing and character selection
@@ -115,6 +116,15 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
     {
         Controller = controller;
         controller.SetPawn(this);
+    }
+
+    public void UnAssign()
+    {
+        if (Controller != null)
+        {
+            Controller.RemovePawn();
+            Controller = null;
+        }
     }
 
     public abstract void Fixate();

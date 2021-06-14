@@ -168,6 +168,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         Body.mass = 80f;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
+        Body.interpolation = RigidbodyInterpolation.Extrapolate;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
