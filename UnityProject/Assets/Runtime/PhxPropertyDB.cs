@@ -72,7 +72,7 @@ public sealed class PhxPropertyDB
         }
         else if (destType == typeof(SWBFPath))
         {
-            outVal = Convert.ChangeType(WorldLoader.Instance.ImportPath(value), destType, CultureInfo.InvariantCulture);
+            outVal = Convert.ChangeType(RTS.GetPath(value), destType, CultureInfo.InvariantCulture);
         }
         else if (destType == typeof(bool))
         {

@@ -32,6 +32,12 @@ public abstract class PhxPawnController
         ViewDirection = Pawn.GetInstance().transform.forward;
     }
 
+    // For un-assignment, use IPhxControlableInstance.UnAssign()!
+    public void RemovePawn()
+    {
+        Pawn = null;
+    }
+
     public void ResetIdleTime()
     {
         IdleTime = 0f;
