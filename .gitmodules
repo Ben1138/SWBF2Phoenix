@@ -6,7 +6,9 @@
 	url = https://github.com/Ben1138/LibSWBF2
 [submodule "UnityProject/Assets/LVLImport"]
 	path = UnityProject/Assets/LVLImport
-url=https://github.com/Ben1138/SWBF2-.lvl-Extraction-Tools-for-Unity3D
+	url=https://github.com/WHSnyder/SWBF2-.lvl-Extraction-Tools-for-Unity3D
+	branch = runtime
 [submodule "UnityProject/Assets/CraUnity"]
 	path = UnityProject/Assets/CraUnity
-	url = https://github.com/Ben1138/CraUnity
+	url = https://github.com/WHSnyder/CraUnity
+	branch = quickfixes

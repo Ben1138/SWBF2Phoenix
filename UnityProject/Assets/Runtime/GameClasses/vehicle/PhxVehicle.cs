@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
+using LibSWBF2.Enums;
 
 
 /*
@@ -34,6 +35,9 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
+    public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
+
+
 
     public Action<PhxInstance> OnDeath;
 
@@ -47,6 +51,42 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
 
 
     protected SWBFModel ModelMapping = null;
+
+
+
+    public override void Init()
+    {
+        /*
+        COLLISION
+        */
+
+        ModelMapping = ModelLoader.Instance.GetModelMapping(gameObject, C.GeometryName); 
+        //ModelMapping.StripMeshCollider();
+
+        void SetODFCollision(PhxMultiProp Props, ECollisionMaskFlags Flag)
+        {
+            foreach (object[] values in Props.Values)
+            {
+                ModelMapping.SetColliderMask(values[0] as string, Flag);
+            }
+        }
+
+        SetODFCollision(C.SoldierCollision,  ECollisionMaskFlags.Soldier);
+        SetODFCollision(C.BuildingCollision, ECollisionMaskFlags.Building);
+        SetODFCollision(C.OrdnanceCollision, ECollisionMaskFlags.Ordnance);
+        SetODFCollision(C.VehicleCollision,  ECollisionMaskFlags.Vehicle);
+
+        foreach (object[] TCvalues in C.TargetableCollision.Values)
+        {
+            ModelMapping.EnableCollider(TCvalues[0] as string, false);
+        }
+
+        ModelMapping.GameRole = SWBFGameRole.Vehicle;
+        ModelMapping.ExpandMultiLayerColliders();
+        ModelMapping.SetColliderLayerFromMaskAll();
+    }
+
+
 
 
 
@@ -243,7 +283,7 @@ public class PhxVehicleProperties : PhxClass
 {
     public PhxPropertySection ChunkSection = new PhxPropertySection(
     	"CHUNKSECTION",
-    	("ChunkGeometryName", new PhxProp<string>(null)),
+        ("ChunkGeometryName", new PhxProp<string>(null)),
     	("ChunkNodeName", new PhxProp<string>(null)),
     	("ChunkTerrainCollisions", new PhxProp<int>(1)),
     	("ChunkTerrainEffect", new PhxProp<string>("")),
@@ -255,7 +295,15 @@ public class PhxVehicleProperties : PhxClass
     	("ChunkUpFactor", new PhxProp<float>(0.5f)),
     	("ChunkTrailEffect", new PhxProp<string>("")),
     	("ChunkSmokeEffect", new PhxProp<string>("")),
-    	("ChunkSmokeNodeName", new PhxProp<string>(""))
+    	("ChunkSmokeNodeName", new PhxProp<string>("")) 
+    );
+
+    public PhxPropertySection Weapons = new PhxPropertySection(
+        "WEAPONSECTION",        
+        ("WeaponName",    new PhxProp<string>(null)),
+        ("WeaponAmmo",    new PhxProp<int>(0)),
+        ("WeaponChannel", new PhxProp<int>(0))
+        
     );
 
     public PhxProp<string> HealthType = new PhxProp<string>("vehicle");

@@ -4,29 +4,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using LibSWBF2.Utils;
+using LibSWBF2.Wrappers;
 using System.Runtime.ExceptionServices;
 
 public class PhxHoverMainSection : PhxVehicleSection
 {
-    public PhxHoverMainSection(uint[] properties, string[] values,
-                            ref int i, PhxHover hv, bool print = false) : 
-                            base(properties, values, ref i, hv, 0){} 
+    public PhxHoverMainSection(PhxHover Hover) : base(Hover, 0){} 
 
-    // Returns a Vector3 where x = strafe input, y = drive input, and z = turn input.
-    /*
-    public Vector4 GetDriverInput()
+    public override void InitManual(EntityClass EC, int StartIndex, string Header, string HeaderValue)
     {
-        if (Occupant == null)
-        {
-            return Vector3.zero;
-        }
-        else 
-        {
-            PhxPawnController Controller = Occupant.GetController();
-            return new Vector4(Controller.MoveDirection.x, Controller.MoveDirection.y, Controller.mouseX, Controller.mouseY);
-        }
+        base.InitManual(EC, StartIndex, "FLYERSECTION", "BODY");
     }
-    */
 
     public PhxPawnController GetController()
     {

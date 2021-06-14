@@ -20,29 +20,40 @@ public class PhxVehicleTurret : PhxVehicleSection
     string TurretStopSound = "";
 
 
-    public PhxVehicleTurret(uint[] properties, string[] values, 
-                            ref int i, PhxVehicle parentVehicle, int sectionIndex) : 
-                            base(properties, values, ref i, parentVehicle, sectionIndex)
+    public PhxVehicleTurret(PhxVehicle V, int index) : base(V,index){}
 
+
+    public override void InitManual(EntityClass EC, int StartIndex, string Header, string HeaderValue)
     {
-        int EndIndex = i;
+        base.InitManual(EC, StartIndex, Header, HeaderValue);
 
-        // Goofy, but didn't want to use static pattern and couldn't call base() midway through...
-        // A more robust soln is coming
-        while (--i > 0)
+        EC.GetAllProperties(out uint[] properties, out string[] values);
+
+        int i = StartIndex;
+
+        while (i < properties.Length)
         {
             if (properties[i] == HashUtils.GetFNV("TurretNodeName"))
             {
-                BaseTransform = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
+                BaseTransform = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);
             }      
             else if (properties[i] == HashUtils.GetFNV("BUILDINGSECTION") ||
-                    properties[i] == HashUtils.GetFNV("CHUNKSECTION") ||
                     properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
                     properties[i] == HashUtils.GetFNV("WALKERSECTION") ||
                     properties[i] == HashUtils.GetFNV("TURRETSECTION"))
             {
-                break;
+                if (properties[i] == HashUtils.GetFNV(Header) &&
+                    values[i].Equals(HeaderValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    // nada
+                }
+                else
+                {
+                    break;   
+                }           
             }
+            
+            i++;
         }
 
         // Turrets use just five poses out of nine given
@@ -50,8 +61,6 @@ public class PhxVehicleTurret : PhxVehicleSection
         {
             PilotAnimationType = PilotAnimationType.FivePose;
         }
-
-        i = EndIndex;
     }
 
 

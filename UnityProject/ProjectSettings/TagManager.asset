@@ -12,21 +12,21 @@ TagManager:
   - Water
   - UI
   - Projectile
-  - Vehicle
+  - VehicleAll
   - PostProcessing
   - Not in Reflection
-  - Soldier
-  - Terrain
-  - Building
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - SoldierAll
+  - TerrainAll
+  - BuildingAll
+  - BuildingVehicle
+  - BuildingOrdnance
+  - BuildingSoldier
+  - VehicleVehicle
+  - VehicleOrdnance
+  - VehicleSoldier
+  - VehicleBuilding
+  - VehicleTerrain
+  - OrdnanceAll
   - 
   - 
   - 

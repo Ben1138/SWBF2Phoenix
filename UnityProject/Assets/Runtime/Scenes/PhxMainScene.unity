@@ -435,7 +435,8 @@ MonoBehaviour:
   Camera: {fileID: 1823688469}
   GroundPhyMat: {fileID: 13400000, guid: 7458103be9a58244089e1784868fb4ae, type: 2}
   HUDPrefab: {fileID: 7293890149350655508, guid: 694c8bdb39040774686521aa6d278167, type: 3}
-  ProjPrefab: {fileID: 6623684661408825687, guid: 269c5e6d5610a574785b3b43a51fc23a, type: 3}
+  BoltPrefab: {fileID: 6623684661408825687, guid: cc81709c2f33f4baba35850b69a78e4f, type: 3}
+  BeamPrefab: {fileID: -7815452322436354814, guid: 0fb08e067ca9c42a8b791d599433641b, type: 3}
   SparkPrefab: {fileID: 2297860178784766108, guid: cd38aa7c78556634d9a9d46c052e5ca5, type: 3}
   MissionListPath: /Volumes/boot/bf2modding/assets/Shell/scripts/missionlist.lua
 --- !u!4 &1641162174

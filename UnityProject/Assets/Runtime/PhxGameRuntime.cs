@@ -52,7 +52,8 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxCamera          Camera;
     public PhysicMaterial     GroundPhyMat;
     public PhxHUD             HUDPrefab;
-    public PhxProjectile      ProjPrefab;
+    public PhxBolt            BoltPrefab;
+    public PhxBeam            BeamPrefab;
     public ParticleSystem     SparkPrefab;
 
     [Header("For non-Windows Users")]
@@ -62,8 +63,9 @@ public class PhxGameRuntime : MonoBehaviour
     public Action OnMapLoaded;
     public Action<Type> OnRemoveMenu;
 
-    PhxPath AddonPath => GamePath / "GameData/addon";
-    PhxPath StdLVLPC;
+    public PhxPath AddonPath { get; private set; }
+    public PhxPath StdLVLPC { get; private set; }
+
 
     PhxLoadscreen    CurrentLS;
     PhxMenuInterface CurrentMenu;
@@ -82,6 +84,17 @@ public class PhxGameRuntime : MonoBehaviour
     List<string> MapRotation = new List<string>();
     int MapRotationIdx = -1;
 
+    // Do not call Destroy on destruction in Editor!
+    // For some reason, when switching between Edit and Play mode,
+    // Unity will create multiple instances of this, without calling
+    // 'Awake' and then destroy those instances again immediately...
+#if !UNITY_EDITOR
+    ~PhxGameRuntime()
+    {
+        Debug.Log("PhxGameRuntime destructor called");
+        Destroy();
+    }
+#endif
 
     public static PhxLuaRuntime GetLuaRuntime()
     {
@@ -115,6 +128,14 @@ public class PhxGameRuntime : MonoBehaviour
     {
         PhxRuntimeEnvironment env = GetEnvironment();
         return env == null ? null : env.GetTimerDB();
+    }
+
+    public void Destroy()
+    {
+        Env?.Destroy();
+        Env = null;
+        Instance = null;
+        Debug.Log("PhxGameRuntime destroyed");
     }
 
     public void AddToMapRotation(List<string> mapScripts)
@@ -174,7 +195,7 @@ public class PhxGameRuntime : MonoBehaviour
 
         if (!bInit)
         {
-            Env.ScheduleLVLRel("load/gal_con.lvl");
+            Env.ScheduleRel("load/gal_con.lvl");
         }
 
         RegisteredAddons.Clear();
@@ -206,7 +227,7 @@ public class PhxGameRuntime : MonoBehaviour
 
         Env?.Destroy();
         Env = PhxRuntimeEnvironment.Create(envPath, StdLVLPC);
-        Env.ScheduleLVLRel("load/common.lvl");
+        Env.ScheduleRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
         Env.OnLoaded += OnEnvLoaded;
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
@@ -241,7 +262,7 @@ public class PhxGameRuntime : MonoBehaviour
 
             Env?.Destroy();
             Env = PhxRuntimeEnvironment.Create(StdLVLPC);
-            Env.ScheduleLVLRel("load/common.lvl");
+            Env.ScheduleRel("load/common.lvl");
 
             Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
             Env.OnLoaded += OnEnvLoaded;
@@ -322,11 +343,16 @@ public class PhxGameRuntime : MonoBehaviour
 
     void Init()
     {
+        Debug.Log("PhxGameRuntime Init");
+        Debug.Assert(Instance == null);
+
         Instance = this;
         WorldLoader.UseHDRP = false;
         MaterialLoader.UseHDRP = false;
 
+        AddonPath = GamePath / "GameData/addon";
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
+
         if (GamePath.IsFile()              || 
             !GamePath.Exists()             || 
             !CheckExistence("common.lvl")  ||
@@ -365,7 +391,7 @@ public class PhxGameRuntime : MonoBehaviour
             PhxPath addme = addon / "addme.script";
             if (addme.Exists() && addme.IsFile())
             {
-                Env.ScheduleLVLAbs(addme);
+                Env.ScheduleAbs(addme);
             }
         }
     }
@@ -383,14 +409,14 @@ public class PhxGameRuntime : MonoBehaviour
             CurrentLS.SetLoadImage(TextureLoader.Instance.ImportUITexture("gal_con"));
         }
 
-        foreach (var lvl in Env.LVLs)
+        foreach (var lvl in Env.Loaded)
         {
-            if (lvl.RelativePath.GetLeaf() == "addme.script")
+            if (lvl.DisplayPath.GetLeaf() == "addme.script")
             {
                 var addme = lvl.Level.Get<LibSWBF2.Wrappers.Script>("addme");
                 if (addme == null)
                 {
-                    Debug.LogWarningFormat("Seems like '{0}' has no 'addme' script chunk!", lvl.RelativePath);
+                    Debug.LogWarningFormat("Seems like '{0}' has no 'addme' script chunk!", lvl.DisplayPath);
                     continue;
                 }
                 Env.Execute(addme);
@@ -436,7 +462,8 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(Camera               != null);
         Debug.Assert(GroundPhyMat         != null);
         Debug.Assert(HUDPrefab            != null);
-        Debug.Assert(ProjPrefab           != null);
+        Debug.Assert(BoltPrefab           != null);
+        Debug.Assert(BeamPrefab           != null);
         Debug.Assert(SparkPrefab          != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
