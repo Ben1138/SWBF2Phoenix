@@ -15,22 +15,44 @@ public class PhxCharacterSelect : PhxMenuInterface
     public PhxCharacterItem ItemPrefab;
     public RectTransform ListContents;
     public Button BtnSpawn;
+    public Button BtnSwitchTeam;
     public Button BtnNextCamera;
 
     [Header("Settings")]
     public float ItemSpace = 5.0f;
     public float MaxItemHeight = 200f;
 
-    List<PhxCharacterItem> Items   = new List<PhxCharacterItem>();
+    List<PhxCharacterItem> Items = new List<PhxCharacterItem>();
     PhxClass CurrentSelection = null;
     List<IPhxControlableInstance> UnitPreviews = new List<IPhxControlableInstance>();
     PhxCommandpost SpawnCP;
 
     static int nameCounter = 0;
 
+    public void UpdateCharacterList()
+    {
+        Clear();
+
+        var team = MTC.Teams[MTC.Player.Team - 1];
+        foreach (var cl in team.UnitClasses)
+        {
+            Add(cl.Unit);
+        }
+        //charSel.Add(team.HeroClass);
+    }
 
     public override void Clear()
     {
+        CurrentSelection = null;
+
+        // Destroy UI items
+        foreach (var item in Items)
+        {
+            Destroy(item.gameObject);
+        }
+        Items.Clear();
+
+        // Destroy unit preview instances
         for (int i = 0; i < UnitPreviews.Count; ++i)
         {
             RTS.DestroyInstance(UnitPreviews[i].GetInstance());
@@ -141,6 +163,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         Debug.Assert(ItemPrefab    != null);
         Debug.Assert(ListContents  != null);
         Debug.Assert(BtnSpawn      != null);
+        Debug.Assert(BtnSwitchTeam != null);
         Debug.Assert(BtnNextCamera != null);
         Debug.Assert(Map           != null);
 
@@ -150,6 +173,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         GAME.CharSelectPPVolume.gameObject.SetActive(true);
 
         BtnSpawn.onClick.AddListener(SpawnClicked);
+        BtnSwitchTeam.onClick.AddListener(SwitchTeamClicked);
         BtnNextCamera.onClick.AddListener(NextCameraClicked);
         Map.OnCPSelect += OnCPSelected;
 
@@ -162,6 +186,8 @@ public class PhxCharacterSelect : PhxMenuInterface
                 break;
             }
         }
+
+        UpdateCharacterList();
     }
 
     // Update is called once per frame
@@ -178,9 +204,21 @@ public class PhxCharacterSelect : PhxMenuInterface
     
     void SpawnClicked()
     {
-        if (SpawnCP != null)
+        if (CurrentSelection != null && SpawnCP != null)
         {
             MTC.SpawnPlayer(CurrentSelection, SpawnCP);
+        }
+    }
+
+    void SwitchTeamClicked()
+    {
+        MTC.Player.Team = MTC.Player.Team == 1 ? 2 : 1;
+        UpdateCharacterList();
+
+        PhxCommandpost[] cps = RTS.GetCommandPosts();
+        for (int i = 0; i < cps.Length; ++i)
+        {
+            cps[i].UpdateColor();
         }
     }
 

@@ -58,6 +58,7 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
             var Body = gameObject.AddComponent<Rigidbody>();
             Body.isKinematic = true;
 
+            TriggerNode.gameObject.layer = LayerMask.NameToLayer("BuildingSoldier");
             SphereCollider TriggerCollider = TriggerNode.gameObject.AddComponent<SphereCollider>();
             TriggerCollider.radius = TriggerRadius;
             TriggerCollider.isTrigger = true;
@@ -65,6 +66,7 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
 
         Player = PhxAnimationLoader.CreatePlayer(transform, C.AnimationName.Get(), C.Animation.Get(), false);
         Player.SetPlaybackSpeed(1f);
+        Player.SetLooping(false);
     }
 
 
@@ -88,12 +90,14 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
 
     void OnTriggerEnter(Collider Object)
     {
-        if (Object.gameObject.GetComponent<PhxSoldier>() != null)
+        if (Object.gameObject.layer != LayerMask.NameToLayer("SoldierAll"))
+        {
+            return;
+        }
+        else 
         {
             NumColliders++;
         }
-
-        //Debug.Log("Door entered!");
 
         Player.SetPlaybackSpeed(1f); 
         if (NumColliders > 0 && !Player.IsPlaying())
@@ -105,7 +109,11 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
 
     void OnTriggerExit(Collider Object)
     {
-        if (Object.gameObject.GetComponent<PhxSoldier>() != null)
+        if (Object.gameObject.layer != LayerMask.NameToLayer("SoldierAll"))
+        {
+            return;
+        }
+        else
         {
             NumColliders--;
         }

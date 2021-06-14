@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using UnityEngine;
 
 /// <summary>
@@ -32,7 +34,7 @@ public class PhxPath
     public static PhxPath operator /(PhxPath lhs, PhxPath rhs) => Concat(lhs, rhs);
     public static PhxPath operator -(PhxPath lhs, PhxPath rhs) => Remove(lhs, rhs);
 
-    public bool Exists() => System.IO.File.Exists(P) || System.IO.Directory.Exists(P);
+    public bool Exists() => File.Exists(P) || Directory.Exists(P);
 
     public override string ToString()
     {
@@ -67,12 +69,24 @@ public class PhxPath
 
     public bool IsFile()
     {
-        System.IO.FileAttributes attr = System.IO.File.GetAttributes(P);
-        return attr != System.IO.FileAttributes.Directory;
+        try
+        {
+            FileAttributes attr = File.GetAttributes(P);
+            return attr != FileAttributes.Directory;
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    public bool HasExtension(string extension)
+    {
+        return IsFile() && P.EndsWith(extension, StringComparison.InvariantCultureIgnoreCase);
     }
 
     // nodeCount: how many nodes to return, starting counting from leaf node
-    public PhxPath GetLeafs(int nodeCount)
+    public PhxPath GetLeaf(int nodeCount)
     {
         Debug.Assert(nodeCount > 0);
         string[] nodes = P.Split('/');
@@ -91,7 +105,12 @@ public class PhxPath
 
     public PhxPath GetLeaf()
     {
-        return GetLeafs(1);
+        return GetLeaf(1);
+    }
+
+    public bool Contains(PhxPath p)
+    {
+        return P.IndexOf(p.P, StringComparison.InvariantCultureIgnoreCase) != -1;
     }
 
     public override int GetHashCode()

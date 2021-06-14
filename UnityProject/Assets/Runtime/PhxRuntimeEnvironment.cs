@@ -9,7 +9,11 @@ using LibSWBF2.Wrappers;
 /*
  * Phases of PhxRuntimeEnvironment:
  * 
- * 1. Init                          Environment is created, with base LVLs scheduled and ready to load
+ * 1. Init                          Environment is created, with base LVLs scheduled and ready to load. Base LVLs are:
+ *                                      - core.lvl
+ *                                      - shell.lvl
+ *                                      - common.lvl
+ *                                      - mission.lvl
  * 2. Loading Base                  Loading scheduled base LVLs
  * 3. Executing Main                There's always a LUA script responsible for environment setup that will be executed in this phase.
  *                                  Usually, there's an optional main function within the main script that will called aswell, if specified.
@@ -23,19 +27,17 @@ using LibSWBF2.Wrappers;
 
 public class PhxRuntimeEnvironment
 {
-    public class LoadST
+    public struct LVL
     {
         public SWBF2Handle Handle;
-        public PhxPath PathPartial;
-        public bool bIsFallback;
+        public Level Level;
         public bool bIsSoundBank;
+
+        // For Debug
+        public PhxPath DisplayPath;
+        public bool bIsAddon;
     }
-    public class LevelST
-    {
-        public LibSWBF2.Wrappers.Level Level;
-        public PhxPath RelativePath;
-        public bool bIsFallback;
-    }
+
     public enum EnvStage
     {
         Init,        
@@ -47,8 +49,8 @@ public class PhxRuntimeEnvironment
     }
 
 
-    public List<LevelST> LVLs = new List<LevelST>();
-    public List<LoadST>  LoadingLVLs = new List<LoadST>();
+    public List<LVL> Loading = new List<LVL>();
+    public List<LVL> Loaded  = new List<LVL>();
 
     public bool              IsLoaded => Stage == EnvStage.Loaded;
     public Action<Texture2D> OnLoadscreenLoaded;
@@ -66,8 +68,8 @@ public class PhxRuntimeEnvironment
     SWBF2Handle LoadscreenHandle;
 
     Container EnvCon;
-    Level     WorldLevel;     // points to level inside 'LVLs'
-    Level     LoadscreenLVL;  // points to level inside 'LVLs'
+    Level     WorldLevel;     // points to level inside 'Loaded'
+    Level     LoadscreenLVL;  // points to level inside 'Loaded'
 
     string InitScriptName;
     string InitFunctionName;
@@ -118,6 +120,7 @@ public class PhxRuntimeEnvironment
         EnvCon?.Delete();
         EnvCon = null;
         PathToHandle.Clear();
+        Debug.Log("PhxRuntimeEnvironment destroyed");
     }
 
     public PhxRuntimeScene GetScene()
@@ -153,11 +156,14 @@ public class PhxRuntimeEnvironment
         PhxLuaEvents.Clear();
 
         PhxRuntimeEnvironment rt = new PhxRuntimeEnvironment(envPath, fallbackPath);
-        rt.ScheduleLVLRel("core.lvl");
-        rt.ScheduleLVLRel("shell.lvl");
-        rt.ScheduleLVLRel("common.lvl");
-        rt.ScheduleLVLRel("mission.lvl");
-        rt.ScheduleSoundBankRel("sound/common.bnk");
+        rt.ScheduleRel("core.lvl");
+        rt.ScheduleRel("shell.lvl");
+        rt.ScheduleRel("common.lvl");
+        rt.ScheduleRel("mission.lvl");
+        rt.ScheduleRel("sound/common.bnk");
+
+        // TODO: Remove
+        rt.ScheduleAbs(rt.FallbackPath / "ingame.lvl");
 
         rt.RTScene = new PhxRuntimeScene(rt, rt.EnvCon);
         rt.Match = initMatch ? new PhxRuntimeMatch() : null;
@@ -226,7 +232,7 @@ public class PhxRuntimeEnvironment
         InitFunctionName = initFn;
         PostLoadFunctionName = postLoadFn;
 
-        LoadscreenHandle = ScheduleLVLRel(GetLoadscreenPath());
+        LoadscreenHandle = ScheduleRel(GetLoadscreenPath());
         EnvCon.LoadLevels();
 
         Stage = EnvStage.LoadingBase;
@@ -245,115 +251,31 @@ public class PhxRuntimeEnvironment
         return WorldLevel;
     }
 
-    public SWBF2Handle ScheduleLVLAbs(PhxPath absoluteLVLPath, string[] subLVLs = null, bool bForceLocal = false)
+    public SWBF2Handle ScheduleAbs(PhxPath absPath, string[] subLVLs = null)
     {
-        Debug.Assert(CanSchedule);
-
-        PhxPath leafPath = absoluteLVLPath.GetLeafs(2);
-        if (PathToHandle.TryGetValue(leafPath, out SWBF2Handle handle))
+        if (!Schedule(absPath, out SWBF2Handle handle, subLVLs))
         {
-            return handle;
+            Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", absPath);
         }
-
-        if (absoluteLVLPath.Exists() && absoluteLVLPath.IsFile())
-        {
-            handle = EnvCon.AddLevel(absoluteLVLPath, subLVLs);
-            LoadingLVLs.Add(new LoadST
-            {
-                Handle = handle,
-                PathPartial = leafPath,
-                bIsFallback = false,
-                bIsSoundBank = false
-            });
-            return handle;
-        }
-
-        Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", absoluteLVLPath);
-        return new SWBF2Handle(ushort.MaxValue);
+        return handle;
     }
 
-    // relativeLVLPath: relative to Environment!
-    public SWBF2Handle ScheduleLVLRel(PhxPath relativeLVLPath, string[] subLVLs = null, bool bForceLocal = false)
+    public SWBF2Handle ScheduleRel(PhxPath relPath, string[] subLVLs = null, bool bNoFallback = false)
     {
-        Debug.Assert(CanSchedule);
-
-        PhxPath leafPath = relativeLVLPath.GetLeafs(2);
-        if (PathToHandle.TryGetValue(leafPath, out SWBF2Handle handle))
+        SWBF2Handle handle;
+        if (Schedule(Path / relPath, out handle, subLVLs) || bNoFallback)
         {
-            return handle;
-        }
-
-        PhxPath envLVLPath = Path / relativeLVLPath;
-        PhxPath fallbackLVLPath = FallbackPath / relativeLVLPath;
-        if (envLVLPath.Exists() && envLVLPath.IsFile())
-        {
-            handle = EnvCon.AddLevel(envLVLPath, subLVLs);
-            LoadingLVLs.Add(new LoadST
-            { 
-                Handle = handle,
-                PathPartial = leafPath,
-                bIsFallback = false,
-                bIsSoundBank = false
-            });
-            return handle;
-        }
-        if (fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
-        {
-            handle = EnvCon.AddLevel(fallbackLVLPath, subLVLs);
-            LoadingLVLs.Add(new LoadST
+            if (!handle.IsValid())
             {
-                Handle = handle,
-                PathPartial = leafPath,
-                bIsFallback = true,
-                bIsSoundBank = false
-            });
+                Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relPath);
+            }
             return handle;
         }
-
-        Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relativeLVLPath);
-        return new SWBF2Handle(ushort.MaxValue);
-    }
-
-    // relativeLVLPath: relative to Environment!
-    public SWBF2Handle ScheduleSoundBankRel(PhxPath relativeLVLPath)
-    {
-        Debug.Assert(CanSchedule);
-
-        PhxPath leafPath = relativeLVLPath.GetLeafs(2);
-        if (PathToHandle.TryGetValue(leafPath, out SWBF2Handle handle))
+        else if (!Schedule(FallbackPath / relPath, out handle, subLVLs))
         {
-            return handle;
+            Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relPath);
         }
-
-        PhxPath envLVLPath = Path / relativeLVLPath;
-        PhxPath fallbackLVLPath = FallbackPath / relativeLVLPath;
-        if (envLVLPath.Exists() && envLVLPath.IsFile())
-        {
-            handle = EnvCon.AddSoundBank(envLVLPath);
-            LoadingLVLs.Add(new LoadST
-            {
-                Handle = handle,
-                PathPartial = leafPath,
-                bIsFallback = false,
-                bIsSoundBank = true
-            });
-            return handle;
-        }
-        if (fallbackLVLPath.Exists() && fallbackLVLPath.IsFile())
-        {
-            handle = EnvCon.AddSoundBank(fallbackLVLPath);
-            LoadingLVLs.Add(new LoadST
-            {
-                Handle = handle,
-                PathPartial = leafPath,
-                bIsFallback = true,
-                bIsSoundBank = true
-            });
-            return handle;
-        }
-
-        Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relativeLVLPath);
-        return new SWBF2Handle(ushort.MaxValue);
+        return handle;
     }
 
     public float GetProgress(SWBF2Handle handle)
@@ -363,32 +285,18 @@ public class PhxRuntimeEnvironment
 
     public void Tick(float deltaTime)
     {
-        for (int i = 0; i < LoadingLVLs.Count; ++i)
+        for (int i = 0; i < Loading.Count; ++i)
         {
-            if (LoadingLVLs[i].bIsSoundBank)
+            ELoadStatus status = EnvCon.GetStatus(Loading[i].Handle);
+            if (status == ELoadStatus.Loaded)
             {
-                if (EnvCon.GetStatus(LoadingLVLs[i].Handle) == ELoadStatus.Loaded)
+                LVL scheduled = Loading[i];
+                if (!scheduled.bIsSoundBank)
                 {
-                    LoadingLVLs.RemoveAt(i);
-                }
-                else if (EnvCon.GetStatus(LoadingLVLs[i].Handle) == ELoadStatus.Failed)
-                {
-                    Debug.LogErrorFormat("Loading '{0}' failed!", LoadingLVLs[i].PathPartial);
-                    LoadingLVLs.RemoveAt(i);
-                }
-            }
-            else
-            {
-                // will return a Level instance ONLY IF loaded
-                var lvl = EnvCon.GetLevel(LoadingLVLs[i].Handle);
-                if (lvl != null)
-                {
-                    LVLs.Add(new LevelST
-                    {
-                        Level = lvl,
-                        RelativePath = LoadingLVLs[i].PathPartial,
-                        bIsFallback = LoadingLVLs[i].bIsFallback
-                    });
+                    var lvl = EnvCon.GetLevel(Loading[i].Handle);
+                    Debug.Assert(lvl != null);
+                    scheduled.Level = lvl;
+
                     if (lvl.IsWorldLevel)
                     {
                         if (WorldLevel != null)
@@ -402,12 +310,20 @@ public class PhxRuntimeEnvironment
                     }
 
                     // grab lvl localizations, if any
-                    Localizations.AddRange(lvl.Get<LibSWBF2.Wrappers.Localization>());
-
-                    LoadingLVLs.RemoveAt(i);
-                    break; // do not further iterate altered list
+                    Localizations.AddRange(lvl.Get<Localization>());
                 }
+
+                Loaded.Add(scheduled);
+                Loading.RemoveAt(i);
+                break; // do not further iterate altered list
             }
+            else if (status == ELoadStatus.Failed)
+            {
+                Debug.LogErrorFormat("Loading '{0}' failed!", Loading[i].DisplayPath);
+
+                Loading.RemoveAt(i);
+                break; // do not further iterate altered list
+            }    
         }
 
         if (Stage == EnvStage.LoadingBase)
@@ -423,14 +339,14 @@ public class PhxRuntimeEnvironment
                 }
             }
 
-            if (EnvCon.IsDone() && LoadingLVLs.Count == 0)
+            if (EnvCon.IsDone() && Loading.Count == 0)
             {
                 Stage = EnvStage.ExecuteMain;
                 RunMain();
             }
         }
 
-        if (Stage == EnvStage.LoadingWorld && EnvCon.IsDone() && LoadingLVLs.Count == 0)
+        if (Stage == EnvStage.LoadingWorld && EnvCon.IsDone() && Loading.Count == 0)
         {
             for (int i = 0; i < Localizations.Count; ++i)
             {
@@ -500,6 +416,43 @@ public class PhxRuntimeEnvironment
         object[] res = LuaRT.CallLuaFunction("missionlist_GetLocalizedMapName", 2, false, true, mapluafile);
         string mapName = res[0] as string;
         return mapName;
+    }
+
+    bool Schedule(PhxPath absPath, out SWBF2Handle handle, string[] subLVLs = null)
+    {
+        Debug.Assert(CanSchedule);
+
+        if (PathToHandle.TryGetValue(absPath, out handle))
+        {
+            return true;
+        }
+
+        if (absPath.Exists() && absPath.IsFile())
+        {
+            bool bSoundBank = absPath.HasExtension(".bnk");
+            if (bSoundBank)
+            {
+                handle = EnvCon.AddSoundBank(absPath);
+            }
+            else
+            {
+                handle = EnvCon.AddLevel(absPath, subLVLs);
+            }
+            Loading.Add(new LVL
+            {
+                Handle = handle,
+                bIsSoundBank = absPath.HasExtension(".bnk"),
+
+                DisplayPath = absPath.GetLeaf(2),
+                bIsAddon = absPath.Contains("/addon/")
+            });
+
+            PathToHandle.Add(absPath, handle);
+            return true;
+        }
+
+        handle = new SWBF2Handle(ushort.MaxValue);
+        return false;
     }
 
     PhxPath GetLoadscreenPath()

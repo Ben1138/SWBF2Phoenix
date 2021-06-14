@@ -160,75 +160,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         }
     }
 
-    void AddToCapture(IPhxControlableInstance other)
-    {
-        PhxPawnController controller = other.GetController();
-        if (controller != null)
-        {
-            CaptureControllers.Add(controller);
-            controller.CapturePost = this;
-            RefreshCapture();
-        }
-    }
-
-    void RefreshCapture()
-    {
-        CaptureTeam = 0;
-        CaptureDisputed = false;
-        ushort[] teamCounts = new ushort[255];
-        
-        foreach (PhxPawnController controller in CaptureControllers)
-        {
-            if (++teamCounts[controller.Team] > teamCounts[CaptureTeam])
-            {
-                CaptureTeam = controller.Team;
-            }
-
-            if (CaptureTeam > 0)
-            {
-                CaptureDisputed = CaptureDisputed || 
-                    (controller.Team != CaptureTeam && !Match.IsFriend(controller.Team, CaptureTeam));
-            }
-        }
-
-        CaptureCount = teamCounts[CaptureTeam];
-    }
-
-    void ApplyTeam(int oldTeam)
-    {
-        if (Team == oldTeam)
-        {
-            // nothing to do
-            return;
-        }
-
-        CaptureTimer = 0.0f;
-
-        AudioCapture.clip = Team == 0 ? C.ChargeSound.Get<AudioClip>(0) : C.DischargeSound.Get<AudioClip>(0);
-        AudioCapture.Play();
-
-        AudioAmbient.loop = true;
-        AudioAction.clip = Team == 0 ? C.LostSound.Get<AudioClip>(0) : C.CapturedSound.Get<AudioClip>(0);
-        AudioAction.Play();
-
-        HoloPresence = 0.0f;
-        HoloPresenceDest = 1.0f;
-
-        if (Team == 0)
-        {
-            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishNeutralize, Scene.GetInstanceIndex(this));
-        }
-        else
-        {
-            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCapture, Scene.GetInstanceIndex(this));
-            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCaptureName, name, Scene.GetInstanceIndex(this));
-        }
-
-        RefreshCapture();
-        UpdateColor();
-    }
-
-    void UpdateColor()
+    public void UpdateColor()
     {
         HoloColor = PhxGameRuntime.GetMatch().GetTeamColor(Team);
         HoloRay?.material.SetColor("_EmissiveColor", HoloColor);
@@ -263,7 +195,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
                     progress = CaptureTimer / C.CaptureTime;
                     if (CaptureTimer >= C.CaptureTime)
                     {
-                        Team.Set(1);
+                        Team.Set(CaptureTeam);
                         progress = 0.0f;
                     }
 
@@ -327,5 +259,74 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
     public override void TickPhysics(float deltaTime)
     {
 
+    }
+
+    void AddToCapture(IPhxControlableInstance other)
+    {
+        PhxPawnController controller = other.GetController();
+        if (controller != null)
+        {
+            CaptureControllers.Add(controller);
+            controller.CapturePost = this;
+            RefreshCapture();
+        }
+    }
+
+    void RefreshCapture()
+    {
+        CaptureTeam = 0;
+        CaptureDisputed = false;
+        ushort[] teamCounts = new ushort[255];
+
+        foreach (PhxPawnController controller in CaptureControllers)
+        {
+            if (++teamCounts[controller.Team] > teamCounts[CaptureTeam])
+            {
+                CaptureTeam = controller.Team;
+            }
+
+            if (CaptureTeam > 0)
+            {
+                CaptureDisputed = CaptureDisputed ||
+                    (controller.Team != CaptureTeam && !Match.IsFriend(controller.Team, CaptureTeam));
+            }
+        }
+
+        CaptureCount = teamCounts[CaptureTeam];
+    }
+
+    void ApplyTeam(int oldTeam)
+    {
+        if (Team == oldTeam)
+        {
+            // nothing to do
+            return;
+        }
+
+        CaptureTimer = 0.0f;
+
+        AudioCapture.clip = Team == 0 ? C.ChargeSound.Get<AudioClip>(0) : C.DischargeSound.Get<AudioClip>(0);
+        AudioCapture.Play();
+
+        AudioAmbient.loop = true;
+        AudioAction.clip = Team == 0 ? C.LostSound.Get<AudioClip>(0) : C.CapturedSound.Get<AudioClip>(0);
+        AudioAction.Play();
+
+        HoloPresence = 0.0f;
+        HoloPresenceDest = 1.0f;
+
+        if (Team == 0)
+        {
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishNeutralize, Scene.GetInstanceIndex(this));
+        }
+        else
+        {
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCapture, Scene.GetInstanceIndex(this));
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCaptureName, name, Scene.GetInstanceIndex(this));
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCaptureTeam, Team.Get(), Scene.GetInstanceIndex(this));
+        }
+
+        RefreshCapture();
+        UpdateColor();
     }
 }

@@ -10,13 +10,13 @@ public class PhxArmedBuilding : PhxVehicle
 {
     public class ClassProperties : PhxVehicleProperties{}
 
-    public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
 
     PhxVehicleTurret TurretSection;
 
     public override void Init()
     {
+        base.Init();
         SetupEnterTrigger();
         
         var EC = C.EntityClass;
@@ -27,9 +27,11 @@ public class PhxArmedBuilding : PhxVehicle
         int i = 0;
         while (i < properties.Length)
         {
-            if (properties[i] == HashUtils.GetFNV("BUILDINGSECTION") && values[i] == "TURRET1")
+            if (properties[i] == HashUtils.GetFNV("BUILDINGSECTION") && 
+                values[i].Equals("TURRET1", StringComparison.OrdinalIgnoreCase))
             {
-                TurretSection = new PhxVehicleTurret(properties, values, ref i, this, 0);
+                TurretSection = new PhxVehicleTurret(this, 0);
+                TurretSection.InitManual(EC, i, "BUILDINGSECTION", "TURRET1");
                 Sections.Add(TurretSection);
             }
 

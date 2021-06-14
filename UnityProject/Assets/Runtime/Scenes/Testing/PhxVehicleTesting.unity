@@ -166,7 +166,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cecdb84110c7c41b0a9a8c3a36953fdb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  VehicleClass: rep_hover_barcspeeder
 --- !u!1 &484971822
 GameObject:
   m_ObjectHideFlags: 0
@@ -271,7 +270,7 @@ GameObject:
   - component: {fileID: 1565331439}
   - component: {fileID: 1565331438}
   - component: {fileID: 1565331437}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Terrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
