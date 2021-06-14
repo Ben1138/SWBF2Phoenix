@@ -93,4 +93,19 @@ public class PhxPath
     {
         return GetLeafs(1);
     }
+
+    public override int GetHashCode()
+    {
+        return P.GetHashCode();
+    }
+
+    public override bool Equals(object obj)
+    {
+        PhxPath other = obj as PhxPath;
+        if (other == null)
+        {
+            return false;
+        }
+        return other.GetHashCode() == GetHashCode();
+    }
 }

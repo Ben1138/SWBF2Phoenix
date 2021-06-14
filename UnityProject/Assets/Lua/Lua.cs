@@ -39,8 +39,9 @@ public sealed class Lua
 
 	public int UsedCallbackCount { get; private set; }
 
-	readonly lua_State_ptr L;
+	lua_State_ptr L;
 	static Dictionary<lua_State_ptr, WeakReference<Lua>> LuaInstances = new Dictionary<lua_State_ptr, WeakReference<Lua>>();
+
 
 	// This is an utterly disgusting solution...
 	// Since IL2CPP does NOT support marshalling non-static functions, we cannot create lambda callbacks 
@@ -52,12 +53,23 @@ public sealed class Lua
 	// As a stupid workaround, we provide an arbitrary pool of predefined static functions, with every one 
 	// of them only executing the associated function provided in this map below.
 	static CFunction[] CallbackMap = new CFunction[200];
-	HashSet<int> UsedCallbackIndices = new HashSet<int>();
+
 
 	public Lua()
 	{
 		L = LuaWrapper.lua_open();
 		LuaInstances.Add(L, new WeakReference<Lua>(this));
+	}
+
+	public void Close()
+    {
+		if (L != lua_State_ptr.Zero)
+        {
+			LuaWrapper.lua_close(L);
+			LuaInstances.Remove(L);
+			L = lua_State_ptr.Zero;
+			Array.Clear(CallbackMap, 0, CallbackMap.Length);
+        }
 	}
 
 	Lua(lua_State_ptr l)
@@ -68,13 +80,7 @@ public sealed class Lua
 
 	~Lua()
 	{
-		LuaWrapper.lua_close(L);
-		LuaInstances.Remove(L);
-
-		foreach (int idx in UsedCallbackIndices)
-        {
-			CallbackMap[idx] = null;
-		}
+		Close();
 	}
 
 	static Lua GetLuaInstance(lua_State_ptr l)
@@ -105,7 +111,6 @@ public sealed class Lua
 			return null;
 		}
 		UsedCallbackCount++;
-		UsedCallbackIndices.Add(i);
 		CallbackMap[i] = fn;
 		return ProvidedCallbacks[i];
 	}

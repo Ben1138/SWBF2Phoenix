@@ -151,7 +151,7 @@ public class PhxGameRuntime : MonoBehaviour
             UnitySceneName = null;
         }
 
-        Env?.ClearScene();
+        Env?.Delete();
         Env = PhxRuntimeEnvironment.Create(StdLVLPC);
 
         if (!bInit)
@@ -186,7 +186,7 @@ public class PhxGameRuntime : MonoBehaviour
             UnitySceneName = null;
         }
 
-        Env?.ClearScene();
+        Env?.Delete();
         Env = PhxRuntimeEnvironment.Create(envPath, StdLVLPC);
         Env.ScheduleLVLRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
@@ -222,7 +222,7 @@ public class PhxGameRuntime : MonoBehaviour
                 return;
             }
 
-            Env?.ClearScene();
+            Env?.Delete();
             Env = PhxRuntimeEnvironment.Create(StdLVLPC);
             Env.ScheduleLVLRel("load/common.lvl");
             Env.ScheduleLVLRel("ingame.lvl");
