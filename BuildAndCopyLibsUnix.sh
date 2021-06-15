@@ -1,4 +1,8 @@
 # Build cpp libs
+
+repopath=$(pwd)
+
+
 cd LibSWBF2/
 rm -rf build
 mkdir build
@@ -12,24 +16,36 @@ xbuild LibSWBF2.NET.csproj
 
 # Build Lua
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    cd ../../lua5.0-swbf2-x64/src
+	echo "Building lua for Linux"
+    cd "${repopath}/lua5.0-swbf2-x64/src"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    cd ../../lua5.0-swbf2-x64/mak.macosx
+	echo "Building lua for Mac"
+    cd "${repopath}/lua5.0-swbf2-x64/mak.macosx/"
+else
+	echo "ERROR: Platform undetected"
+	exit
+fi
+
 make -f lua50_dll.make
 
 
-cd ../..
+cd "${repopath}"
 
 
 # Copy built libs
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+	echo "Copy Linux libs"
     cp lua5.0-swbf2-x64/bin/liblua50.so UnityProject/Assets/Lib/liblua50-swbf2-x64.so
 	cp LibSWBF2/build/LibSWBF2/libLibSWBF2.so UnityProject/Assets/Lib/    
 elif [[ "$OSTYPE" == "darwin"* ]]; then
+	echo "Copying Mac libs"
 	cp lua5.0-swbf2-x64/bin/liblua50.dylib UnityProject/Assets/Lib/liblua50-swbf2-x64.dylib
 	cp LibSWBF2/build/LibSWBF2/libLibSWBF2.dylib UnityProject/Assets/Lib/
+else
+	echo "ERROR: Platform undetected"
+	exit
+fi
 
 cp LibSWBF2/LibSWBF2.NET/bin/Debug/LibSWBF2.NET.dll UnityProject/Assets/Lib/
 
  
-
