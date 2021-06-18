@@ -38,6 +38,8 @@ public class PhxRuntimeScene
     int CurrCamIdx;
 
     PhxProjectiles Projectiles = new PhxProjectiles();
+    public readonly PhxEffectsManager EffectsManager = new PhxEffectsManager();
+
     CraMain Cra;
 
     int InstanceCounter;
