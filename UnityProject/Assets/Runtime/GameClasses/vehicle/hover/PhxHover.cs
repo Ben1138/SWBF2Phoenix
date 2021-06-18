@@ -172,9 +172,25 @@ public class PhxHover : PhxVehicle
 
 
 
+    List<PhxDamageEffect> DamageEffects;
+
+
+
+
+    HashSet<Collider> ObjectColliders;
+
+
+
+    // for debugging
+    bool DBG = false;
+
+    Vector3 startPos;
+
     public override void Init()
     {
         base.Init();
+
+        CurHealth.Set(C.MaxHealth.Get());
 
         H = C as PhxHover.ClassProperties;
         if (H == null) return;
@@ -367,6 +383,38 @@ public class PhxHover : PhxVehicle
                 }
             }
         }
+
+
+        DamageEffects = new List<PhxDamageEffect>();
+        PhxDamageEffect CurrDamageEffect = null;
+
+        /*
+        i = 0;
+        while (i < properties.Length)
+        {
+            if (properties[i] == HashUtils.GetFNV("DamageStartPercent"))
+            {
+            	CurrDamageEffect = new PhxDamageEffect();
+            	DamageEffects.Add(CurrDamageEffect);
+
+            	CurrDamageEffect.DamageStartPercent = float.Parse(values[i]) / 100f;
+            }
+            else if (properties[i] == HashUtils.GetFNV("DamageStopPercent"))
+            {
+            	CurrDamageEffect.DamageStopPercent = float.Parse(values[i]) / 100f;
+            }
+            else if (properties[i] == HashUtils.GetFNV("DamageEffect"))
+            {
+            	CurrDamageEffect.Effect = SCENE.EffectsManager.LendEffect(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("DamageAttachPoint"))
+            {
+            	CurrDamageEffect.DamageAttachPoint = UnityUtils.FindChildTransform(transform, values[i]);
+            }
+
+        	i++;
+        }
+        */
     }
 
 
@@ -421,53 +469,54 @@ public class PhxHover : PhxVehicle
             if (Vector3.Magnitude(Input) < .001f)
             {
                 Poser.SetState(PhxNinePoseState.Idle, blend);
-                return;
             }
+            else 
+            {
+	            if (Input.x > .01f)
+	            {
+	                Poser.SetState(PhxNinePoseState.StrafeRight, blend);           
+	            }
 
-            if (Input.x > .01f)
-            {
-                Poser.SetState(PhxNinePoseState.StrafeRight, blend);           
-            }
+	            if (Input.x < -.01f)
+	            {
+	                Poser.SetState(PhxNinePoseState.StrafeLeft, blend);            
+	            }
 
-            if (Input.x < -.01f)
-            {
-                Poser.SetState(PhxNinePoseState.StrafeLeft, blend);            
-            }
-
-            if (Input.y < 0f) 
-            {
-                if (Input.z > .01f)
-                {
-                    Poser.SetState(PhxNinePoseState.BackwardsTurnLeft, blend);            
-                }
-                else if (Input.z < -.01f)
-                {
-                    Poser.SetState(PhxNinePoseState.BackwardsTurnRight, blend);            
-                }
-                else
-                {
-                    Poser.SetState(PhxNinePoseState.Backwards, blend);            
-                }
-            }
-            else
-            {
-                if (Input.z > .01f)
-                {
-                    Poser.SetState(PhxNinePoseState.ForwardTurnLeft, blend);            
-                }
-                else if (Input.z < -.01f)
-                {
-                    Poser.SetState(PhxNinePoseState.ForwardTurnRight, blend);            
-                }
-                else
-                {
-                    Poser.SetState(PhxNinePoseState.Forward, blend);            
-                }
-            }
+	            if (Input.y < 0f) 
+	            {
+	                if (Input.z > .01f)
+	                {
+	                    Poser.SetState(PhxNinePoseState.BackwardsTurnLeft, blend);            
+	                }
+	                else if (Input.z < -.01f)
+	                {
+	                    Poser.SetState(PhxNinePoseState.BackwardsTurnRight, blend);            
+	                }
+	                else
+	                {
+	                    Poser.SetState(PhxNinePoseState.Backwards, blend);            
+	                }
+	            }
+	            else
+	            {
+	                if (Input.z > .01f)
+	                {
+	                    Poser.SetState(PhxNinePoseState.ForwardTurnLeft, blend);            
+	                }
+	                else if (Input.z < -.01f)
+	                {
+	                    Poser.SetState(PhxNinePoseState.ForwardTurnRight, blend);            
+	                }
+	                else
+	                {
+	                    Poser.SetState(PhxNinePoseState.Forward, blend);            
+	                }
+	            }
+        	}
         }
 
 
-        /*
+       /*
         Wheels
         */
 
@@ -478,8 +527,39 @@ public class PhxHover : PhxVehicle
                 Wheel.Update(deltaTime, LocalVel.z, LocalAngVel.z);
             }
         }
-    }
 
+
+        // Update damage effects
+        //CurHealth.Set(Mathf.Clamp(CurHealth.Get() - ((deltaTime / 15f) * C.MaxHealth.Get()), 1f, C.MaxHealth.Get()));
+
+        float HealthPercent = CurHealth.Get() / C.MaxHealth.Get();
+        
+
+        foreach (PhxDamageEffect DamageEffect in DamageEffects)
+        {
+        	if (HealthPercent < DamageEffect.DamageStartPercent && HealthPercent > DamageEffect.DamageStopPercent)
+        	{
+        		if (!DamageEffect.IsOn && DamageEffect.Effect != null)
+        		{
+        			Debug.LogFormat("Playing effect: {0} at node: {1}...", DamageEffect.Effect.EffectName, DamageEffect.DamageAttachPoint.name);
+        			DamageEffect.IsOn = true;
+        			DamageEffect.Effect.SetParent(DamageEffect.DamageAttachPoint);
+        			DamageEffect.Effect.SetLocalTransform(Vector3.zero, Quaternion.identity);
+        			DamageEffect.Effect.Play();
+        		}
+        	}
+        	else 
+        	{
+        		if (DamageEffect.IsOn && DamageEffect.Effect != null)
+        		{
+        			Debug.LogFormat("Stopping effect: {0}...", DamageEffect.Effect.EffectName);
+
+        			DamageEffect.IsOn = false;
+        			DamageEffect.Effect.Stop();
+        		}
+        	}
+        }
+    }
 
     
     /* 

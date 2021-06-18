@@ -11,7 +11,6 @@ using LibSWBF2.Enums;
 [RequireComponent(typeof(Rigidbody), typeof(Light))]
 public class PhxMissile : PhxOrdnance
 {
-
     public class ClassProperties : PhxOrdnance.ClassProperties
     {
         public PhxProp<float> LightRadius = new PhxProp<float>(3f);
@@ -24,6 +23,8 @@ public class PhxMissile : PhxOrdnance
         public PhxProp<float> TurnRate = new PhxProp<float>(0f);
 
         public PhxProp<float> Velocity = new PhxProp<float>(100f);
+
+        public PhxProp<string> TrailEffect = new PhxProp<string>(null);
     }
 
     // for heatseeking
@@ -36,6 +37,9 @@ public class PhxMissile : PhxOrdnance
 
     List<Collider> Colliders;
     List<Collider> IgnoredColliders;
+
+
+    PhxEffect TrailEffect;
 
 
     public override void Init(PhxClass OClass)
@@ -57,12 +61,19 @@ public class PhxMissile : PhxOrdnance
         Mapping.SetColliderMaskAll(ECollisionMaskFlags.Ordnance);
         Mapping.GameRole = SWBFGameRole.Ordnance;
         Mapping.SetColliderLayerFromMaskAll();
-        Colliders = Mapping.GetCollidersByLayer(ECollisionMaskFlags.Ordnance);
+        Colliders = Mapping.GetCollidersByLayer(ECollisionMaskFlags.Ordnance); 
+
+        TrailEffect = SCENE.EffectsManager.LendEffect(MissileClass.TrailEffect.Get());
+        if (TrailEffect != null)
+        {
+            TrailEffect.SetParent(transform);
+            TrailEffect.SetLocalTransform(Vector3.zero, Quaternion.identity);
+        } 
     }
 
 
     public override void Setup(IPhxWeapon OriginatorWeapon)
-    {
+    {        
         OwnerWeapon = OriginatorWeapon;
         Owner = OwnerWeapon.GetOwnerController();
 
@@ -91,6 +102,8 @@ public class PhxMissile : PhxOrdnance
                 Physics.IgnoreCollision(MissileCollider, IgnoredCollider);
             }                   
         }
+
+        TrailEffect?.Play();
     }
 
 
@@ -100,6 +113,9 @@ public class PhxMissile : PhxOrdnance
 
         Owner = null;
         Target = null;
+
+        TrailEffect?.Stop();
+
         gameObject.SetActive(false);
     }
 

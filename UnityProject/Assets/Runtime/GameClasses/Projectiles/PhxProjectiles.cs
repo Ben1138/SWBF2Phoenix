@@ -153,7 +153,6 @@ public class PhxProjectiles
                 // method in ModelLoader for attaching meshes instead of freshly instantiating them...
                 GameObject MissileObj = ModelLoader.Instance.GetGameObjectFromModel(MissileClass.GeometryName.Get(),null);
                 PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
-                Missile.Init(MissileClass);
                 Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 5); 
                 GameObject.Destroy(MissileObj);
             }
@@ -164,7 +163,7 @@ public class PhxProjectiles
             else if (OClassType == typeof(PhxBolt.ClassProperties))
             {
                 Pool = new PhxPool<PhxOrdnance>(Game.BoltPrefab, OrdnanceClass.EntityClass.Name, 15, (OrdnanceClass as PhxBolt.ClassProperties).LifeSpan);                
-                // To avoid Update() call in 
+                // To avoid Update() call in MonoBehavior
                 TickablePools.Add(Pool);
             }
             else 

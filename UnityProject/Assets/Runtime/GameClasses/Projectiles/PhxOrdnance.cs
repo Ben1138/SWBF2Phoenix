@@ -30,6 +30,13 @@ public abstract class PhxOrdnance : MonoBehaviour
         public PhxProp<float> LifeSpan = new PhxProp<float>(3f);
     }
 
+
+    protected static PhxGameRuntime GAME => PhxGameRuntime.Instance;
+    protected static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
+    protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
+
+
     /*
     Should be PhxClass NOT PhxOrdnance.ClassProperties, since 'grenade'
     is a weapon class, but will be used here to initialize ordnance.
@@ -38,7 +45,7 @@ public abstract class PhxOrdnance : MonoBehaviour
 
 
     [System.NonSerialized]
-    public bool IsInitialized = false;
+    public bool IsInitialized;
 
     /*
     Previously this was kept in PhxPool, but will need to be updated
