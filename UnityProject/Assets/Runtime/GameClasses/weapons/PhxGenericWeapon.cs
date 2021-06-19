@@ -58,6 +58,8 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 	    public PhxProp<int>   SalvoCount    = new PhxProp<int>(1);
 	    public PhxProp<int>   ShotsPerSalvo = new PhxProp<int>(1);
 
+        public PhxProp<bool>  TriggerSingle = new PhxProp<bool>(false);
+
 	    public PhxProp<int> RoundsPerClip = new PhxProp<int>(50);
 
 	    public PhxProp<PhxClass> OrdnanceName = new PhxProp<PhxClass>(null);
@@ -74,8 +76,9 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
     public override void Init()
     {
-        //if (C.FireSound.Get() != null)
-        //{
+        /*
+        if (C.FireSound.Get() != null)
+        {
             Audio = gameObject.AddComponent<AudioSource>();
             Audio.playOnAwake = false;
             Audio.spatialBlend = 1.0f;
@@ -86,11 +89,23 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
             // TODO: replace with class sound, once we can load sound LVLs
             Audio.clip = SoundLoader.LoadSound("wpn_rep_blaster_fire");
-        //}
+        }
+        */
 
         if (C.OrdnanceName.Get() == null)
         {
-            Debug.LogWarning($"Missing Ordnance class in cannon '{name}'!");
+            Debug.LogWarning($"Missing Ordnance class in weapon '{name}'!");
+        }
+
+        if (transform.childCount > 0)
+        {
+            FirePoint = transform.GetChild(0).Find("hp_fire");
+        }
+
+        if (FirePoint == null)
+        {
+            Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
+            FirePoint = transform;
         }
 
         // Total amount of 4 magazines
@@ -115,8 +130,8 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
     {
         if (FirePoint == null)
         {
-            Pos = Vector3.zero;
-            Rot = Quaternion.identity;
+            Pos = transform.position;
+            Rot = transform.rotation;
         }
         else 
         {
@@ -172,11 +187,14 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
 
     int SalvoIndex = 0;
+    Vector3 SalvoTargetPosition;
 
 	public virtual bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
         if (WeaponState == PhxWeaponState.Free)
         {
+            SalvoTargetPosition = targetPos;
+
             if (Audio != null)
             {
                 float half = C.PitchSpread / 2f;
@@ -190,11 +208,11 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
                 if (Ordnance != null) 
                 {
                     //Debug.LogFormat("Firing ordnance: {0}", Ordnance.EntityClass.Name);
-                    Scene.FireProjectile(this, Ordnance);   
+                    Scene.FireProjectile(this, Ordnance, FirePoint.position, Quaternion.LookRotation(SalvoTargetPosition -  FirePoint.position, Vector3.up));   
                 }
             }
 
-            if (++SalvoIndex >= C.SalvoCount)
+            if (++SalvoIndex >= C.SalvoCount || C.TriggerSingle.Get())
             {
                 SalvoIndex = 0;
                 WeaponState = PhxWeaponState.ShotDelayed;
@@ -315,7 +333,7 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
             if (SalvoDelayTimer < 0f)
             {
                 WeaponState = PhxWeaponState.Free;
-                Fire(null, Vector3.zero);
+                Fire(null, SalvoTargetPosition);
             }
         }
         else if (WeaponState == PhxWeaponState.ShotDelayed)

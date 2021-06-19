@@ -5,13 +5,6 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 
 
-/*
-All ordnances need some basic things. 
-HOWEVER, some ordnance is implicitly defined in weapon classes
-such as "grenade."  It should be easy to change this to account
-for that though.
-*/
-
 
 public class PhxOrdnanceClass : PhxClass 
 {
@@ -68,12 +61,11 @@ public abstract class PhxOrdnance : MonoBehaviour
 
     /*
     Use-specific setup, might need a better name.
-    Originally had Rotation/Position params, but these can now be
-    obtained from IPhxWeapon.  Given the wildly varying needs of different ordnances,
+    Given the wildly varying needs of different ordnances,
     the parameter list would've grown quite long, thus IPhxWeapon should just be expanded
-    to cover those needs.  Perhaps a parameter: Vector3 Target (in world space) will be added. 
+    to cover those needs.
     */  
-    public abstract void Setup(IPhxWeapon Originator);
+    public abstract void Setup(IPhxWeapon Originator, Vector3 Position, Quaternion Rotation);
 
     // Clear use-specific data,  release back to the manager instance
     protected abstract void Release();

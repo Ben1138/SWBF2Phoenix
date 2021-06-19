@@ -40,11 +40,11 @@ public class PhxBolt : PhxOrdnance
     LineRenderer Renderer;
 
 
-    public override void Setup(IPhxWeapon Originator)
+    public override void Setup(IPhxWeapon Originator, Vector3 Pos, Quaternion Rot)
     {
         gameObject.SetActive(true);
 
-        Originator.GetFirePoint(out Vector3 Pos, out Quaternion Rot);
+        //Originator.GetFirePoint(out Vector3 Pos, out Quaternion Rot);
         
         Body.transform.position = Pos;
         Body.transform.rotation = Rot;
