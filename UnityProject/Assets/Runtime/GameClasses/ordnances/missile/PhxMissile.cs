@@ -60,6 +60,7 @@ public class PhxMissile : PhxOrdnance
         Body.angularDrag = 0f;
 
         SWBFModel Mapping = ModelLoader.Instance.GetModelMapping(gameObject, MissileClass.GeometryName.Get());
+        Mapping.ConvexifyMeshColliders();
         Mapping.SetColliderMaskAll(ECollisionMaskFlags.Ordnance);
         Mapping.GameRole = SWBFGameRole.Ordnance;
         Mapping.SetColliderLayerFromMaskAll();
@@ -136,7 +137,7 @@ public class PhxMissile : PhxOrdnance
         }
 
         // Manual gravity, since it varies
-        Body.AddForce(deltaTime * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
+        Body.AddForce(MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
 
         if (Vector3.Magnitude(Body.velocity) > MissileClass.Velocity)
         {
@@ -144,7 +145,7 @@ public class PhxMissile : PhxOrdnance
         }
         else 
         {
-            Body.AddForce(deltaTime * MissileClass.Acceleration * transform.forward, ForceMode.Acceleration);
+            Body.AddForce(MissileClass.Acceleration * transform.forward, ForceMode.Acceleration);
         }
 
         if (Target != null)
@@ -167,6 +168,7 @@ public class PhxMissile : PhxOrdnance
 
     void OnCollisionEnter(Collision coll)
     {
+        Debug.LogFormat("Missile hit: " + coll.collider.gameObject.name);
         Release();
     }
 }
