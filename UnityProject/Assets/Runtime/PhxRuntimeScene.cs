@@ -163,9 +163,11 @@ public class PhxRuntimeScene
     }
 
 
-    public void FireProjectile(IPhxWeapon WeaponOfOrigin, PhxOrdnanceClass OrdnanceClass)
+    public void FireProjectile(IPhxWeapon WeaponOfOrigin, 
+                                PhxOrdnanceClass OrdnanceClass,
+                                Vector3 Pos, Quaternion Rot)
     {
-        Projectiles.FireProjectile(WeaponOfOrigin, OrdnanceClass);
+        Projectiles.FireProjectile(WeaponOfOrigin, OrdnanceClass, Pos, Rot);
     }
 
 

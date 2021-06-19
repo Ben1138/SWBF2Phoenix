@@ -49,7 +49,7 @@ public class PhxCannon : PhxGenericWeapon, IPhxWeapon
 
         if (FirePoint == null)
         {
-            Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
+            //Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
         }
 
 
