@@ -66,6 +66,7 @@ public class PhxMissile : PhxOrdnance
         TrailEffect = SCENE.EffectsManager.LendEffect(MissileClass.TrailEffect.Get());
         if (TrailEffect != null)
         {
+            TrailEffect.SetLooping();
             TrailEffect.SetParent(transform);
             TrailEffect.SetLocalTransform(Vector3.zero, Quaternion.identity);
         } 

@@ -5,7 +5,7 @@ public class PhxVehicleTesting : PhxUnityScript
     static PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
 
 
-    private string VehicleClass = "rep_hover_barcspeeder";
+    private string VehicleClass = "cis_tread_hailfire";
     // "rep_hover_barcspeeder"; 
     // "rep_hover_fightertank"; 
     // "cis_tread_hailfire";
@@ -31,7 +31,7 @@ public class PhxVehicleTesting : PhxUnityScript
             Quaternion.identity
         );        
 		
-		MATCH.SpawnPlayer(scene.GetClass("rep_inf_ep2_sniper"), transform.position + new Vector3(-3f,0f,-2f), Quaternion.identity);
+		MATCH.SpawnPlayer(scene.GetClass("rep_inf_ep3_rifleman"), transform.position + new Vector3(-3f,0f,-2f), Quaternion.identity);
     }
 
     void Update()
