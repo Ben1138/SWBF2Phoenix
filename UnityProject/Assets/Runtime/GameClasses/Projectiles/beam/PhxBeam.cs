@@ -6,30 +6,30 @@ using UnityEngine.Rendering.HighDefinition;
 
 
 
+public class PhxBeamClass : PhxOrdnanceClass
+{
+    public PhxProp<float> LaserWidth = new PhxProp<float>(5f);
+    public PhxProp<Texture2D> LaserTexture = new PhxProp<Texture2D>(null);
+    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.white);
+
+    public PhxProp<float> Range = new PhxProp<float>(100f);
+
+    public PhxProp<float> Gravity = new PhxProp<float>(0f);
+    public PhxProp<float> Rebound = new PhxProp<float>(0f);
+
+    public PhxProp<bool> PassThrough = new PhxProp<bool>(false);
+}
+
+
 [RequireComponent(typeof(LineRenderer), typeof(Light))]
 public class PhxBeam : PhxOrdnance
 {
-
-    public class ClassProperties : PhxOrdnance.ClassProperties
-    {
-        public PhxProp<float> LaserWidth = new PhxProp<float>(5f);
-        public PhxProp<Texture2D> LaserTexture = new PhxProp<Texture2D>(null);
-        public PhxProp<Color> LightColor = new PhxProp<Color>(Color.white);
-
-        public PhxProp<float> Range = new PhxProp<float>(100f);
-
-        public PhxProp<float> Gravity = new PhxProp<float>(0f);
-        public PhxProp<float> Rebound = new PhxProp<float>(0f);
-
-        public PhxProp<bool> PassThrough = new PhxProp<bool>(false);
-    }
-
 
     static int BeamMask;
 
     Transform BeamRoot;
 
-    ClassProperties BeamClass;
+    PhxBeamClass BeamClass;
    
     LineRenderer Renderer;
     Light Light;
@@ -39,9 +39,9 @@ public class PhxBeam : PhxOrdnance
     List<int> IgnoredColliderLayers;
 
 
-    public override void Init(PhxClass OClass)
+    public override void Init(PhxOrdnanceClass OClass)
     {
-        BeamClass = OClass as ClassProperties;
+        BeamClass = OClass as PhxBeamClass;
 
         Renderer.startWidth = BeamClass.LaserWidth;
         Renderer.endWidth = BeamClass.LaserWidth;

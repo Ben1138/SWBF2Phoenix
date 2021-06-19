@@ -7,30 +7,32 @@ using UnityEngine.Rendering.HighDefinition;
 using LibSWBF2.Enums;
 
 
+public class PhxMissileClass : PhxOrdnanceClass
+{
+    public PhxProp<float> LightRadius = new PhxProp<float>(3f);
+    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.white);
+
+    public PhxProp<float> MinSpeed = new PhxProp<float>(10f);
+    public PhxProp<float> Acceleration = new PhxProp<float>(50f);
+    public PhxProp<float> Gravity = new PhxProp<float>(0f);
+    public PhxProp<float> Rebound = new PhxProp<float>(0f);
+    public PhxProp<float> TurnRate = new PhxProp<float>(0f);
+
+    public PhxProp<float> Velocity = new PhxProp<float>(100f);
+
+    public PhxProp<string> TrailEffect = new PhxProp<string>(null);
+}
+
+
 
 [RequireComponent(typeof(Rigidbody), typeof(Light))]
 public class PhxMissile : PhxOrdnance
 {
-    public class ClassProperties : PhxOrdnance.ClassProperties
-    {
-        public PhxProp<float> LightRadius = new PhxProp<float>(3f);
-        public PhxProp<Color> LightColor = new PhxProp<Color>(Color.white);
-
-        public PhxProp<float> MinSpeed = new PhxProp<float>(10f);
-        public PhxProp<float> Acceleration = new PhxProp<float>(50f);
-        public PhxProp<float> Gravity = new PhxProp<float>(0f);
-        public PhxProp<float> Rebound = new PhxProp<float>(0f);
-        public PhxProp<float> TurnRate = new PhxProp<float>(0f);
-
-        public PhxProp<float> Velocity = new PhxProp<float>(100f);
-
-        public PhxProp<string> TrailEffect = new PhxProp<string>(null);
-    }
 
     // for heatseeking
     PhxInstance Target; 
 
-    ClassProperties MissileClass;
+    PhxMissileClass MissileClass;
    
     Rigidbody Body;
     Light Light;
@@ -42,11 +44,11 @@ public class PhxMissile : PhxOrdnance
     PhxEffect TrailEffect;
 
 
-    public override void Init(PhxClass OClass)
+    public override void Init(PhxOrdnanceClass OClass)
     {
         IsInitialized = true;
 
-        MissileClass = OClass as ClassProperties;
+        MissileClass = OClass as PhxMissileClass;
 
         Light.color = MissileClass.LightColor;
         Light.range = MissileClass.LightRadius;

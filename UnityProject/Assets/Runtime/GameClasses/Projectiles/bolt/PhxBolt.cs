@@ -5,25 +5,25 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 
 
+public class PhxBoltClass : PhxOrdnanceClass
+{
+    public PhxProp<Texture2D> LaserTexture = new PhxProp<Texture2D>(null);
+    public PhxProp<Color> LaserGlowColor = new PhxProp<Color>(Color.white);
+    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.black);
+    public PhxProp<float> LightRadius = new PhxProp<float>(1f);
+    public PhxProp<float> LaserLength = new PhxProp<float>(1f);
+    public PhxProp<float> LaserWidth = new PhxProp<float>(1f);
+    public PhxProp<float> Velocity = new PhxProp<float>(1f);
+
+    public PhxProp<string> ImpactEffectStatic = new PhxProp<string>(null);
+}
+
 
 [RequireComponent(typeof(LineRenderer), typeof(Rigidbody), typeof(Light))]
 public class PhxBolt : PhxOrdnance
 {
 
-    public class ClassProperties : PhxOrdnance.ClassProperties
-    {
-        public PhxProp<Texture2D> LaserTexture = new PhxProp<Texture2D>(null);
-        public PhxProp<Color> LaserGlowColor = new PhxProp<Color>(Color.white);
-        public PhxProp<Color> LightColor = new PhxProp<Color>(Color.black);
-        public PhxProp<float> LightRadius = new PhxProp<float>(1f);
-        public PhxProp<float> LaserLength = new PhxProp<float>(1f);
-        public PhxProp<float> LaserWidth = new PhxProp<float>(1f);
-        public PhxProp<float> Velocity = new PhxProp<float>(1f);
-
-        public PhxProp<string> ImpactEffectStatic = new PhxProp<string>(null);
-    }
-
-    ClassProperties BoltClass;
+    PhxBoltClass BoltClass;
 
     public BoxCollider Coll { get; private set; }
     public Action<PhxBolt, Collision> OnHit;
@@ -61,11 +61,11 @@ public class PhxBolt : PhxOrdnance
 
 
 
-    public override void Init(PhxClass OClass)
+    public override void Init(PhxOrdnanceClass OClass)
     {
         IsInitialized = true;
 
-        BoltClass = OClass as ClassProperties;
+        BoltClass = OClass as PhxBoltClass;
 
         RenderHD = !(GraphicsSettings.renderPipelineAsset == null); 
         if (RenderHD)
@@ -123,13 +123,11 @@ public class PhxBolt : PhxOrdnance
         OnHit?.Invoke(this, coll);
 
         ContactPoint Point = coll.GetContact(0);
-        //if (Point != null)
-        //{
-            Vector3 Pos = Point.point;
-            Quaternion Rot = Quaternion.LookRotation(Point.normal, Vector3.up);
 
-            SCENE.EffectsManager.PlayEffect(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
-        //}
+        Vector3 Pos = Point.point;
+        Quaternion Rot = Quaternion.LookRotation(Point.normal, Vector3.up);
+
+        SCENE.EffectsManager.PlayEffect(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
 
         Release();
     }

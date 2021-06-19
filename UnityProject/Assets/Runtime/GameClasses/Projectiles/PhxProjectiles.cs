@@ -113,7 +113,7 @@ public class PhxProjectiles
     See note in PhxOrdnance about why PhxClass is used instead of PhxOrdnance.ClassProperties
     */
 
-    Dictionary<PhxClass, PhxPool<PhxOrdnance>> PoolDB;
+    Dictionary<PhxOrdnanceClass, PhxPool<PhxOrdnance>> PoolDB;
 
     /*
     To avoid calling Update() in more trivial types like bolts,
@@ -128,7 +128,7 @@ public class PhxProjectiles
     {
         ProjectileRoot = new GameObject("Projectiles");
     
-        PoolDB = new Dictionary<PhxClass, PhxPool<PhxOrdnance>>();
+        PoolDB = new Dictionary<PhxOrdnanceClass, PhxPool<PhxOrdnance>>();
         TickablePools = new List<PhxPool<PhxOrdnance>>(); 
     }
 
@@ -139,15 +139,15 @@ public class PhxProjectiles
     hardcoded for now.  Lifetimes are set for trivial types like 'bolt'.
     */
 
-    public void FireProjectile(IPhxWeapon OriginatorWeapon, PhxClass OrdnanceClass)
+    public void FireProjectile(IPhxWeapon OriginatorWeapon, PhxOrdnanceClass OrdnanceClass)
     {
         if (!PoolDB.TryGetValue(OrdnanceClass, out PhxPool<PhxOrdnance> Pool)) 
         {   
             System.Type OClassType = OrdnanceClass.GetType();
             
-            if (OClassType == typeof(PhxMissile.ClassProperties))
+            if (OClassType == typeof(PhxMissileClass))
             {
-                PhxMissile.ClassProperties MissileClass = OrdnanceClass as PhxMissile.ClassProperties;
+                PhxMissileClass MissileClass = OrdnanceClass as PhxMissileClass;
                 
                 // Messy, will get a prefab sorted out.  That requires another
                 // method in ModelLoader for attaching meshes instead of freshly instantiating them...
@@ -156,13 +156,13 @@ public class PhxProjectiles
                 Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 5); 
                 GameObject.Destroy(MissileObj);
             }
-            else if (OClassType == typeof(PhxBeam.ClassProperties))
+            else if (OClassType == typeof(PhxBeamClass))
             {
                 Pool = new PhxPool<PhxOrdnance>(Game.BeamPrefab, OrdnanceClass.EntityClass.Name, 5);  
             }
-            else if (OClassType == typeof(PhxBolt.ClassProperties))
+            else if (OClassType == typeof(PhxBoltClass))
             {
-                Pool = new PhxPool<PhxOrdnance>(Game.BoltPrefab, OrdnanceClass.EntityClass.Name, 15, (OrdnanceClass as PhxBolt.ClassProperties).LifeSpan);                
+                Pool = new PhxPool<PhxOrdnance>(Game.BoltPrefab, OrdnanceClass.EntityClass.Name, 15, (OrdnanceClass as PhxBoltClass).LifeSpan);                
                 // To avoid Update() call in MonoBehavior
                 TickablePools.Add(Pool);
             }
