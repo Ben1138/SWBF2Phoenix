@@ -69,6 +69,17 @@ public class PhxEffect
 
     }
 
+
+    public void SetLooping(bool Loop = true)
+    {
+        foreach (ParticleSystem ps in Systems)
+        {
+            ps.loop = Loop;
+        }
+    }
+
+
+
     public void Play()
     {
         if (EffectObject == null)
@@ -91,7 +102,7 @@ public class PhxEffect
             Debug.LogWarningFormat("Effect object for {0} is null!", EffectName);
             return;
         }
-        
+
         foreach (ParticleSystem ps in Systems)
         {
             ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
@@ -130,6 +141,8 @@ public class PhxEffectsManager
 
     PhxEffect GetFreeEffect(string Name)
     {
+        if (Name == null) return null;
+
         uint NameHash = HashUtils.GetFNV(Name);
 
         List<PhxEffect> EffectsList = null;

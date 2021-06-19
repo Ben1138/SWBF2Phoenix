@@ -19,6 +19,8 @@ public class PhxBolt : PhxOrdnance
         public PhxProp<float> LaserLength = new PhxProp<float>(1f);
         public PhxProp<float> LaserWidth = new PhxProp<float>(1f);
         public PhxProp<float> Velocity = new PhxProp<float>(1f);
+
+        public PhxProp<string> ImpactEffectStatic = new PhxProp<string>(null);
     }
 
     ClassProperties BoltClass;
@@ -119,6 +121,16 @@ public class PhxBolt : PhxOrdnance
     void OnCollisionEnter(Collision coll)
     {
         OnHit?.Invoke(this, coll);
+
+        ContactPoint Point = coll.GetContact(0);
+        //if (Point != null)
+        //{
+            Vector3 Pos = Point.point;
+            Quaternion Rot = Quaternion.LookRotation(Point.normal, Vector3.up);
+
+            SCENE.EffectsManager.PlayEffect(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
+        //}
+
         Release();
     }
 }
