@@ -12,36 +12,31 @@ such as "grenade."  It should be easy to change this to account
 for that though.
 */
 
+
+public class PhxOrdnanceClass : PhxClass 
+{
+    public PhxProp<float> MaxDamage = new PhxProp<float>(1f);
+
+    public PhxProp<float> VehicleScale =  new PhxProp<float>(1f);
+    public PhxProp<float> ShieldScale =   new PhxProp<float>(1f);
+    public PhxProp<float> PersonScale =   new PhxProp<float>(1f);
+    public PhxProp<float> AnimalScale =   new PhxProp<float>(1f);
+    public PhxProp<float> DroidScale =    new PhxProp<float>(1f);
+    public PhxProp<float> BuildingScale = new PhxProp<float>(1f);
+
+    public PhxProp<string> GeometryName = new PhxProp<string>(null);
+
+    public PhxProp<float> LifeSpan = new PhxProp<float>(3f);
+}
+
+
 public abstract class PhxOrdnance : MonoBehaviour
 {
-    public class ClassProperties : PhxClass 
-    {
-        public PhxProp<float> MaxDamage = new PhxProp<float>(1f);
-
-        public PhxProp<float> VehicleScale =  new PhxProp<float>(1f);
-        public PhxProp<float> ShieldScale =   new PhxProp<float>(1f);
-        public PhxProp<float> PersonScale =   new PhxProp<float>(1f);
-        public PhxProp<float> AnimalScale =   new PhxProp<float>(1f);
-        public PhxProp<float> DroidScale =    new PhxProp<float>(1f);
-        public PhxProp<float> BuildingScale = new PhxProp<float>(1f);
-
-        public PhxProp<string> GeometryName = new PhxProp<string>(null);
-
-        public PhxProp<float> LifeSpan = new PhxProp<float>(3f);
-    }
-
 
     protected static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     protected static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
     protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
     protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
-
-
-    /*
-    Should be PhxClass NOT PhxOrdnance.ClassProperties, since 'grenade'
-    is a weapon class, but will be used here to initialize ordnance.
-    */
-    protected PhxClass OrdnanceClass;
 
 
     [System.NonSerialized]
@@ -69,7 +64,7 @@ public abstract class PhxOrdnance : MonoBehaviour
     protected PhxPawnController Owner;     
     
     // Class level setup, e.g. components, collision. Called once.
-    public abstract void Init(PhxClass Class);
+    public abstract void Init(PhxOrdnanceClass Class);
 
     /*
     Use-specific setup, might need a better name.

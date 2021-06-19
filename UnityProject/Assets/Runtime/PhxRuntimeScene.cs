@@ -163,7 +163,7 @@ public class PhxRuntimeScene
     }
 
 
-    public void FireProjectile(IPhxWeapon WeaponOfOrigin, PhxClass OrdnanceClass)
+    public void FireProjectile(IPhxWeapon WeaponOfOrigin, PhxOrdnanceClass OrdnanceClass)
     {
         Projectiles.FireProjectile(WeaponOfOrigin, OrdnanceClass);
     }
