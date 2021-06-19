@@ -64,8 +64,12 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
 	    public PhxProp<PhxClass> OrdnanceName = new PhxProp<PhxClass>(null);
 
+        // Spread
+        public PhxProp<float> PitchSpread = new PhxProp<float>(0f);
+        public PhxProp<float> YawSpread   = new PhxProp<float>(0f);
+
+
 	    // Sound
-	    public PhxProp<float>  PitchSpread = new PhxProp<float>(0.1f);
 	    public PhxProp<string> FireSound = new PhxProp<string>(null);
 
 	    public PhxProp<float> HeatRecoverRate = new PhxProp<float>(0.25f);
@@ -104,7 +108,7 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
         if (FirePoint == null)
         {
-            Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
+            //Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
             FirePoint = transform;
         }
 
@@ -207,8 +211,24 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
                 PhxOrdnanceClass Ordnance = C.OrdnanceName.Get() as PhxOrdnanceClass;
                 if (Ordnance != null) 
                 {
-                    //Debug.LogFormat("Firing ordnance: {0}", Ordnance.EntityClass.Name);
-                    Scene.FireProjectile(this, Ordnance, FirePoint.position, Quaternion.LookRotation(SalvoTargetPosition -  FirePoint.position, Vector3.up));   
+                    for (int i = 0; i < C.ShotsPerSalvo; i++)
+                    {
+                        Vector3 TargetPosition = SalvoTargetPosition;
+                        /*
+                        if (FirePoint == null)
+                        {
+                            FirePoint = transform;
+                        }
+                        float ShotLength = Vector3.Magnitude(SalvoTargetPosition - FirePoint.position);
+
+                        // We'll say 1 spread = 0.436332 rad of fp rotation
+                        TargetPosition += Mathf.Tan(C.PitchSpread * .436332f) * ShotLength * FirePoint.up;
+                        TargetPosition += Mathf.Tan(C.YawSpread * .436332f) * ShotLength * FirePoint.right;
+                        */
+                        
+                        //Debug.LogFormat("Firing ordnance: {0}", Ordnance.EntityClass.Name);
+                        Scene.FireProjectile(this, Ordnance, FirePoint.position, Quaternion.LookRotation(TargetPosition - FirePoint.position, Vector3.up));   
+                    }
                 }
             }
 
