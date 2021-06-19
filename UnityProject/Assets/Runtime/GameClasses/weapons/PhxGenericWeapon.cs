@@ -186,7 +186,7 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
             if (SalvoIndex < C.SalvoCount)
             {
-                PhxOrdnance.ClassProperties Ordnance = C.OrdnanceName.Get() as PhxOrdnance.ClassProperties;
+                PhxOrdnanceClass Ordnance = C.OrdnanceName.Get() as PhxOrdnanceClass;
                 if (Ordnance != null) 
                 {
                     //Debug.LogFormat("Firing ordnance: {0}", Ordnance.EntityClass.Name);

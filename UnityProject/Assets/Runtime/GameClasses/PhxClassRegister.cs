@@ -35,9 +35,9 @@ public static class PhxClassRegister
         // Right now, there's custom object pooling just for projectiles, meaning, PhxBolt's are not instantiated via
         // PhxRuntimeScene.CreateInstance(), but with PhxProjectiles.FireProjectile()
         // Maybe this will be obsolete once we've got a generic object pooling for everything. Idk yet.
-        { "missile",        new GameBaseClass(typeof(PhxMissile.ClassProperties),        null)                      },
-        { "beam",           new GameBaseClass(typeof(PhxBeam.ClassProperties),           null)                      },
-        { "bolt",           new GameBaseClass(typeof(PhxBolt.ClassProperties),           null)                      },
+        { "missile",        new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
+        { "beam",           new GameBaseClass(typeof(PhxBeamClass),                      null)                      },
+        { "bolt",           new GameBaseClass(typeof(PhxBoltClass),                      null)                      },
     };
 
     public static Type GetPhxInstanceType(string name)
