@@ -154,6 +154,12 @@ public class PhxProjectiles
                 // Messy, will get a prefab sorted out.  That requires another
                 // method in ModelLoader for attaching meshes instead of freshly instantiating them...
                 GameObject MissileObj = ModelLoader.Instance.GetGameObjectFromModel(MissileClass.GeometryName.Get(),null);
+                
+                if (MissileObj == null) 
+                {
+                    return;
+                } 
+
                 PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
                 Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 5); 
                 GameObject.Destroy(MissileObj);
@@ -164,7 +170,7 @@ public class PhxProjectiles
             }
             else if (OClassType == typeof(PhxBoltClass))
             {
-                Pool = new PhxPool<PhxOrdnance>(Game.BoltPrefab, OrdnanceClass.EntityClass.Name, 15, (OrdnanceClass as PhxBoltClass).LifeSpan);                
+                Pool = new PhxPool<PhxOrdnance>(Game.BoltPrefab, OrdnanceClass.EntityClass.Name, 20, (OrdnanceClass as PhxBoltClass).LifeSpan);                
                 // To avoid Update() call in MonoBehavior
                 TickablePools.Add(Pool);
             }

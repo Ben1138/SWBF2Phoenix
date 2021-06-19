@@ -19,14 +19,16 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
         public PhxProp<AudioClip> LockedSound = new PhxProp<AudioClip>(null);
     }
 
-    // How open door is
-    float Openness = 0f;
 
     // Never heard of door locking functionality in SWBF2
     public PhxProp<bool> Islocked = new PhxProp<bool>(false);
 
     // Door animator; only a CraPlayer is needed for this simple case
     CraPlayer Player;
+
+    // How many colliders (i.e. vehicles and soldiers) are in door's trigger
+    int NumColliders;
+
 
 
     public override void Init()
@@ -70,24 +72,7 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
     }
 
 
-
-    void UpdateState(float deltaTime)
-    {
-        CollisionUpdateTimer -= deltaTime;
-
-        if (CollisionUpdateTimer <= 0f)
-        {
-            CollisionUpdateTimer = CollisionUpdateTime;
-
-        }
-    }
-
-
-    public float CollisionUpdateTime  = 7f;
-    float CollisionUpdateTimer;
     
-    int NumColliders;
-
     void OnTriggerEnter(Collider Object)
     {
         if (Object.gameObject.layer != LayerMask.NameToLayer("SoldierAll"))
