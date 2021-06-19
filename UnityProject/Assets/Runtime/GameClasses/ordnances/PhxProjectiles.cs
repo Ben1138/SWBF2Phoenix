@@ -139,7 +139,9 @@ public class PhxProjectiles
     hardcoded for now.  Lifetimes are set for trivial types like 'bolt'.
     */
 
-    public void FireProjectile(IPhxWeapon OriginatorWeapon, PhxOrdnanceClass OrdnanceClass)
+    public void FireProjectile(IPhxWeapon OriginatorWeapon,
+                                PhxOrdnanceClass OrdnanceClass, 
+                                Vector3 Pos, Quaternion Rot)
     {
         if (!PoolDB.TryGetValue(OrdnanceClass, out PhxPool<PhxOrdnance> Pool)) 
         {   
@@ -184,7 +186,7 @@ public class PhxProjectiles
                 Ordnance.Init(OrdnanceClass);
             }
 
-            Ordnance.Setup(OriginatorWeapon); 
+            Ordnance.Setup(OriginatorWeapon, Pos, Rot); 
         }           
     }
 

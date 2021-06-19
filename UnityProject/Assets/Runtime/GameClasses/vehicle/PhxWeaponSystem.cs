@@ -197,7 +197,7 @@ public class PhxWeaponSystem
     List<Transform> FirePoints;
     List<PhxBarrel> Barrels;
 
-    public bool Fire()
+    public bool Fire(Vector3 Target)
     {
         if (!WeaponFirePointsSet)
         {
@@ -223,7 +223,7 @@ public class PhxWeaponSystem
 
         if (Aimers.Count > 0 && WeaponTransform != null)
         {
-        	if (!Weapon.Fire(OwnerSection.Occupant.GetController(), Vector3.zero))
+        	if (!Weapon.Fire(OwnerSection.Occupant.GetController(), Target))
         	{
                 return false;
             }

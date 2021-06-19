@@ -75,7 +75,7 @@ public class PhxMissile : PhxOrdnance
     }
 
 
-    public override void Setup(IPhxWeapon OriginatorWeapon)
+    public override void Setup(IPhxWeapon OriginatorWeapon, Vector3 Position, Quaternion Rotation)
     {        
         OwnerWeapon = OriginatorWeapon;
         Owner = OwnerWeapon.GetOwnerController();
@@ -87,9 +87,9 @@ public class PhxMissile : PhxOrdnance
 
         gameObject.SetActive(true);
 
-        OwnerWeapon.GetFirePoint(out Vector3 Pos, out Quaternion Rot);
-        transform.position = Pos;
-        transform.rotation = Rot;
+        //OwnerWeapon.GetFirePoint(out Vector3 Pos, out Quaternion Rot);
+        transform.position = Position;
+        transform.rotation = Rotation;
 
         Body.velocity = transform.forward * MissileClass.MinSpeed.Get();
 

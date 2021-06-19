@@ -54,7 +54,7 @@ public class PhxBeam : PhxOrdnance
     }
 
 
-    public override void Setup(IPhxWeapon Originator)
+    public override void Setup(IPhxWeapon Originator, Vector3 Pos, Quaternion Rot)
     {
         gameObject.SetActive(true);
 
