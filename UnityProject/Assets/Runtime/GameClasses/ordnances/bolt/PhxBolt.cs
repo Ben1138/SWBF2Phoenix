@@ -127,7 +127,7 @@ public class PhxBolt : PhxOrdnance
         Vector3 Pos = Point.point;
         Quaternion Rot = Quaternion.LookRotation(Point.normal, Vector3.up);
 
-        SCENE.EffectsManager.PlayEffect(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
+        SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
 
         Release();
     }

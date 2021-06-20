@@ -25,21 +25,28 @@ public static class PhxClassRegister
         { "commandpost",    new GameBaseClass(typeof(PhxCommandpost.ClassProperties),    typeof(PhxCommandpost))    },
         { "soldier",        new GameBaseClass(typeof(PhxSoldier.ClassProperties),        typeof(PhxSoldier))        },
         { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
-        { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
+        // { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
         { "powerupstation", new GameBaseClass(typeof(PhxPowerupstation.ClassProperties), typeof(PhxPowerupstation)) },
         { "hover",          new GameBaseClass(typeof(PhxHover.ClassProperties),          typeof(PhxHover))          },
         { "armedbuilding",  new GameBaseClass(typeof(PhxArmedBuilding.ClassProperties),  typeof(PhxArmedBuilding))  },
         { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn))   },
+        
         { "weapon",         new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
+        { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
         { "launcher",       new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
+        
         { "door",           new GameBaseClass(typeof(PhxDoor.ClassProperties),           typeof(PhxDoor))           },
+        
         // Right now, there's custom object pooling just for projectiles, meaning, PhxBolt's are not instantiated via
         // PhxRuntimeScene.CreateInstance(), but with PhxProjectiles.FireProjectile()
         // Maybe this will be obsolete once we've got a generic object pooling for everything. Idk yet.
         { "missile",        new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
+        { "sticky",         new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
         { "shell",          new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
         { "beam",           new GameBaseClass(typeof(PhxBeamClass),                      null)                      },
         { "bolt",           new GameBaseClass(typeof(PhxBoltClass),                      null)                      },
+
+        { "explosion",      new GameBaseClass(typeof(PhxExplosionClass),                 null)                      },
     };
 
     public static Type GetPhxInstanceType(string name)
