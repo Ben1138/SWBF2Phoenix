@@ -60,11 +60,19 @@ public class PhxMissile : PhxOrdnance
         Body.angularDrag = 0f;
 
         SWBFModel Mapping = ModelLoader.Instance.GetModelMapping(gameObject, MissileClass.GeometryName.Get());
-        Mapping.ConvexifyMeshColliders();
-        Mapping.SetColliderMaskAll(ECollisionMaskFlags.Ordnance);
-        Mapping.GameRole = SWBFGameRole.Ordnance;
-        Mapping.SetColliderLayerFromMaskAll();
-        Colliders = Mapping.GetCollidersByLayer(ECollisionMaskFlags.Ordnance); 
+        if (Mapping != null)
+        {
+            Mapping.ConvexifyMeshColliders();
+            Mapping.SetColliderMaskAll(ECollisionMaskFlags.Ordnance);
+            Mapping.GameRole = SWBFGameRole.Ordnance;
+            Mapping.SetColliderLayerFromMaskAll();
+            Colliders = Mapping.GetCollidersByLayer(ECollisionMaskFlags.Ordnance); 
+        }
+        else 
+        {
+            Colliders = new List<Collider>();
+            Colliders.Add(GetComponent<SphereCollider>());
+        }
 
         TrailEffect = SCENE.EffectsManager.LendEffect(MissileClass.TrailEffect.Get());
         if (TrailEffect != null)
@@ -77,7 +85,7 @@ public class PhxMissile : PhxOrdnance
 
 
     public override void Setup(IPhxWeapon OriginatorWeapon, Vector3 Position, Quaternion Rotation)
-    {        
+    {
         OwnerWeapon = OriginatorWeapon;
         Owner = OwnerWeapon.GetOwnerController();
 
