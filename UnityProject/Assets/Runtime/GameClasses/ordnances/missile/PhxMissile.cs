@@ -21,6 +21,10 @@ public class PhxMissileClass : PhxOrdnanceClass
     public PhxProp<float> Velocity = new PhxProp<float>(100f);
 
     public PhxProp<string> TrailEffect = new PhxProp<string>(null);
+    public PhxProp<PhxClass> ExplosionName = new PhxProp<PhxClass>(null);
+
+    public PhxProp<PhxClass> ExplosionImpact = new PhxProp<PhxClass>(null);
+    public PhxProp<PhxClass> ExplosionExpire = new PhxProp<PhxClass>(null);    
 }
 
 
@@ -58,6 +62,8 @@ public class PhxMissile : PhxOrdnance
         Body.drag = 0f;
         Body.mass = .0000000001f;
         Body.angularDrag = 0f;
+        Body.interpolation = RigidbodyInterpolation.Interpolate;
+        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
         SWBFModel Mapping = ModelLoader.Instance.GetModelMapping(gameObject, MissileClass.GeometryName.Get());
         if (Mapping != null)
@@ -119,9 +125,10 @@ public class PhxMissile : PhxOrdnance
     }
 
 
+
     protected override void Release()
     {
-        IgnoredColliders = null;
+        //IgnoredColliders.Clear();
 
         Owner = null;
         Target = null;
@@ -133,7 +140,7 @@ public class PhxMissile : PhxOrdnance
 
 
 
-    void Update()
+    void FixedUpdate()
     {
         float deltaTime = Time.deltaTime;
 
@@ -145,7 +152,7 @@ public class PhxMissile : PhxOrdnance
         }
 
         // Manual gravity, since it varies
-        Body.AddForce(MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
+        Body.AddForce(9.8f * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
 
         if (Vector3.Magnitude(Body.velocity) > MissileClass.Velocity)
         {
@@ -174,9 +181,26 @@ public class PhxMissile : PhxOrdnance
         Light.type = LightType.Point;
     }
 
+
+
     void OnCollisionEnter(Collision coll)
     {
-        Debug.LogFormat("Missile hit: " + coll.collider.gameObject.name);
-        Release();
+        if (gameObject.activeSelf)
+        {
+            ContactPoint Contact = coll.GetContact(0);
+
+            PhxClass Exp = MissileClass.ExplosionImpact.Get();
+            if (Exp == null)
+            {
+                Exp = MissileClass.ExplosionName.Get();
+            }
+            
+
+            Debug.LogFormat("Missile hit collider: {0}", Contact.otherCollider.name);
+
+            PhxExplosionManager.AddExplosion(null, Exp as PhxExplosionClass, Contact.point, Quaternion.LookRotation(Contact.normal, Vector3.up));
+
+            Release();
+        }
     }
 }
