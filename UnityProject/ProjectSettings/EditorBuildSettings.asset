@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 0
     path: 
     guid: 00000000000000000000000000000000
+  - enabled: 1
+    path: Assets/Runtime/Scenes/Testing/PhxVehicleTesting.unity
+    guid: 866313ead2d8f4f2385d52a6e87ef09b
   m_configObjects: {}

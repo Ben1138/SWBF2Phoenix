@@ -157,7 +157,11 @@ public class PhxProjectiles
                 
                 if (MissileObj == null) 
                 {
-                    return;
+                    // Not sure if there's a default geometry for missiles/shells
+                    Debug.LogWarningFormat("Failed to get geometry: {0}", MissileClass.GeometryName.Get());
+                    MissileObj = new GameObject(MissileClass.EntityClass.Name);
+                    SphereCollider coll = MissileObj.AddComponent<SphereCollider>();
+                    coll.radius = .4f;
                 } 
 
                 PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
