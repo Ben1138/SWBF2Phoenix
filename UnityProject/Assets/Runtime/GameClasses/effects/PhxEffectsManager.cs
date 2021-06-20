@@ -190,7 +190,7 @@ public class PhxEffectsManager
 
 
     // Fire and forget i.e. impact sparks, explosions
-    public void PlayEffect(string Name, Vector3 position, Quaternion rotation)
+    public void PlayEffectOnce(string Name, Vector3 position, Quaternion rotation)
     {
         PhxEffect Effect = GetFreeEffect(Name);
 
