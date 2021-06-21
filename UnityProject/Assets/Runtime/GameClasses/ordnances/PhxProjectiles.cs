@@ -165,7 +165,7 @@ public class PhxProjectiles
                 } 
 
                 PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
-                Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 5); 
+                Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 25); 
                 GameObject.Destroy(MissileObj);
             }
             else if (OClassType == typeof(PhxBeamClass))
