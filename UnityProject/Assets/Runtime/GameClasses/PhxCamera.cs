@@ -33,11 +33,11 @@ public class PhxCamera : MonoBehaviour
         FollowInstance = null;
     }
 
-    public void Fixed(Vector3 pos, Quaternion rot)
+    public void Fixed(PhxTransform t)
     {
         Fixed();
-        transform.position = pos;
-        transform.rotation = rot;
+        transform.position = t.Position;
+        transform.rotation = t.Rotation;
     }
 
     public void Free()
