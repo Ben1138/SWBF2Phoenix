@@ -24,17 +24,17 @@ public static class PhxClassRegister
     {
         { "commandpost",    new GameBaseClass(typeof(PhxCommandpost.ClassProperties),    typeof(PhxCommandpost))    },
         { "soldier",        new GameBaseClass(typeof(PhxSoldier.ClassProperties),        typeof(PhxSoldier))        },
-        { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
-        // { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
         { "powerupstation", new GameBaseClass(typeof(PhxPowerupstation.ClassProperties), typeof(PhxPowerupstation)) },
         { "hover",          new GameBaseClass(typeof(PhxHover.ClassProperties),          typeof(PhxHover))          },
+        { "commandhover",   new GameBaseClass(typeof(PhxHover.ClassProperties),          typeof(PhxHover))          },
         { "armedbuilding",  new GameBaseClass(typeof(PhxArmedBuilding.ClassProperties),  typeof(PhxArmedBuilding))  },
         { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn))   },
         
         { "weapon",         new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
         { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
         { "launcher",       new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
-        
+        { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
+
         { "door",           new GameBaseClass(typeof(PhxDoor.ClassProperties),           typeof(PhxDoor))           },
         
         // Right now, there's custom object pooling just for projectiles, meaning, PhxBolt's are not instantiated via
@@ -45,6 +45,7 @@ public static class PhxClassRegister
         { "shell",          new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
         { "beam",           new GameBaseClass(typeof(PhxBeamClass),                      null)                      },
         { "bolt",           new GameBaseClass(typeof(PhxBoltClass),                      null)                      },
+        { "bullet",         new GameBaseClass(typeof(PhxBoltClass),                      null)                      },
 
         { "explosion",      new GameBaseClass(typeof(PhxExplosionClass),                 null)                      },
     };

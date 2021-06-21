@@ -23,8 +23,8 @@ public class PhxCannon : PhxGenericWeapon, IPhxWeapon
     {
         CannonClass = C as PhxCannon.ClassProperties;
 
-        //if (CannonClass.FireSound.Get() != null)
-        //{
+        if (CannonClass.FireSound.Get() != null)
+        {
             Audio = gameObject.AddComponent<AudioSource>();
             Audio.playOnAwake = false;
             Audio.spatialBlend = 1.0f;
@@ -35,7 +35,7 @@ public class PhxCannon : PhxGenericWeapon, IPhxWeapon
 
             // TODO: replace with class sound, once we can load sound LVLs
             Audio.clip = SoundLoader.LoadSound("wpn_rep_blaster_fire");
-        //}
+        }
 
         if (CannonClass.OrdnanceName.Get() == null)
         {
@@ -50,6 +50,7 @@ public class PhxCannon : PhxGenericWeapon, IPhxWeapon
         if (FirePoint == null)
         {
             //Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
+            FirePoint = transform;
         }
 
 

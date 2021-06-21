@@ -27,6 +27,15 @@ public class PhxWeaponSystem
     List<Collider> IgnoredColliders;
 
 
+    public PhxWeaponSystem(PhxVehicleSection Section)
+    {
+        OwnerSection = Section;
+        Aimers = new List<PhxAimer>();
+
+        IgnoredColliders = OwnerSection.OwnerVehicle.GetOrdnanceColliders();
+    }
+
+
 
     public void InitManual(EntityClass EC, int StartIndex, string WeaponIndex = "1")
     {
@@ -141,7 +150,6 @@ public class PhxWeaponSystem
     public void SetWeapon(string WeaponName)
     {
     	Weapon = SCENE.CreateInstance(SCENE.GetClass(WeaponName), false) as IPhxWeapon;
-        Weapon.SetIgnoredColliders(IgnoredColliders);
 
     	if (Weapon == null)
     	{
@@ -150,17 +158,13 @@ public class PhxWeaponSystem
     	else 
     	{
     		WeaponTransform = Weapon.GetInstance().gameObject.transform;
+            WeaponTransform.SetParent(OwnerSection.OwnerVehicle.transform);
+            WeaponTransform.localPosition = Vector3.zero;
+            WeaponTransform.localRotation = Quaternion.identity;
+            Weapon.SetIgnoredColliders(IgnoredColliders);
     	}
     }
 
-
-    public PhxWeaponSystem(PhxVehicleSection Section)
-    {
-    	OwnerSection = Section;
-        Aimers = new List<PhxAimer>();
-
-        IgnoredColliders = OwnerSection.OwnerVehicle.GetOrdnanceColliders();
-    }
 
 
     public void AdjustAimers(Vector3 Target)
@@ -183,9 +187,6 @@ public class PhxWeaponSystem
         {
             CurrBarrel.Recoil();
         }
-
-        //Aimers[CurrAimer++].Fire();
-        //CurrAimer %= Aimers.Count;
         
         FirePointIndex = (FirePointIndex + 1) % FirePoints.Count;
         Weapon.SetFirePoint(FirePoints[FirePointIndex]);

@@ -179,6 +179,7 @@ public class PhxEffectsManager
             {
                 EffectsList = new List<PhxEffect>();
                 PhxEffect NewEffect = new PhxEffect(FXObj);
+                NewEffect.SetLooping(false);
                 EffectsList.Add(NewEffect);
 
                 Effects[NameHash] = EffectsList;
@@ -193,6 +194,7 @@ public class PhxEffectsManager
     public void PlayEffectOnce(string Name, Vector3 position, Quaternion rotation)
     {
         PhxEffect Effect = GetFreeEffect(Name);
+        Effect.SetLooping(false);
 
         if (Effect == null)
         {
@@ -207,6 +209,7 @@ public class PhxEffectsManager
     public PhxEffect LendEffect(string Name)
     {
         PhxEffect Effect = GetFreeEffect(Name);
+        Effect.SetLooping(false);
         if (Effect == null)
         {
             Debug.LogWarningFormat("Failed to lend effect: {0}", Name);
