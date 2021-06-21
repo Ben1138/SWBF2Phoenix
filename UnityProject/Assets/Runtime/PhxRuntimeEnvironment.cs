@@ -110,6 +110,7 @@ public class PhxRuntimeEnvironment
         LuaRT?.Close();
         EnvCon?.Delete();
         PathToHandle.Clear();
+        CraPlaybackManager.Instance.Clear();
     }
 
     public PhxRuntimeScene GetScene()

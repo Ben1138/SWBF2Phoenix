@@ -10,15 +10,15 @@ using System.Reflection;
 #endif
 
 
+public struct PhxTransform
+{
+    public Vector3 Position;
+    public Quaternion Rotation;
+}
+
 public class PhxRuntimeScene
 {
     public Texture2D MapTexture { get; private set; }
-
-    struct RTTransform
-    {
-        public Vector3    Position;
-        public Quaternion Rotation;
-    }
 
     Dictionary<string, PhxClass>    Classes   = new Dictionary<string, PhxClass>();
     Dictionary<string, PhxInstance> Instances = new Dictionary<string, PhxInstance>();
@@ -33,7 +33,8 @@ public class PhxRuntimeScene
     Dictionary<string, PhxRegion>  Regions  = new Dictionary<string, PhxRegion>();
 
     List<GameObject>  WorldRoots = new List<GameObject>();
-    List<RTTransform> CameraShots = new List<RTTransform>();
+    List<PhxTransform> CameraShots = new List<PhxTransform>();
+    int CurrCamIdx;
 
     int InstanceCounter;
 
@@ -72,14 +73,32 @@ public class PhxRuntimeScene
         return null;
     }
 
-    public void AddCameraShot(float quatX, float quatY, float quatZ, float quatW, float posX, float posY, float posZ)
+    public void AddCameraShot(Vector3 position, Quaternion rotation)
     {
-        // TODO: space conversion
-        CameraShots.Add(new RTTransform 
+        CameraShots.Add(new PhxTransform
         {
-            Position = new Vector3(posX, posY, posZ),
-            Rotation = new Quaternion(quatX, quatY, quatZ, quatW)
+            Position = position,
+            Rotation = rotation
         });
+    }
+
+    public PhxTransform GetNextCameraShot()
+    {
+        if (CameraShots.Count == 0)
+        {
+            return new PhxTransform
+            {
+                Position = Vector3.zero,
+                Rotation = Quaternion.identity
+            };
+        }
+
+        PhxTransform camShot = CameraShots[CurrCamIdx++];
+        if (CurrCamIdx >= CameraShots.Count)
+        {
+            CurrCamIdx = 0;
+        }
+        return camShot;
     }
 
     public void Import(World[] worldLayers)

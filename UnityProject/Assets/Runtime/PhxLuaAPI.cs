@@ -293,9 +293,12 @@ public static class PhxLuaAPI
 		
 	}
 
-	public static void AddCameraShot(float quatX, float quatY, float quatZ, float quatW, float posX, float posY, float posZ)
+	public static void AddCameraShot(float quatW, float quatX, float quatY, float quatZ, float posX, float posY, float posZ)
 	{
-		RTS.AddCameraShot(quatX, quatY, quatZ, quatW, posX, posY, posZ);
+		RTS.AddCameraShot(
+			UnityUtils.Vec3FromLibWorld( new LibSWBF2.Types.Vector3 { X = posX,  Y = posY,  Z = posZ } ),
+			UnityUtils.QuatFromLibSkel( new LibSWBF2.Types.Vector4 { X = quatX, Y = quatY, Z = quatZ, W = quatW } )
+		);
 	}
 
 	public static void SetTeamIcon(int teamIdx, string iconName, string hudIconName, string flagIconName)

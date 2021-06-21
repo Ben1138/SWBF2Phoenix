@@ -7,7 +7,7 @@ public class PhxGameMatch
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
     static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
-    static PhxCamera Cam => PhxGameRuntime.GetCamera();
+    static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
 
     public PhxPlayerController Player { get; private set; }
@@ -102,25 +102,19 @@ public class PhxGameMatch
         if (PlayerST == PhxPlayerState.CharacterSelection)
         {
             ShowCharacterSelection();
-            Cam.Fixed();
-            RemoveHUD();
-        }
-        else if (PlayerST == PhxPlayerState.FreeCam)
-        {
-            Cam.Free();
-            GAME.RemoveMenu();
+            CAM.Fixed(RTS.GetNextCameraShot());
             RemoveHUD();
         }
         else if (PlayerST == PhxPlayerState.Spawned)
         {
             GAME.RemoveMenu();
-            Cam.Follow(Player.Pawn);
+            CAM.Follow(Player.Pawn);
             ShowHUD();
         }
-        else
+        else if (PlayerST == PhxPlayerState.FreeCam)
         {
+            CAM.Free();
             GAME.RemoveMenu();
-            Cam.Fixed();
             RemoveHUD();
         }
     }
@@ -161,7 +155,7 @@ public class PhxGameMatch
 
     public void Clear()
     {
-        Cam.Fixed();
+        CAM.Fixed();
 
         GAME.OnMapLoaded -= StartMatch;
         GAME.OnRemoveMenu -= OnRemoveMenu;
@@ -205,7 +199,7 @@ public class PhxGameMatch
 
     public void KillPlayer()
     {
-        Cam.Fixed();
+        CAM.Fixed();
 
         IPhxControlableInstance pawn = Player.Pawn;
         if (pawn != null)
@@ -414,6 +408,7 @@ public class PhxGameMatch
     {
         AvailablePauseMenu = true;
         ShowCharacterSelection();
+        CAM.Fixed(RTS.GetNextCameraShot());
     }
 
     void ShowCharacterSelection()

@@ -8,13 +8,15 @@ public class PhxCharacterSelect : PhxMenuInterface
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
     static PhxGameMatch MTC => PhxGameRuntime.GetMatch();
+    static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
     [Header("References")]
     public PhxUIMap Map;
     public PhxCharacterItem ItemPrefab;
     public RectTransform ListContents;
     public Button BtnSpawn;
-        
+    public Button BtnNextCamera;
+
     [Header("Settings")]
     public float ItemSpace = 5.0f;
     public float MaxItemHeight = 200f;
@@ -123,10 +125,11 @@ public class PhxCharacterSelect : PhxMenuInterface
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Assert(ItemPrefab   != null);
-        Debug.Assert(ListContents != null);
-        Debug.Assert(BtnSpawn     != null);
-        Debug.Assert(Map          != null);
+        Debug.Assert(ItemPrefab    != null);
+        Debug.Assert(ListContents  != null);
+        Debug.Assert(BtnSpawn      != null);
+        Debug.Assert(BtnNextCamera != null);
+        Debug.Assert(Map           != null);
 
         // For soem reason, we have to trigger the volume in order
         // for it to be actually active...
@@ -134,6 +137,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         GAME.CharSelectPPVolume.gameObject.SetActive(true);
 
         BtnSpawn.onClick.AddListener(SpawnClicked);
+        BtnNextCamera.onClick.AddListener(NextCameraClicked);
         Map.OnCPSelect += OnCPSelected;
 
         PhxCommandpost[] cps = RTS.GetCommandPosts();
@@ -165,5 +169,10 @@ public class PhxCharacterSelect : PhxMenuInterface
         {
             MTC.SpawnPlayer(CurrentSelection, SpawnCP);
         }
+    }
+
+    void NextCameraClicked()
+    {
+        CAM.Fixed(RTS.GetNextCameraShot());
     }
 }
