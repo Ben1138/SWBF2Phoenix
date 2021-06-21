@@ -31,7 +31,7 @@ public class PhxVehicleTesting : PhxUnityScript
             Quaternion.identity
         );        
 		
-		MATCH.SpawnPlayer(scene.GetClass("rep_inf_ep3_rifleman"), transform.position + new Vector3(-3f,0f,-2f), Quaternion.identity);
+		MATCH.SpawnPlayer(scene.GetClass("rep_inf_ep2_rifleman"), transform.position + new Vector3(-3f,0f,-2f), Quaternion.identity);
     }
 
     void Update()

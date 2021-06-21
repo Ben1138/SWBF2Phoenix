@@ -26,7 +26,8 @@ public sealed class PhxPropertyDB
 
     public void Register<T>(string propName, T variable) where T : IPhxPropRef
     {
-        Properties.Add(propName.ToLowerInvariant(), variable);
+        //Properties.Add(propName.ToLowerInvariant(), variable);
+        Properties[propName.ToLowerInvariant()] = variable;
     }
 
     public void SetProperty(string propName, object propValue)
