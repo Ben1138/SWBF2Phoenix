@@ -86,5 +86,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CPButtonPrefab: {fileID: 7264752958408131541, guid: 7f85f29bf9b52e849b27bd9d90c9cb37, type: 3}
-  ClipableCPs: 0
-  UpdateCPs: 1
+  Mode: 0
+  CPUpdateFreq: 10
+  CPSelectAnimSpeed: 1
+  Zoom: 300
+  MapOffset: {x: 0, y: 0}
+  MapTexOffset: {x: 0, y: 0.015}

@@ -11,13 +11,23 @@ public class PhxUIMap : MonoBehaviour
     PhxGameMatch MATCH => PhxGameRuntime.GetMatch();
 
 
+    public enum PhxUIMapMode
+    {
+        Static,
+        StaticClickable,
+        Dynamic
+    }
+
     [Header("References")]
     public Button CPButtonPrefab;
 
     [Header("Settings")]
-    public bool ClipableCPs = false;
+    public PhxUIMapMode Mode = PhxUIMapMode.Static;
     public float CPUpdateFreq = 10f;
     public float CPSelectAnimSpeed = 1f;
+    public float Zoom = 300f;
+    public Vector2 MapOffset = Vector2.zero;
+    public Vector2 MapTexOffset = new Vector2(-0.01f, 0.045f);
 
     public Action<PhxCommandpost> OnCPSelect;
 
@@ -30,6 +40,8 @@ public class PhxUIMap : MonoBehaviour
     bool[] CPSelected = new bool[64];
     float[] CPSelectAnim = new float[64];
     int CPCount = 0;
+
+    Vector2 InitMapTexOffset = Vector2.zero;
 
     AudioClip CPSelectSound;
     Button[] CPButtons = new Button[64];
@@ -44,7 +56,7 @@ public class PhxUIMap : MonoBehaviour
         }
     }
 
-    public void SelectCP(int idx)
+    void SelectCP(int idx)
     {
         Debug.Assert(idx >= 0 && idx < CommandPosts.Length);
         Array.Clear(CPSelected, 0, CPSelected.Length);
@@ -73,9 +85,17 @@ public class PhxUIMap : MonoBehaviour
         // TODO: Load texture from "MapTexture" property specified in PhxCommandpost class
         Texture2D cpTexture = TextureLoader.Instance.ImportUITexture("hud_flag_icon");
         MapMat.SetTexture("_CPTex", cpTexture);
-        MapMat.SetTexture("_MapTex", SCENE.MapTexture);
 
-        if (ClipableCPs)
+        if (SCENE.MapTexture != null)
+        {
+            Debug.Assert(SCENE.MapTexture.width == SCENE.MapTexture.height);
+            MapMat.SetTexture("_MapTex", SCENE.MapTexture);
+        }
+
+        RectTransform rt = transform as RectTransform;
+        MapMat.SetVector("_SpriteSize", new Vector4(rt.sizeDelta.x, rt.sizeDelta.y));
+
+        if (Mode == PhxUIMapMode.StaticClickable)
         {
             for (int i = 0; i < CPButtons.Length; ++i)
             {
@@ -104,7 +124,7 @@ public class PhxUIMap : MonoBehaviour
         RefreshTimer += Time.deltaTime;
         if (CPUpdateFreq != 0f && RefreshTimer > CPUpdateFreq)
         {
-            if (ClipableCPs)
+            if (Mode == PhxUIMapMode.StaticClickable)
             {
                 for (int i = 0; i < CPCount; ++i)
                 {
@@ -135,13 +155,20 @@ public class PhxUIMap : MonoBehaviour
                 CPPositions[cpIdx][cpVecIdx + 1] = pos.y;
             }
 
-            // zoom is in world units per pixel
-            float zoom = (posMax - posMin).magnitude * 1.25f;
+            // Take the mean of all cp positions and flip the axis
+            Vector2 worldOffset = positionSum / -CPCount;
 
-            // Take the of all cp positions mean and flip the axis
-            Vector2 mapOffset = positionSum  / - CPCount;
+            if (Mode != PhxUIMapMode.Dynamic)
+            {
+                // zoom is in world units per UV
+                Zoom = (posMax - posMin).magnitude * 1.15f;
 
-            if (ClipableCPs)
+                MapOffset = worldOffset;
+            }
+
+            InitMapTexOffset = -worldOffset / Zoom;
+
+            if (Mode == PhxUIMapMode.StaticClickable)
             {
                 RectTransform rectT = transform as RectTransform;
 
@@ -151,22 +178,23 @@ public class PhxUIMap : MonoBehaviour
                     int cpVecIdx = (i % 2) * 2;
 
                     Vector2 cpWorldPos = new Vector2(CPPositions[cpIdx][cpVecIdx], CPPositions[cpIdx][cpVecIdx + 1]);
-                    Vector2 cpMapPos = ((cpWorldPos + mapOffset) / zoom) + new Vector2(0.5f, 0.5f);
+                    Vector2 cpMapPos = ((cpWorldPos + MapOffset) / Zoom) + new Vector2(0.5f, 0.5f);
 
                     CPButtons[i].gameObject.SetActive(true);
                     RectTransform t = CPButtons[i].transform as RectTransform;
                     t.anchoredPosition = new Vector3(cpMapPos.x * rectT.rect.width, cpMapPos.y * rectT.rect.height, 0f);
                 }
             }
-            
 
-            MapMat.SetFloat("_Zoom", zoom);
-
-            MapMat.SetFloat("_MapOffsetX", mapOffset.x);
-            MapMat.SetFloat("_MapOffsetY", mapOffset.y);
+            if (SCENE.MapTexture != null)
+            {
+                float mapTexSizeFactor = Zoom / SCENE.MapTexture.width;
+                MapMat.SetFloat("_MapTexSize", mapTexSizeFactor);
+            }
 
             MapMat.SetVectorArray("_CPPositions", CPPositions);
             MapMat.SetFloat("_CPCount", CPCount);
+            //MapMat.SetVector("_MapTexOffset", InitMapTexOffset + MapTexOffset);
 
             RefreshTimer = 0f;
         }
@@ -184,6 +212,11 @@ public class PhxUIMap : MonoBehaviour
                 CPSelectAnim[i] = Mathf.Clamp01(CPSelectAnim[i] - Time.deltaTime / CPSelectAnimSpeed);
             }
         }
+
+        MapMat.SetVector("_MapTexOffset", InitMapTexOffset + MapTexOffset);
+
+        MapMat.SetFloat("_Zoom", Zoom);
+        MapMat.SetVector("_MapOffset", MapOffset);
 
         MapMat.SetColorArray("_CPColors", CPColors);
         MapMat.SetFloatArray("_CPSelected", CPSelectAnim);

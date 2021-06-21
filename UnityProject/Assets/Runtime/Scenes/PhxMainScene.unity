@@ -477,6 +477,7 @@ MonoBehaviour:
   UIAudioMixer: {fileID: 24300002, guid: 5b1d0ca51cd0f274db1afd97adfe1c4e, type: 2}
   Camera: {fileID: 1823688469}
   GroundPhyMat: {fileID: 13400000, guid: 7458103be9a58244089e1784868fb4ae, type: 2}
+  HUDPrefab: {fileID: 7293890149350655508, guid: 694c8bdb39040774686521aa6d278167, type: 3}
 --- !u!4 &1641162174
 Transform:
   m_ObjectHideFlags: 0
