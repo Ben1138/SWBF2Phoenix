@@ -10,11 +10,6 @@ public class PhxGameMatch
     static PhxCamera Cam => PhxGameRuntime.GetCamera();
 
 
-    public Color NeutralColor  { get; private set; } = new Color(1.0f, 1.0f, 1.0f);
-    public Color FriendlyColor { get; private set; } = new Color(0.0f, 0.0f, 1.0f);
-    public Color EnemyColor    { get; private set; } = new Color(1.0f, 0.0f, 0.0f);
-    public Color LocalsColor   { get; private set; } = new Color(1.0f, 1.0f, 0.0f);
-
     public PhxPlayerController Player { get; private set; }
 
     List<PhxPawnController> AIControllers = new List<PhxPawnController>();
@@ -31,7 +26,6 @@ public class PhxGameMatch
 
     bool LVLsLoaded = false;
     bool AvailablePauseMenu = false;
-    bool PauseMenuActive = false;
     int NameCounter;
 
 
@@ -109,25 +103,25 @@ public class PhxGameMatch
         {
             ShowCharacterSelection();
             Cam.Fixed();
+            RemoveHUD();
         }
         else if (PlayerST == PhxPlayerState.FreeCam)
         {
             Cam.Free();
-            if (PauseMenuActive)
-            {
-                GAME.RemoveMenu();
-                PauseMenuActive = false;
-            }
+            GAME.RemoveMenu();
+            RemoveHUD();
         }
         else if (PlayerST == PhxPlayerState.Spawned)
         {
             GAME.RemoveMenu();
             Cam.Follow(Player.Pawn);
+            ShowHUD();
         }
         else
         {
             GAME.RemoveMenu();
             Cam.Fixed();
+            RemoveHUD();
         }
     }
 
@@ -192,14 +186,13 @@ public class PhxGameMatch
 
         if (AvailablePauseMenu && Player.CancelPressed)
         {
-            if (PauseMenuActive)
+            if (GAME.IsMenuActive(GAME.PauseMenuPrefab))
             {
                 GAME.RemoveMenu();
             }
             else
             {
                 GAME.ShowMenu(GAME.PauseMenuPrefab);
-                PauseMenuActive = true;
             }
 
             if (UIBack == null)
@@ -401,7 +394,6 @@ public class PhxGameMatch
     // Lua API end
     // ====================================================================================
 
-
     bool CheckTeamIdx(int teamIdx)
     {
         if (teamIdx < 0 || teamIdx >= MAX_TEAMS)
@@ -426,8 +418,7 @@ public class PhxGameMatch
 
     void ShowCharacterSelection()
     {
-        PauseMenuActive = false;
-        PhxCharacterSelect charSel = GAME.ShowMenu(GAME.CharacterSelectPrefab).GetComponent<PhxCharacterSelect>();
+        PhxCharacterSelect charSel = GAME.ShowMenu(GAME.CharacterSelectPrefab);
         foreach (PhxUnitClass cl in Teams[0].UnitClasses)
         {
             charSel.Add(cl.Unit);
@@ -435,12 +426,35 @@ public class PhxGameMatch
         //charSel.Add(Teams[0].HeroClass);
     }
 
-    void OnRemoveMenu()
+    void ShowHUD()
     {
-        PauseMenuActive = false;
-        if (PlayerST == PhxPlayerState.CharacterSelection)
+        if (GAME.IsMenuActive(GAME.HUDPrefab))
         {
-            ShowCharacterSelection();
+            return;
+        }
+        GAME.ShowMenu(GAME.HUDPrefab);
+    }
+
+    void RemoveHUD()
+    {
+        if (GAME.IsMenuActive(GAME.HUDPrefab))
+        {
+            GAME.RemoveMenu();
+        }
+    }
+
+    void OnRemoveMenu(Type menuType)
+    {
+        if (menuType == GAME.PauseMenuPrefab.GetType())
+        {
+            if (PlayerST == PhxPlayerState.CharacterSelection)
+            {
+                ShowCharacterSelection();
+            }
+            else if (PlayerST == PhxPlayerState.Spawned)
+            {
+                ShowHUD();
+            }
         }
     }
 }

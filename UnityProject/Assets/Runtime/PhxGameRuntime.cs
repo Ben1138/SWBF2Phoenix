@@ -29,20 +29,21 @@ public class PhxGameRuntime : MonoBehaviour
     public string StartupUnityScene;
 
     [Header("References")]
-    public PhxLoadscreen    InitScreenPrefab;
-    public PhxLoadscreen    LoadScreenPrefab;
-    public PhxMenuInterface MainMenuPrefab;
-    public PhxMenuInterface PauseMenuPrefab;
-    public PhxMenuInterface CharacterSelectPrefab;
-    public Transform        CharSelectTransform;
-    public Volume           CharSelectPPVolume;
-    public AudioMixerGroup  UIAudioMixer;
-    public PhxCamera        Camera;
-    public PhysicMaterial   GroundPhyMat;
+    public PhxLoadscreen      InitScreenPrefab;
+    public PhxLoadscreen      LoadScreenPrefab;
+    public PhxMainMenu        MainMenuPrefab;
+    public PhxPauseMenu       PauseMenuPrefab;
+    public PhxCharacterSelect CharacterSelectPrefab;
+    public Transform          CharSelectTransform;
+    public Volume             CharSelectPPVolume;
+    public AudioMixerGroup    UIAudioMixer;
+    public PhxCamera          Camera;
+    public PhysicMaterial     GroundPhyMat;
+    public PhxHUD             HUDPrefab;
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMapLoaded;
-    public Action OnRemoveMenu;
+    public Action<Type> OnRemoveMenu;
 
     PhxPath AddonPath => GamePath / "GameData/addon";
     PhxPath StdLVLPC;
@@ -240,14 +241,14 @@ public class PhxGameRuntime : MonoBehaviour
         };
     }
 
-    public PhxMenuInterface ShowMenu(PhxMenuInterface prefab)
+    public T ShowMenu<T>(T prefab) where T : PhxMenuInterface
     {
         if (CurrentMenu != null)
         {
             RemoveMenu(false);
         }
         CurrentMenu = Instantiate(prefab.gameObject).GetComponent<PhxMenuInterface>();
-        return CurrentMenu;
+        return (T)CurrentMenu;
     }
 
     public void RemoveMenu()
@@ -255,17 +256,24 @@ public class PhxGameRuntime : MonoBehaviour
         RemoveMenu(true);
     }
 
+    public bool IsMenuActive(PhxMenuInterface prefab)
+    {
+        Debug.Assert(prefab != null);
+        return CurrentMenu == null ? false : CurrentMenu.GetType() == prefab.GetType();
+    }
+
     void RemoveMenu(bool bInvokeEvent)
     {
         if (CurrentMenu != null)
         {
+            Type menuType = CurrentMenu.GetType();
             CurrentMenu.Clear();
             Destroy(CurrentMenu.gameObject);
             CurrentMenu = null;
-        }
-        if (bInvokeEvent)
-        {
-            OnRemoveMenu?.Invoke();
+            if (bInvokeEvent)
+            {
+                OnRemoveMenu?.Invoke(menuType);
+            }
         }
     }
 
@@ -418,6 +426,7 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(UIAudioMixer         != null);
         Debug.Assert(Camera               != null);
         Debug.Assert(GroundPhyMat         != null);
+        Debug.Assert(HUDPrefab            != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
         {
