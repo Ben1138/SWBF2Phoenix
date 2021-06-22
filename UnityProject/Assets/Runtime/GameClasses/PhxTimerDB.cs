@@ -10,12 +10,12 @@ public class PhxTimerDB
 	public struct PhxTimer
     {
 		public string Name;
-		public float Elapsed;
-		public float Target;
+		public float Time;
 		public float Rate;
 		public bool InUse;
 		public bool IsRunning;
 	}
+
 	public List<int> InUseIndices { get; private set; } = new List<int>();
 
 	PhxTimer[] Timers = new PhxTimer[MAX_TIMERS];
@@ -31,7 +31,7 @@ public class PhxTimerDB
 			if (!Timers[i].InUse)
 			{
 				Timers[i].Name = timerName;
-				Timers[i].Elapsed = 0.0f;
+				Timers[i].Time = 0.0f;
 				Timers[i].Rate = 1.0f;
 				Timers[i].InUse = true;
 				Timers[i].IsRunning = false;
@@ -74,8 +74,7 @@ public class PhxTimerDB
 	{
 		if (!CheckTimerIdx(timer)) return;
 		int idx = (int)timer;
-		Timers[idx].Elapsed = 0.0f;
-		Timers[idx].Target = value;
+		Timers[idx].Time = value;
 	}
 
 	public int? FindTimer(string name)
@@ -87,7 +86,6 @@ public class PhxTimerDB
 		return null;
     }
 
-
 	public void Update(float deltaTime)
     {
 		for (int i = 0; i < InUseIndices.Count; ++i)
@@ -95,11 +93,12 @@ public class PhxTimerDB
 			int idx = InUseIndices[i];
 			if (Timers[idx].IsRunning)
             {
-				Timers[idx].Elapsed += Timers[idx].Rate * deltaTime;
-
-				if (Timers[idx].Elapsed >= Timers[idx].Target)
+				Timers[idx].Time -= Timers[idx].Rate * deltaTime;
+				if (Timers[idx].Time <= 0f)
                 {
-					GameLuaEvents.Invoke(GameLuaEvents.Event.OnTimerElapse, idx);
+					GameLuaEvents.InvokeParameterized(GameLuaEvents.Event.OnTimerElapse, idx);
+
+					Timers[idx].Time = 0f;
 					Timers[idx].IsRunning = false;
 				}
             }
