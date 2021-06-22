@@ -7,6 +7,10 @@ public abstract class PhxInstance : MonoBehaviour
 {
     public PhxPropertyDB P { get; private set; } = new PhxPropertyDB();
 
+
+    public PhxProp<int> Team = new PhxProp<int>(0);
+
+
     public abstract void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties);
 }
 

@@ -20,10 +20,11 @@ public class PhxRuntimeScene
 {
     public Texture2D MapTexture { get; private set; }
 
-    Dictionary<string, PhxClass>    Classes   = new Dictionary<string, PhxClass>();
-    Dictionary<string, PhxInstance> Instances = new Dictionary<string, PhxInstance>();
+    List<PhxInstance>    Instances    = new List<PhxInstance>();
+    List<PhxCommandpost> CommandPosts = new List<PhxCommandpost>();
 
-    List<PhxCommandpost>            CommandPosts = new List<PhxCommandpost>();
+    Dictionary<string, PhxClass> Classes     = new Dictionary<string, PhxClass>();
+    Dictionary<string, int>      InstanceMap = new Dictionary<string, int>();
 
     PhxRuntimeEnvironment ENV;
     Container EnvCon;
@@ -46,9 +47,9 @@ public class PhxRuntimeScene
 
     public void SetProperty(string instName, string propName, object propValue)
     {
-        if (Instances.TryGetValue(instName, out PhxInstance inst))
+        if (InstanceMap.TryGetValue(instName, out int instIdx))
         {
-            inst.P.SetProperty(propName, propValue);
+            Instances[instIdx].P.SetProperty(propName, propValue);
             return;
         }
         Debug.LogWarningFormat("Could not find instance '{0}' to set property '{1}'!", instName, propName);
@@ -64,12 +65,58 @@ public class PhxRuntimeScene
         Debug.LogWarningFormat("Coukd not find odf class '{0}' to set class property '{1}'!", className, propName);
     }
 
+    public bool IsObjectAlive(string instName)
+    {
+        if (InstanceMap.TryGetValue(instName, out int instIdx))
+        {
+            return Instances[instIdx].gameObject.activeSelf;
+        }
+        return false;
+    }
+
     public PhxRegion GetRegion(string name)
     {
         if (Regions.TryGetValue(name, out PhxRegion region))
         {
             return region;
         }
+        return null;
+    }
+
+    public int? GetInstanceIndex(PhxInstance inst)
+    {
+        int idx = Instances.IndexOf(inst);
+        return idx < 0 ? null : new int?(idx);
+    }
+
+    public int? GetInstanceIndex(string instName)
+    {
+        if (InstanceMap.TryGetValue(instName, out int instIdx))
+        {
+            return instIdx;
+        }
+        return null;
+    }
+
+    public T GetInstance<T>(string instName) where T : PhxInstance
+    {
+        if (InstanceMap.TryGetValue(instName, out int instIdx))
+        {
+            return GetInstance<T>(instIdx);
+        }
+
+        Debug.LogWarning($"Cannot inf Instance '{instName}'!");
+        return null;
+    }
+
+    public T GetInstance<T>(int instIdx) where T : PhxInstance
+    {
+        if (instIdx >= 0 && instIdx < Instances.Count)
+        {
+            return Instances[instIdx] as T;
+        }
+
+        Debug.LogWarning($"Instance index '{instIdx}' is out of bounds ({Instances.Count})!");
         return null;
     }
 
@@ -131,8 +178,8 @@ public class PhxRuntimeScene
                     PhxRegion reg = region.Value.gameObject.AddComponent<PhxRegion>();
 
                     // invoke Lua events
-                    reg.OnEnter += (PhxInstance obj) => GameLuaEvents.Invoke(GameLuaEvents.Event.OnEnterRegion, region.Key, region.Key, obj.name);
-                    reg.OnLeave += (PhxInstance obj) => GameLuaEvents.Invoke(GameLuaEvents.Event.OnLeaveRegion, region.Key, region.Key, obj.name);
+                    reg.OnEnter += (IPhxControlableInstance obj) => GameLuaEvents.InvokeParameterized(GameLuaEvents.Event.OnEnterRegion, region.Key, region.Key, obj.GetInstance().name);
+                    reg.OnLeave += (IPhxControlableInstance obj) => GameLuaEvents.InvokeParameterized(GameLuaEvents.Event.OnLeaveRegion, region.Key, region.Key, obj.GetInstance().name);
 
                     Regions.Add(region.Key, reg);
                 }
@@ -301,7 +348,9 @@ public class PhxRuntimeScene
             PhxClass odf = GetClass(ec);
             PhxInstance script = (PhxInstance)instanceObject.AddComponent(instType);
             script.InitInstance(instOrClass, odf);
-            Instances.Add(instanceObject.name, script);
+
+            Instances.Add(script);
+            InstanceMap.Add(instanceObject.name, Instances.Count - 1);
 
             if (script is PhxCommandpost)
             {

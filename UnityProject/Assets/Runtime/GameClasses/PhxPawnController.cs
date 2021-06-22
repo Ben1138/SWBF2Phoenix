@@ -17,7 +17,9 @@ public abstract class PhxPawnController
     public Vector2 MoveDirection;
     public Vector3 ViewDirection;
 
+    public PhxCommandpost CapturePost;
     public int Team = 0;
+
 
     public bool IsIdle => !ShootPrimary && !Crouch && MoveDirection == Vector2.zero;
     public float IdleTime { get; private set; }
@@ -36,6 +38,7 @@ public abstract class PhxPawnController
     public void RemovePawn()
     {
         Pawn = null;
+        CapturePost = null;
     }
 
     public void ResetIdleTime()
