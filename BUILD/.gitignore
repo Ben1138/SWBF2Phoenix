@@ -1,0 +1,7 @@
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!7za.exe
+!PackageWindows.bat
