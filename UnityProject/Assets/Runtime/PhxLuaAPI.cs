@@ -39,7 +39,7 @@ public static class PhxLuaAPI
 
 	public static int ScriptCB_GetCONMaxTimeLimit()
 	{
-		return 0;
+		return 60 * 60;
 	}
 
 	public static int ScriptCB_GetCONNumBots()
@@ -180,20 +180,25 @@ public static class PhxLuaAPI
 	{
 		
 	}
-	public static int AddAIGoal(int teamIdx, string goalName, float goalWeight)
+	public static int? AddAIGoal(int teamIdx, string goalName, float goalWeight)
 	{
-		return 0;
+		return null;
 	}
 
-	public static int AddAIGoal(int teamIdx, string goalName, float goalWeight, string captureRegion)
+	public static int? AddAIGoal(int teamIdx, string goalName, float goalWeight, string captureRegion)
 	{
-		return 0;
+		return null;
 	}
 
-	public static int AddAIGoal(int teamIdx, string goalName, float goalWeight, string captureRegion, int flagPtr)
+	public static int? AddAIGoal(int teamIdx, string goalName, float goalWeight, string captureRegion, int flagPtr)
 	{
-		return 0;
+		return null;
 	}
+
+	public static void DeleteAIGoal(int? goalPtr)
+    {
+
+    }
 
 	public static void ClearAIGoals(int teamIdx)
     {
@@ -499,6 +504,21 @@ public static class PhxLuaAPI
 
     }
 
+	public static int GetCommandPostTeam(int? cpPtr)
+    {
+		if (!cpPtr.HasValue)
+        {
+			return 0;
+        }			
+		PhxCommandpost cp = RTS.GetInstance<PhxCommandpost>(cpPtr.Value);
+		if (cp != null)
+        {
+			return cp.Team;
+        }
+		Debug.LogWarning($"Illegal CommandPost Lua pointer '{cpPtr.Value}'!");
+		return 0;
+    }
+
 	public static float GetCommandPostBleedValue(string cpName, int teamIdx)
 	{
 		return 0.0f;
@@ -544,9 +564,15 @@ public static class PhxLuaAPI
 
     }
 
+	public static void CompleteObjective(string objectiveName)
+	{
+
+	}
+
 	public static void MissionVictory(object teams)
     {
 		// teams can either be one int (1), or a table of ints {1,2}
+		Debug.Log($"Team '{teams}' wins!");
 	}
 
 	public static int? CreateTimer(string timerName)
@@ -556,6 +582,10 @@ public static class PhxLuaAPI
 
 	public static void DestroyTimer(int? timer)
 	{
+		if (MT.ShowTimer == timer)
+        {
+			MT.ShowTimer = null;
+		}
 		TDB.DestroyTimer(timer);
 	}
 
@@ -579,20 +609,40 @@ public static class PhxLuaAPI
 		TDB.SetTimerValue(timer, value);
 	}
 
+	public static void ReleaseTimerElapse(int? timerCallback)
+    {
+		// Some scripts call this to notify their timer callback
+		// to be obsolete, so that it can be deleted.
+		// Example:
+
+		//eventPtr = OnTimerElapse(
+		//	function()
+		//		ReleaseTimerElapse(eventPtr)
+		//		eventPtr = nil
+		//	end,
+		//	some_timer
+		//)
+	}
+
 	public static void ShowTimer(int? timer)
     {
 		// only one neutral timer can be shown at a time.
 		// when called with 'nil', hide the timer
-    }
+		MT.ShowTimer = timer;
+	}
 
 	public static void SetDefeatTimer(int? timer, int teamIdx)
     {
-		// only one defeat timer can be shown at a time.
+		// only one defeat/victory timer can be shown at a time.
+		// when called with 'nil', hide the timer
+		MT.SetDefeatTimer(timer, teamIdx);
 	}
 
 	public static void SetVictoryTimer(int? timer, int teamIdx)
 	{
-		// only one victory timer can be shown at a time.
+		// only one victory/defeat timer can be shown at a time.
+		// when called with 'nil', hide the timer
+		MT.SetVictoryTimer(timer, teamIdx);
 	}
 
 	public static int? FindTimer(string timerName)
@@ -602,17 +652,17 @@ public static class PhxLuaAPI
 
 	public static int GetObjectTeam(string objName)
     {
-		return 0;
+		return RTS.GetInstance<PhxInstance>(objName).Team;
     }
 
-	public static int GetObjectTeam(int? objPtr)
+	public static int GetObjectTeam(int objPtr)
 	{
-		return 0;
+		return RTS.GetInstance<PhxInstance>(objPtr).Team;
 	}
 
 	public static bool IsObjectAlive(string objName)
 	{
-		return false;
+		return RTS.IsObjectAlive(objName);
 	}
 
 	public static void KillObject(string objName)
@@ -695,13 +745,17 @@ public static class PhxLuaAPI
 
     }
 
-	public static int GetObjectPtr(string objName)
+	public static int? GetObjectPtr(string objName)
     {
-		return 0;
-    }
+		return RTS.GetInstanceIndex(objName);
+	}
 
-	public static string GetEntityName(object objPtr)
+	public static string GetEntityName(int? objPtr)
     {
+		if (objPtr.HasValue)
+        {
+			return RTS.GetInstance<PhxInstance>(objPtr.Value).name;
+        }
 		return null;
     }
 
@@ -859,15 +913,22 @@ public static class PhxLuaAPI
 	}
 	public static void OnFinishCapture(PhxLuaRuntime.LFunction callback)
 	{
+		Debug.Log("Registered callback for 'OnFinishCapture'");
+		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishCapture, callback);
 		// callback paramters:
 		// - postPtr
 	}
 	public static void OnFinishCaptureName(PhxLuaRuntime.LFunction callback, string cpName)
 	{
-		
+		Debug.Log("Registered callback for 'OnFinishCaptureName'");
+		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishCaptureName, callback, cpName);
+		// callback paramters:
+		// - postPtr
 	}
 	public static void OnFinishNeutralize(PhxLuaRuntime.LFunction callback)
 	{
+		Debug.Log("Registered callback for 'OnFinishNeutralize'");
+		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishNeutralize, callback);
 		// callback paramters:
 		// - postPtr
 	}
@@ -925,9 +986,18 @@ public static class GameLuaEvents
 		OnEnterRegion,
 		OnEnterRegionTeam,
 		OnLeaveRegion,
-		OnTimerElapse
+		OnTimerElapse,
+		OnFinishCapture,
+		OnFinishCaptureName,
+		OnFinishNeutralize
 	}
 
+	/// <summary>
+	/// Maps parameterized callbacks. For example, Someone in Lua could call something like 'OnEnterRegion', 
+	/// providing a callback and the name of the region this event should react to.
+	/// Hence, we need to store who wants to listen to what exactly.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
 	class CallbackDict<T>
     {
 		Dictionary<T, List<PhxLuaRuntime.LFunction>> Callbacks = new Dictionary<T, List<PhxLuaRuntime.LFunction>>();
@@ -964,37 +1034,59 @@ public static class GameLuaEvents
 		}
 	}
 
-	static Dictionary<Event, CallbackDict<object>> Callbacks = new Dictionary<Event, CallbackDict<object>>();
-	static Dictionary<int, (Event, int)> GlobalIdxDict = new Dictionary<int, (Event, int)>();
+	static Dictionary<Event, CallbackDict<object>> ParameterizedCallbacks = new Dictionary<Event, CallbackDict<object>>();
+	static Dictionary<Event, List<PhxLuaRuntime.LFunction>> Callbacks = new Dictionary<Event, List<PhxLuaRuntime.LFunction>>();
+	//static Dictionary<int, (Event, int)> GlobalIdxDict = new Dictionary<int, (Event, int)>();
 	static int GlobalIdxCounter = 0;
 
 	static CallbackDict<object> Get(Event ev)
 	{
-		if (Callbacks.TryGetValue(ev, out CallbackDict<object> inner))
+		if (ParameterizedCallbacks.TryGetValue(ev, out CallbackDict<object> inner))
 		{
 			return inner;
 		}
 
 		inner = new CallbackDict<object>();
-		Callbacks.Add(ev, inner);
+		ParameterizedCallbacks.Add(ev, inner);
 		return inner;
 	}
 
 	public static void Clear()
     {
+		ParameterizedCallbacks.Clear();
 		Callbacks.Clear();
-		GlobalIdxDict.Clear();
 	}
 
-	public static int Register(Event ev, PhxLuaRuntime.LFunction callback, object key)
+	public static void Register(Event ev, PhxLuaRuntime.LFunction callback)
 	{
-		int localIdx = Get(ev).AddCallback(key, callback);
-		GlobalIdxDict.Add(GlobalIdxCounter, (ev, localIdx));
-		return GlobalIdxCounter++;
+		if (Callbacks.TryGetValue(ev, out var callbacks))
+        {
+			callbacks.Add(callback);
+			return;
+		}
+		Callbacks.Add(ev, new List<PhxLuaRuntime.LFunction>() { callback });
+	}
+
+	public static void Register(Event ev, PhxLuaRuntime.LFunction callback, object key)
+	{
+		Get(ev).AddCallback(key, callback);
 	}
 
 	// To be called by environment
-	public static void Invoke(Event ev, object key, params object[] eventArgs)
+	public static void Invoke(Event ev, params object[] eventArgs)
+	{
+		if (Callbacks.TryGetValue(ev, out List<PhxLuaRuntime.LFunction> callbacks))
+		{
+			for (int i = 0; i < callbacks.Count; ++i)
+			{
+				callbacks[i].Invoke(eventArgs);
+				Debug.Log($"Invoked Lua callback for '{ev}'");
+			}
+		}
+	}
+
+	// To be called by environment
+	public static void InvokeParameterized(Event ev, object key, params object[] eventArgs)
     {
 		Get(ev).Invoke(key, eventArgs);
 	}

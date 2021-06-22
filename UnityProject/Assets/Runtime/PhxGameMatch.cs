@@ -8,7 +8,15 @@ public class PhxGameMatch
     static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
     static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    static PhxTimerDB TDB => PhxGameRuntime.GetTimerDB();
 
+
+    public static Color ColorNeutral   = Color.white;
+    public static Color ColorEnemy     = Color.red;
+    public static Color ColorFriendly  = Color.green;
+    public static Color ColorLocals    = Color.yellow;
+
+    public int? ShowTimer = null;
 
     public PhxPlayerController Player { get; private set; }
 
@@ -45,6 +53,11 @@ public class PhxGameMatch
 
     public class PhxTeam
     {
+        public enum TimerDisplay
+        {
+            Victory, Defeat
+        }
+
         public string Name = "UNKNOWN TEAM";
         public float Aggressiveness = 1.0f;
         public Texture2D Icon = null;
@@ -54,6 +67,9 @@ public class PhxGameMatch
         public HashSet<PhxUnitClass> UnitClasses = new HashSet<PhxUnitClass>();
         public PhxClass HeroClass = null;
         public bool[] Friends = new bool[MAX_TEAMS];
+
+        public int? Timer = null;
+        public TimerDisplay TimerMode = TimerDisplay.Defeat;
     }
 
     public PhxTeam[] Teams { get; private set; } = new PhxTeam[MAX_TEAMS];
@@ -70,6 +86,9 @@ public class PhxGameMatch
         for (int i = 0; i < MAX_TEAMS; ++i)
         {
             Teams[i] = new PhxTeam();
+
+            // Everyone if befriended with themselfs
+            Teams[i].Friends[i] = true;
         }
 
         GAME.OnRemoveMenu += OnRemoveMenu;
@@ -81,17 +100,17 @@ public class PhxGameMatch
     {
         if (teamId == 0)
         {
-            return Color.white;
+            return ColorNeutral;
         }
         else if (teamId == Player.Team || IsFriend(Player.Team, teamId))
         {
-            return Color.green;
+            return ColorFriendly;
         }
         else if (teamId >= 3)
         {
-            return Color.yellow;
+            return ColorLocals;
         }
-        return Color.red;
+        return ColorEnemy;
     }
 
     public void SetPlayerState(PhxPlayerState st)
@@ -271,9 +290,40 @@ public class PhxGameMatch
         return player;
     }
 
+    public (int?, PhxTeam.TimerDisplay) GetTeamTimer(int teamIdx)
+    {
+        if (!CheckTeamIdx(--teamIdx) || !Teams[teamIdx].Timer.HasValue)
+        {
+            return (null, PhxTeam.TimerDisplay.Defeat);
+        }
+
+        TDB.GetTimer(Teams[teamIdx].Timer.Value, out PhxTimerDB.PhxTimer timer);
+        if (!timer.InUse)
+        {
+            Teams[teamIdx].Timer = null;
+            Teams[teamIdx].TimerMode = PhxTeam.TimerDisplay.Defeat;
+        }
+
+        return (Teams[teamIdx].Timer, Teams[teamIdx].TimerMode);
+    }
+
     // ====================================================================================
     // Lua API start
     // ====================================================================================
+
+    public void SetDefeatTimer(int? timerPtr, int teamIdx)
+    {
+        if (!CheckTeamIdx(--teamIdx)) return;
+        Teams[teamIdx].Timer = timerPtr;
+        Teams[teamIdx].TimerMode = PhxTeam.TimerDisplay.Defeat;
+    }
+
+    public void SetVictoryTimer(int? timerPtr, int teamIdx)
+    {
+        if (!CheckTeamIdx(--teamIdx)) return;
+        Teams[teamIdx].Timer = timerPtr;
+        Teams[teamIdx].TimerMode = PhxTeam.TimerDisplay.Victory;
+    }
 
     public void SetTeamName(int teamIdx, string name)
     {

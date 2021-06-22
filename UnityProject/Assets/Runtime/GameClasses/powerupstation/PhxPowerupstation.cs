@@ -149,7 +149,7 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         PowerupRegion.OnLeave += OnEffectRegionLeave;
     }
 
-    void OnEffectRegionEnter(PhxInstance other)
+    void OnEffectRegionEnter(IPhxControlableInstance other)
     {
         PhxSoldier soldier = other as PhxSoldier;
         if (soldier != null)
@@ -158,7 +158,7 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         }
     }
 
-    void OnEffectRegionLeave(PhxInstance other)
+    void OnEffectRegionLeave(IPhxControlableInstance other)
     {
         PhxSoldier soldier = other as PhxSoldier;
         if (soldier != null)

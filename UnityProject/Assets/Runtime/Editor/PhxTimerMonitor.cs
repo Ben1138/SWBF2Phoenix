@@ -42,8 +42,7 @@ public class PhxTimerMonitor : EditorWindow
             tdb.GetTimer(idx, out PhxTimerDB.PhxTimer timer);
 
             EditorGUILayout.LabelField("Name", timer.Name);
-            EditorGUILayout.LabelField("Elapsed", (Mathf.Round(timer.Elapsed * 100f) / 100f).ToString());
-            EditorGUILayout.LabelField("Target", timer.Target.ToString());
+            EditorGUILayout.LabelField("Time", (Mathf.Round(timer.Time * 100f) / 100f).ToString());
             EditorGUILayout.LabelField("Rate", timer.Rate.ToString());
             EditorGUILayout.LabelField("IsRunning", timer.IsRunning.ToString());
             GUILayout.Space(20);

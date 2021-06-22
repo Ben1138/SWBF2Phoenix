@@ -7,8 +7,8 @@ using UnityEngine;
 public class PhxRegion : MonoBehaviour
 {
     public Collider Collider { get; private set; }
-    public Action<PhxInstance> OnEnter;
-    public Action<PhxInstance> OnLeave;
+    public Action<IPhxControlableInstance> OnEnter;
+    public Action<IPhxControlableInstance> OnLeave;
 
     // Start is called before the first frame update
     void Start()
@@ -18,7 +18,7 @@ public class PhxRegion : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        PhxInstance inst = other.gameObject.GetComponent<PhxInstance>();
+        IPhxControlableInstance inst = other.gameObject.GetComponent<IPhxControlableInstance>();
         if (inst != null)
         {
             OnEnter?.Invoke(inst);
@@ -27,7 +27,7 @@ public class PhxRegion : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-        PhxInstance inst = other.gameObject.GetComponent<PhxInstance>();
+        IPhxControlableInstance inst = other.gameObject.GetComponent<IPhxControlableInstance>();
         if (inst != null)
         {
             OnLeave?.Invoke(inst);

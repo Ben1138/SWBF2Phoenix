@@ -582,8 +582,16 @@ public class PhxLuaRuntime
                     Lua.ValueType luaType = expectedParamTypes[i];
                     if (luaType == Lua.ValueType.NUMBER)
                     {
-                        // also support other number parameters, such as int, long etc
-                        invokeParams[i] = Convert.ChangeType(invokeParams[i], pi.ParameterType, CultureInfo.InvariantCulture);
+                        // special case: nullables (used as pointers in Lua)
+                        if (pi.ParameterType == typeof(int?))
+                        {
+                            invokeParams[i] = new int?((int)Convert.ChangeType(invokeParams[i], typeof(int), CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            // also support other number parameters, such as int, long etc
+                            invokeParams[i] = Convert.ChangeType(invokeParams[i], pi.ParameterType, CultureInfo.InvariantCulture);
+                        }
                     }
                 }
             }
