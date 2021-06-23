@@ -242,8 +242,8 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
                         TargetPosition += Mathf.Tan(C.YawSpread * .436332f) * ShotLength * FirePoint.right;
                         */
                         
-                        Scene.FireProjectile(this, Ordnance, FirePoint.position + C.ShotElevate * Vector3.up,
-                                            Quaternion.LookRotation(TargetPosition - FirePoint.position, Vector3.up));   
+                        Scene.FireProjectile(this, Ordnance, FirePoint.position,
+                                            Quaternion.AngleAxis(C.ShotElevate, -FirePoint.right) * Quaternion.LookRotation(TargetPosition - FirePoint.position, Vector3.up));   
                     }
                 }
             }
