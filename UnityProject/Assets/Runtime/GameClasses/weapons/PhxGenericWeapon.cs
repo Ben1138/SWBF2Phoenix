@@ -80,6 +80,11 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 	    public PhxProp<float> HeatRecoverRate = new PhxProp<float>(0.25f);
 	    public PhxProp<float> HeatThreshold = new PhxProp<float>(0.2f); 
 	    public PhxProp<float> HeatPerShot = new PhxProp<float>(0.12f);
+
+        public PhxProp<float> SpreadPerShot = new PhxProp<float>(0f);
+        public PhxProp<float> SpreadRecoverRate = new PhxProp<float>(0f); 
+        public PhxProp<float> SpreadThreshold = new PhxProp<float>(0f); 
+        public PhxProp<float> SpreadLimit = new PhxProp<float>(0f);
 	}
 
 
@@ -121,6 +126,12 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
         // Total amount of 4 magazines
         Ammunition = C.RoundsPerClip * 3;
         MagazineAmmo = C.RoundsPerClip;
+
+
+        if (C.SpreadPerShot > 0.001f)
+        {
+            bUsesNewSpreadSystem = true;
+        }
     }
 
     public override void BindEvents()
@@ -199,6 +210,12 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
     int SalvoIndex = 0;
     Vector3 SalvoTargetPosition;
 
+    Vector3 SpreadAxis = Vector3.right;
+    float CurrSpread, EffectiveSpread;
+    Quaternion SpreadQuat;
+
+    protected bool bUsesNewSpreadSystem = false;
+
 	public virtual bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
         //Debug.LogFormat("Attempting to fire weapon {0}", C.EntityClass.Name);
@@ -226,24 +243,47 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
                 PhxOrdnanceClass Ordnance = C.OrdnanceName.Get() as PhxOrdnanceClass;
                 if (Ordnance != null) 
                 {
+                    /*
+                    SPREAD
+                    */
+                    if (bUsesNewSpreadSystem)
+                    {
+                        CurrSpread = Mathf.Min(CurrSpread + C.SpreadPerShot, C.SpreadLimit + C.SpreadThreshold);
+                        EffectiveSpread = Mathf.Max(CurrSpread - C.SpreadThreshold, 0f);
+
+                        if (EffectiveSpread < .0001f)
+                        {
+                            SpreadQuat = Quaternion.identity;
+                        }
+                        else 
+                        {
+                            SpreadAxis = Quaternion.AngleAxis(UnityEngine.Random.Range(0f, 180f), Vector3.forward) * SpreadAxis;
+                            SpreadQuat = Quaternion.AngleAxis(EffectiveSpread, FirePoint.TransformDirection(SpreadAxis)); 
+                        }
+                    }
+
+                    // Debug.LogFormat("SpreadAxis: {0}, CurrSpread: {1}, EffectiveSpread: {2} ", SpreadAxis.ToString("F4"), CurrSpread, EffectiveSpread);
+
+
+                    /*
+                    SHOT ELEVATION
+                    */
+
+                    Quaternion ShotElevationQuat = Quaternion.AngleAxis(C.ShotElevate, -FirePoint.right);
+
                     for (int i = 0; i < C.ShotsPerSalvo; i++)
                     {
                         Vector3 TargetPosition = SalvoTargetPosition;
-                        
-                        /*
-                        if (FirePoint == null)
-                        {
-                            FirePoint = transform;
-                        }
-                        float ShotLength = Vector3.Magnitude(SalvoTargetPosition - FirePoint.position);
 
-                        // We'll say 1 spread = 0.436332 rad of fp rotation
-                        TargetPosition += Mathf.Tan(C.PitchSpread * .436332f) * ShotLength * FirePoint.up;
-                        TargetPosition += Mathf.Tan(C.YawSpread * .436332f) * ShotLength * FirePoint.right;
-                        */
+                        if (!bUsesNewSpreadSystem)
+                        {
+                            SpreadQuat = Quaternion.AngleAxis(UnityEngine.Random.Range(-C.PitchSpread, C.PitchSpread), -FirePoint.right) * 
+                                         Quaternion.AngleAxis(UnityEngine.Random.Range(-C.YawSpread, C.YawSpread), FirePoint.up);
+                        }
+
                         
                         Scene.FireProjectile(this, Ordnance, FirePoint.position,
-                                            Quaternion.AngleAxis(C.ShotElevate, -FirePoint.right) * Quaternion.LookRotation(TargetPosition - FirePoint.position, Vector3.up));   
+                            SpreadQuat * ShotElevationQuat * Quaternion.LookRotation(TargetPosition - FirePoint.position, Vector3.up));   
                     }
                 }
             }
@@ -344,6 +384,8 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
     public override void Tick(float deltaTime)
     {
+        CurrSpread = Mathf.Max(CurrSpread - deltaTime * C.SpreadRecoverRate, 0f);
+
         if (WeaponState == PhxWeaponState.Reloading)
         {
             ReloadDelay -= deltaTime;
