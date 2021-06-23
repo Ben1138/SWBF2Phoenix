@@ -309,7 +309,31 @@ public sealed class Lua
 		int len = (int)LuaWrapper.lua_strlen(L, idx);
 		byte[] uniChars = new byte[len];
 		Marshal.Copy(uniPtr, uniChars, 0, len);
-		string res = Encoding.Unicode.GetString(uniChars);
+
+		// HACK: For some reason, lua puts ascii strings in here,
+		// while in the Unity Editor it's unicode as expected...
+		// More debugging needed!
+		bool IsAscii(byte[] chars)
+        {
+			for (int i = 0; i < chars.Length; ++i)
+            {
+				if (chars[i] < 32 || chars[i] > 126)
+                {
+					return false;
+                }
+            }
+			return true;
+        }
+
+		string res;
+		if (IsAscii(uniChars))
+        {
+			res = Encoding.ASCII.GetString(uniChars);
+        }
+        else
+        {
+			res = Encoding.Unicode.GetString(uniChars);
+		}
 		return res;
 	}
 	public ulong StrLen(int idx)
