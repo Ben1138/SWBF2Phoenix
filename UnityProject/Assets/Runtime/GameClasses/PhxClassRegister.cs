@@ -42,7 +42,7 @@ public static class PhxClassRegister
         // Maybe this will be obsolete once we've got a generic object pooling for everything. Idk yet.
         { "missile",        new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
         { "sticky",         new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
-        { "shell",          new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
+        { "shell",          new GameBaseClass(typeof(PhxShellClass),                     null)                      },
         { "beam",           new GameBaseClass(typeof(PhxBeamClass),                      null)                      },
         { "bolt",           new GameBaseClass(typeof(PhxBoltClass),                      null)                      },
         { "bullet",         new GameBaseClass(typeof(PhxBoltClass),                      null)                      },
