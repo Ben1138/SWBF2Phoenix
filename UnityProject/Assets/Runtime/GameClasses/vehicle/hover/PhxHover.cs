@@ -52,7 +52,7 @@ public class PhxHover : PhxVehicle
         	Length = Scale;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             return String.Format("Position: {0}, Scale: {1}, Length: {2}", Position.ToString("F2"), Scale, Length);
         }
@@ -68,7 +68,7 @@ public class PhxHover : PhxVehicle
 
         Vector2 TexOffset = Vector2.zero;
 
-        public string ToString()
+        public override string ToString()
         {
             return String.Format("WheelMaterial: {0} Vel Factors: {1} Turn Factors: {2}", WheelMaterial.name, VelocityFactor.ToString("F2"), TurnFactor.ToString("F2"));
         }
@@ -145,13 +145,6 @@ public class PhxHover : PhxVehicle
     AudioSource AudioAmbient;
 
 
-
-
-    // Paired object with kinematic rigidbody and SO collision
-    // Used to isolate concave collision so non-kinematic physics
-    // can be used on vehicle.
-    GameObject SOColliderObject;
-
     // Just for quick editor debugging
     [Serializable]
     public class SpringForce 
@@ -166,6 +159,18 @@ public class PhxHover : PhxVehicle
     	public float ZDamp;
 
     	public float Penetration;
+
+        public void Clear()
+        {
+            XRot = 0f;
+            XDamp = 0f;                   
+            ZRot = 0f;
+            ZDamp = 0f;
+            VelForce = 0f;
+            VelDamp = 0f;
+
+            Penetration = 0f;
+        }
     }
 
     public List<SpringForce> SpringForces;
@@ -176,13 +181,6 @@ public class PhxHover : PhxVehicle
 
 
 
-
-    HashSet<Collider> ObjectColliders;
-
-
-
-    // for debugging
-    bool DBG = false;
 
     Vector3 startPos;
 
@@ -385,10 +383,13 @@ public class PhxHover : PhxVehicle
         }
 
 
+
+
+        /*
         DamageEffects = new List<PhxDamageEffect>();
         PhxDamageEffect CurrDamageEffect = null;
 
-        /*
+
         i = 0;
         while (i < properties.Length)
         {
@@ -427,13 +428,6 @@ public class PhxHover : PhxVehicle
 
     void UpdateState(float deltaTime)
     {
-        if (SOColliderObject != null)
-        {
-            SOColliderObject.transform.position = transform.position;
-            SOColliderObject.transform.rotation = transform.rotation;
-        }
-
-
         /* 
         Sections
         */
@@ -530,7 +524,8 @@ public class PhxHover : PhxVehicle
 
 
         // Update damage effects
-        //CurHealth.Set(Mathf.Clamp(CurHealth.Get() - ((deltaTime / 15f) * C.MaxHealth.Get()), 1f, C.MaxHealth.Get()));
+        /*
+        CurHealth.Set(Mathf.Clamp(CurHealth.Get() - ((deltaTime / 15f) * C.MaxHealth.Get()), 1f, C.MaxHealth.Get()));
 
         float HealthPercent = CurHealth.Get() / C.MaxHealth.Get();
         
@@ -559,6 +554,7 @@ public class PhxHover : PhxVehicle
         		}
         	}
         }
+        */
     }
 
     
@@ -591,7 +587,7 @@ public class PhxHover : PhxVehicle
             combined with the local ones? 
     */ 
 
-    int SpringUpdatesPerFrame = 2; 
+    // int SpringUpdatesPerFrame = 2; 
 
     void UpdateSprings(float deltaTime)
     {
@@ -599,9 +595,6 @@ public class PhxHover : PhxVehicle
         Vector3 netPos = Vector3.zero;
 
         LayerMask Mask = (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
-
-        // Set all colliders to RaycastIgnore
-        ModelMapping.SetColliderLayerAll(2);
 
 
         for (int CurrSpringIndex = 0; CurrSpringIndex < Springs.Count; CurrSpringIndex++)
@@ -643,20 +636,11 @@ public class PhxHover : PhxVehicle
                 }
                 else 
                 {
-                    SpringForces[CurrSpringIndex].XRot = 0f;
-                    SpringForces[CurrSpringIndex].XDamp = 0f;                	
-                    SpringForces[CurrSpringIndex].ZRot = 0f;
-                    SpringForces[CurrSpringIndex].ZDamp = 0f;
-                    SpringForces[CurrSpringIndex].VelForce = 0f;
-                    SpringForces[CurrSpringIndex].VelDamp = 0f;
+                    SpringForces[CurrSpringIndex].Clear();
                 }  
             }
         }
-
-        // Reset all colliders to their mask's layers
-        ModelMapping.SetColliderLayerFromMaskAll();
     }
-
 
 
 
