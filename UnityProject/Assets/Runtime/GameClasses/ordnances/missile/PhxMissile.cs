@@ -14,7 +14,7 @@ public class PhxMissileClass : PhxOrdnanceClass
 
     public PhxProp<float> MinSpeed = new PhxProp<float>(10f);
     public PhxProp<float> Acceleration = new PhxProp<float>(50f);
-    public PhxProp<float> Gravity = new PhxProp<float>(0f);
+    // public PhxProp<float> Gravity = new PhxProp<float>(0f);
     public PhxProp<float> Rebound = new PhxProp<float>(0f);
     public PhxProp<float> TurnRate = new PhxProp<float>(0f);
 
@@ -38,7 +38,7 @@ public class PhxMissile : PhxOrdnance
 
     PhxMissileClass MissileClass;
    
-    Rigidbody Body;
+    protected Rigidbody Body;
     Light Light;
 
     List<Collider> Colliders;
@@ -140,7 +140,7 @@ public class PhxMissile : PhxOrdnance
 
 
 
-    void FixedUpdate()
+    protected virtual void FixedUpdate()
     {
         float deltaTime = Time.deltaTime;
 
@@ -151,8 +151,8 @@ public class PhxMissile : PhxOrdnance
             return;
         }
 
-        // Manual gravity, since it varies
-        Body.AddForce(9.8f * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
+        // Don't think missiles actually use gravity, shells do though
+        // Body.AddForce(9.8f * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
 
         if (Vector3.Magnitude(Body.velocity) > MissileClass.Velocity)
         {
@@ -195,8 +195,6 @@ public class PhxMissile : PhxOrdnance
                 Exp = MissileClass.ExplosionName.Get();
             }
             
-
-            Debug.LogFormat("Missile hit collider: {0}", Contact.otherCollider.name);
 
             PhxExplosionManager.AddExplosion(null, Exp as PhxExplosionClass, Contact.point, Quaternion.LookRotation(Contact.normal, Vector3.up));
 
