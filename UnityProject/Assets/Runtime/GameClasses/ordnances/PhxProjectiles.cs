@@ -147,7 +147,7 @@ public class PhxProjectiles
         {   
             System.Type OClassType = OrdnanceClass.GetType();
             
-            if (OClassType == typeof(PhxMissileClass))
+            if (typeof(PhxMissileClass).IsAssignableFrom(OClassType))
             {
                 PhxMissileClass MissileClass = OrdnanceClass as PhxMissileClass;
                 
@@ -164,8 +164,17 @@ public class PhxProjectiles
                     coll.radius = .4f;
                 } 
 
-                PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
-                Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 25); 
+                if (OClassType == typeof(PhxMissileClass))
+                {
+                    PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
+                    Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 25);                     
+                }
+                else if (OClassType == typeof(PhxShellClass))
+                {
+                    PhxShell Shell = MissileObj.AddComponent<PhxShell>();
+                    Pool = new PhxPool<PhxOrdnance>(Shell, MissileClass.EntityClass.Name, 25);                      
+                }
+
                 GameObject.Destroy(MissileObj);
             }
             else if (OClassType == typeof(PhxBeamClass))
