@@ -139,9 +139,26 @@ public sealed class PhxPropertyDB
                 outVal = outCol;
             }
         }
+        else if (destType == typeof(int))
+        {
+            float floatVal = float.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+            outVal = (int) floatVal;
+        }
+        else if (destType == typeof(float))
+        {
+            outVal = float.Parse(value, System.Globalization.CultureInfo.InvariantCulture);            
+        }
         else
         {
-            outVal = Convert.ChangeType(value, destType, CultureInfo.InvariantCulture);
+            try {
+                outVal = Convert.ChangeType(value, destType, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Debug.LogErrorFormat("Failed to convert string {0} to type {1}...", value, destType.ToString());
+                // Debug.LogError(e.ToString());
+                outVal = 0;
+            }
         }
         return outVal;
     }
