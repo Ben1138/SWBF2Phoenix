@@ -6,9 +6,9 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
+public class PhxDoor : PhxProp
 {
-    public class ClassProperties : PhxClass 
+    public class ClassProperties : PhxProp.ClassProperties 
     {
         public PhxProp<string> AnimationName = new PhxProp<string>("");
         public PhxProp<string> Animation = new PhxProp<string>("");
@@ -18,6 +18,8 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
         public PhxProp<AudioClip> CloseSound = new PhxProp<AudioClip>(null);
         public PhxProp<AudioClip> LockedSound = new PhxProp<AudioClip>(null);
     }
+
+    PhxDoor.ClassProperties DoorClass;
 
 
     // Never heard of door locking functionality in SWBF2
@@ -33,10 +35,14 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
 
     public override void Init()
     {
+        base.Init();
+
         Transform TriggerNode = null;
         float TriggerRadius = 1f;
 
-        foreach (object[] values in C.AnimationTrigger.Values)
+        DoorClass = C as PhxDoor.ClassProperties;
+
+        foreach (object[] values in DoorClass.AnimationTrigger.Values)
         {
             if (values.Length == 0)
             {
@@ -66,7 +72,7 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
             TriggerCollider.isTrigger = true;
         } 
 
-        Player = PhxAnimationLoader.CreatePlayer(transform, C.AnimationName.Get(), C.Animation.Get(), false);
+        Player = PhxAnimationLoader.CreatePlayer(transform, DoorClass.AnimationName.Get(), DoorClass.Animation.Get(), false);
         Player.SetPlaybackSpeed(1f);
         Player.SetLooping(false);
     }
@@ -112,9 +118,4 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
             }  
         }
     }
-
-
-    public override void BindEvents(){}
-    public override void Tick(float deltaTime){}
-    public override void TickPhysics(float deltaTime){}
 }

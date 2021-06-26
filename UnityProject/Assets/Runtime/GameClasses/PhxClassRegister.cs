@@ -22,6 +22,12 @@ public static class PhxClassRegister
     // attempt to resolve the class string to a class type, or create an instance of it, respectively.
     static Dictionary<string, GameBaseClass> TypeDB = new Dictionary<string, GameBaseClass>()
     {
+        { "prop",           new GameBaseClass(typeof(PhxProp.ClassProperties),           typeof(PhxProp))           },        
+        { "door",           new GameBaseClass(typeof(PhxDoor.ClassProperties),           typeof(PhxDoor))           },
+        { "animatedprop",   new GameBaseClass(typeof(PhxAnimatedProp.ClassProperties),   typeof(PhxAnimatedProp))   },
+        
+        { "leafpatch",      new GameBaseClass(typeof(PhxLeafPatchClass),                 typeof(PhxLeafPatch))      },
+
         { "commandpost",    new GameBaseClass(typeof(PhxCommandpost.ClassProperties),    typeof(PhxCommandpost))    },
         { "soldier",        new GameBaseClass(typeof(PhxSoldier.ClassProperties),        typeof(PhxSoldier))        },
         { "powerupstation", new GameBaseClass(typeof(PhxPowerupstation.ClassProperties), typeof(PhxPowerupstation)) },
@@ -35,13 +41,12 @@ public static class PhxClassRegister
         { "launcher",       new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
         { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
 
-        { "door",           new GameBaseClass(typeof(PhxDoor.ClassProperties),           typeof(PhxDoor))           },
         
         // Right now, there's custom object pooling just for projectiles, meaning, PhxBolt's are not instantiated via
         // PhxRuntimeScene.CreateInstance(), but with PhxProjectiles.FireProjectile()
         // Maybe this will be obsolete once we've got a generic object pooling for everything. Idk yet.
         { "missile",        new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
-        { "sticky",         new GameBaseClass(typeof(PhxMissileClass),                   null)                      },
+        { "sticky",         new GameBaseClass(typeof(PhxShellClass),                     null)                      },
         { "shell",          new GameBaseClass(typeof(PhxShellClass),                     null)                      },
         { "beam",           new GameBaseClass(typeof(PhxBeamClass),                      null)                      },
         { "bolt",           new GameBaseClass(typeof(PhxBoltClass),                      null)                      },
