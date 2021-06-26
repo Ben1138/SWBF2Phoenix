@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using UnityEngine;
 
-
+[Serializable]
 public class PhxDamageEffect 
 {
     public float DamageStartPercent;
@@ -13,14 +13,23 @@ public class PhxDamageEffect
 
     public bool IsOn;
 
-    public void Update(float health)
+    bool IsInitialized;
+
+    public void Update(float healthPercent)
     {
-    	if (health < DamageStartPercent && health > DamageStopPercent)
+    	if (!IsInitialized)
+    	{
+    		Init();
+    	}
+
+    	if (healthPercent <= DamageStartPercent && healthPercent > DamageStopPercent)
     	{
     		if (!Effect.IsPlaying)
     		{
     			Effect.Play();
-    		}    		
+    		}  
+
+    		IsOn = true;  		
     	}
     	else 
     	{
@@ -28,6 +37,22 @@ public class PhxDamageEffect
     		{
     			Effect.Stop();
     		}
+
+    		IsOn = false;
     	}
+    }
+
+
+    void Init()
+    {
+    	if (DamageAttachPoint != null && Effect != null)
+    	{
+    		Effect.SetParent(DamageAttachPoint);
+    		Effect.SetLocalTransform(Vector3.zero, Quaternion.identity);
+    		Effect.SetLooping(true);
+    		Effect.Stop();
+    	}
+
+    	IsInitialized = true;
     }
 }
