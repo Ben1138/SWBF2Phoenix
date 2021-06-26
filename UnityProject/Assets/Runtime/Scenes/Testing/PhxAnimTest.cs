@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PhxAnimTest : PhxUnityScene
 {
-    static PhxGameMatch MATCH => PhxGameRuntime.GetMatch();
+    static PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
 
     public int Width;
     public int Height;

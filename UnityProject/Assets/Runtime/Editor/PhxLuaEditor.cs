@@ -56,7 +56,7 @@ public class PhxLuaEditor : EditorWindow
         Lua L = runtime.GetLua();
 
         GUILayout.BeginHorizontal();
-        LuaCode = GUILayout.TextArea(LuaCode, /*EditorStyle, */GUILayout.Width(500), GUILayout.ExpandHeight(true));
+        LuaCode = GUILayout.TextArea(LuaCode, /*EditorStyle, */GUILayout.Width(400), GUILayout.ExpandHeight(true));
 
         GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
         int stackSize = L.GetTop();

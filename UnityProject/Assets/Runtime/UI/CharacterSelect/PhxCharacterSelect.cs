@@ -7,7 +7,7 @@ public class PhxCharacterSelect : PhxMenuInterface
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
-    static PhxGameMatch MTC => PhxGameRuntime.GetMatch();
+    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
     [Header("References")]

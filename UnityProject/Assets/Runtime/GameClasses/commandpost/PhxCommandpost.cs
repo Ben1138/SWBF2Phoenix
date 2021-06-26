@@ -6,7 +6,7 @@ using LibSWBF2.Wrappers;
 
 public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
 {
-    PhxGameMatch Match => PhxGameRuntime.GetMatch();
+    PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
     PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
 
     public class ClassProperties : PhxClass

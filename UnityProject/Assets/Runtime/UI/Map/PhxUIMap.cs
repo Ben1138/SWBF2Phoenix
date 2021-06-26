@@ -8,7 +8,7 @@ public class PhxUIMap : MonoBehaviour
 {
     PhxGameRuntime GAME => PhxGameRuntime.Instance;
     PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
-    PhxGameMatch MATCH => PhxGameRuntime.GetMatch();
+    PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
 
 
     public enum PhxUIMapMode
