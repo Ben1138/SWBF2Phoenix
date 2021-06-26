@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PhxPlayerController : PhxPawnController
 {
+    PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
     public bool CancelPressed { get; private set; }
 
 
@@ -17,16 +18,29 @@ public class PhxPlayerController : PhxPawnController
     {
         base.Update(deltaTime);
 
-        // nothing to do
-        if (Pawn == null)
+        // UI Controls, are always checked
+        CancelPressed = Input.GetButtonDown("Cancel");
+
+        // Nothing to control if either there's no pawn
+        // to control or we're currently in some menu
+        if (Pawn == null || Cursor.lockState != CursorLockMode.Locked)
         {
+            MoveDirection = Vector2.zero;
+            Jump = false;
+            Sprint = false;
+            Reload = false;
+            NextPrimaryWeapon = false;
+            NextSecondaryWeapon = false;
+            ShootPrimary = false;
+            ShootSecondary = false;
+            Crouch = false;
             return;
         }
 
         MoveDirection.x = Input.GetAxis("Horizontal");
         MoveDirection.y = Input.GetAxis("Vertical");
 
-        float mouseX = Input.GetAxis("Mouse X");
+        float mouseX =  Input.GetAxis("Mouse X");
         float mouseY = -Input.GetAxis("Mouse Y");
 
         Vector2 rotConstraints = Pawn.GetViewConstraint();
@@ -58,7 +72,5 @@ public class PhxPlayerController : PhxPawnController
         {
             Crouch = !Crouch;
         }
-
-        CancelPressed = Input.GetButtonDown("Cancel");
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class PhxPauseMenu : PhxMenuInterface
 {
-    PhxGameMatch MTC => PhxGameRuntime.GetMatch();
+    PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
 
     [Header("References")]
     public Button BtnContinue;
@@ -29,7 +29,7 @@ public class PhxPauseMenu : PhxMenuInterface
         Debug.Assert(BtnBackToMainMenu != null);
         Debug.Assert(BtnQuit           != null);
 
-        BtnFreeCam.GetComponentInChildren<Text>().text = MTC.PlayerST != PhxGameMatch.PhxPlayerState.FreeCam ? "Free Cam" : "Character Selection";
+        BtnFreeCam.GetComponentInChildren<Text>().text = MTC.PlayerST != PhxRuntimeMatch.PhxPlayerState.FreeCam ? "Free Cam" : "Character Selection";
 
         BtnContinue.onClick.AddListener(Continue);
         BtnRespawn.onClick.AddListener(Respawn);
@@ -51,13 +51,13 @@ public class PhxPauseMenu : PhxMenuInterface
 
     void FreeCam()
     {
-        if (MTC.PlayerST == PhxGameMatch.PhxPlayerState.CharacterSelection)
+        if (MTC.PlayerST == PhxRuntimeMatch.PhxPlayerState.CharacterSelection)
         {
-            MTC.SetPlayerState(PhxGameMatch.PhxPlayerState.FreeCam);
+            MTC.SetPlayerState(PhxRuntimeMatch.PhxPlayerState.FreeCam);
         }
-        else if (MTC.PlayerST == PhxGameMatch.PhxPlayerState.FreeCam)
+        else if (MTC.PlayerST == PhxRuntimeMatch.PhxPlayerState.FreeCam)
         {
-            MTC.SetPlayerState(PhxGameMatch.PhxPlayerState.CharacterSelection);
+            MTC.SetPlayerState(PhxRuntimeMatch.PhxPlayerState.CharacterSelection);
         }
     }
 

@@ -74,7 +74,7 @@ public class PhxRuntimeEnvironment
     string PostLoadFunctionName;
 
     PhxRuntimeScene RTScene;
-    PhxGameMatch Match;
+    PhxRuntimeMatch Match;
     PhxTimerDB Timers;
 
     List<Localization> Localizations = new List<Localization>();
@@ -118,7 +118,7 @@ public class PhxRuntimeEnvironment
         return RTScene;
     }
 
-    public PhxGameMatch GetMatch()
+    public PhxRuntimeMatch GetMatch()
     {
         return Match;
     }
@@ -153,7 +153,7 @@ public class PhxRuntimeEnvironment
         rt.ScheduleSoundBankRel("sound/common.bnk");
 
         rt.RTScene = new PhxRuntimeScene(rt, rt.EnvCon);
-        rt.Match = initMatch ? new PhxGameMatch() : null;
+        rt.Match = initMatch ? new PhxRuntimeMatch() : null;
         rt.Timers = new PhxTimerDB();
 
         PhxAnimationLoader.Con = rt.EnvCon;

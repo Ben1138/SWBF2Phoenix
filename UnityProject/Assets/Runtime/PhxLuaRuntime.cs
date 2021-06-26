@@ -476,7 +476,7 @@ public class PhxLuaRuntime
 
         if (!mi.IsStatic)
         {
-            Debug.LogWarningFormat("Cannor register non-static method '{0}' as Lua function!", methodName);
+            Debug.LogWarningFormat("Cannot register non-static method '{0}' as Lua function!", methodName);
             return false;
         }
 

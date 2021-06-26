@@ -9,7 +9,7 @@ public static class PhxLuaAPI
 
 	static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
 	static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
-	static PhxGameMatch MT => PhxGameRuntime.GetMatch();
+	static PhxRuntimeMatch MT => PhxGameRuntime.GetMatch();
 	static PhxLuaRuntime RT => PhxGameRuntime.GetLuaRuntime();
 	static PhxTimerDB TDB => PhxGameRuntime.GetTimerDB();
 	static Lua L => RT.GetLua();
@@ -913,21 +913,18 @@ public static class PhxLuaAPI
 	}
 	public static void OnFinishCapture(PhxLuaRuntime.LFunction callback)
 	{
-		Debug.Log("Registered callback for 'OnFinishCapture'");
 		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishCapture, callback);
 		// callback paramters:
 		// - postPtr
 	}
 	public static void OnFinishCaptureName(PhxLuaRuntime.LFunction callback, string cpName)
 	{
-		Debug.Log("Registered callback for 'OnFinishCaptureName'");
 		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishCaptureName, callback, cpName);
 		// callback paramters:
 		// - postPtr
 	}
 	public static void OnFinishNeutralize(PhxLuaRuntime.LFunction callback)
 	{
-		Debug.Log("Registered callback for 'OnFinishNeutralize'");
 		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishNeutralize, callback);
 		// callback paramters:
 		// - postPtr
@@ -1036,8 +1033,7 @@ public static class GameLuaEvents
 
 	static Dictionary<Event, CallbackDict<object>> ParameterizedCallbacks = new Dictionary<Event, CallbackDict<object>>();
 	static Dictionary<Event, List<PhxLuaRuntime.LFunction>> Callbacks = new Dictionary<Event, List<PhxLuaRuntime.LFunction>>();
-	//static Dictionary<int, (Event, int)> GlobalIdxDict = new Dictionary<int, (Event, int)>();
-	static int GlobalIdxCounter = 0;
+
 
 	static CallbackDict<object> Get(Event ev)
 	{

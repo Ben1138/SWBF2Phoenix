@@ -34,11 +34,11 @@ public class PhxMatchMonitor : EditorWindow
             return;
         }
 
-        PhxGameMatch gm = PhxGameRuntime.GetMatch();
+        PhxRuntimeMatch gm = PhxGameRuntime.GetMatch();
         ScrollPos = EditorGUILayout.BeginScrollView(ScrollPos);
-        for (int i = 0; i < PhxGameMatch.MAX_TEAMS; ++i)
+        for (int i = 0; i < PhxRuntimeMatch.MAX_TEAMS; ++i)
         {
-            PhxGameMatch.PhxTeam t = gm.Teams[i];
+            PhxRuntimeMatch.PhxTeam t = gm.Teams[i];
 
             EditorGUILayout.LabelField("Team ID", (i+1).ToString());
             EditorGUILayout.LabelField("Name", t.Name);
@@ -49,7 +49,7 @@ public class PhxMatchMonitor : EditorWindow
             EditorGUILayout.LabelField("Spawn Delay", t.SpawnDelay.ToString());
             EditorGUILayout.LabelField("Hero Class", t.HeroClass?.Name);
             GUILayout.Label("Unit Classes:");
-            foreach (PhxGameMatch.PhxUnitClass unitClass in t.UnitClasses)
+            foreach (PhxRuntimeMatch.PhxUnitClass unitClass in t.UnitClasses)
             {
                 EditorGUILayout.LabelField("    " + unitClass.Unit.Name, unitClass.Count.ToString());
             }

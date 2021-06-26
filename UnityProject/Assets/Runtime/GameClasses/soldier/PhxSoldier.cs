@@ -8,7 +8,7 @@ using System.Runtime.ExceptionServices;
 public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    static PhxGameMatch MTC => PhxGameRuntime.GetMatch();
+    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
     static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
