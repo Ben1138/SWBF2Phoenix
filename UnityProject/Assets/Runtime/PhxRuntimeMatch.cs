@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PhxGameMatch
+public class PhxRuntimeMatch
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
@@ -81,7 +81,7 @@ public class PhxGameMatch
     AudioClip UIBack;
 
 
-    public PhxGameMatch()
+    public PhxRuntimeMatch()
     {
         for (int i = 0; i < MAX_TEAMS; ++i)
         {
@@ -129,6 +129,9 @@ public class PhxGameMatch
             GAME.RemoveMenu();
             CAM.Follow(Player.Pawn);
             ShowHUD();
+
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
         }
         else if (PlayerST == PhxPlayerState.FreeCam)
         {
@@ -205,7 +208,7 @@ public class PhxGameMatch
             }
             else
             {
-                GAME.ShowMenu(GAME.PauseMenuPrefab);
+                ShowMenu(GAME.PauseMenuPrefab);
             }
 
             if (UIBack == null)
@@ -461,9 +464,16 @@ public class PhxGameMatch
         CAM.Fixed(RTS.GetNextCameraShot());
     }
 
+    T ShowMenu<T>(T menu) where T : PhxMenuInterface
+    {
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        return GAME.ShowMenu(menu);
+    }
+
     void ShowCharacterSelection()
     {
-        PhxCharacterSelect charSel = GAME.ShowMenu(GAME.CharacterSelectPrefab);
+        PhxCharacterSelect charSel = ShowMenu(GAME.CharacterSelectPrefab);
         foreach (PhxUnitClass cl in Teams[0].UnitClasses)
         {
             charSel.Add(cl.Unit);
@@ -477,7 +487,7 @@ public class PhxGameMatch
         {
             return;
         }
-        GAME.ShowMenu(GAME.HUDPrefab);
+        ShowMenu(GAME.HUDPrefab);
     }
 
     void RemoveHUD()
@@ -499,6 +509,9 @@ public class PhxGameMatch
             else if (PlayerST == PhxPlayerState.Spawned)
             {
                 ShowHUD();
+
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Locked;
             }
         }
     }

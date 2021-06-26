@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class PhxHUD : PhxMenuInterface
 {
-    PhxGameMatch Match => PhxGameRuntime.GetMatch();
+    PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
     PhxTimerDB TimerDB => PhxGameRuntime.GetTimerDB();
 
     [Header("References")]
@@ -15,6 +15,7 @@ public class PhxHUD : PhxMenuInterface
     public Text VicDefTimerDisplay;
     public PhxUIMap Map;
     public RawImage CaptureDisplay;
+    public RawImage Reticule;
 
     Material CaptureMat;
 
@@ -33,12 +34,15 @@ public class PhxHUD : PhxMenuInterface
         Debug.Assert(VicDefTimerDisplay != null);
         Debug.Assert(Map                != null);
         Debug.Assert(CaptureDisplay     != null);
+        Debug.Assert(Reticule           != null);
 
         ReinforcementTeam1.color = Match.GetTeamColor(1);
         ReinforcementTeam2.color = Match.GetTeamColor(2);
 
         CaptureMat = CaptureDisplay.materialForRendering;
         CaptureMat.SetTexture("_CaptureIcon", TextureLoader.Instance.ImportUITexture("hud_flag_timer"));
+
+        //Reticule.texture = TextureLoader.Instance.ImportUITexture("reticule_rifle");
     }
 
     // Update is called once per frame
@@ -83,21 +87,21 @@ public class PhxHUD : PhxMenuInterface
 
             TimeSpan t = TimeSpan.FromSeconds(timer.Time);
             TimerDisplay.text = string.Format("{0:D2}:{1:D2}", t.Minutes, t.Seconds);
-            TimerDisplay.color = PhxGameMatch.ColorNeutral;
+            TimerDisplay.color = PhxRuntimeMatch.ColorNeutral;
         }
 
-        (int? timerIdx, PhxGameMatch.PhxTeam.TimerDisplay display) = Match.GetTeamTimer(Match.Player.Team);
+        (int? timerIdx, PhxRuntimeMatch.PhxTeam.TimerDisplay display) = Match.GetTeamTimer(Match.Player.Team);
         VicDefTimerDisplay.gameObject.SetActive(timerIdx.HasValue);
         if (timerIdx.HasValue)
         {
-            Color color = PhxGameMatch.ColorNeutral;
-            if (display == PhxGameMatch.PhxTeam.TimerDisplay.Defeat)
+            Color color = PhxRuntimeMatch.ColorNeutral;
+            if (display == PhxRuntimeMatch.PhxTeam.TimerDisplay.Defeat)
             {
-                color = PhxGameMatch.ColorEnemy;
+                color = PhxRuntimeMatch.ColorEnemy;
             }
-            else if (display == PhxGameMatch.PhxTeam.TimerDisplay.Victory)
+            else if (display == PhxRuntimeMatch.PhxTeam.TimerDisplay.Victory)
             {
-                color = PhxGameMatch.ColorFriendly;
+                color = PhxRuntimeMatch.ColorFriendly;
             }
 
             TimerDB.GetTimer(timerIdx.Value, out var timer);

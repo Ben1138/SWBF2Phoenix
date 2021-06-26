@@ -88,7 +88,7 @@ public class PhxGameRuntime : MonoBehaviour
         return env == null ? null : env.GetScene();
     }
 
-    public static PhxGameMatch GetMatch()
+    public static PhxRuntimeMatch GetMatch()
     {
         PhxRuntimeEnvironment env = GetEnvironment();
         return env == null ? null : env.GetMatch();
