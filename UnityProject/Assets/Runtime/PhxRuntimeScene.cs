@@ -373,6 +373,54 @@ public class PhxRuntimeScene
         return odf;
     }
 
+
+    public GameObject InstantiateClass(PhxClass objectClass, bool withCollision=true, Transform parent =null)
+    {
+        if (objectClass == null)
+        {
+            Debug.LogWarning("Called 'InstantiateClass' with NULL!");
+            return null;
+        }
+
+        EntityClass ec = objectClass.EntityClass;
+        if (ec == null)
+        {
+            Debug.LogWarning($"Cannot find EnityClass to instantiate...");
+            return null;
+        }
+
+        EntityClass rootClass = ClassLoader.GetRootClass(ec);
+        if (rootClass == null)
+        {
+            Debug.LogWarning($"Could not find root class of '{ec.Name}'!");
+            return null;
+        }
+
+        GameObject instanceObject = ClassLoader.Instance.Instantiate(ec, ec.Name);
+        instanceObject.transform.SetParent(parent);
+        instanceObject.transform.localRotation = Quaternion.identity;
+        instanceObject.transform.localPosition = Vector3.zero;
+        instanceObject.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
+
+        Type instType = PhxClassRegister.GetPhxInstanceType(rootClass.BaseClassName);
+        if (instType != null)
+        {
+            PhxClass odf = GetClass(ec);
+            PhxInstance script = (PhxInstance)instanceObject.AddComponent(instType);
+            script.InitInstance(ec, odf);
+
+            if (script is PhxCommandpost)
+            {
+                CommandPosts.Add((PhxCommandpost)script);
+            }
+        }
+
+        return instanceObject;
+    }
+
+
+
+
     GameObject CreateInstance(ISWBFProperties instOrClass, string instName, Vector3 position, Quaternion rotation, bool withCollision=true, Transform parent =null)
     {
         if (InstanceMap.ContainsKey(instName))
