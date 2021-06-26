@@ -61,7 +61,6 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         */
 
         ModelMapping = ModelLoader.Instance.GetModelMapping(gameObject, C.GeometryName); 
-        //ModelMapping.StripMeshCollider();
 
         void SetODFCollision(PhxMultiProp Props, ECollisionMaskFlags Flag)
         {
@@ -84,6 +83,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         ModelMapping.GameRole = SWBFGameRole.Vehicle;
         ModelMapping.ExpandMultiLayerColliders();
         ModelMapping.SetColliderLayerFromMaskAll();
+        ModelMapping.ConvexifyMeshColliders();
     }
 
 
@@ -330,27 +330,3 @@ public class PhxVehicleProperties : PhxClass
     public PhxProp<string> VehicleType = new PhxProp<string>("light");
     public PhxProp<string> AISizeType =  new PhxProp<string>("MEDIUM");
 }
-
-
-
-public class PhxDamageEffect 
-{
-    public float DamageStartPercent;
-    public float DamageStopPercent;
-    public PhxEffect Effect;
-    public Transform DamageAttachPoint;
-
-    public bool IsOn;
-}
-
-
-
-
-
-
-
-
-
-
-
-
