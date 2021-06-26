@@ -72,6 +72,15 @@ public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
     }
 }
 
+
+public interface IPhxDamageableInstance
+{
+    public void AddDamage(float Damage);
+}
+
+
+
+
 public interface IPhxControlableInstance
 {
     public PhxInstance GetInstance();
