@@ -1,4 +1,4 @@
-Shader "Phoenix/PhxUIMapShader"
+Shader "Phoenix/PhxUIMap"
 {
     Properties
     {
@@ -68,7 +68,7 @@ Shader "Phoenix/PhxUIMapShader"
 
             float circle(float2 st, float radius, float smoothRadius)
             {
-                const float2 dist = st + float2(-0.5, -0.5);
+                float2 dist = st + float2(-0.5, -0.5);
                 return 1. - smoothstep(radius - (radius * smoothRadius),
                     radius + (radius * smoothRadius),
                     dot(dist, dist) * 4.0);
@@ -81,33 +81,33 @@ Shader "Phoenix/PhxUIMapShader"
 
             fixed4 fragment(v2f frag) : SV_Target
             {
-                const float2 mapPxSize    = float2(_MapTex_TexelSize.z, _MapTex_TexelSize.w);
-                const float2 cpIconPxSize = float2(_CPTex_TexelSize.z, _CPTex_TexelSize.w);
+                float2 mapPxSize    = float2(_MapTex_TexelSize.z, _MapTex_TexelSize.w);
+                float2 cpIconPxSize = float2(_CPTex_TexelSize.z, _CPTex_TexelSize.w);
 
                 // where is this 1.15 comming from? 
                 // Take a look at the Zoom calculation in PhxUIMap.cs
-                const float2 mapTexZoom = _Zoom * 1.15 / (mapPxSize * _MapTexSize);
+                float2 mapTexZoom = _Zoom * 1.15 / (mapPxSize * _MapTexSize);
 
-                const float2 zoomUV = frag.uv * mapTexZoom - (mapTexZoom / 2);
-                const float2 offsetUV = (_MapOffset * mapTexZoom / _Zoom) + _MapTexOffset;
+                float2 zoomUV = frag.uv * mapTexZoom - (mapTexZoom / 2);
+                float2 offsetUV = (_MapOffset * mapTexZoom / _Zoom) + _MapTexOffset;
 
                 fixed4 col = tex2D(_MapTex, float2(0.5, 0.5) + zoomUV - offsetUV);
                 col.a = _Alpha;
 
-                const float2 CPMapSize = cpIconPxSize * _CPTexSize / float2(_SpriteSize.x, _SpriteSize.y);
-                const float2 CPMapHalfSize = CPMapSize / 2;
+                float2 CPMapSize = cpIconPxSize * _CPTexSize / float2(_SpriteSize.x, _SpriteSize.y);
+                float2 CPMapHalfSize = CPMapSize / 2;
                 
                 for (int i = 0; i < _CPCount; ++i)
                 {
-                    const int cpIdx = i / 2;
-                    const int cpVecIdx = (i % 2) * 2;
-                    const float2 cpWorldPos = float2(_CPPositions[cpIdx][cpVecIdx], _CPPositions[cpIdx][cpVecIdx + 1]);
-
-                    const float2 cpMapPos = ((cpWorldPos + _MapOffset) / _Zoom) + float2(0.5, 0.5);
-                    const float2 diff = abs(frag.uv - cpMapPos);
-
-                    const float2 cpUVMin = cpMapPos - CPMapHalfSize;
-                    const float2 cpUV = ((frag.uv - cpUVMin) / CPMapHalfSize) / 2;
+                    int cpIdx = i / 2;
+                    int cpVecIdx = (i % 2) * 2;
+                    float2 cpWorldPos = float2(_CPPositions[cpIdx][cpVecIdx], _CPPositions[cpIdx][cpVecIdx + 1]);
+                    
+                    float2 cpMapPos = ((cpWorldPos + _MapOffset) / _Zoom) + float2(0.5, 0.5);
+                    float2 diff = abs(frag.uv - cpMapPos);
+                    
+                    float2 cpUVMin = cpMapPos - CPMapHalfSize;
+                    float2 cpUV = ((frag.uv - cpUVMin) / CPMapHalfSize) / 2;
 
                     if (diff.x < CPMapHalfSize.x && diff.y < CPMapHalfSize.y)
                     {
@@ -120,12 +120,12 @@ Shader "Phoenix/PhxUIMapShader"
 
                     if (_CPSelected[i] > 0.2)
                     {
-                        const float c = ring(cpUV, _CPSelected[i] * 3, 0.1, 0.5);
+                        float c = ring(cpUV, _CPSelected[i] * 3, 0.1, 0.5);
                         col = lerp(col, _CPColors[i], c);
                     }
                 }
 
-                const float c = circle(frag.uv, _Radius, 0.05);
+                float c = circle(frag.uv, _Radius, 0.05);
                 col.a = lerp(0, col.a, c);
 
                 return col;
