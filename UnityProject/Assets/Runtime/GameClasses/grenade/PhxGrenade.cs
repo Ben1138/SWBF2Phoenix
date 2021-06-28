@@ -49,4 +49,39 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
     {
 
     }
+
+    void IPhxWeapon.Reload()
+    {
+        
+    }
+
+    void IPhxWeapon.OnReload(Action callback)
+    {
+        
+    }
+
+    int IPhxWeapon.GetMagazineSize()
+    {
+        return 0;
+    }
+
+    int IPhxWeapon.GetTotalAmmo()
+    {
+        return 0;
+    }
+
+    int IPhxWeapon.GetMagazineAmmo()
+    {
+        return 0;
+    }
+
+    public int GetAvailableAmmo()
+    {
+        return 0;
+    }
+
+    float IPhxWeapon.GetReloadProgress()
+    {
+        return 0f;
+    }
 }

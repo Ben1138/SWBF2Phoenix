@@ -139,6 +139,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     IPhxWeapon[][] Weapons = new IPhxWeapon[2][];
     int[] WeaponIdx = new int[2] { -1, -1 };
 
+    PhxInstance Aim;
+
 
     public override void Init()
     {
@@ -229,6 +231,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                         // init weapon as inactive
                         weap.GetInstance().gameObject.SetActive(false);
                         weap.OnShot(() => FireAnimation(channel == 0));
+                        weap.OnReload(Reload);
                     }
                     else
                     {
@@ -276,6 +279,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         Body = null;
 
         Destroy(GetComponent<CapsuleCollider>());
+    }
+
+    public override IPhxWeapon GetPrimaryWeapon()
+    {
+        return Weapons[0][WeaponIdx[0]];
     }
 
     public void AddHealth(float amount)
@@ -328,9 +336,20 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         Animator.PlayIntroAnim();
     }
 
+    public override PhxInstance GetAim()
+    {
+        return Aim;
+    }
+
     void FireAnimation(bool primary)
     {
         Animator.SetState(1, Animator.StandShootPrimary);
+        Animator.RestartState(1);
+    }
+
+    void Reload()
+    {
+        Animator.SetState(1, Animator.StandReload);
         Animator.RestartState(1);
     }
 
@@ -369,27 +388,45 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
         if (Controller != null)
         {
-            if (Controller.ShootPrimary)
+            if (Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
             {
-                Weapons[0][WeaponIdx[0]].Fire();
-            }
-            if (Controller.ShootSecondary)
-            {
-                Weapons[1][WeaponIdx[1]].Fire();
-            }
-            if (Controller.NextPrimaryWeapon)
-            {
-                NextWeapon(0);
-            }
-            if (Controller.NextSecondaryWeapon)
-            {
-                NextWeapon(1);
+                if (Controller.ShootPrimary)
+                {
+                    Weapons[0][WeaponIdx[0]].Fire();
+                }
+                if (Controller.ShootSecondary)
+                {
+                    Weapons[1][WeaponIdx[1]].Fire();
+                }
+                if (Controller.Reload)
+                {
+                    Weapons[0][WeaponIdx[0]].Reload();
+                }
+                if (Controller.NextPrimaryWeapon)
+                {
+                    NextWeapon(0);
+                }
+                if (Controller.NextSecondaryWeapon)
+                {
+                    NextWeapon(1);
+                }
             }
 
             if (Physics.Raycast(Neck.position, Controller.ViewDirection, out RaycastHit hit, 1000f))
             {
                 TargetPos = hit.point;
                 Debug.DrawLine(Neck.position, TargetPos, Color.blue);
+
+                PhxInstance GetInstance(Transform t)
+                {
+                    PhxInstance inst = t.gameObject.GetComponent<PhxInstance>();
+                    if (inst == null && t.parent != null)
+                    {
+                        return GetInstance(t.parent);
+                    }
+                    return inst;
+                }
+                Aim = GetInstance(hit.collider.gameObject.transform);
             }
             else
             {

@@ -13,11 +13,18 @@ public class PhxHUD : PhxMenuInterface
     public Text ReinforcementTeam2;
     public Text TimerDisplay;
     public Text VicDefTimerDisplay;
+    public Text AmmoPrim;
     public PhxUIMap Map;
     public RawImage CaptureDisplay;
-    public RawImage Reticule;
+    public RawImage Crosshair;
+
+    [Header("Settings")]
+    public float AimSpeed = 1f;
 
     Material CaptureMat;
+    Material CrosshairMat;
+
+    float AimFixation;
 
 
     public override void Clear()
@@ -32,15 +39,18 @@ public class PhxHUD : PhxMenuInterface
         Debug.Assert(ReinforcementTeam2 != null);
         Debug.Assert(TimerDisplay       != null);
         Debug.Assert(VicDefTimerDisplay != null);
+        Debug.Assert(AmmoPrim           != null);
         Debug.Assert(Map                != null);
         Debug.Assert(CaptureDisplay     != null);
-        Debug.Assert(Reticule           != null);
+        Debug.Assert(Crosshair          != null);
 
         ReinforcementTeam1.color = Match.GetTeamColor(1);
         ReinforcementTeam2.color = Match.GetTeamColor(2);
 
         CaptureMat = CaptureDisplay.materialForRendering;
         CaptureMat.SetTexture("_CaptureIcon", TextureLoader.Instance.ImportUITexture("hud_flag_timer"));
+
+        CrosshairMat = Crosshair.materialForRendering;
 
         //Reticule.texture = TextureLoader.Instance.ImportUITexture("reticule_rifle");
     }
@@ -56,6 +66,51 @@ public class PhxHUD : PhxMenuInterface
             Vector3 playerPos = Match.Player.Pawn.GetInstance().transform.position;
             Map.MapOffset.x = -playerPos.x;
             Map.MapOffset.y = -playerPos.z;
+
+            IPhxWeapon weapPrim = Match.Player.Pawn.GetPrimaryWeapon();
+            if (weapPrim != null)
+            {
+                int ammo = weapPrim.GetMagazineAmmo();
+                int magazine = weapPrim.GetMagazineSize();
+
+                float reloadProgress = weapPrim.GetReloadProgress();
+                if (reloadProgress < 1f)
+                {
+                    int reload = Mathf.Min(magazine - ammo, weapPrim.GetAvailableAmmo());
+                    ammo += (int)(reload * reloadProgress);
+                }
+
+                CrosshairMat.SetFloat("_Ammo", ammo);
+                CrosshairMat.SetFloat("_Magazin", magazine);
+
+                AmmoPrim.text = weapPrim.GetTotalAmmo().ToString();
+            }
+            else
+            {
+                CrosshairMat.SetFloat("_Ammo", 0);
+                AmmoPrim.text = "-";
+            }
+
+            PhxInstance aim = Match.Player.Pawn.GetAim();
+            if (aim != null)
+            {
+                if (aim.Team != 0)
+                {
+                    AimFixation = Mathf.Clamp01(AimFixation + Time.deltaTime / AimSpeed);
+                }
+                else
+                {
+                    AimFixation = Mathf.Clamp01(AimFixation - Time.deltaTime / AimSpeed);
+                }
+                CrosshairMat.SetColor("_Color", Match.GetTeamColor(aim.Team));
+            }
+            else
+            {
+                AimFixation = Mathf.Clamp01(AimFixation - Time.deltaTime / AimSpeed);
+                CrosshairMat.SetColor("_Color", Color.white);
+            }
+
+            CrosshairMat.SetFloat("_Fixation", AimFixation);
         }
 
         PhxCommandpost cp = Match.Player.CapturePost;

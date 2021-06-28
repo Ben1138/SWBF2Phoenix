@@ -1,4 +1,4 @@
-Shader "Unlit/PhxLoadIconShader"
+Shader "Phoenix/PhxLoadIcon"
 {
     Properties
     {

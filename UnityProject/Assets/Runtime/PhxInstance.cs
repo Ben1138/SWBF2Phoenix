@@ -78,6 +78,10 @@ public interface IPhxControlableInstance
     public void Fixate();
 
     public void PlayIntroAnim();
+
+    IPhxWeapon GetPrimaryWeapon();
+
+    PhxInstance GetAim();
 }
 
 public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlableInstance where T : PhxClass
@@ -133,12 +137,22 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
 
     public abstract void Fixate();
     public abstract void PlayIntroAnim();
+    public abstract IPhxWeapon GetPrimaryWeapon();
+    public abstract PhxInstance GetAim();
 }
 
 public interface IPhxWeapon
 {
     public PhxInstance GetInstance();
     public void Fire();
+    public void Reload();
     public void OnShot(Action callback);
+    public void OnReload(Action callback);
     public string GetAnimBankName();
+
+    public int GetMagazineSize();
+    public int GetTotalAmmo();
+    public int GetMagazineAmmo();
+    public int GetAvailableAmmo();
+    public float GetReloadProgress();
 }
