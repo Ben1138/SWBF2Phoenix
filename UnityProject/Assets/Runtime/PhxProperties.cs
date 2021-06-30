@@ -181,3 +181,48 @@ public class PhxPropertySection : IEnumerable
         }
     }
 }
+
+
+/*
+/// <summary>
+/// Similar to PropertySections, but are not explicitly named as such.
+/// They are denoted by certain command properties.
+///
+/// Example from rep_hover_fightertank.odf, command is "AddSpringBody":
+///
+///    AddSpringBody = "1.8 1.25 1.7 2.3"
+///    BodySpringLength = 1.0
+///
+///    AddSpringBody = "-1.4 1.25 -2.3 2.3"
+///    BodySpringLength = 1.0
+///    BodyOmegaXSpringFactor = 1.2
+/// </summary>
+public class PhxAnonymousPropertySection : IEnumerable
+{
+    public (string, IPhxPropRef)[] Properties { get; private set; }
+    public uint NameHash { get; private set; }
+
+    Dictionary<string, IPhxPropRef>[] Sections;
+
+    public PhxAnonymousPropertySection(string name, params (string, IPhxPropRef)[] properties)
+    {
+        NameHash = LibSWBF2.Utils.HashUtils.GetFNV(name);
+        Properties = properties;
+    }
+
+    public void SetSections(Dictionary<string, IPhxPropRef>[] sections)
+    {
+        Sections = sections;
+    }
+
+    public IEnumerator GetEnumerator()
+    {
+        for (int i = 0; i < Sections.Length; ++i)
+        {
+            yield return Sections[i];
+        }
+    }
+}
+*/
+
+

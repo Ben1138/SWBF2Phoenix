@@ -1,0 +1,538 @@
+
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Animations;
+using LibSWBF2.Utils;
+using System.Runtime.ExceptionServices;
+
+public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
+{
+    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
+    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
+    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    static PhxCamera CAM => PhxGameRuntime.GetCamera();
+
+
+    public class PhxHoverProperties : PhxVehicleProperties
+    {
+    }
+
+
+    /*
+    public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
+
+    public PhxHumanAnimator Animator { get; private set; }
+    Rigidbody Body;
+
+    // Important skeleton bones
+    Transform HpWeapons;
+    Transform Spine;
+    Transform Neck;
+
+    PhxControlState State;
+
+    // Physical raycast downwards
+    bool Grounded;
+    bool PrevGrounded;
+
+    // how long to still be alerted after the last fire / hit
+    const float AlertTime = 3f;
+    float AlertTimer;
+
+    // Time we have to fail the raycast to be considered falling
+    //const float FallTime = 0.5f;
+    //float FallTimer;
+
+    // count time while not grounded
+    float FallTimer;
+
+    // minimum time we're considered falling when jumping
+    const float JumpTime = 0.2f;
+    float JumpTimer;
+
+    // when > 0, we're currently landing
+    float LandTimer;
+
+    // time it takes to turn left/right when idle (not walking)
+    const float TurnTime = 0.2f;
+    float TurnTimer;
+    Quaternion TurnStart;
+
+    Vector3 CurrSpeed;
+
+
+    bool bHasLookaroundIdleAnim = false;
+    bool bHasCheckweaponIdleAnim = false;
+    bool LastIdle = false;
+    const float IdleTime = 10f;
+
+    // <stance>, <thrustfactor> <strafefactor> <turnfactor>
+    float[][] ControlValues;
+
+    // First array index is whether:
+    // - 0 : Primary Weapon
+    // - 1 : Secondary Weapon
+    IPhxWeapon[][] Weapons = new IPhxWeapon[2][];
+    int[] WeaponIdx = new int[2] { -1, -1 };
+
+    PhxInstance Aim;
+
+    */
+
+    public override void Init()
+    {
+        /*
+        ViewConstraint.x = 45f;
+
+        // TODO: base turn speed in degreees/sec really 45?
+        MaxTurnSpeed.y = 45f * C.MaxTurnSpeed;
+
+        //CurrDir = transform.rotation;
+        //TargetDir = CurrDir;
+
+        PhxControlState[] states = (PhxControlState[])Enum.GetValues(typeof(PhxControlState));
+        ControlValues = new float[states.Length][];
+        for (int i = 0; i < states.Length; ++i)
+        {
+            ControlValues[i] = GetControlSpeed(states[i]);
+        }
+
+        HpWeapons = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_r_clavicle/bone_r_upperarm/bone_r_forearm/bone_r_hand/hp_weapons");
+        Neck = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_neck");
+        Spine = transform.Find("dummyroot/bone_root/bone_a_spine");
+        Debug.Assert(HpWeapons != null);
+        Debug.Assert(Neck != null);
+        Debug.Assert(Spine != null);
+
+        Body = gameObject.AddComponent<Rigidbody>();
+        Body.mass = 80f;
+        Body.drag = 0.2f;
+        Body.angularDrag = 10f;
+        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+        CapsuleCollider coll = gameObject.AddComponent<CapsuleCollider>();
+        coll.height = 1.9f;
+        coll.radius = 0.4f;
+        coll.center = new Vector3(0f, 0.9f, 0f);
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Weapons
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        var weapons = new List<IPhxWeapon>[2]
+        {
+            new List<IPhxWeapon>(),
+            new List<IPhxWeapon>()
+        };
+
+        HashSet<string> weaponAnimBanks = new HashSet<string>();
+
+        foreach (Dictionary<string, IPhxPropRef> section in C.Weapons)
+        {
+            int channel = 0;
+            if (section.TryGetValue("WeaponChannel", out IPhxPropRef chVal))
+            {
+                PhxProp<int> weapCh = (PhxProp<int>)chVal;
+                channel = weapCh;
+            }
+            Debug.Assert(channel >= 0 && channel < 2);
+
+            if (section.TryGetValue("WeaponName", out IPhxPropRef nameVal))
+            {
+                PhxProp<string> weapCh = (PhxProp<string>)nameVal;
+                PhxClass weapClass = SCENE.GetClass(weapCh);
+                if (weapClass != null)
+                {
+                    PhxProp<int> medalProp = weapClass.P.Get<PhxProp<int>>("MedalsTypeToUnlock");
+                    if (medalProp != null && medalProp != 0)
+                    {
+                        // Skip medal/award weapons for now
+                        continue;
+                    }
+
+                    // do not attach grenates to skeleton, will fail because of collision!
+                    Transform attach = weapClass is PhxGrenade ? null : HpWeapons;
+
+                    IPhxWeapon weap = SCENE.CreateInstance(weapClass, false, HpWeapons) as IPhxWeapon;
+                    if (weap != null)
+                    {
+                        string weapAnimName = weap.GetAnimBankName();
+                        if (!string.IsNullOrEmpty(weapAnimName))
+                        {
+                            weaponAnimBanks.Add(weapAnimName);
+                        }
+
+                        weapons[channel].Add(weap);
+
+                        // init weapon as inactive
+                        weap.GetInstance().gameObject.SetActive(false);
+                        weap.OnShot(() => FireAnimation(channel == 0));
+                        weap.OnReload(Reload);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Instantiation of weapon class '{weapCh}' failed!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"Cannot find weapon class '{weapCh}'!");
+                }
+            }
+
+            // TODO: weapon ammo
+        }
+
+        Weapons[0] = weapons[0].Count == 0 ? new IPhxWeapon[1] { null } : weapons[0].ToArray();
+        Weapons[1] = weapons[1].Count == 0 ? new IPhxWeapon[1] { null } : weapons[1].ToArray();
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Animation
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        Animator = gameObject.AddComponent<PhxHumanAnimator>();
+        Animator.OnStateFinished += StateFinished;
+
+        string[] weapAnimBanks = new string[weaponAnimBanks.Count];
+        weaponAnimBanks.CopyTo(weapAnimBanks);
+        Animator.Init(weapAnimBanks);
+
+
+        // this needs to happen after the Animator is initialized, since swicthing
+        // will weapons will most likely cause an animation bank change aswell
+        NextWeapon(0);
+        NextWeapon(1);
+        */
+    }
+
+    public override void BindEvents()
+    {
+        
+    }
+
+    public override void Fixate()
+    {
+        /*
+        Destroy(Body);
+        Body = null;
+
+        Destroy(GetComponent<CapsuleCollider>());
+        */
+    }
+
+    public override IPhxWeapon GetPrimaryWeapon()
+    {
+        return null;
+        //return Weapons[0][WeaponIdx[0]];
+    }
+
+    public void AddHealth(float amount)
+    {
+        /*
+        if (amount < 0)
+        {
+            // we got hit! alert!
+            AlertTimer = AlertTime;
+        }
+
+        float health = CurHealth + amount;
+        if (health <= 0f)
+        {
+            health = 0;
+            // TODO: dead!
+        }
+        CurHealth.Set(Mathf.Min(health, C.MaxHealth));
+        */
+    }
+
+    public void AddAmmo(float amount)
+    {
+        // TODO
+    }
+
+    public void NextWeapon(int channel)
+    {
+        /*
+        Debug.Assert(channel >= 0 && channel < 2);
+
+        if (WeaponIdx[channel] >= 0 && Weapons[channel][WeaponIdx[channel]] != null)
+        {
+            Weapons[channel][WeaponIdx[channel]].GetInstance().gameObject.SetActive(false);
+        }
+        if (++WeaponIdx[channel] >= Weapons[channel].Length)
+        {
+            WeaponIdx[channel] = 0;
+        }
+        if (Weapons[channel][WeaponIdx[channel]] != null)
+        {
+            Weapons[channel][WeaponIdx[channel]].GetInstance().gameObject.SetActive(true);
+            Animator.SetAnimBank(Weapons[channel][WeaponIdx[channel]].GetAnimBankName());
+        }
+        else
+        {
+            Debug.LogWarning($"Encountered NULL weapon at channel {channel} and weapon index {WeaponIdx[channel]}!");
+        }
+        */
+    }
+
+    public override void PlayIntroAnim()
+    {
+        //Animator.PlayIntroAnim();
+    }
+
+    public override PhxInstance GetAim()
+    {
+        return null;
+        //return Aim;
+    }
+
+ 
+
+    
+
+    void StateFinished(int layer)
+    {
+        /*
+        if (layer == 1)
+        {
+            Animator.SetState(1, CraSettings.STATE_NONE);
+        }
+        */
+    }
+
+    void Update()
+    {
+        /*
+        AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
+        //Weap.Fire = false;
+
+        if (Controller != null)
+        {
+            if (Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
+            {
+                if (Controller.ShootPrimary)
+                {
+                    Weapons[0][WeaponIdx[0]].Fire();
+                }
+                if (Controller.ShootSecondary)
+                {
+                    Weapons[1][WeaponIdx[1]].Fire();
+                }
+                if (Controller.Reload)
+                {
+                    Weapons[0][WeaponIdx[0]].Reload();
+                }
+                if (Controller.NextPrimaryWeapon)
+                {
+                    NextWeapon(0);
+                }
+                if (Controller.NextSecondaryWeapon)
+                {
+                    NextWeapon(1);
+                }
+            }
+
+            if (Physics.Raycast(Neck.position, Controller.ViewDirection, out RaycastHit hit, 1000f))
+            {
+                TargetPos = hit.point;
+                Debug.DrawLine(Neck.position, TargetPos, Color.blue);
+
+                PhxInstance GetInstance(Transform t)
+                {
+                    PhxInstance inst = t.gameObject.GetComponent<PhxInstance>();
+                    if (inst == null && t.parent != null)
+                    {
+                        return GetInstance(t.parent);
+                    }
+                    return inst;
+                }
+                Aim = GetInstance(hit.collider.gameObject.transform);
+            }
+            else
+            {
+                TargetPos = Neck.position + Controller.ViewDirection * 1000f;
+                Debug.DrawRay(Neck.position, Controller.ViewDirection * 1000f, Color.blue);
+            }
+
+            if (Grounded && LandTimer <= 0f && TurnTimer <= 0f)
+            {
+                // Stand - Crouch - Sprint
+                if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
+                {
+                    // ---------------------------------------------------------------------------------------------
+                    // Forward
+                    // ---------------------------------------------------------------------------------------------
+                    float walk = Controller.MoveDirection.magnitude;
+                    if (Controller.MoveDirection.y <= 0f)
+                    {
+                        // invert animation direction for strafing (left/right)
+                        walk = -walk;
+                    }
+
+                    if (State == PhxControlState.Sprint)
+                    {
+                        Animator.SetState(0, Animator.StandSprint);
+                    }
+                    else if (walk > 0.2f && walk <= 0.75f)
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertWalk : Animator.StandWalk);
+                        Animator.SetPlaybackSpeed(0, Animator.StandWalk, walk / 0.75f);
+                    }
+                    else if (walk > 0.75f)
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
+                        Animator.SetPlaybackSpeed(0, Animator.StandRun, walk / 1f);
+                    }
+                    else if (walk < -0.2f)
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
+                        Animator.SetPlaybackSpeed(0, Animator.StandBackward, -walk / 1f);
+                    }
+                    else
+                    {
+                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertIdle : Animator.StandIdle);
+                    }
+                    // ---------------------------------------------------------------------------------------------
+                }
+
+                // Stand - Crouch
+                if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
+                {
+                    // ---------------------------------------------------------------------------------------------
+                    // Idle
+                    // ---------------------------------------------------------------------------------------------
+                    if (Controller.IdleTime >= IdleTime)
+                    {
+                        if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+                        {
+                            //Anim.SetTrigger(IdleNames[0]);
+                        }
+                        else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                        {
+                            //Anim.SetTrigger(IdleNames[1]);
+                        }
+                        else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+                        {
+                            //Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
+                        }
+                        Controller.ResetIdleTime();
+                    }
+                    if (!Controller.IsIdle && LastIdle)
+                    {
+                        //Anim.SetTrigger("UnIdle");
+                    }
+                    // ---------------------------------------------------------------------------------------------
+
+
+                    // ---------------------------------------------------------------------------------------------
+                    // Shooting
+                    // ---------------------------------------------------------------------------------------------
+                    if (Controller.ShootPrimary)
+                    {
+                        // only fire when not currently turning
+                        //Weap.Fire = TurnTimer <= 0f;
+                        AlertTimer = AlertTime;
+                    }
+                    else if (Controller.ShootSecondary)
+                    {
+                        //Anim.SetTrigger("ShootSecondary");
+                        AlertTimer = AlertTime;
+                    }
+                    else if (Controller.Reload)
+                    {
+                        //Anim.SetTrigger("Reload");
+                    }
+                    // ---------------------------------------------------------------------------------------------
+
+
+                    State = Controller.Crouch ? PhxControlState.Crouch : PhxControlState.Stand;
+                }
+
+                // Stand - Sprint
+                if (State == PhxControlState.Stand || State == PhxControlState.Sprint)
+                {
+                    // ---------------------------------------------------------------------------------------------
+                    // Jumping
+                    // ---------------------------------------------------------------------------------------------
+                    if (Controller.Jump)
+                    {
+                        Body?.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
+                        State = PhxControlState.Jump;
+                        JumpTimer = JumpTime;
+
+                        Animator.SetState(0, Animator.Jump);
+                        Animator.SetState(1, CraSettings.STATE_NONE);
+                    }
+                    // ---------------------------------------------------------------------------------------------
+                }
+
+                // Stand
+                if (State == PhxControlState.Stand)
+                {
+                    if (Controller.MoveDirection.y > 0.2f && Controller.Sprint)
+                    {
+                        State = PhxControlState.Sprint;
+                    }
+                }
+
+                // Crouch
+                if (State == PhxControlState.Crouch)
+                {
+                    if (Controller.Jump)
+                    {
+                        State = PhxControlState.Stand;
+                    }
+
+                    // TODO: verify
+                    else if (Controller.MoveDirection.y > 0.8f && Controller.Sprint)
+                    {
+                        State = PhxControlState.Sprint;
+                    }
+                }
+
+                // Sprint
+                if (State == PhxControlState.Sprint)
+                {
+                    if (Controller.MoveDirection.y < 0.8f || !Controller.Sprint)
+                    {
+                        State = PhxControlState.Stand;
+                    }
+                }
+
+                // Jump
+                if (State == PhxControlState.Jump)
+                {
+                    JumpTimer -= Time.deltaTime;
+                    if (Grounded && JumpTimer < 0f)
+                    {
+                        State = PhxControlState.Stand;
+                    }
+                }
+
+                //Anim.SetBool("Alert", AlertTimer > 0f);
+                LastIdle = Controller.IsIdle;
+
+                FallTimer = 0f;
+            }
+        }
+        */
+    }
+
+    void FixedUpdate()
+    {
+        
+    }
+
+    //public Vector3 RotAlt1 = new Vector3(7f, -78f, -130f);
+    //public Vector3 RotAlt2 = new Vector3(0f, -50f, -75f);
+    //public Vector3 RotAlt3 = new Vector3(0f, -68f, -81f);
+
+    void LateUpdate()
+    {
+
+    }
+}
+
