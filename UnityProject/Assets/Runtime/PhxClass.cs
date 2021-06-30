@@ -83,7 +83,15 @@ public abstract class PhxClass
                                 {                 
                                     IPhxPropRef prop = section.Properties[j].Item2.ShallowCopy();
                                     prop.SetFromString(propValues[i]);
-                                    currSection.Add(propName, prop);
+
+                                    if (currSection.ContainsKey(propName))
+                                    {
+                                        Debug.LogErrorFormat("Section already contains key: {0} (in PhxClass: {1}, Section index: {2})", propName, ec.Name, foundSections.Count - 1);
+                                    }
+                                    else
+                                    {
+                                        currSection.Add(propName, prop);
+                                    }
                                 }
                             }
                         }
