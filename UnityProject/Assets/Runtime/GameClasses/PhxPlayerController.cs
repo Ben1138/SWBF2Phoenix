@@ -8,6 +8,8 @@ public class PhxPlayerController : PhxPawnController
     public bool CancelPressed { get; private set; }
 
 
+    float VehicleEnterTimer = 1.0f;
+
 
     public PhxPlayerController()
     {
@@ -72,5 +74,25 @@ public class PhxPlayerController : PhxPawnController
         {
             Crouch = !Crouch;
         }
+
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            Debug.Log("Pressed E!");
+            TryEnterVehicle = true;
+        }
+
+        if (TryEnterVehicle)
+        {
+            if (VehicleEnterTimer <= 0.0f)
+            {
+                VehicleEnterTimer = 1.0f;
+            }
+            else 
+            {
+                TryEnterVehicle = false;
+            }
+        }
+
+        VehicleEnterTimer = Mathf.Clamp(VehicleEnterTimer - Time.deltaTime, -0.01f, 1.0f);
     }
 }

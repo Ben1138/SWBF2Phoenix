@@ -8,7 +8,8 @@ public class PhxCamera : MonoBehaviour
     {
         Fixed,
         Free,
-        Follow
+        Follow,
+        FollowVehicle
     }
                      
     public CamMode    Mode { get; private set; } = CamMode.Free;
@@ -18,13 +19,33 @@ public class PhxCamera : MonoBehaviour
     public float      FollowSpeed                = 10.0f;
     public float      MouseSensitivity           = 5f;
 
+
+    public Vector3 VehicleOffset;
+    public Vector3 VehicleFocus;
+
+
     IPhxControlableInstance FollowInstance;
+
+
+    public void FollowVehicle(IPhxControlableInstance follow, Vector3 positionOffset, Vector3 focus)
+    {
+        Mode = CamMode.FollowVehicle;
+        FollowInstance = follow;
+
+        VehicleOffset = positionOffset;
+        VehicleFocus = focus;
+    }
 
 
     public void Follow(IPhxControlableInstance follow)
     {
         Mode = CamMode.Follow;
         FollowInstance = follow;
+
+        FreeMoveSpeed              = 100.0f;
+        FreeRotationSpeed          = 5.0f;
+        PositionOffset             = new Vector3(0f, 2f, -2f);
+        FollowSpeed                = 10.0f;
     }
 
     public void Fixed()
@@ -89,14 +110,24 @@ public class PhxCamera : MonoBehaviour
             rotPoint.y += PositionOffset.y;
 
 
-            //Vector3 viewDir = (FollowInstance.GetTargetPosition() - rotPoint).normalized;
-            Vector3 viewDir = PhxGameRuntime.GetMatch().Player.ViewDirection;
+            Vector3 viewDir = (FollowInstance.GetTargetPosition() - rotPoint).normalized;
+            //Vector3 viewDir = PhxGameRuntime.GetMatch().Player.ViewDirection;
             Vector3 camTargetPos = rotPoint + viewDir * PositionOffset.z;
             Quaternion camTargetRot = Quaternion.LookRotation(viewDir);
             camTargetPos += camTargetRot * new Vector3(PositionOffset.x, 0f, 0f);
 
             transform.position = Vector3.Lerp(transform.position, camTargetPos, Time.fixedDeltaTime * FollowSpeed);
             transform.rotation = Quaternion.Slerp(transform.rotation, camTargetRot, Time.fixedDeltaTime * FollowSpeed);
+        }
+        else if (Mode == CamMode.FollowVehicle)
+        {
+            Transform vTx = ((PhxHover) FollowInstance).transform;
+
+            Vector3 pos = vTx.TransformPoint(VehicleOffset);
+            Vector3 focus = vTx.TransformPoint(VehicleFocus);
+
+            transform.rotation = Quaternion.LookRotation(focus - pos, Vector3.up);
+            transform.position = pos;
         }
     }
 }
