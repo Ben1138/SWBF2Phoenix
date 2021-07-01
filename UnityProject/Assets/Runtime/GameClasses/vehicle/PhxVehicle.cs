@@ -1,27 +1,114 @@
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
+
 
 
 public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxClass
 {
     public Action<PhxInstance> OnDeath;
 
-    public PhxSoldier[] Occupants = null;
-
     private float SliceProgress = 0.0f;
+
+
+    protected PhxSoldier Driver = null;
+
 
     public void IncrementSlice()
     {
         SliceProgress += .1f;
     }
 
+
     public bool AddSoldier(PhxSoldier soldier)
     {
+        if (Driver == null)
+        {
+            Driver = soldier;
+            return true;
+        }
+
+        return false;
+    }
+
+    /*
+    public PhxVehicleSection AddSoldier(PhxSoldier soldier)
+    {
         // Check how many seats available, return true if one is...
+
+        int i = 0;
+        foreach (PhxVehicleSection section in Sections)
+        {
+            if (!section.HasOccupant())
+            {
+                section.SetOccupant(soldier);
+
+                if (i == 0)
+                {
+                    Driver = soldier;
+                }
+
+                return section;
+            }
+
+            i++;
+        }
+
+        return null;
+    }
+    */
+
+
+
+    //List<PhxVehicleSection> Sections = new List<PhxVehicleSection>();
+
+    public void FillSections(PhxPropertySection sections)
+    {
+        foreach (Dictionary<string, IPhxPropRef> section in sections)
+        {
+            //var NewSection = AddComponent<PhxVehicleSection>();
+            //NewSection.SetProperties(section, this);
+            //Sections.Add(NewSection);
+        }
+    }
+
+
+
+    protected void PruneMeshColliders(Transform tx)
+    {
+        MeshCollider coll = tx.gameObject.GetComponent<MeshCollider>();
+        if (coll != null)
+        {
+            Destroy(coll);
+        }
+
+        for (int j = 0; j < tx.childCount; j++)
+        {
+            PruneMeshColliders(tx.GetChild(j));
+        }
+    }
+
+
+
+    public bool CameraFollow()
+    {
+        PhxGameRuntime.GetCamera().FollowVehicle(this, new Vector3(0.0f, 2.0f, 0.0f) + new Vector3(0.0f, 2.0f, -5.0f), new Vector3(0.0f, .5f, 6.0f));
+
+
+
         return true;
     }
+    
+
+    public void EjectOccupant(PhxSoldier occupant)
+    {
+        //occupant.SetFree(transform.position + Vector3.up * 2.0f);
+    }
+
+
+
 }
 
 
@@ -62,7 +149,12 @@ public class PhxVehicleProperties : PhxClass
         "FLYERSECTION",
         ("VehicleType",   new PhxProp<string>(null)),
         ("WeaponName",    new PhxProp<string>(null)),
-        ("WeaponAmmo",    new PhxProp<int>(0))
+        ("WeaponAmmo",    new PhxProp<int>(0)),
+        ("PilotPosition", new PhxProp<string>(null)),
+        ("Pilot9Pose",    new PhxProp<string>(null)),
+        ("EyePointOffset",new PhxProp<Vector3>(Vector3.zero)),
+        ("TrackCenter",   new PhxProp<Vector3>(Vector3.zero)),
+        ("TrackOffset",   new PhxProp<Vector3>(Vector3.zero))
     );
 
     public PhxPropertySection Weapons = new PhxPropertySection(

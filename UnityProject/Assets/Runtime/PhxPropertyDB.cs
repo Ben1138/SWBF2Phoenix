@@ -74,6 +74,16 @@ public sealed class PhxPropertyDB
         {
             outVal = Convert.ChangeType(RTS.GetPath(value), destType, CultureInfo.InvariantCulture);
         }
+        else if (destType == typeof(Vector3))
+        {
+            string[] v = value.Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
+            Vector3 vOut = new Vector3();
+            for (int i = 0; i < 3; i++)
+            {
+                vOut[i] = float.Parse(v[i]);
+            }
+            outVal = vOut;
+        }
         else if (destType == typeof(bool))
         {
             if (value == "0" || value == "1")
