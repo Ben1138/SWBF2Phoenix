@@ -79,8 +79,23 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         Jet,
         Jump,
         Roll,
-        Tumble
+        Tumble,
     }
+
+    enum PhxSoldierContext
+    {
+        Free,
+        Pilot,
+    }
+
+    PhxSoldierContext Context = PhxSoldierContext.Free;
+
+
+    // Vehicle related fields
+    public string NinePoseAnim = null;
+
+
+
 
 
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
@@ -353,6 +368,68 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         Animator.RestartState(1);
     }
 
+    // Undoes SetPilot; called by vehicles/turrets when ejecting soldiers
+    public void SetFree(Vector3 position)
+    {
+        //Body.isKinematic = false;
+        //Body.detectCollisions = true;
+        //Body.useGravity = true;
+
+        Body = gameObject.AddComponent<Rigidbody>();
+        Body.mass = 80f;
+        Body.drag = 0.2f;
+        Body.angularDrag = 10f;
+        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+
+        GetComponent<SkinnedMeshRenderer>().enabled = true;
+        GetComponent<CapsuleCollider>().enabled = true;
+
+        transform.parent = null;
+        transform.position = position;
+
+        NinePoseAnim = null;
+        Context = PhxSoldierContext.Free;
+
+        Debug.Log("Soldier free");
+
+        Controller.TryEnterVehicle = false;
+
+
+    }
+
+
+    void SetPilot(Transform pilotNode, string NinePAnim)
+    {
+        Context = PhxSoldierContext.Pilot;
+        NinePoseAnim = NinePAnim;
+
+        Destroy(Body);
+
+
+        //Body.detectCollisions = false;
+        //Body.isKinematic = true;
+        //Body.useGravity = false;
+
+        GetComponent<CapsuleCollider>().enabled = false;
+
+
+        if (true)//pilotNode == null)
+        {
+            GetComponent<SkinnedMeshRenderer>().enabled = false;
+        }
+        else
+        {
+            transform.parent = pilotNode;
+            transform.localPosition = Vector3.zero;
+        }
+
+        Debug.Log("Soldier piloting");
+    }
+
+
     // see: com_inf_default
     float[] GetControlSpeed(PhxControlState state)
     {
@@ -381,8 +458,31 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         }
     }
 
+
+    void UpdateNinePose()
+    {
+        if (NinePoseAnim == null)
+        {
+            return;
+        }
+        else 
+        {
+            return;
+        }
+    }
+
+
+
+
+
     void Update()
     {
+        if (Context == PhxSoldierContext.Pilot)
+        {
+            UpdateNinePose();
+            return;
+        }
+
         AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
         //Weap.Fire = false;
 
@@ -594,11 +694,34 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
                 FallTimer = 0f;
             }
+
+
+            // Will work into specific control schema.  Not sure when you can't enter vehicles...
+            if (Controller.TryEnterVehicle)
+            {
+                Collider[] PossibleVehicles = Physics.OverlapSphere(transform.position, 5.0f);
+                foreach (Collider PossibleVehicle in PossibleVehicles)
+                {
+                    PhxHover Vehicle = PossibleVehicle.GetComponent<PhxHover>();
+                    if (Vehicle != null)
+                    {
+                        if (Vehicle.TryEnterVehicle(this, out string NinePAnim, out Transform seat))
+                        {
+                            SetPilot(seat, NinePAnim);
+                            Controller.TryEnterVehicle = false;
+                        }
+                    }
+                }
+            }
         }
     }
 
+
+
     void FixedUpdate()
     {
+        if (Context == PhxSoldierContext.Pilot) return;
+
         Grounded = Physics.CheckSphere(transform.position, 0.4f, PhxGameRuntime.PlayerMask, QueryTriggerInteraction.Ignore);
 
         if (Controller != null)
@@ -720,6 +843,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
     void LateUpdate()
     {
+        if (Context == PhxSoldierContext.Pilot) return;
+
         if (Controller == null) return;
 
         if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
