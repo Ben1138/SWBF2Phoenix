@@ -14,21 +14,6 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
 
-    public class PhxAimer
-    {
-        public Transform node;
-        public Vector2 pitchRange;
-        public Vector3 yawRange;
-
-        bool TestAndLimitRotation()
-        {
-
-        }
-    }
-
-
-
-
     public class PhxHoverProperties : PhxVehicleProperties
     {
         public PhxProp<float> Acceleration = new PhxProp<float>(5.0f);
@@ -47,11 +32,19 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
         public PhxProp<float> LiftSpring = new PhxProp<float>(.5f);
 
         public PhxProp<float> GravityScale = new PhxProp<float>(.5f);
+
+        public PhxProp<float> SpinRate = new PhxProp<float>(1.7f);
+        public PhxProp<float> TurnRate = new PhxProp<float>(1.7f);
+
+        //public PhxProp<Vector3> 
     }
 
 
     
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
+
+
+    private List<PhxAimer> Aimers;
 
 
     Rigidbody Body;
@@ -70,13 +63,8 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
         PilotPosition = null;
 
 
-        //PhxVehicleSection SoldiersSection = AddSoldier(soldier);
-
         if (AddSoldier(soldier))
         {   
-            //NinePoseAnim = SoldiersSection.NinePoseAnim;
-            //PilotPosition = SoldiersSection.PilotPosition;
-
             Controller = Driver.GetController();
             CameraFollow();
 
@@ -107,7 +95,86 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
     }
 
 
-    //Vector3 CurrSpeed = 0.0f;
+
+    public Vector2 Vec2FromString(string val)
+    {
+        string[] v = val.Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
+        Vector2 vOut = new Vector2();
+        for (int i = 0; i < 2; i++)
+        {
+            vOut[i] = float.Parse(v[i]);
+        }
+        return vOut;
+    }
+
+
+    public int InitWeapSection(uint[] properties, string[] values, int i, bool print = false)
+    {
+        bool CreateNew = true;
+        PhxAimer CurrAimer = new PhxAimer();
+
+        while (++i < properties.Length)
+        {
+            if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
+            {
+                CurrAimer.HierarchyLevel = 1;
+            }
+            else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
+            {
+                CurrAimer.PitchRange = Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("AimerYawLimits"))
+            {
+                CurrAimer.YawRange = Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("BarrelNodeName"))
+            {
+                CurrAimer.BarrelNode = UnityUtils.FindChildTransform(transform, values[i]);
+            }     
+            else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))
+            {
+                CurrAimer.Node = UnityUtils.FindChildTransform(transform, values[i]);
+            }            
+            else if (properties[i] == HashUtils.GetFNV("NextAimer"))
+            {
+
+            if (properties[i] == HashUtils.GetFNV("WEAPONSECTION") || 
+                properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
+                properties[i] == HashUtils.GetFNV("CHUNKSECTION") || 
+                properties[i] == HashUtils.GetFNV("NextAimer"))
+            {
+                CurrAimer.Init();
+
+                if (Aimers.Count > 0 && Aimers[Aimers.Count - 1].HierarchyLevel > CurrAimer.HierarchyLevel)
+                {
+                    Aimers[Aimers.Count - 1].ChildAimer = CurrAimer;
+                    if (print)
+                    {
+                        Debug.LogFormat("Added aimer: {0} with barrel: {1} as child of aimer: {2}", CurrAimer.Node.name, CurrAimer.BarrelNode == null ? "null" : CurrAimer.BarrelNode.name, Aimers[Aimers.Count - 1].Node.name);                        
+                    }
+                }
+                else 
+                {
+                    Aimers.Add(CurrAimer);
+                }
+
+
+                if (properties[i] == HashUtils.GetFNV("NextAimer"))
+                {
+                    CurrAimer = new PhxAimer();
+                }
+                else 
+                {
+                    break;
+                }
+            }
+        }
+
+        return i;
+    } 
+
+
+    Vector3 GroundNormal;
 
 
     public override void Init()
@@ -127,19 +194,62 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
         Body.mass = 1.0f;// C.GravityScale;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
-        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.interpolation = RigidbodyInterpolation.Interpolate;
         Body.constraints = RigidbodyConstraints.FreezeRotationZ;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+
+
+        //Set up aimers
+        Aimers = new List<PhxAimer>();
+
+
+        var EC = C.EntityClass;
+        EC.GetAllProperties(out uint[] properties, out string[] values);
+
+        int i = 0;
+        bool Exit = false;
+        while (i < properties.Length && !Exit)
+        {
+            if (properties[i] == HashUtils.GetFNV("FLYERSECTION"))
+            {
+                if (EC.Name == "rep_hover_fightertank")
+                {
+                    Debug.Log("Initting flyer sec...");
+                }
+
+                i++;
+                while (i < properties.Length && properties[i] != HashUtils.GetFNV("FLYERSECTION"))
+                {
+                    if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
+                    {
+                        if (EC.Name == "rep_hover_fightertank")
+                        {
+                            Debug.Log("Initting weap sec...");
+                        }
+                        i = InitWeapSection(properties, values, i, EC.Name == "rep_hover_fightertank");
+
+                        Exit = true;
+                        break;
+                    }
+
+                    i++;
+                }
+            }
+
+            i++;
+        }
     }
 
+
+    int CurrAimer = 0;
+
+    Vector3 ViewDirection = new Vector3(0.0f, 0.5f, 6.0f);
 
 
     void Update()
     {
-        if (Controller == null)
-        {
-            return;
-        }
+        if (Controller == null) { return; }
 
         if (Controller.TryEnterVehicle)
         {
@@ -149,15 +259,35 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
         }
 
 
+        if (Controller.ShootPrimary)
+        {
+            if (Aimers.Count > 0)
+            {
+                Debug.LogFormat("Firing aimer {0}", CurrAimer);
+                if (Aimers[CurrAimer].Fire())
+                {
+                    // If the aimer fires successfully, 
+                    CurrAimer++;
+                }
+
+                if (CurrAimer >= Aimers.Count)
+                {
+                    CurrAimer = 0;
+                }
+            }
+        }
 
 
-        Controller.ViewDirection 
+        ViewDirection = Quaternion.Euler(3.0f * Controller.mouseY, 0.0f, 0.0f) * ViewDirection;
 
 
+        foreach (var Aimer in Aimers)
+        {
+            Aimer.AdjustAim(transform.TransformPoint(ViewDirection));
+            Aimer.UpdateBarrel();
+        }
 
-
-
-
+        CAM.VehicleFocus = ViewDirection;
 
     }
 
@@ -197,6 +327,14 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>
             DecelerateToRest(localVel);
             return;
         }
+
+
+        float rotRate = Vector3.Magnitude(localVel) < .1f ? C.SpinRate : C.TurnRate;
+
+        Quaternion deltaRotation = Quaternion.Euler(new Vector3(0.0f, rotRate * Controller.mouseX, 0.0f) * Time.fixedDeltaTime);
+        Body.MoveRotation(Body.rotation * deltaRotation);
+
+
 
 
         float strafe = Controller.MoveDirection.x;
