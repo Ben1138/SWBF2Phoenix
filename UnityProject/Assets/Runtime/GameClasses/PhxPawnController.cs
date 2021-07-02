@@ -6,6 +6,9 @@ public abstract class PhxPawnController
 {
     public IPhxControlableInstance Pawn { get; private set; }
 
+    public float mouseX;
+    public float mouseY;
+
     public bool ShootPrimary;
     public bool ShootSecondary;
     public bool Crouch;

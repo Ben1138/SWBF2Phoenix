@@ -42,8 +42,8 @@ public class PhxPlayerController : PhxPawnController
         MoveDirection.x = Input.GetAxis("Horizontal");
         MoveDirection.y = Input.GetAxis("Vertical");
 
-        float mouseX =  Input.GetAxis("Mouse X");
-        float mouseY = -Input.GetAxis("Mouse Y");
+        mouseX =  Input.GetAxis("Mouse X");
+        mouseY = -Input.GetAxis("Mouse Y");
 
         Vector2 rotConstraints = Pawn.GetViewConstraint();
         Vector2 maxTurnSpeed = Pawn.GetMaxTurnSpeed();
