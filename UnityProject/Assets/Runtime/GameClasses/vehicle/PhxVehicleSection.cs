@@ -21,14 +21,14 @@ Each frame the parent vehicle will call Update() on each section.
 
 public abstract class PhxVehicleSection : IPhxTrackable
 {    
-    public PhxHover OwnerVehicle = null;
+    public PhxHover OwnerVehicle;
 
-    public PhxSoldier Occupant = null;
+    public PhxSoldier Occupant;
 
     public bool CanExit = true;
 
 
-    public Transform PilotPosition = null;
+    public Transform PilotPosition;
     public string PilotAnimation = "";
 
 
@@ -44,14 +44,14 @@ public abstract class PhxVehicleSection : IPhxTrackable
     protected int Index;
 
 
-    protected List<PhxAimer> Aimers = null;
+    protected List<PhxAimer> Aimers;
 
     // View direction in local space 
     protected Vector3 ViewDirection;
 
     // Accumulators for view control
-    protected float PitchAccum = 0.0f;
-    protected float YawAccum = 0.0f;
+    protected float PitchAccum;
+    protected float YawAccum;
 
 
     public abstract Vector3 GetCameraPosition();
@@ -88,6 +88,8 @@ public abstract class PhxVehicleSection : IPhxTrackable
     {
         if (CurrAimer.Node == null){ return false; }
         CurrAimer.Init();
+
+        Debug.LogFormat("Attempting to add Aimer: {0}", CurrAimer.Node.name);
 
         if (Aimers == null)
         {

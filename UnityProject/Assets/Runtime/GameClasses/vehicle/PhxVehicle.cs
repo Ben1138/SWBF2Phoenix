@@ -34,10 +34,10 @@ public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxVeh
     private List<PhxVehicleSection> Sections;
     //private List<PhxChunk> Chunks;
 
-    protected float SliceProgress = 0.0f;
+    protected float SliceProgress;
 
 
-    protected PhxSoldier Driver = null;
+    protected PhxSoldier Driver;
 
     // Will return true if vehicle is sliceable.  Out param is SliceProgress
     public abstract bool IncrementSlice(out float progress); 

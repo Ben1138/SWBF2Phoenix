@@ -20,7 +20,7 @@ public class PhxAimer
     public Vector2 PitchRange;
     public Vector2 YawRange;
     public float BarrelRecoil = .25f;
-    public Transform BarrelNode = null;
+    public Transform BarrelNode;
 
     private Vector3 RestDir;
     private Vector3 BarrelRestPos;
@@ -28,9 +28,9 @@ public class PhxAimer
     private float RecoilTime = 1.0f;
     private float RecoilTimer = 1.1f;
 
-    public PhxAimer ChildAimer = null;
+    public PhxAimer ChildAimer;
 
-    public int HierarchyLevel = 0;
+    public int HierarchyLevel;
 
     public void AdjustAim(Vector3 TargetPos)
     {
@@ -113,5 +113,25 @@ public class PhxAimer
         
         return true;
     }
+
+
+    public override string ToString()
+    {
+        string rep = String.Format("Aimer (Node: {0}", Node.name);
+
+        if (BarrelNode != null)
+        {
+            rep = rep + String.Format(", Barrel: {0}", BarrelNode.name);
+        }
+
+        if (ChildAimer != null)
+        {
+            rep = rep + String.Format(", Child: {0}", ChildAimer.Node.name);
+        }
+
+        return rep + ")";
+    }   
+
+
 }
 
