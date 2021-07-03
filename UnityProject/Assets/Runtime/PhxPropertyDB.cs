@@ -76,13 +76,11 @@ public sealed class PhxPropertyDB
         }
         else if (destType == typeof(Vector3))
         {
-            string[] v = value.Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
-            Vector3 vOut = new Vector3();
-            for (int i = 0; i < 3; i++)
-            {
-                vOut[i] = float.Parse(v[i]);
-            }
-            outVal = vOut;
+            outVal = PhxUtils.Vec3FromString(value); 
+        }
+        else if (destType == typeof(Vector2))
+        {
+            outVal = PhxUtils.Vec2FromString(value); 
         }
         else if (destType == typeof(bool))
         {

@@ -9,6 +9,9 @@ using System.Runtime.ExceptionServices;
 public class PhxAimer
 {
     public Transform Node;
+    public Transform FireNode;
+
+
     public Vector2 PitchRange;
     public Vector2 YawRange;
     public float BarrelRecoil = .25f;
@@ -54,6 +57,11 @@ public class PhxAimer
         if (BarrelNode != null)
         {
             BarrelRestPos = BarrelNode.localPosition;
+        }
+
+        if (FireNode == null)
+        {
+            FireNode = Node;
         }
     }
 
