@@ -6,7 +6,15 @@ using LibSWBF2.Wrappers;
 
 
 
-public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxClass
+public interface IPhxTrackable
+{
+    public Vector3 GetCameraPosition();
+    public Quaternion GetCameraRotation();
+}
+
+
+
+public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxClass 
 {
     public Action<PhxInstance> OnDeath;
 
@@ -16,66 +24,19 @@ public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxCla
     protected PhxSoldier Driver = null;
 
 
-    public void IncrementSlice()
-    {
-        SliceProgress += .1f;
-    }
+    public void IncrementSlice() { SliceProgress += .1f; }
 
 
-    public bool AddSoldier(PhxSoldier soldier)
-    {
-        if (Driver == null)
-        {
-            Driver = soldier;
-            return true;
-        }
-
-        return false;
-    }
-
-    /*
-    public PhxVehicleSection AddSoldier(PhxSoldier soldier)
-    {
-        // Check how many seats available, return true if one is...
-
-        int i = 0;
-        foreach (PhxVehicleSection section in Sections)
-        {
-            if (!section.HasOccupant())
-            {
-                section.SetOccupant(soldier);
-
-                if (i == 0)
-                {
-                    Driver = soldier;
-                }
-
-                return section;
-            }
-
-            i++;
-        }
-
-        return null;
-    }
-    */
+    public bool AddSoldier(PhxSoldier soldier) { return false; }
 
 
+    
 
-    //List<PhxVehicleSection> Sections = new List<PhxVehicleSection>();
-
-    public void FillSections(PhxPropertySection sections)
-    {
-        foreach (Dictionary<string, IPhxPropRef> section in sections)
-        {
-            //var NewSection = AddComponent<PhxVehicleSection>();
-            //NewSection.SetProperties(section, this);
-            //Sections.Add(NewSection);
-        }
-    }
+    public void FillSections(PhxPropertySection sections){}
 
 
-
+    // Dealing with SWBF's use of concave colliders on physics objects will be a major challenge
+    // unless we can reliably use the primitives found on each imported model...
     protected void PruneMeshColliders(Transform tx)
     {
         MeshCollider coll = tx.gameObject.GetComponent<MeshCollider>();
@@ -91,15 +52,6 @@ public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxCla
     }
 
 
-
-    public bool CameraFollow()
-    {
-        PhxGameRuntime.GetCamera().FollowVehicle(this, new Vector3(0.0f, 2.0f, 0.0f) + new Vector3(0.0f, 2.0f, -5.0f), new Vector3(0.0f, .5f, 6.0f));
-
-
-
-        return true;
-    }
     
 
     public void EjectOccupant(PhxSoldier occupant)

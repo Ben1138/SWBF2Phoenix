@@ -75,6 +75,8 @@ public class PhxPlayerController : PhxPawnController
             Crouch = !Crouch;
         }
 
+        SwitchSeat = Input.GetKeyDown(KeyCode.G);
+
         if (Input.GetKeyDown(KeyCode.E))
         {
             Debug.Log("Pressed E!");

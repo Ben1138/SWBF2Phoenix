@@ -9,7 +9,7 @@ public class PhxCamera : MonoBehaviour
         Fixed,
         Free,
         Follow,
-        FollowVehicle
+        FollowTrackable,
     }
                      
     public CamMode    Mode { get; private set; } = CamMode.Free;
@@ -20,20 +20,16 @@ public class PhxCamera : MonoBehaviour
     public float      MouseSensitivity           = 5f;
 
 
-    public Vector3 VehicleOffset;
-    public Vector3 VehicleFocus;
-
-
     IPhxControlableInstance FollowInstance;
 
+    IPhxTrackable TrackableInstance;
 
-    public void FollowVehicle(IPhxControlableInstance follow, Vector3 positionOffset, Vector3 focus)
+
+
+    public void FollowTrackable(IPhxTrackable follow)
     {
-        Mode = CamMode.FollowVehicle;
-        FollowInstance = follow;
-
-        VehicleOffset = positionOffset;
-        VehicleFocus = focus;
+        Mode = CamMode.FollowTrackable;
+        TrackableInstance = follow;
     }
 
 
@@ -119,15 +115,10 @@ public class PhxCamera : MonoBehaviour
             transform.position = Vector3.Lerp(transform.position, camTargetPos, Time.fixedDeltaTime * FollowSpeed);
             transform.rotation = Quaternion.Slerp(transform.rotation, camTargetRot, Time.fixedDeltaTime * FollowSpeed);
         }
-        else if (Mode == CamMode.FollowVehicle)
+        else if (Mode == CamMode.FollowTrackable)
         {
-            Transform vTx = ((PhxHover) FollowInstance).transform;
-
-            Vector3 pos = vTx.TransformPoint(VehicleOffset);
-            Vector3 focus = vTx.TransformPoint(VehicleFocus);
-
-            transform.rotation = Quaternion.LookRotation(focus - pos, Vector3.up);
-            transform.position = pos;
+            transform.rotation = TrackableInstance.GetCameraRotation();
+            transform.position = TrackableInstance.GetCameraPosition();
         }
     }
 }
