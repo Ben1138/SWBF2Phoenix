@@ -5,6 +5,11 @@ using UnityEngine;
 using LibSWBF2.Wrappers;
 
 
+/*
+Implement if you want object to be followed by the camera.
+Added so that PhxVehicleSections, which are not Lua-accessible instances,
+could be followed.
+*/
 
 public interface IPhxTrackable
 {
@@ -13,18 +18,29 @@ public interface IPhxTrackable
 }
 
 
+/*
+All vehicles have control sections (FLYERSECTION/WALKERSECTION {BODY, TURRET1, TURRET2}, etc),
+chunks, and some unique class properties.  Though the vast majority of those properties
+are not accessible in Lua.
 
-public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxClass 
+They can be entered, exited, sliced, repaired by soldiers
+
+*/
+
+public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxVehicleProperties 
 {
     public Action<PhxInstance> OnDeath;
 
-    private float SliceProgress = 0.0f;
+    private List<PhxVehicleSection> Sections;
+    //private List<PhxChunk> Chunks;
+
+    protected float SliceProgress = 0.0f;
 
 
     protected PhxSoldier Driver = null;
 
-
-    public void IncrementSlice() { SliceProgress += .1f; }
+    // Will return true if vehicle is sliceable.  Out param is SliceProgress
+    public abstract bool IncrementSlice(out float progress); 
 
 
     public bool AddSoldier(PhxSoldier soldier) { return false; }
