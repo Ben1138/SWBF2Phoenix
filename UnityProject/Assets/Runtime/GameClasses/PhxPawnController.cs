@@ -9,6 +9,8 @@ public abstract class PhxPawnController
     public float mouseX;
     public float mouseY;
 
+    public bool SwitchSeat;
+
     public bool ShootPrimary;
     public bool ShootSecondary;
     public bool Crouch;
