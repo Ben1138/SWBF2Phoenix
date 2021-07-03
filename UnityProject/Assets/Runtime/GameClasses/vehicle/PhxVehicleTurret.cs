@@ -7,44 +7,28 @@ using LibSWBF2.Utils;
 
 
 
-public class PhxVehicleTurret : IPhxTrackable
+public class PhxVehicleTurret : PhxVehicleSection
 {    
-    public PhxHover OwnerVehicle = null;
-
-    public PhxSoldier Occupant = null;
-
-    public bool CanExit = true;
 
 
-    public Transform PilotPosition = null;
-    public Transform TurretNode = null;
-
-
-    public Vector3 EyePointOffset;
-    public Vector3 TrackCenter;
-    public Vector3 TrackOffset;
-
-    int Index;
-
-
-    private List<PhxAimer> Aimers;
-
-
-    public Vector3 GetCameraPosition()
+    public override Vector3 GetCameraPosition()
     {
-        return TurretNode.TransformPoint(EyePointOffset + TrackCenter);
+        return TurretNode.transform.TransformPoint(EyePointOffset + TrackCenter);
     }
 
-    public Quaternion GetCameraRotation()
+    public override Quaternion GetCameraRotation()
     {
-        return Quaternion.LookRotation(TurretNode.forward, Vector3.up);
+        return Quaternion.LookRotation(ViewDirection, Vector3.up);
     }
 
 
-    public PhxVehicleTurret(uint[] properties, string[] values, int i, Transform parentVehicle, int index)
+
+    //IPhxWeapon Weapon;
+    Transform TurretNode = null;
+
+    public PhxVehicleTurret(uint[] properties, string[] values, ref int i, Transform parentVehicle, int sectionIndex)
     {
-        Index = index;
-        Aimers = new List<PhxAimer>();
+        Index = sectionIndex;
 
         PhxAimer CurrAimer = new PhxAimer();
 
@@ -96,17 +80,7 @@ public class PhxVehicleTurret : IPhxTrackable
                     properties[i] == HashUtils.GetFNV("CHUNKSECTION") || 
                     properties[i] == HashUtils.GetFNV("NextAimer"))
             {
-                CurrAimer.Init();
-
-                if (Aimers.Count > 0 && Aimers[Aimers.Count - 1].HierarchyLevel > CurrAimer.HierarchyLevel)
-                {
-                    Aimers[Aimers.Count - 1].ChildAimer = CurrAimer;
-                }
-                else 
-                {
-                    Aimers.Add(CurrAimer);
-                }
-
+                AddAimer(CurrAimer);
 
                 if (properties[i] == HashUtils.GetFNV("NextAimer"))
                 {
@@ -122,23 +96,7 @@ public class PhxVehicleTurret : IPhxTrackable
 
 
 
-
-    public bool SetOccupant(PhxSoldier s) 
-    {
-        if (Occupant != null) return false;
-        
-        Occupant = s;
-
-        return true;
-    }
-
-
-    Vector3 ViewDirection;
-    float PitchAccum = 0.0f;
-    float YawAccum = 0.0f;
-
-
-    public void Update()
+    public override void Update()
     {
         if (Occupant == null) return;
 
@@ -150,6 +108,7 @@ public class PhxVehicleTurret : IPhxTrackable
             {
                 Occupant.SetFree(OwnerVehicle.transform.position + Vector3.up * 2.0f);
                 Occupant = null;
+                return;
             }
         }
 
