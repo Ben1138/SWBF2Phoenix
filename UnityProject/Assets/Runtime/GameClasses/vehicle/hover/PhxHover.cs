@@ -49,12 +49,41 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
     private List<PhxVehicleTurret> Turrets;
 
+    private List<PhxVehicleSection> Sections;
+
 
     Rigidbody Body;
 
     PhxPawnController Controller = null;
 
+    PhxHoverMainSection DriverSection = null;
+
     PhxInstance Aim;
+
+
+
+    public int GetNextAvailableSeat(int startIndex = -1)
+    {
+        int numSeats = Sections.Count;
+        int i = (startIndex + 1) % numSeats;
+        
+        while (i != startIndex)
+        {
+            if (Sections[i].Occupant == null)
+            {
+                return i;
+            }
+
+            if (startIndex == -1 && i == numSeats - 1)
+            {
+                return -1;
+            }
+
+            i = (startIndex + 1) % numSeats;
+        }
+
+        return -1;
+    }
 
 
 
@@ -62,135 +91,63 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
                                 out string NinePoseAnim, 
                                 out Transform PilotPosition)
     {
-        // Find first available seat
-        GameObject SoldierObj = soldier.gameObject;
-
         NinePoseAnim = "";
         PilotPosition = null;
 
-        if (false)//Driver == null)
+        // Find first available seat
+        int seat = GetNextAvailableSeat();
+
+        if (seat == -1)
         {
-            Controller = Driver.GetController();
-            PhxGameRuntime.GetCamera().FollowTrackable(this);
-
-            PilotPosition = transform;
-
-            return true;
+            return false;
         }
         else 
         {
-            foreach (var turret in Turrets)
-            {
-                if (turret.Occupant == null)
-                {
-                    PilotPosition = turret.PilotPosition;
-                    turret.SetOccupant(soldier);
-                    PhxGameRuntime.GetCamera().FollowTrackable(turret);
-
-                    return true;
-                }
-            }
+            Sections[seat].SetOccupant(soldier);
+            PhxGameRuntime.GetCamera().FollowTrackable(Sections[seat]);
+            return true;
         }
-
-        return false;
     }
 
 
     public bool TrySwitchSeat(int index)
     {
         // Get next index
+        int seat = GetNextAvailableSeat(index);
 
-        return true;
-
-        //int nextIndex = ;
-
-
-
-
-
+        if (seat == -1)
+        {
+            return false;
+        }
+        else
+        {
+            Sections[seat].SetOccupant(Sections[index].Occupant);
+            return true;
+        }
     }
 
 
-    void EjectDriver()
+    public bool Eject(int i)
     {
-        if (Driver != null)
+        if (i >= Sections.Count)
         {
-            PhxGameRuntime.GetCamera().Follow(Driver);
+            return false;
         }
 
-        Driver = null;
-        Controller = null;
+        if (Sections[i] != null || Sections[i].Occupant != null)
+        {
+            Sections[i].Occupant.SetFree(transform.position + Vector3.up * 2.0f);
+            Sections[i].Occupant = null;
+            PhxGameRuntime.GetCamera().Follow(Sections[i].Occupant);
+
+            return true;
+        }
+        else 
+        {
+            return false;
+        }
     }
 
-
-
-    public int InitWeapSection(uint[] properties, string[] values, int i, bool print = false)
-    {
-        PhxAimer CurrAimer = new PhxAimer();
-
-        while (++i < properties.Length)
-        {
-            if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
-            {
-                CurrAimer.HierarchyLevel = 1;
-            }
-            else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
-            {
-                CurrAimer.PitchRange = PhxUtils.Vec2FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("AimerYawLimits"))
-            {
-                CurrAimer.YawRange = PhxUtils.Vec2FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("BarrelNodeName"))
-            {
-                CurrAimer.BarrelNode = UnityUtils.FindChildTransform(transform, values[i]);
-            }     
-            else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))
-            {
-                CurrAimer.Node = UnityUtils.FindChildTransform(transform, values[i]);
-            }            
-
-
-            if (properties[i] == HashUtils.GetFNV("WEAPONSECTION") || 
-                properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
-                properties[i] == HashUtils.GetFNV("CHUNKSECTION") || 
-                properties[i] == HashUtils.GetFNV("NextAimer"))
-            {
-                CurrAimer.Init();
-
-                if (Aimers.Count > 0 && Aimers[Aimers.Count - 1].HierarchyLevel > CurrAimer.HierarchyLevel)
-                {
-                    Aimers[Aimers.Count - 1].ChildAimer = CurrAimer;
-                    if (print)
-                    {
-                        Debug.LogFormat("Added aimer: {0} with barrel: {1} as child of aimer: {2}", CurrAimer.Node.name, CurrAimer.BarrelNode == null ? "null" : CurrAimer.BarrelNode.name, Aimers[Aimers.Count - 1].Node.name);                        
-                    }
-                }
-                else 
-                {
-                    Aimers.Add(CurrAimer);
-                }
-
-
-                if (properties[i] == HashUtils.GetFNV("NextAimer"))
-                {
-                    CurrAimer = new PhxAimer();
-                }
-                else 
-                {
-                    break;
-                }
-            }
-        }
-
-        return i;
-    } 
-
-
-    Vector3 EyePointOffset;
-    Vector3 TrackCenter;
-    Vector3 TrackOffset;
 
 
     public override void Init()
@@ -215,10 +172,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
 
-
-        //Set up Aimers and Turrets
-        Aimers = new List<PhxAimer>();
-        Turrets = new List<PhxVehicleTurret>();
+        Sections = new List<PhxVehicleSection>();
 
 
         var EC = C.EntityClass;
@@ -232,146 +186,34 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
             {
                 if (values[i] == "BODY")
                 {
-                    while (i < properties.Length && properties[i] != HashUtils.GetFNV("FLYERSECTION"))
-                    {
-                        if (properties[i] == HashUtils.GetFNV("EyePointOffset"))
-                        {
-                            EyePointOffset = PhxUtils.Vec3FromString(values[i]);
-                        }
-                        else if (properties[i] == HashUtils.GetFNV("TrackCenter"))
-                        {
-                            TrackCenter = PhxUtils.Vec3FromString(values[i]);
-                        }
-                        else if (properties[i] == HashUtils.GetFNV("TrackOffset"))
-                        {
-                            TrackOffset = PhxUtils.Vec3FromString(values[i]);
-                        }
-                        
-                        
-                        if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
-                        {
-                            i = InitWeapSection(properties, values, i, EC.Name == "rep_hover_fightertank");
-                        }
-                        else 
-                        {
-                            i++;
-                        }
-                    }
+                    DriverSection = new PhxHoverMainSection(properties, values, ref i, this, EC.Name == "rep_hover_fightertank");
+                    Sections.Add(DriverSection);                
                 }
                 else 
                 {
-                    Turrets.Add(new PhxVehicleTurret(properties, values, i, transform, TurretIndex++));
+                    Sections.Add(new PhxVehicleTurret(properties, values, ref i, transform, TurretIndex++));
                 }
             }
-
-            i++;
+            else 
+            {
+                i++;
+            }
         }
     }
 
-
-    // Current top-level Aimer
-    int CurrAimer = 0;
-
-    Vector3 RestDir = new Vector3(0.0f, 0.5f, 6.0f);
-    Vector3 ViewDirection = new Vector3(0.0f, 0.5f, 6.0f);
-
-
-    float PitchAccum = 0.0f;
-    float YawAccum = 0.0f;
 
     void Update()
     {
-        foreach (var turret in Turrets)
+        foreach (var section in Sections)
         {
-            turret.Update();
-        }
-
-        if (Controller == null) { return; }
-
-        if (Controller.TryEnterVehicle)
-        {
-            Driver.SetFree(transform.position + Vector3.up * 2.0f);
-            EjectDriver();
-            return;
-        }
-
-
-        if (Controller.ShootPrimary)
-        {
-            if (Aimers.Count > 0)
-            {
-                Debug.LogFormat("Firing aimer {0}", CurrAimer);
-                if (Aimers[CurrAimer].Fire())
-                {
-                    CurrAimer++;
-                }
-
-                if (CurrAimer >= Aimers.Count)
-                {
-                    CurrAimer = 0;
-                }
-            }
-        }
-
-
-        PitchAccum += Controller.mouseY;
-        PitchAccum = Mathf.Clamp(PitchAccum, -8f, 25f);
-
-        YawAccum += Controller.mouseX;
-        YawAccum = Mathf.Clamp(YawAccum, 0f, 0f);        
-
-        ViewDirection = Quaternion.Euler(3f * PitchAccum, 0f, 0f) * TrackOffset;
-
-
-        Vector3 TargetPos = transform.TransformPoint(ViewDirection);
-
-        if (Physics.Raycast(TargetPos, TargetPos - CAM.transform.position, out RaycastHit hit, 1000f))
-        {
-            TargetPos = hit.point;
-
-            PhxInstance GetInstance(Transform t)
-            {
-                PhxInstance inst = t.gameObject.GetComponent<PhxInstance>();
-                if (inst == null && t.parent != null)
-                {
-                    return GetInstance(t.parent);
-                }
-                return inst;
-            }
-
-            Aim = GetInstance(hit.collider.gameObject.transform);
-        }
-
-
-        foreach (var Aimer in Aimers)
-        {
-            Aimer.AdjustAim(TargetPos);
-            Aimer.UpdateBarrel();
+            section.Update();
         }
     }
 
-
-
-    private Vector3 DecelerateToRest(Vector3 localVelocity)
-    {
-        if (Mathf.Abs(localVelocity.x) > 0.0f || Mathf.Abs(localVelocity.z) > 0.0f)
-        {
-            //localVelocity.z = 0.0f;
-            //localVelocity.x = 0.0f;
-        }
-
-        return localVelocity;
-    }
-
-
-
-
-
-    Vector3 localVel = Vector3.zero;
 
     void FixedUpdate()
     {
-        localVel = transform.worldToLocalMatrix * Body.velocity;
+        Vector3 localVel = transform.worldToLocalMatrix * Body.velocity;
 
         // Maintain hover
         if (Physics.Raycast(transform.position, -Vector3.up, out RaycastHit hit))
@@ -383,22 +225,17 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         }
 
 
-        if (Controller == null)
-        {
-            DecelerateToRest(localVel);
-            return;
-        }
-
-
         float rotRate = Vector3.Magnitude(localVel) < .1f ? C.SpinRate : C.TurnRate;
 
-        Quaternion deltaRotation = Quaternion.Euler(new Vector3(0f, 3f * rotRate * Controller.mouseX, 0f) * Time.fixedDeltaTime);
+        Vector3 DriverInput = DriverSection.GetDriverInput();
+
+
+        Quaternion deltaRotation = Quaternion.Euler(new Vector3(0f, 3f * rotRate * DriverInput.z, 0f) * Time.fixedDeltaTime);
         Body.MoveRotation(Body.rotation * deltaRotation);
 
 
-
-        float strafe = Controller.MoveDirection.x;
-        float drive = Controller.MoveDirection.y;
+        float strafe = DriverInput.x;
+        float drive = DriverInput.y;
 
         float forwardForce, strafeForce;
 
@@ -435,14 +272,20 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
     public Vector3 GetCameraPosition()
     {
-        return transform.TransformPoint(EyePointOffset + TrackCenter);
+        return Sections[0].GetCameraPosition();
     }
 
     public Quaternion GetCameraRotation()
     {
-        return Quaternion.LookRotation(transform.TransformDirection(ViewDirection), Vector3.up);
+        return Sections[0].GetCameraRotation();
     }
 
+
+    public override bool IncrementSlice(out float progress)
+    {
+        progress = SliceProgress;
+        return false;
+    }
 
 
 

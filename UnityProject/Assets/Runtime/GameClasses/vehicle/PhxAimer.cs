@@ -6,6 +6,11 @@ using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
 
+/*
+Aims barrels at target. 
+*/
+
+
 public class PhxAimer
 {
     public Transform Node;
@@ -68,6 +73,8 @@ public class PhxAimer
 
     public void UpdateBarrel()
     {
+        //Debug.LogFormat("Firing aimer {0}", Node.name);
+
         if (BarrelNode == null)
         {
             if (ChildAimer != null)
@@ -89,11 +96,15 @@ public class PhxAimer
     {
         if (ChildAimer != null)
         {
+            Debug.LogFormat("Firing child of aimer: {0}", Node.name);
             return ChildAimer.Fire();
         }
 
+        Debug.LogFormat("Firing aimer {0}", Node.name);
+
         if (BarrelNode == null)
         {
+            Debug.Log("Barrel null...");
             return true;
         }
 
