@@ -24,7 +24,7 @@ public class PhxVehicleTurret : PhxVehicleSection
 
 
     //IPhxWeapon Weapon;
-    Transform TurretNode = null;
+    Transform TurretNode;
 
     public PhxVehicleTurret(uint[] properties, string[] values, ref int i, Transform parentVehicle, int sectionIndex)
     {

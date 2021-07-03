@@ -23,7 +23,7 @@ public class PhxHoverMainSection : PhxVehicleSection
     }
 
 
-    //IPhxWeapon[] Weapons;
+    List<PhxVehicleWeapon> Weapons;
 
     public PhxHoverMainSection(uint[] properties, string[] values, ref int i, PhxHover hv, bool print = false)
     {
@@ -33,7 +33,7 @@ public class PhxHoverMainSection : PhxVehicleSection
 
         OwnerVehicle = hv;
 
-        //Weapons = new IPhxWeapon[2];
+        Weapons = new List<PhxVehicleWeapon>();
         int WeaponIndex = 0;
 
         while (++i < properties.Length)
@@ -52,7 +52,7 @@ public class PhxHoverMainSection : PhxVehicleSection
             }
             else if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
             {
-                CurrAimer.HierarchyLevel = 1;
+                CurrAimer.HierarchyLevel = Int32.Parse(values[i]);
             }
             else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
             {
@@ -73,20 +73,13 @@ public class PhxHoverMainSection : PhxVehicleSection
 
             if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
             {
-
-                if (print)
-                {
-                    Debug.LogFormat("Adding new aimer {0}", CurrAimer.Node == null ? "null" : CurrAimer.Node.name);
-                }
-
-                
-
                 WeaponIndex = Int32.Parse(values[i]) - 1;
-                if (WeaponIndex > 1 || WeaponIndex < 0)
+
+                if (WeaponIndex == 1)
                 {
-                    //
+                    AddAimer(CurrAimer);
+                    CurrAimer = new PhxAimer();
                 }
-                if (WeaponIndex == 0) AddAimer(CurrAimer);
 
             }            
 
@@ -94,11 +87,6 @@ public class PhxHoverMainSection : PhxVehicleSection
                 properties[i] == HashUtils.GetFNV("CHUNKSECTION") || 
                 properties[i] == HashUtils.GetFNV("NextAimer"))
             {
-                if (print)
-                {
-                    Debug.LogFormat("Adding new aimer {0}", CurrAimer.Node == null ? "null" : CurrAimer.Node.name);
-                }
-
                 if (WeaponIndex == 0) AddAimer(CurrAimer);
 
                 //AddAimer(CurrAimer);
@@ -112,6 +100,11 @@ public class PhxHoverMainSection : PhxVehicleSection
                     break;
                 }
             }
+        }
+
+        foreach (var aimer in Aimers)
+        {
+            Debug.Log(aimer.ToString());
         }
     } 
 
