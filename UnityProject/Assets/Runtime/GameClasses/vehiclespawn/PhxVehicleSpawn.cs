@@ -33,7 +33,9 @@ public class PhxVehicleSpawn : PhxInstance
     public PhxProp<string> ClassLocals = new PhxProp<string>("");
 
 
-    public PhxProp<PhxRegion> ControlZone = new PhxProp<PhxRegion>(null);
+    public PhxProp<string> ControlZone = new PhxProp<string>("");
+
+    PhxCommandpost CommandPost;
 
 
     public override void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties)
@@ -92,9 +94,50 @@ public class PhxVehicleSpawn : PhxInstance
     void Start()
     {
         Init();
+
+        if (ControlZone.Get() == null) return;
+
+        var CommandPosts = Scene.GetCommandPosts();
+        foreach (var Post in CommandPosts)
+        {
+            if (Post.gameObject.name.Equals(ControlZone.Get(), StringComparison.OrdinalIgnoreCase))
+            {
+                CommandPost = Post;
+                Team = Post.Team;
+                break;
+            }
+        }
     }
 
     
+
+    PhxClass GetAppropriateVehicle()
+    {
+        PhxRuntimeMatch.PhxTeam CPTeam = Match.Teams[Team.Get() - 1];
+        string ClassName;
+        switch (CPTeam.Name)
+        {
+            case "cis":
+                ClassName = Team == 1 ? ClassCISATK : ClassCISDEF;
+                break;
+            case "rep":
+                ClassName = Team == 1 ? ClassRepATK : ClassRepDEF;
+                break;
+            case "imp":
+                ClassName = Team == 1 ? ClassImpATK : ClassImpDEF;
+                break;
+            case "all":
+                ClassName = Team == 1 ? ClassAllATK : ClassAllDEF;
+                break;
+            default:
+                ClassName = "";
+                break;
+        }
+
+        return Scene.GetClass(ClassName);
+    }
+
+
 
 
     public void Init()
@@ -108,26 +151,17 @@ public class PhxVehicleSpawn : PhxInstance
 
     private void SpawnVehicle()
     {
-        string ClassName = ClassRepATK != "" ? ClassRepATK : ClassRepDEF;
-
-        if (ClassName == "") return;
-
-        PhxClass VehicleClass = Scene.GetClass(ClassName);
+        PhxClass VehicleClass = GetAppropriateVehicle();
 
         if (VehicleClass != null)
         {
-            // Will update to account for team allegiance etc...
             Scene.CreateInstance(
                         VehicleClass,
                         "vehicle_" + VehicleCount++.ToString(),
                         transform.position + new Vector3(0.0f, 1.0f, 0.0f),
                         transform.rotation
             );
-        }  
-        else 
-        {
-            Debug.LogError("Scene couldn't find PhxClass for vehicle type: " + ClassName);
-        }  
+        }
     }
 
 
