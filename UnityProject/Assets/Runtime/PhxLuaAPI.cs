@@ -237,6 +237,11 @@ public static class PhxLuaAPI
 
     }
 
+    public static void EnableAIAutoBalance()
+    {
+
+    }
+
 	public static void SetTeamAsEnemy(int teamIdx1, int teamIdx2)
 	{
 		MT.SetTeamAsEnemy(teamIdx1, teamIdx2);

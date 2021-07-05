@@ -8,13 +8,12 @@ using System.Runtime.ExceptionServices;
 
 public class PhxHoverMainSection : PhxVehicleSection
 {
-
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
 
     public override Vector3 GetCameraPosition()
     {
-        return OwnerVehicle.transform.TransformPoint(EyePointOffset + TrackCenter);
+        return OwnerVehicle.transform.TransformPoint(TrackCenter);
     }
 
     public override Quaternion GetCameraRotation()
@@ -23,7 +22,7 @@ public class PhxHoverMainSection : PhxVehicleSection
     }
 
 
-    List<PhxVehicleWeapon> Weapons;
+    List<PhxWeaponSystem> Weapons;
 
     public PhxHoverMainSection(uint[] properties, string[] values, ref int i, PhxHover hv, bool print = false)
     {
@@ -33,7 +32,7 @@ public class PhxHoverMainSection : PhxVehicleSection
 
         OwnerVehicle = hv;
 
-        Weapons = new List<PhxVehicleWeapon>();
+        //Weapons = new List<PhxVehicleWeapon>();
         int WeaponIndex = 0;
 
         while (++i < properties.Length)
@@ -102,10 +101,13 @@ public class PhxHoverMainSection : PhxVehicleSection
             }
         }
 
-        foreach (var aimer in Aimers)
-        {
-            Debug.Log(aimer.ToString());
-        }
+        ViewDirection = TrackOffset - TrackCenter;
+
+
+        //foreach (var aimer in Aimers)
+        //{
+        //    Debug.Log(aimer.ToString());
+        //}
     } 
 
 
@@ -125,27 +127,22 @@ public class PhxHoverMainSection : PhxVehicleSection
         if (Controller == null) return;
 
 
+        
+
         if (Controller.SwitchSeat && OwnerVehicle.TrySwitchSeat(Index))
         {
             Occupant = null;
             return;
         }
 
-        if (Controller.TryEnterVehicle)
-        {
-            if (OwnerVehicle.Eject(0))
-            {
-                Occupant = null;
-                return;
-            }
-        }
+        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(0)) return;
+        
 
 
         if (Controller.ShootPrimary)
         {
             if (Aimers.Count > 0)
             {
-                //Debug.LogFormat("Firing aimer {0}", CurrAimer);
                 if (Aimers[CurrAimer].Fire())
                 {
                     CurrAimer++;
@@ -162,14 +159,17 @@ public class PhxHoverMainSection : PhxVehicleSection
         PitchAccum += Controller.mouseY;
         PitchAccum = Mathf.Clamp(PitchAccum, -8f, 25f);
 
+        bool printAimer = Controller.mouseY < 0f;
+
         YawAccum += Controller.mouseX;
         YawAccum = Mathf.Clamp(YawAccum, 0f, 0f);        
 
         ViewDirection = Quaternion.Euler(3f * PitchAccum, 0f, 0f) * TrackOffset;
 
 
-        Vector3 TargetPos = OwnerVehicle.transform.TransformPoint(ViewDirection);
+        Vector3 TargetPos = OwnerVehicle.transform.TransformPoint(30f * ViewDirection);
 
+        /*
         if (Physics.Raycast(TargetPos, TargetPos - CAM.transform.position, out RaycastHit hit, 1000f))
         {
             TargetPos = hit.point;
@@ -186,11 +186,12 @@ public class PhxHoverMainSection : PhxVehicleSection
 
             Aim = GetInstance(hit.collider.gameObject.transform);
         }
+        */
 
 
         foreach (var Aimer in Aimers)
         {
-            Aimer.AdjustAim(TargetPos);
+            Aimer.AdjustAim(TargetPos, printAimer);
             Aimer.UpdateBarrel();
         }
     }
