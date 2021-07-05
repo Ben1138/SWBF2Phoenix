@@ -6,116 +6,113 @@ using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
 
+
+public class PhxWeapon : PhxClass
+{         
+    public PhxProp<float> ShotDelay     = new PhxProp<float>(0.2f);
+    public PhxProp<float> ReloadTime    = new PhxProp<float>(1.0f);
+    public PhxProp<int>   SalvoCount    = new PhxProp<int>(1);
+    public PhxProp<int>   ShotsPerSalvo = new PhxProp<int>(1);
+
+    public PhxProp<int> RoundsPerClip = new PhxProp<int>(50);
+
+    // Sound
+    public PhxProp<float>  PitchSpread = new PhxProp<float>(0.1f);
+    public PhxProp<string> FireSound = new PhxProp<string>(null);
+
+    public PhxProp<float> HeatRecoverRate = new PhxProp<float>(0.25f);
+    public PhxProp<float> HeatThreshold = new PhxProp<float>(0.2f); 
+    public PhxProp<float> HeatPerShot = new PhxProp<float>(0.12f);
+}
+
+
 /*
 classlabel = weapon
 
-Equivalent to WEAPONSECTIONs in vehicles.  Maintains Aimers.
+Equivalent to WEAPONSECTIONs in vehicles.  Maintains aimers, barrels, firing configurations,
+and fires weapons.
 */
 
-public class PhxVehicleWeapon : PhxInstance<PhxVehicleWeapon.ClassProperties>, IPhxWeapon
+
+public class PhxWeaponSystem
 {
-    Action ShotCallback;
-    Action ReloadCallback;
-    AudioSource Audio;
+    PhxWeapon Weapon;
+    List<PhxAimer> Aimers;
+
+    List<Transform> Barrels;
+    List<Transform> FirePoints;
+
+    int CurrentAimer;
+
+    float ShotTimer;
 
 
-    float FireDelay;
-    float ReloadDelay = 0f;
+    public void AddAimer(PhxAimer Aimer)
+    {
+        Aimers.Add(Aimer);
+    }
 
+    public void AddBarrel(Transform Barrel)
+    {
+        Barrels.Add(Barrel);
+    }
 
-    public class ClassProperties : PhxClass
-    {         
-        public PhxProp<float> ShotDelay     = new PhxProp<float>(0.2f);
-        public PhxProp<float> ReloadTime    = new PhxProp<float>(1.0f);
-        public PhxProp<int>   SalvoCount    = new PhxProp<int>(1);
-        public PhxProp<int>   ShotsPerSalvo = new PhxProp<int>(1);
+    //public void SetBarrelRecoil( )
 
-        public PhxProp<int> RoundsPerClip = new PhxProp<int>(50);
-
-        // Sound
-        public PhxProp<float>  PitchSpread = new PhxProp<float>(0.1f);
-        public PhxProp<string> FireSound = new PhxProp<string>(null);
-
-        public PhxProp<float> HeatRecoverRate = new PhxProp<float>(0.25f);
-        public PhxProp<float> HeatThreshold = new PhxProp<float>(0.2f); 
-        public PhxProp<float> HeatPerShot = new PhxProp<float>(0.12f);
+    public void SetWeapon(string WeaponName)
+    {
+        Weapon = (PhxWeapon) PhxGameRuntime.GetScene().GetClass(WeaponName);
+        ShotTimer = Weapon.ShotDelay;
     }
 
 
-    public override void Init()
-    {
-        if (C.FireSound.Get() != null)
-        {
-            Audio = gameObject.AddComponent<AudioSource>();
-            Audio.playOnAwake = false;
-            Audio.spatialBlend = 1.0f;
-            Audio.rolloffMode = AudioRolloffMode.Linear;
-            Audio.minDistance = 2.0f;
-            Audio.maxDistance = 30.0f;
-            Audio.loop = false;
+    public PhxWeaponSystem(){}
 
-            // TODO: replace with class sound, once we can load sound LVLs
-            Audio.clip = SoundLoader.LoadSound("wpn_rep_blaster_fire");
+
+    public void AdjustAimers(Vector3 Target)
+    {
+        foreach (PhxAimer Aimer in Aimers)
+        {
+            Aimer.AdjustAim(Target);
         }
     }
 
 
-    public override void BindEvents(){}
-
-    public PhxInstance GetInstance(){return this;}
-
-    public void Fire()
+    int CurrBarrel;
+    public bool Fire()
     {
-        if (FireDelay <= 0f)
+        if (ShotTimer <= 0f)
         {
-            if (Audio != null)
-            {
-                float half = C.PitchSpread / 2f;
-                Audio.pitch = UnityEngine.Random.Range(1f - half, 1f + half);
-                Audio.Play();
-            }
+            //if (Audio != null)
+            //{
+                //float half = C.PitchSpread / 2f;
+                //Audio.pitch = UnityEngine.Random.Range(1f - half, 1f + half);
+                //Audio.Play();
+            //}
 
-            for (int i = 0; i < NumBarrelsPerShot; i++)
+
+            for (int i = 0; i < Weapon.ShotsPerSalvo; i++)
             {
                 CurrBarrel = CurrBarrel % FirePoints.Count;
                 //Emit from barrel...
                 CurrBarrel++;
             }
 
-            ShotCallback?.Invoke();
-            FireDelay = C.ShotDelay;
+            //ShotCallback?.Invoke();
+            ShotTimer = Weapon.ShotDelay;
         }
-    }
 
-    public void Reload(){}
-    public void OnShot(Action callback){ShotCallback += callback;}
-    public void OnReload(Action callback){ReloadCallback += callback;}
-    public string GetAnimBankName(){return "";}
-    public int GetMagazineSize(){return C.RoundsPerClip;}
-    public int GetTotalAmmo(){return 0;}
-    public int GetMagazineAmmo(){return 0;}
-    public int GetAvailableAmmo(){return 0;}
-
-    public float GetReloadProgress(){return 1f - ReloadDelay / C.ReloadTime;}
-
-
-    private int CurrBarrel = 0;
-    private int NumBarrelsPerShot = 1;
-    private List<Transform> FirePoints = null;
-
-    public void ConfigureFirePattern(List<Transform> firePoints, int numBarrelsPerShot)
-    {
-        NumBarrelsPerShot = numBarrelsPerShot;
-        FirePoints = firePoints;
+        return false;
     }
 
 
     void Update()
     {
-        if (FireDelay > 0.0f)
+        if (ShotTimer > 0.0f)
         {
-            FireDelay -= Time.deltaTime;
+            ShotTimer -= Time.deltaTime;
         }
     }
 }
+
 

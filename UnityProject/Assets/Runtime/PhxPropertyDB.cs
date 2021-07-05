@@ -57,6 +57,13 @@ public sealed class PhxPropertyDB
 
     public static object FromString(Type destType, string value)
     {
+        //Strip comments
+        int index = value.IndexOf("/");
+        if (index >= 0)
+        {
+           value = value.Substring(0, index);
+        }
+
         object outVal;
         if (destType == typeof(PhxRegion))
         {

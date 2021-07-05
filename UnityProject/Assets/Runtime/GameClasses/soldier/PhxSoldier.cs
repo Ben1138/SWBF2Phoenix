@@ -401,7 +401,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     }
 
 
-    void SetPilot(Transform pilotNode, string NinePAnim)
+    public void SetPilot(Transform pilotNode, string NinePAnim)
     {
         Context = PhxSoldierContext.Pilot;
         NinePoseAnim = NinePAnim;
