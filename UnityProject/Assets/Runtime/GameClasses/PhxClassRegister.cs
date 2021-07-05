@@ -25,7 +25,7 @@ public static class PhxClassRegister
         { "powerupstation", new GameBaseClass(typeof(PhxPowerupstation.ClassProperties), typeof(PhxPowerupstation)) },
         { "hover",          new GameBaseClass(typeof(PhxHover.PhxHoverProperties),       typeof(PhxHover)) },
         { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn)) },
-        { "weapon",         new GameBaseClass(typeof(PhxVehicleWeapon.ClassProperties),  typeof(PhxVehicleWeapon)) },
+        { "weapon",         new GameBaseClass(typeof(PhxWeapon),                         typeof(PhxWeapon)) },
     };
 
     public static Type GetPhxInstanceType(string name)

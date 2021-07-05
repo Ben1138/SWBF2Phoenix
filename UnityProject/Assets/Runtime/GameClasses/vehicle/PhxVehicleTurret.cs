@@ -10,20 +10,30 @@ using LibSWBF2.Utils;
 public class PhxVehicleTurret : PhxVehicleSection
 {    
 
+    string TurretYawSound = "";
+    float TurretYawSoundPitch = 0.7f;
+    string TurretPitchSound = "";
+    float TurretPitchSoundPitch = 0.7f;
+    string TurretAmbientSound = "";
+    string TurretActivateSound = "vehicle_equip";
+    string TurretDeactivateSound = "vehicle_equip";
+    string TurretStartSound = "";
+    string TurretStopSound = "";
+
 
     public override Vector3 GetCameraPosition()
     {
-        return TurretNode.transform.TransformPoint(EyePointOffset + TrackCenter);
+        return TurretNode.transform.TransformPoint(TrackCenter);
     }
 
     public override Quaternion GetCameraRotation()
     {
-        return Quaternion.LookRotation(ViewDirection, Vector3.up);
+        return Quaternion.LookRotation(TurretNode.TransformDirection(ViewDirection), Vector3.up);
     }
 
 
 
-    //IPhxWeapon Weapon;
+    PhxWeaponSystem Weapon;
     Transform TurretNode;
 
     public PhxVehicleTurret(uint[] properties, string[] values, ref int i, Transform parentVehicle, int sectionIndex)
@@ -92,6 +102,8 @@ public class PhxVehicleTurret : PhxVehicleSection
                 }
             }
         }
+
+        ViewDirection = TrackOffset - TrackCenter;
     }
 
 
@@ -102,20 +114,14 @@ public class PhxVehicleTurret : PhxVehicleSection
 
         var Controller = Occupant.GetController();
 
-        if (Controller.TryEnterVehicle)
+        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(Index))
         {
-            if (CanExit)
-            {
-                Occupant.SetFree(OwnerVehicle.transform.position + Vector3.up * 2.0f);
-                Occupant = null;
-                return;
-            }
+            return;
         }
 
 
-        if (Controller.SwitchSeat && OwnerVehicle.TrySwitchSeat(Index))
+        if (Controller.SwitchSeat && HopToNextSeat())
         {
-            Occupant = null;
             return;
         }
 

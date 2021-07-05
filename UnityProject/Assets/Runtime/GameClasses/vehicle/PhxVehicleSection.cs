@@ -63,9 +63,15 @@ public abstract class PhxVehicleSection : IPhxTrackable
         if (Occupant != null) return false;
         
         Occupant = s;
+        RequestSwitch = false;
+
+        s.SetPilot(PilotPosition,"");
 
         return true;
     }
+
+
+
 
     public abstract void Update();
 
@@ -77,9 +83,17 @@ public abstract class PhxVehicleSection : IPhxTrackable
         bool r = OwnerVehicle.TrySwitchSeat(Index);
         if (r)
         {
+            Occupant.
             Occupant = null;
         }
         return r;
+    }
+
+
+    public void ClearOccupant()
+    {
+        Occupant = null;
+        RequestSwitch = false;
     }
 
 
@@ -89,7 +103,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
         if (CurrAimer.Node == null){ return false; }
         CurrAimer.Init();
 
-        Debug.LogFormat("Attempting to add Aimer: {0}", CurrAimer.Node.name);
+        //Debug.LogFormat("Attempting to add Aimer: {0}", CurrAimer.Node.name);
 
         if (Aimers == null)
         {
@@ -107,6 +121,15 @@ public abstract class PhxVehicleSection : IPhxTrackable
 
         return true;     
     }
+
+
+    protected int AssignCameraValues(uint[] properties, string[] values, uint )
+    {
+        int start = i;
+        while (i < )
+    }
+
+
 
 
     /*

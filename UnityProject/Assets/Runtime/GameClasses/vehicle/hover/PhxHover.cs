@@ -38,16 +38,14 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
         public PhxProp<Vector2> PitchLimits = new PhxProp<Vector2>(Vector2.zero);  
         public PhxProp<Vector2> YawLimits = new PhxProp<Vector2>(Vector2.zero); 
+
+        public PhxProp<AudioClip> EngineSound = new PhxProp<AudioClip>(null);
     }
 
 
     
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
-
-    private List<PhxAimer> Aimers;
-
-    private List<PhxVehicleTurret> Turrets;
 
     private List<PhxVehicleSection> Sections;
 
@@ -61,16 +59,24 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
     PhxInstance Aim;
 
 
+    int tstcount = 0;
 
     public int GetNextAvailableSeat(int startIndex = -1)
     {
         int numSeats = Sections.Count;
         int i = (startIndex + 1) % numSeats;
+
+        if (tstcount == 2)
+        {
+            return -1;
+        }
+        tstcount++;
         
         while (i != startIndex)
         {
             if (Sections[i].Occupant == null)
             {
+                Debug.LogFormat("Found open seat at index {0}", i);
                 return i;
             }
 
@@ -79,10 +85,30 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
                 return -1;
             }
 
-            i = (startIndex + 1) % numSeats;
+            i = (i + 1) % numSeats;
         }
 
         return -1;
+    }
+
+
+    public bool TrySwitchSeat(int index)
+    {
+        // Get next index
+        int seat = GetNextAvailableSeat(index);
+
+        if (seat == -1)
+        {
+            return false;
+        }
+        else
+        {
+            Sections[seat].SetOccupant(Sections[index].Occupant);
+            Sections[index].Occupant = null;
+            CAM.FollowTrackable(Sections[seat]);
+
+            return true;
+        }
     }
 
 
@@ -110,23 +136,6 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
     }
 
 
-    public bool TrySwitchSeat(int index)
-    {
-        // Get next index
-        int seat = GetNextAvailableSeat(index);
-
-        if (seat == -1)
-        {
-            return false;
-        }
-        else
-        {
-            Sections[seat].SetOccupant(Sections[index].Occupant);
-            return true;
-        }
-    }
-
-
     public bool Eject(int i)
     {
         if (i >= Sections.Count)
@@ -137,8 +146,8 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         if (Sections[i] != null || Sections[i].Occupant != null)
         {
             Sections[i].Occupant.SetFree(transform.position + Vector3.up * 2.0f);
-            Sections[i].Occupant = null;
             PhxGameRuntime.GetCamera().Follow(Sections[i].Occupant);
+            Sections[i].Occupant = null;
 
             return true;
         }
@@ -149,6 +158,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
     }
 
 
+    AudioSource AudioAmbient;
 
     public override void Init()
     {
@@ -172,8 +182,18 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
 
-        Sections = new List<PhxVehicleSection>();
+        AudioAmbient = gameObject.AddComponent<AudioSource>();
+        AudioAmbient.spatialBlend = 1.0f;
+        AudioAmbient.clip = C.EngineSound;
+        AudioAmbient.pitch = 1.0f;
+        AudioAmbient.volume = 0.5f;
+        AudioAmbient.rolloffMode = AudioRolloffMode.Linear;
+        AudioAmbient.minDistance = 2.0f;
+        AudioAmbient.maxDistance = 30.0f;
 
+
+
+        Sections = new List<PhxVehicleSection>();
 
         var EC = C.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);

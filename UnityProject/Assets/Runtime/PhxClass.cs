@@ -56,7 +56,16 @@ public abstract class PhxClass
                     PhxPropertySection section = type.GetField(member.Name).GetValue(this) as PhxPropertySection;
 
                     // Read properties from top to bottom to fill property sections
-                    ec.GetAllProperties(out uint[] propHashes, out string[] propValues);
+                    uint[] propHashes = new uint[0];
+                    string[] propValues = new string[0];
+                    try {
+                        ec.GetAllProperties(out propHashes, out propValues);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogErrorFormat("Failed to get all props from class: {0}", ec.Name);
+                    }
+
                     Debug.Assert(propHashes.Length == propValues.Length);
 
                     var foundSections = new List<Dictionary<string, IPhxPropRef>>();

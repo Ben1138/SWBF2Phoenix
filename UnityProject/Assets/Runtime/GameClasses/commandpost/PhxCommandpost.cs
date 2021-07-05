@@ -82,6 +82,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         };
     }
 
+
     public override void Init()
     {
         Transform hpHolo = transform.Find(string.Format("{0}/hp_hologram", C.Name));
