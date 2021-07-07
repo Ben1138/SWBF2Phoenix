@@ -80,8 +80,23 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Jet,
         Jump,
         Roll,
-        Tumble
+        Tumble,
     }
+
+    enum PhxSoldierContext
+    {
+        Free,
+        Pilot,
+    }
+
+    PhxSoldierContext Context = PhxSoldierContext.Free;
+
+
+    // Vehicle related fields
+    public string NinePoseAnim = null;
+
+
+
 
 
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
@@ -351,6 +366,73 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
     }
 
+    // Undoes SetPilot; called by vehicles/turrets when ejecting soldiers
+    public void SetFree(Vector3 position)
+    {
+        //Body.isKinematic = false;
+        //Body.detectCollisions = true;
+        //Body.useGravity = true;
+
+        Body = gameObject.AddComponent<Rigidbody>();
+        Body.mass = 80f;
+        Body.drag = 0.2f;
+        Body.angularDrag = 10f;
+        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+
+        GetComponent<SkinnedMeshRenderer>().enabled = true;
+        GetComponent<CapsuleCollider>().enabled = true;
+
+        transform.parent = null;
+        transform.position = position;
+
+        NinePoseAnim = null;
+        Context = PhxSoldierContext.Free;
+
+        //Debug.Log("Soldier free");
+
+        Controller.TryEnterVehicle = false;
+
+
+        if (WeaponIdx[0] >= 0 && Weapons[0][WeaponIdx[0]] != null)
+        {
+            Weapons[0][WeaponIdx[0]].GetInstance().gameObject.SetActive(true);
+        }
+
+
+    }
+
+
+    public void SetPilot(Transform pilotNode, string NinePAnim)
+    {
+        Context = PhxSoldierContext.Pilot;
+        NinePoseAnim = NinePAnim;
+
+        Destroy(Body);
+
+        GetComponent<CapsuleCollider>().enabled = false;
+
+        if (true)//pilotNode == null)
+        {
+            GetComponent<SkinnedMeshRenderer>().enabled = false;
+        }
+        else
+        {
+            transform.parent = pilotNode;
+            transform.localPosition = Vector3.zero;
+        }
+
+        if (WeaponIdx[0] >= 0 && Weapons[0][WeaponIdx[0]] != null)
+        {
+            Weapons[0][WeaponIdx[0]].GetInstance().gameObject.SetActive(false);
+        }
+
+        //Debug.Log("Soldier piloting");
+    }
+
+
     // see: com_inf_default
     float[] GetControlSpeed(PhxControlState state)
     {
@@ -385,8 +467,29 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Profiler.EndSample();
     }
 
+    void UpdateNinePose()
+    {
+        if (NinePoseAnim == null)
+        {
+            return;
+        }
+        else 
+        {
+            return;
+        }
+    }
+
+
+
+
     void UpdateState(float deltaTime)
     {
+        if (Context == PhxSoldierContext.Pilot)
+        {
+            UpdateNinePose();
+            return;
+        }
+
         AnimationCorrection();
 
         AlertTimer = Mathf.Max(AlertTimer - deltaTime, 0f);
@@ -394,6 +497,25 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         if (Controller == null)
         {
             return;
+        }
+
+        // Will work into specific control schema.  Not sure when you can't enter vehicles...
+        if (Controller.TryEnterVehicle)
+        {
+            Collider[] PossibleVehicles = Physics.OverlapSphere(transform.position, 5.0f);
+            foreach (Collider PossibleVehicle in PossibleVehicles)
+            {
+                PhxHover Vehicle = PossibleVehicle.GetComponent<PhxHover>();
+                if (Vehicle != null)
+                {
+                    if (Vehicle.TryEnterVehicle(this, out string NinePAnim, out Transform seat))
+                    {
+                        SetPilot(seat, NinePAnim);
+                        Controller.TryEnterVehicle = false;
+                        return;
+                    }
+                }
+            }
         }
 
         Vector3 lookWalkForward = Controller.ViewDirection;
@@ -616,6 +738,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             }
         }
 
+
         // Handle falling / jumping
         if (State != PhxControlState.Jump && !Grounded)
         {
@@ -623,6 +746,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Animator.Anim.SetState(0, Animator.Fall);
             Animator.Anim.SetState(1, CraSettings.STATE_NONE);
         }
+
+
+        //Grounded = Physics.CheckSphere(transform.position, 0.4f, PhxGameRuntime.PlayerMask, QueryTriggerInteraction.Ignore);
 
         // Jump
         if (State == PhxControlState.Jump)
@@ -666,6 +792,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     void UpdatePhysics(float deltaTime)
     {
+        if (Context == PhxSoldierContext.Pilot) return;
+
         if (IsFixated)
         {
             transform.rotation = LookRot;
@@ -707,6 +835,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     void AnimationCorrection()
     {
+        if (Context == PhxSoldierContext.Pilot) return;
+
         if (Controller == null/* || FallTimer > 0f || TurnTimer > 0f*/)
         {
             return;

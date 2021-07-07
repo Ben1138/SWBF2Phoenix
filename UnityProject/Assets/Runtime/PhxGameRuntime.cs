@@ -12,7 +12,8 @@ using ELibLogType = LibSWBF2.Logging.ELogType;
 public class PhxGameRuntime : MonoBehaviour
 {
     public static PhxGameRuntime Instance { get; private set; } = null;
-    public static PhxPath GamePath { get; private set; } = @"/Volumes/boot/Game"; // @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
+
+    public static PhxPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
 
 
     public enum PhxStartupBehaviour
