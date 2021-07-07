@@ -9,8 +9,7 @@ using LibSWBF2.Utils;
 
 public class PhxVehicleTurret : PhxVehicleSection
 {    
-
-    string TurretYawSound = "";
+	string TurretYawSound = "";
     float TurretYawSoundPitch = 0.7f;
     string TurretPitchSound = "";
     float TurretPitchSoundPitch = 0.7f;
@@ -40,7 +39,7 @@ public class PhxVehicleTurret : PhxVehicleSection
     {
         Index = sectionIndex;
 
-        Weapon = new PhxWeaponSystem();
+        Weapon = new PhxWeaponSystem(this);
         PhxAimer CurrAimer = new PhxAimer();
 
         OwnerVehicle = parentVehicle.GetComponent<PhxHover>();
@@ -86,22 +85,21 @@ public class PhxVehicleTurret : PhxVehicleSection
             else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))
             {
                 CurrAimer.Node = UnityUtils.FindChildTransform(parentVehicle, values[i]);
-            }            
-            else if (properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
-                    properties[i] == HashUtils.GetFNV("CHUNKSECTION") || 
-                    properties[i] == HashUtils.GetFNV("NextAimer"))
+            }  
+            else if (properties[i] == HashUtils.GetFNV("NextAimer"))
             {
-            	
-                AddAimer(CurrAimer);
-
-                if (properties[i] == HashUtils.GetFNV("NextAimer"))
-                {
-                    CurrAimer = new PhxAimer();
-                }
-                else 
-                {
-                    break;
-                }
+            	Weapon.AddAimer(CurrAimer);
+            	CurrAimer = new PhxAimer();
+            }  
+            else if (properties[i] == HashUtils.GetFNV("WeaponName"))
+            {
+                Weapon.SetWeapon(values[i]);
+            }         
+            else if (properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
+                    properties[i] == HashUtils.GetFNV("CHUNKSECTION"))
+            {
+                Weapon.AddAimer(CurrAimer);
+                break;
             }
         }
 
@@ -130,26 +128,19 @@ public class PhxVehicleTurret : PhxVehicleSection
 
         if (Controller.ShootPrimary)
         {
-            // fire
-            if (Aimers.Count > 0)
-            {
-                Aimers[0].Fire();
-            }
+            Weapon.Fire();
         }
+
+        Vector3 TargetPos = TurretNode.TransformPoint(ViewDirection);
+        Weapon.Update(TargetPos);
+
 
         PitchAccum += Controller.mouseY;
         PitchAccum = Mathf.Clamp(PitchAccum, -8f, 25f);
         ViewDirection = Quaternion.Euler(3f * PitchAccum, 0f, 0f) * TrackOffset;
-        Vector3 TargetPos = TurretNode.TransformPoint(ViewDirection);
 
         YawAccum += Controller.mouseX;
         YawAccum = Mathf.Clamp(YawAccum, -180f, 180f);  
         TurretNode.rotation = Quaternion.Euler(new Vector3(0f,YawAccum,0f));
-
-        foreach (var Aimer in Aimers)
-        {
-            Aimer.AdjustAim(TargetPos);
-            Aimer.UpdateBarrel();
-        }
     }
 }

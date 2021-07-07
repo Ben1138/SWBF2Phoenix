@@ -13,6 +13,16 @@ Aims barrels at target.
 
 public class PhxAimer
 {
+	/*
+	struct Barrel 
+	{
+		Transform BarrelNode,
+		Transform FirePoint;
+		float Recoil;
+	}
+	*/
+
+
     public Transform Node;
     public Transform FireNode;
 
@@ -33,6 +43,31 @@ public class PhxAimer
     public PhxAimer ChildAimer;
 
     public int HierarchyLevel;
+
+
+    public bool GetLeafTarget(int index, out Vector3 pos, out Quaternion rot)
+    {
+    	if (ChildAimer != null)
+    	{
+    		return ChildAimer.GetLeafTarget(index, out pos, out rot);
+    	}
+    	else 
+    	{
+    		rot = Node.rotation;
+
+    		if (BarrelNode != null)
+    		{
+    			pos = BarrelNode.position;
+    		}
+    		else 
+    		{
+    			pos = Node.position;
+    		}
+
+    		return true;
+    	}
+    }
+
 
 
     /*
