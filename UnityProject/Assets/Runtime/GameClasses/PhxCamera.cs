@@ -8,7 +8,8 @@ public class PhxCamera : MonoBehaviour
     {
         Fixed,
         Free,
-        Follow
+        Follow,
+        FollowTrackable,
     }
                      
     public CamMode    Mode { get; private set; } = CamMode.Free;
@@ -18,13 +19,29 @@ public class PhxCamera : MonoBehaviour
     public float      FollowSpeed                = 100.0f;
     public float      MouseSensitivity           = 5f;
 
+
     IPhxControlableInstance FollowInstance;
+
+    IPhxTrackable TrackableInstance;
+
+
+
+    public void FollowTrackable(IPhxTrackable follow)
+    {
+        Mode = CamMode.FollowTrackable;
+        TrackableInstance = follow;
+    }
 
 
     public void Follow(IPhxControlableInstance follow)
     {
         Mode = CamMode.Follow;
         FollowInstance = follow;
+
+        FreeMoveSpeed              = 100.0f;
+        FreeRotationSpeed          = 5.0f;
+        PositionOffset             = new Vector3(0f, 2f, -2f);
+        FollowSpeed                = 10.0f;
     }
 
     public void Fixed()
@@ -94,6 +111,11 @@ public class PhxCamera : MonoBehaviour
 
             transform.position = camTargetPos;// Vector3.Lerp(transform.position, camTargetPos, deltaTime * FollowSpeed);
             transform.rotation = camTargetRot;// Quaternion.Slerp(transform.rotation, camTargetRot, deltaTime * FollowSpeed);
+        }
+        else if (Mode == CamMode.FollowTrackable)
+        {
+            transform.rotation = TrackableInstance.GetCameraRotation();
+            transform.position = TrackableInstance.GetCameraPosition();
         }
     }
 }
