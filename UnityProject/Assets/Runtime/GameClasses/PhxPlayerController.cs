@@ -10,6 +10,8 @@ public class PhxPlayerController : PhxPawnController
     public bool CancelPressed { get; private set; }
     Vector3? TargetPos;
 
+    float VehicleEnterTimer = 1.0f;
+
 
     public PhxPlayerController()
     {
@@ -47,8 +49,8 @@ public class PhxPlayerController : PhxPawnController
         MoveDirection.x = Input.GetAxis("Horizontal");
         MoveDirection.y = Input.GetAxis("Vertical");
 
-        float mouseX =  Input.GetAxis("Mouse X");
-        float mouseY = -Input.GetAxis("Mouse Y");
+        mouseX =  Input.GetAxis("Mouse X");
+        mouseY = -Input.GetAxis("Mouse Y");
 
         Vector2 rotConstraints = Pawn.GetViewConstraint();
         Vector2 maxTurnSpeed = Pawn.GetMaxTurnSpeed();
@@ -103,5 +105,26 @@ public class PhxPlayerController : PhxPawnController
         {
             TargetPos = null;
         }
+        
+        SwitchSeat = Input.GetKeyDown(KeyCode.G);
+
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            TryEnterVehicle = true;
+        }
+
+        if (TryEnterVehicle)
+        {
+            if (VehicleEnterTimer <= 0.0f)
+            {
+                VehicleEnterTimer = 1.0f;
+            }
+            else 
+            {
+                TryEnterVehicle = false;
+            }
+        }
+
+        VehicleEnterTimer = Mathf.Clamp(VehicleEnterTimer - Time.deltaTime, -0.01f, 1.0f);
     }
 }

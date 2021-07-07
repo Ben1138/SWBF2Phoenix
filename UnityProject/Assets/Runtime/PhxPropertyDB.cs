@@ -67,6 +67,13 @@ public sealed class PhxPropertyDB
 
     public static object FromString(Type destType, string value)
     {
+        //Strip comments
+        int index = value.IndexOf("/");
+        if (index >= 0)
+        {
+           value = value.Substring(0, index);
+        }
+
         object outVal;
         if (destType == typeof(PhxClass))
         {
@@ -87,6 +94,14 @@ public sealed class PhxPropertyDB
         else if (destType == typeof(SWBFPath))
         {
             outVal = Convert.ChangeType(RTS.GetPath(value), destType, CultureInfo.InvariantCulture);
+        }
+        else if (destType == typeof(Vector3))
+        {
+            outVal = PhxUtils.Vec3FromString(value); 
+        }
+        else if (destType == typeof(Vector2))
+        {
+            outVal = PhxUtils.Vec2FromString(value); 
         }
         else if (destType == typeof(bool))
         {

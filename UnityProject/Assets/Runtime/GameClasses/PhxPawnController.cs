@@ -6,6 +6,11 @@ public abstract class PhxPawnController
 {
     public IPhxControlableInstance Pawn { get; private set; }
 
+    public float mouseX;
+    public float mouseY;
+
+    public bool SwitchSeat;
+
     public bool ShootPrimary;
     public bool ShootSecondary;
     public bool Crouch;
@@ -14,6 +19,9 @@ public abstract class PhxPawnController
     public bool Reload;
     public bool NextPrimaryWeapon;
     public bool NextSecondaryWeapon;
+
+    public bool TryEnterVehicle;
+
     public Vector2 MoveDirection;
     public Vector3 ViewDirection;
     protected PhxInstance Target;

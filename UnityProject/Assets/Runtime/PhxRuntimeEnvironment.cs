@@ -205,10 +205,12 @@ public class PhxRuntimeEnvironment
             return false;
         }
 
+        /*
         if (script.Name == "missionlist")
         {
             return LuaRT.ExecuteFile("/Volumes/boot/bf2modding/assets/Shell/scripts/missionlist.lua");
         }
+        */
 
         return LuaRT.Execute(luaBin, size, script.Name);
     }
