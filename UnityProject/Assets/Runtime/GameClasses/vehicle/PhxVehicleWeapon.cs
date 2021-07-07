@@ -39,7 +39,9 @@ and fires weapons.
 
 public class PhxWeaponSystem
 {
-    PhxWeapon Weapon;
+    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+
+    PhxClass Weapon;
     public List<PhxAimer> Aimers;
 
     List<Transform> Barrels;
@@ -68,7 +70,11 @@ public class PhxWeaponSystem
 
     public void SetWeapon(string WeaponName)
     {
-    	
+    	Weapon = SCENE.GetClass(WeaponName);
+    	if (Weapon == null)
+    	{
+    		Debug.LogErrorFormat("Couldn't get weapon class: {0}", WeaponName);
+    	}
         //Weapon = PhxGameRuntime.GetScene().GetClass(WeaponName) as PhxWeapon;
         //ShotTimer = Weapon.ShotDelay;
     }
