@@ -112,12 +112,9 @@ public class PhxVehicleProperties : PhxClass
 
     public PhxMultiProp SoldierCollision = new PhxMultiProp(typeof(string));
 
-
     public PhxPropertySection Flyer = new PhxPropertySection(
         "FLYERSECTION",
         ("VehicleType",   new PhxProp<string>(null)),
-        ("WeaponName",    new PhxProp<string>(null)),
-        ("WeaponAmmo",    new PhxProp<int>(0)),
         ("PilotPosition", new PhxProp<string>(null)),
         ("Pilot9Pose",    new PhxProp<string>(null)),
         ("EyePointOffset",new PhxProp<Vector3>(Vector3.zero)),
@@ -125,12 +122,14 @@ public class PhxVehicleProperties : PhxClass
         ("TrackOffset",   new PhxProp<Vector3>(Vector3.zero))
     );
 
+    /*
     public PhxPropertySection Weapons = new PhxPropertySection(
         "WEAPONSECTION",
         ("WeaponName",    new PhxProp<string>(null)),
         ("WeaponAmmo",    new PhxProp<int>(0)),
         ("WeaponChannel", new PhxProp<int>(0))
     );
+    */
 
     public PhxProp<string> VehicleType = new PhxProp<string>("light");
     public PhxProp<string> AISizeType =  new PhxProp<string>("MEDIUM");
