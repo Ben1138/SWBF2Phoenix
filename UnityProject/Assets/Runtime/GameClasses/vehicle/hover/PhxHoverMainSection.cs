@@ -22,7 +22,7 @@ public class PhxHoverMainSection : PhxVehicleSection
     }
 
 
-    PhxWeaponSystem[] Weapons;
+    PhxWeaponSystem[] WeaponSystems;
 
     public PhxHoverMainSection(uint[] properties, string[] values, ref int i, PhxHover hv, bool print = false)
     {
@@ -30,9 +30,9 @@ public class PhxHoverMainSection : PhxVehicleSection
 
         OwnerVehicle = hv;
 
-        Weapons = new PhxWeaponSystem[2];
-        Weapons[0] = new PhxWeaponSystem();
-        Weapons[1] = new PhxWeaponSystem();
+        WeaponSystems = new PhxWeaponSystem[2];
+        WeaponSystems[0] = new PhxWeaponSystem(this);
+        WeaponSystems[1] = new PhxWeaponSystem(this);
 
         PhxAimer CurrAimer = new PhxAimer();
 
@@ -79,7 +79,7 @@ public class PhxHoverMainSection : PhxVehicleSection
             }
             else if (properties[i] == HashUtils.GetFNV("NextAimer"))
             {
-                Weapons[WeaponIndex].AddAimer(CurrAimer);
+                WeaponSystems[WeaponIndex].AddAimer(CurrAimer);
                 CurrAimer = new PhxAimer();
             }
             else if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
@@ -88,7 +88,7 @@ public class PhxHoverMainSection : PhxVehicleSection
                 
                 if (WeaponIndex != newSlot)
                 {
-                    Weapons[WeaponIndex].AddAimer(CurrAimer);  
+                    WeaponSystems[WeaponIndex].AddAimer(CurrAimer);  
                     CurrAimer = new PhxAimer();                  
                 }
 
@@ -96,17 +96,17 @@ public class PhxHoverMainSection : PhxVehicleSection
             }   
             else if (properties[i] == HashUtils.GetFNV("WeaponName"))
             {
-                Weapons[WeaponIndex].SetWeapon(values[i]);
+                WeaponSystems[WeaponIndex].SetWeapon(values[i]);
             }         
             else if (properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
                     properties[i] == HashUtils.GetFNV("CHUNKSECTION"))
             {
-                Weapons[WeaponIndex].AddAimer(CurrAimer);                    
+                WeaponSystems[WeaponIndex].AddAimer(CurrAimer);                    
                 break;   
             }
         }
 
-        ViewDirection = TrackOffset - TrackCenter;
+        TrackOffset = new Vector3(0f,0f,20f);
     } 
 
 
@@ -126,32 +126,35 @@ public class PhxHoverMainSection : PhxVehicleSection
         if (Controller == null) return;
 
 
-        
+        if (Controller.SwitchSeat && OwnerVehicle.TrySwitchSeat(0))
+        {
+            Occupant = null;
+            Controller.SwitchSeat = false;
+            return;
+        }
 
-        if (Controller.SwitchSeat && OwnerVehicle.TrySwitchSeat(Index))
+        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(0))
         {
             Occupant = null;
             return;
         }
-
-        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(0)) return;
         
 
 
         if (Controller.ShootPrimary)
         {
-            if (Weapons[0] != null)
+            if (WeaponSystems[0] != null)
             {
-                Weapons[0].Fire();
+                WeaponSystems[0].Fire();
             }
         }
 
 
         if (Controller.ShootSecondary)
         {
-            if (Weapons[1] != null)
+            if (WeaponSystems[1] != null)
             {
-                Weapons[1].Fire();
+                WeaponSystems[1].Fire();
             }
         }
 
@@ -170,7 +173,7 @@ public class PhxHoverMainSection : PhxVehicleSection
 
         Vector3 TargetPos = OwnerVehicle.transform.TransformPoint(30f * ViewDirection);
 
-        /*
+        
         if (Physics.Raycast(TargetPos, TargetPos - CAM.transform.position, out RaycastHit hit, 1000f))
         {
             TargetPos = hit.point;
@@ -187,10 +190,10 @@ public class PhxHoverMainSection : PhxVehicleSection
 
             Aim = GetInstance(hit.collider.gameObject.transform);
         }
-        */
+        
 
-        Weapons[0].Update(TargetPos);
-        Weapons[1].Update(TargetPos);
+        WeaponSystems[0].Update(TargetPos);
+        WeaponSystems[1].Update(TargetPos);
     }
 
 

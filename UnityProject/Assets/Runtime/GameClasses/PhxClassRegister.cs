@@ -31,9 +31,9 @@ public static class PhxClassRegister
         // PhxRuntimeScene.CreateInstance(), but with PhxProjectiles.FireProjectile()
         // Maybe this will be obsolete once we've got a generic object pooling for everything. Idk yet.
         { "bolt",           new GameBaseClass(typeof(PhxBolt),                           null)                      },
-        { "hover",          new GameBaseClass(typeof(PhxHover.PhxHoverProperties),       typeof(PhxHover)) },
-        { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn)) },
-        { "weapon",         new GameBaseClass(typeof(PhxWeapon),                         typeof(PhxWeapon)) },
+        { "hover",          new GameBaseClass(typeof(PhxHover.PhxHoverProperties),       typeof(PhxHover))          },
+        { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn))   },
+        { "weapon",         new GameBaseClass(typeof(PhxWeapon.ClassProperties),         typeof(PhxWeapon))         },
     };
 
     public static Type GetPhxInstanceType(string name)
