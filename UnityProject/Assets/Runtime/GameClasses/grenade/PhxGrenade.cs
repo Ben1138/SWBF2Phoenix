@@ -32,9 +32,9 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
         return this;
     }
 
-    public void Fire(PhxPawnController owner, Vector3 targetPos)
+    public bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
-        
+        return true;   
     }
 
     public void OnShot(Action callback)

@@ -162,8 +162,8 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
         PruneMeshColliders(transform);
 
-        BoxCollider PhysCollider = gameObject.AddComponent<BoxCollider>();
-        PhysCollider.size = UnityUtils.GetMaxBounds(gameObject).extents * 2.0f;
+        //BoxCollider PhysCollider = gameObject.AddComponent<BoxCollider>();
+        //PhysCollider.size = UnityUtils.GetMaxBounds(gameObject).extents * 2.0f;
         
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 1.0f;// C.GravityScale;
@@ -236,12 +236,12 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
             GroundNormal = hit.normal;
             if (hit.distance < C.SetAltitude)
             {
-                Body.AddForce(Vector3.up * 9.8f, ForceMode.Acceleration);
+                Body.AddForce(Vector3.up * 1.5f * 9.8f, ForceMode.Acceleration);
             }
         }
 
 
-        Body.MoveRotation(Quaternion.LookRotation(transform.forward, GroundNormal));  //.7f * transform.up + .3f * GroundNormal));
+        Body.MoveRotation(Quaternion.LookRotation(transform.forward, 0.7f * transform.up + 0.3f * GroundNormal));
 
 
         float rotRate = Vector3.Magnitude(localVel) < .1f ? C.SpinRate : C.TurnRate;
@@ -249,7 +249,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         Vector3 DriverInput = DriverSection.GetDriverInput();
 
 
-        Quaternion deltaRotation = Quaternion.Euler(new Vector3(0f, 3f * rotRate * DriverInput.z, 0f) * deltaTime);
+        Quaternion deltaRotation = Quaternion.Euler(new Vector3(0f, 6f * rotRate * DriverInput.z, 0f) * deltaTime);
         Body.MoveRotation(Body.rotation * deltaRotation);
 
 
