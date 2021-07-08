@@ -141,7 +141,7 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
 public interface IPhxWeapon
 {
     public PhxInstance GetInstance();
-    public void Fire(PhxPawnController owner, Vector3 targetPos);
+    public bool Fire(PhxPawnController owner, Vector3 targetPos);
     public void Reload();
     public void OnShot(Action callback);
     public void OnReload(Action callback);
