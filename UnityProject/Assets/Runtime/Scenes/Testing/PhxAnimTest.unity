@@ -478,8 +478,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ScheduleLVLs: []
-  Width: 1
-  Height: 1
+  Width: 16
+  Height: 16
   Padding: 1.5
   SpawnPlayer: 1
   SpawnMobs: 0

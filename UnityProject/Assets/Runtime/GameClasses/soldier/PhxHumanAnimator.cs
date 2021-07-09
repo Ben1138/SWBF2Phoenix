@@ -233,11 +233,4 @@ public class PhxHumanAnimator : CraAnimator
         ClipPlayers.Add(animName, player);
         return player;
     }
-
-    void Update()
-    {
-        Profiler.BeginSample("PhxHumanAnimator Tick");
-        Tick(Time.deltaTime);
-        Profiler.EndSample();
-    }
 }
