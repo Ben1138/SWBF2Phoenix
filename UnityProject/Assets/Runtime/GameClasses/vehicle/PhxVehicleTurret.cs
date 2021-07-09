@@ -20,26 +20,17 @@ public class PhxVehicleTurret : PhxVehicleSection
     string TurretStopSound = "";
 
 
-    public override Vector3 GetCameraPosition()
-    {
-        return TurretNode.transform.TransformPoint(TrackCenter);
-    }
-
-    public override Quaternion GetCameraRotation()
-    {
-        return Quaternion.LookRotation(TurretNode.TransformDirection(ViewDirection), Vector3.up);
-    }
-
-
-
-    PhxWeaponSystem Weapon;
-    Transform TurretNode;
-
     public PhxVehicleTurret(uint[] properties, string[] values, ref int i, Transform parentVehicle, int sectionIndex)
     {
         Index = sectionIndex;
 
-        Weapon = new PhxWeaponSystem(this);
+        PhxWeaponSystem Weapon = new PhxWeaponSystem(this);
+
+        WeaponSystems = new List<PhxWeaponSystem>();
+        WeaponSystems.Add(Weapon);
+
+        //BaseTransform = TurretNode;
+
         PhxAimer CurrAimer = new PhxAimer();
 
         OwnerVehicle = parentVehicle.GetComponent<PhxHover>();
@@ -52,7 +43,15 @@ public class PhxVehicleTurret : PhxVehicleSection
             }
             else if (properties[i] == HashUtils.GetFNV("TurretNodeName"))
             {
-                TurretNode = UnityUtils.FindChildTransform(parentVehicle, values[i]);
+                BaseTransform = UnityUtils.FindChildTransform(parentVehicle, values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("YawLimits"))
+            {
+                YawLimits = PhxUtils.Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("PitchLimits"))
+            {
+                PitchLimits = PhxUtils.Vec2FromString(values[i]);
             }
             else if (properties[i] == HashUtils.GetFNV("EyePointOffset"))
             {
@@ -65,6 +64,10 @@ public class PhxVehicleTurret : PhxVehicleSection
             else if (properties[i] == HashUtils.GetFNV("TrackOffset"))
             {
                 TrackOffset = PhxUtils.Vec3FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("TiltValue"))
+            {
+                TiltValue = float.Parse(values[i]);
             }
             else if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
             {
@@ -102,45 +105,14 @@ public class PhxVehicleTurret : PhxVehicleSection
                 break;
             }
         }
-
-        ViewDirection = TrackOffset - TrackCenter;
     }
-
 
 
     public override void Update()
     {
         if (Occupant == null) return;
 
-        var Controller = Occupant.GetController();
-
-        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(Index))
-        {
-            return;
-        }
-
-
-        if (Controller.SwitchSeat && HopToNextSeat())
-        {
-            return;
-        }
-
-
-        if (Controller.ShootPrimary)
-        {
-            Weapon.Fire();
-        }
-
-        Vector3 TargetPos = TurretNode.TransformPoint(ViewDirection);
-        Weapon.Update(TargetPos);
-
-
-        PitchAccum += Controller.mouseY;
-        PitchAccum = Mathf.Clamp(PitchAccum, -8f, 25f);
-        ViewDirection = Quaternion.Euler(3f * PitchAccum, 0f, 0f) * TrackOffset;
-
-        YawAccum += Controller.mouseX;
-        YawAccum = Mathf.Clamp(YawAccum, -180f, 180f);  
-        TurretNode.rotation = Quaternion.Euler(new Vector3(0f,YawAccum,0f));
+        base.Update();
+        BaseTransform.rotation = Quaternion.Euler(new Vector3(0f,YawAccum,0f));
     }
 }

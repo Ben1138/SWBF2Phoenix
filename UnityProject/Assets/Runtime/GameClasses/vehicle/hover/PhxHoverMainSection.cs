@@ -8,31 +8,16 @@ using System.Runtime.ExceptionServices;
 
 public class PhxHoverMainSection : PhxVehicleSection
 {
-    static PhxCamera CAM => PhxGameRuntime.GetCamera();
-
-
-    public override Vector3 GetCameraPosition()
-    {
-        return OwnerVehicle.transform.TransformPoint(new Vector3(0f, 3f, -6f));
-    }
-
-    public override Quaternion GetCameraRotation()
-    {
-        return Quaternion.LookRotation(OwnerVehicle.transform.TransformDirection(ViewDirection), Vector3.up);
-    }
-
-
-    PhxWeaponSystem[] WeaponSystems;
-
     public PhxHoverMainSection(uint[] properties, string[] values, ref int i, PhxHover hv, bool print = false)
     {
         Index = 0;
 
         OwnerVehicle = hv;
+        BaseTransform = hv.gameObject.transform;
 
-        WeaponSystems = new PhxWeaponSystem[2];
-        WeaponSystems[0] = new PhxWeaponSystem(this);
-        WeaponSystems[1] = new PhxWeaponSystem(this);
+        WeaponSystems = new List<PhxWeaponSystem>();
+        WeaponSystems.Add(new PhxWeaponSystem(this));
+        
 
         PhxAimer CurrAimer = new PhxAimer();
 
@@ -48,6 +33,18 @@ public class PhxHoverMainSection : PhxVehicleSection
             else if (properties[i] == HashUtils.GetFNV("TrackCenter"))
             {
                 TrackCenter = PhxUtils.Vec3FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("YawLimits"))
+            {
+                YawLimits = PhxUtils.Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("PitchLimits"))
+            {
+                PitchLimits = PhxUtils.Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("TiltValue"))
+            {
+                TiltValue = float.Parse(values[i]);
             }
             else if (properties[i] == HashUtils.GetFNV("TrackOffset"))
             {
@@ -84,15 +81,21 @@ public class PhxHoverMainSection : PhxVehicleSection
             }
             else if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
             {
-                int newSlot = Int32.Parse(values[i]) - 1;
+                int newSlot = Int32.Parse(values[i]);
                 
-                if (WeaponIndex != newSlot)
+                if (newSlot > WeaponSystems.Count)
                 {
+                    WeaponSystems.Add(new PhxWeaponSystem(this));
+
+                    // New WeapSec indicates that the last defined aimer should be added to
+                    // the previous WeapSec
                     WeaponSystems[WeaponIndex].AddAimer(CurrAimer);  
+
+                    // With a new WeaponSection comes a new default aimer? 
                     CurrAimer = new PhxAimer();                  
                 }
 
-                WeaponIndex = newSlot;
+                WeaponIndex = newSlot - 1;
             }   
             else if (properties[i] == HashUtils.GetFNV("WeaponName"))
             {
@@ -105,99 +108,10 @@ public class PhxHoverMainSection : PhxVehicleSection
                 break;   
             }
         }
-
-        TrackOffset = new Vector3(0f,0f,20f);
     } 
 
 
-
-    // Current top-level Aimer
-    int CurrAimer = 0;
-    PhxPawnController Controller;
-
-    private PhxInstance Aim;
-
-    public override void Update()
-    {
-        if (Occupant == null) return; 
-
-        Controller = Occupant.GetController();
-
-        if (Controller == null) return;
-
-
-        if (Controller.SwitchSeat && OwnerVehicle.TrySwitchSeat(0))
-        {
-            Occupant = null;
-            Controller.SwitchSeat = false;
-            return;
-        }
-
-        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(0))
-        {
-            Occupant = null;
-            return;
-        }
-        
-
-
-        if (Controller.ShootPrimary)
-        {
-            if (WeaponSystems[0] != null)
-            {
-                WeaponSystems[0].Fire();
-            }
-        }
-
-
-        if (Controller.ShootSecondary)
-        {
-            if (WeaponSystems[1] != null)
-            {
-                WeaponSystems[1].Fire();
-            }
-        }
-
-
-
-        PitchAccum += Controller.mouseY;
-        PitchAccum = Mathf.Clamp(PitchAccum, -8f, 25f);
-
-        bool printAimer = Controller.mouseY < 0f;
-
-        YawAccum += Controller.mouseX;
-        YawAccum = Mathf.Clamp(YawAccum, 0f, 0f);        
-
-        ViewDirection = Quaternion.Euler(3f * PitchAccum, 0f, 0f) * TrackOffset;
-
-
-        Vector3 TargetPos = OwnerVehicle.transform.TransformPoint(30f * ViewDirection);
-
-        
-        if (Physics.Raycast(TargetPos, TargetPos - CAM.transform.position, out RaycastHit hit, 1000f))
-        {
-            TargetPos = hit.point;
-
-            PhxInstance GetInstance(Transform t)
-            {
-                PhxInstance inst = t.gameObject.GetComponent<PhxInstance>();
-                if (inst == null && t.parent != null)
-                {
-                    return GetInstance(t.parent);
-                }
-                return inst;
-            }
-
-            Aim = GetInstance(hit.collider.gameObject.transform);
-        }
-        
-
-        WeaponSystems[0].Update(TargetPos);
-        WeaponSystems[1].Update(TargetPos);
-    }
-
-
-
+    // Returns a Vector3 where x = strafe input, y = drive input, and z = turn input.
     public Vector3 GetDriverInput()
     {
         if (Occupant == null)
@@ -206,7 +120,7 @@ public class PhxHoverMainSection : PhxVehicleSection
         }
         else 
         {
-            Controller = Occupant.GetController();
+            PhxPawnController Controller = Occupant.GetController();
             return new Vector3(Controller.MoveDirection.x, Controller.MoveDirection.y, Controller.mouseX);
         }
     }
