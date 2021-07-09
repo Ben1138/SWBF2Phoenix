@@ -8,9 +8,13 @@ using LibSWBF2.Wrappers;
 
 public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
 {
+    PhxGameRuntime Game => PhxGameRuntime.Instance;
+    PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
+
     Action ShotCallback;
     Action ReloadCallback;
     AudioSource Audio;
+    Transform HpFire;
 
     int Ammunition;
     int MagazineAmmo;
@@ -18,10 +22,13 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
     float FireDelay;
     float ReloadDelay;
 
+
     public class ClassProperties : PhxClass
     {
         public PhxProp<string> AnimationBank = new PhxProp<string>("rifle");
-         
+
+        public PhxProp<PhxClass> OrdnanceName = new PhxProp<PhxClass>(null);
+
         public PhxProp<float> ShotDelay     = new PhxProp<float>(0.2f);
         public PhxProp<float> ReloadTime    = new PhxProp<float>(1.0f);
         public PhxProp<int>   SalvoCount    = new PhxProp<int>(1);
@@ -54,6 +61,20 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
             Audio.clip = SoundLoader.LoadSound("wpn_rep_blaster_fire");
         }
 
+        if (C.OrdnanceName.Get() == null)
+        {
+            Debug.LogWarning($"Missing Ordnance class in cannon '{name}'!");
+        }
+
+        if (transform.childCount > 0)
+        {
+            HpFire = transform.GetChild(0).Find("hp_fire");
+        }
+        if (HpFire == null)
+        {
+            Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
+        }
+
         // Total amount of 4 magazines
         Ammunition = C.RoundsPerClip * 3;
         MagazineAmmo = C.RoundsPerClip;
@@ -69,7 +90,7 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
         return this;
     }
 
-    public void Fire()
+    public void Fire(PhxPawnController owner, Vector3 targetPos)
     {
         if (FireDelay <= 0f && ReloadDelay == 0f && MagazineAmmo >= C.ShotsPerSalvo)
         {
@@ -80,10 +101,25 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
                 Audio.Play();
             }
 
+            if (C.OrdnanceName.Get() != null)
+            {
+                PhxBolt bolt = C.OrdnanceName.Get() as PhxBolt;
+                if (HpFire != null && bolt != null)
+                {
+                    Vector3 dirVec = targetPos - HpFire.position;
+                    Quaternion dir = Quaternion.LookRotation(dirVec);
+                    Scene.FireProjectile(owner, HpFire.position, dir, bolt);
+                    Debug.DrawRay(HpFire.position, dirVec, Color.red);
+                }
+            }
+
             ShotCallback?.Invoke();
             FireDelay = C.ShotDelay;
 
-            MagazineAmmo -= C.ShotsPerSalvo;
+            if (!Game.InfiniteAmmo)
+            {
+                MagazineAmmo -= C.ShotsPerSalvo;
+            }
             if (MagazineAmmo < C.ShotsPerSalvo)
             {
                 Reload();
@@ -139,6 +175,11 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
     public int GetAvailableAmmo()
     {
         return Ammunition;
+    }
+
+    public float GetReloadTime()
+    {
+        return C.ReloadTime;
     }
 
     public float GetReloadProgress()

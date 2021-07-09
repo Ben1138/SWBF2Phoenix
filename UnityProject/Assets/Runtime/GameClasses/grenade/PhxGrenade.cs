@@ -13,11 +13,9 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
 
     public override void Init()
     {
-        MeshCollider collision = GetComponent<MeshCollider>();
-        if (collision != null)
-        {
-            collision.convex = true;
-        }
+        // Hide grenade mesh in hand
+        gameObject.layer = 6; // Projectiles
+        transform.GetChild(0).gameObject.SetActive(false);
     }
 
     public override void BindEvents()
@@ -30,7 +28,7 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
         return this;
     }
 
-    public void Fire()
+    public void Fire(PhxPawnController owner, Vector3 targetPos)
     {
         
     }
@@ -50,27 +48,27 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
 
     }
 
-    void IPhxWeapon.Reload()
+    public void Reload()
     {
         
     }
 
-    void IPhxWeapon.OnReload(Action callback)
+    public void OnReload(Action callback)
     {
         
     }
 
-    int IPhxWeapon.GetMagazineSize()
+    public int GetMagazineSize()
     {
         return 0;
     }
 
-    int IPhxWeapon.GetTotalAmmo()
+    public int GetTotalAmmo()
     {
         return 0;
     }
 
-    int IPhxWeapon.GetMagazineAmmo()
+    public int GetMagazineAmmo()
     {
         return 0;
     }
@@ -80,7 +78,12 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
         return 0;
     }
 
-    float IPhxWeapon.GetReloadProgress()
+    public float GetReloadTime()
+    {
+        return 0f;
+    }
+
+    public float GetReloadProgress()
     {
         return 0f;
     }

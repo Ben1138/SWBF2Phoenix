@@ -144,7 +144,7 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
 public interface IPhxWeapon
 {
     public PhxInstance GetInstance();
-    public void Fire();
+    public void Fire(PhxPawnController owner, Vector3 targetPos);
     public void Reload();
     public void OnShot(Action callback);
     public void OnReload(Action callback);
@@ -154,5 +154,6 @@ public interface IPhxWeapon
     public int GetTotalAmmo();
     public int GetMagazineAmmo();
     public int GetAvailableAmmo();
+    public float GetReloadTime();
     public float GetReloadProgress();
 }

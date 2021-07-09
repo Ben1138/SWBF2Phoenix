@@ -23,6 +23,7 @@ public static class PhxClassRegister
         { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
         { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
         { "powerupstation", new GameBaseClass(typeof(PhxPowerupstation.ClassProperties), typeof(PhxPowerupstation)) },
+        { "bolt",           new GameBaseClass(typeof(PhxBolt), typeof(PhxBolt)) },
     };
 
     public static Type GetPhxInstanceType(string name)
