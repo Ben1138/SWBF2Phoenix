@@ -41,11 +41,21 @@ public sealed class PhxPropertyDB
 
     public static void AssignProp(ISWBFProperties instOrClass, string propName, IPhxPropRef value)
     {
-        if (instOrClass.GetProperty(propName, out string[] outVal))
+        if (value is PhxMultiProp)
         {
-            for (int i = 0; i < outVal.Length; ++i)
+            if (instOrClass.GetProperty(propName, out string[] outVal))
             {
-                value.SetFromString(outVal[i]);
+                for (int i = 0; i < outVal.Length; ++i)
+                {
+                    value.SetFromString(outVal[i]);
+                }
+            }
+        }
+        else
+        {
+            if (instOrClass.GetProperty(propName, out string outVal))
+            {
+                value.SetFromString(outVal);
             }
         }
     }
@@ -58,7 +68,11 @@ public sealed class PhxPropertyDB
     public static object FromString(Type destType, string value)
     {
         object outVal;
-        if (destType == typeof(PhxRegion))
+        if (destType == typeof(PhxClass))
+        {
+            outVal = RTS.GetClass(value);
+        }
+        else if (destType == typeof(PhxRegion))
         {
             outVal = Convert.ChangeType(RTS.GetRegion(value), destType, CultureInfo.InvariantCulture);
         }
@@ -83,6 +97,30 @@ public sealed class PhxPropertyDB
             else
             {
                 outVal = Convert.ChangeType(value != "0" ? true : false, destType, CultureInfo.InvariantCulture);
+            }
+        }
+        else if (destType == typeof(Color))
+        {
+            string[] vals = value.Split(' ');
+            if (vals.Length < 3)
+            {
+                Debug.LogError($"Expected 3 or 4 color arguments (rgb / rgba), but got {vals.Length}!");
+                outVal = Color.black;
+            }
+            else
+            {
+                Color outCol = new Color();
+                outCol.r = float.Parse(vals[0]) / 255f;
+                outCol.g = float.Parse(vals[1]) / 255f;
+                outCol.b = float.Parse(vals[2]) / 255f;
+                outCol.a = 1f;
+
+                if (vals.Length == 4)
+                {
+                    outCol.a = float.Parse(vals[0]) / 255f;
+                }
+
+                outVal = outCol;
             }
         }
         else

@@ -214,9 +214,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                         continue;
                     }
 
-                    // do not attach grenates to skeleton, will fail because of collision!
-                    Transform attach = weapClass is PhxGrenade ? null : HpWeapons;
-
                     IPhxWeapon weap = SCENE.CreateInstance(weapClass, false, HpWeapons) as IPhxWeapon;
                     if (weap != null)
                     {
@@ -349,8 +346,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
     void Reload()
     {
-        Animator.SetState(1, Animator.StandReload);
-        Animator.RestartState(1);
+        IPhxWeapon weap = Weapons[0][WeaponIdx[0]];
+        if (weap != null)
+        {
+            Animator.SetState(1, Animator.StandReload);
+            Animator.RestartState(1);
+            float animTime = Animator.GetCurrentState(1).GetDuration();
+            Animator.SetPlaybackSpeed(1, Animator.StandReload, 1f / (weap.GetReloadTime() / animTime));
+        }
     }
 
     // see: com_inf_default
@@ -383,39 +386,26 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
     void Update()
     {
+        // Update Animator BEFORE firing any projectiles!
+        Animator.Tick(Time.deltaTime);
+        AnimationCorrection();
+
         AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
         //Weap.Fire = false;
 
         if (Controller != null)
         {
-            if (Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
+            Vector3 aimStart = Neck.position;
+            Vector3 aimDir = Controller.ViewDirection;
+            if (Controller is PhxPlayerController)
             {
-                if (Controller.ShootPrimary)
-                {
-                    Weapons[0][WeaponIdx[0]].Fire();
-                }
-                if (Controller.ShootSecondary)
-                {
-                    Weapons[1][WeaponIdx[1]].Fire();
-                }
-                if (Controller.Reload)
-                {
-                    Weapons[0][WeaponIdx[0]].Reload();
-                }
-                if (Controller.NextPrimaryWeapon)
-                {
-                    NextWeapon(0);
-                }
-                if (Controller.NextSecondaryWeapon)
-                {
-                    NextWeapon(1);
-                }
+                aimStart = CAM.transform.position;
             }
 
-            if (Physics.Raycast(Neck.position, Controller.ViewDirection, out RaycastHit hit, 1000f))
+            if (Physics.Raycast(aimStart, aimDir, out RaycastHit hit, 1000f))
             {
                 TargetPos = hit.point;
-                Debug.DrawLine(Neck.position, TargetPos, Color.blue);
+                Debug.DrawLine(aimStart, TargetPos, Color.blue);
 
                 PhxInstance GetInstance(Transform t)
                 {
@@ -430,8 +420,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
             }
             else
             {
-                TargetPos = Neck.position + Controller.ViewDirection * 1000f;
-                Debug.DrawRay(Neck.position, Controller.ViewDirection * 1000f, Color.blue);
+                TargetPos = aimStart + aimDir * 1000f;
+                Debug.DrawRay(aimStart, aimDir * 1000f, Color.blue);
             }
 
             if (Grounded && LandTimer <= 0f && TurnTimer <= 0f)
@@ -442,7 +432,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                     // ---------------------------------------------------------------------------------------------
                     // Forward
                     // ---------------------------------------------------------------------------------------------
-                    float walk = Controller.MoveDirection.magnitude;
+                    float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
                     if (Controller.MoveDirection.y <= 0f)
                     {
                         // invert animation direction for strafing (left/right)
@@ -507,22 +497,36 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                     // ---------------------------------------------------------------------------------------------
                     // Shooting
                     // ---------------------------------------------------------------------------------------------
-                    if (Controller.ShootPrimary)
+                    if (Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
                     {
-                        // only fire when not currently turning
-                        //Weap.Fire = TurnTimer <= 0f;
-                        AlertTimer = AlertTime;
-                    }
-                    else if (Controller.ShootSecondary)
-                    {
-                        //Anim.SetTrigger("ShootSecondary");
-                        AlertTimer = AlertTime;
-                    }
-                    else if (Controller.Reload)
-                    {
-                        //Anim.SetTrigger("Reload");
+                        if (Controller.ShootPrimary)
+                        {
+                            // only fire when not currently turning
+                            //Weap.Fire = TurnTimer <= 0f;
+
+                            Weapons[0][WeaponIdx[0]].Fire(Controller, TargetPos);
+                            AlertTimer = AlertTime;
+                        }
+                        else if (Controller.ShootSecondary)
+                        {
+                            Weapons[1][WeaponIdx[1]].Fire(Controller, TargetPos);
+                            AlertTimer = AlertTime;
+                        }
+                        else if (Controller.Reload)
+                        {
+                            Weapons[0][WeaponIdx[0]].Reload();
+                            //Anim.SetTrigger("Reload");
+                        }
                     }
                     // ---------------------------------------------------------------------------------------------
+                    if (Controller.NextPrimaryWeapon)
+                    {
+                        NextWeapon(0);
+                    }
+                    if (Controller.NextSecondaryWeapon)
+                    {
+                        NextWeapon(1);
+                    }
 
 
                     State = Controller.Crouch ? PhxControlState.Crouch : PhxControlState.Stand;
@@ -549,7 +553,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 // Stand
                 if (State == PhxControlState.Stand)
                 {
-                    if (Controller.MoveDirection.y > 0.2f && Controller.Sprint)
+                    if (Controller.MoveDirection.y > 0.2f && Controller.Sprint && Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
                     {
                         State = PhxControlState.Sprint;
                     }
@@ -717,14 +721,19 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     public Vector3 RotAlt1 = new Vector3(7f, -78f, -130f);
     public Vector3 RotAlt2 = new Vector3(0f, -50f, -75f);
     public Vector3 RotAlt3 = new Vector3(0f, -68f, -81f);
+    public Vector3 RotAlt4 = new Vector3(0f, -53f, -77f);
 
-    void LateUpdate()
+    void AnimationCorrection()
     {
         if (Controller == null) return;
 
         if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
         {
-            if (AlertTimer > 0f)
+            if (Animator.GetCurrentStateIdx(1) == Animator.StandShootPrimary)
+            {
+                Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt4);
+            }
+            else if (AlertTimer > 0f)
             {
                 if (Controller.MoveDirection.magnitude > 0.1f)
                 {

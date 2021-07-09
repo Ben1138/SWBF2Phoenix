@@ -27,6 +27,7 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxStartupBehaviour StartupBehaviour;
     public string StartupSWBF2Map;
     public string StartupUnityScene;
+    public bool   InfiniteAmmo;
 
     [Header("References")]
     public PhxLoadscreen      InitScreenPrefab;
@@ -40,6 +41,7 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxCamera          Camera;
     public PhysicMaterial     GroundPhyMat;
     public PhxHUD             HUDPrefab;
+    public PhxProjectile      ProjPrefab;
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMapLoaded;
@@ -427,6 +429,7 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(Camera               != null);
         Debug.Assert(GroundPhyMat         != null);
         Debug.Assert(HUDPrefab            != null);
+        Debug.Assert(ProjPrefab           != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
         {
@@ -437,6 +440,12 @@ public class PhxGameRuntime : MonoBehaviour
         }
 
         Init();
+        
+    }
+
+    void Start()
+    {
+        //PhxProjectiles.Instance.InitProjectileMeshes();
     }
 
     void Update()

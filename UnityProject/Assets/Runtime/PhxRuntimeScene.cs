@@ -37,6 +37,8 @@ public class PhxRuntimeScene
     List<PhxTransform> CameraShots = new List<PhxTransform>();
     int CurrCamIdx;
 
+    PhxProjectiles Projectiles = new PhxProjectiles();
+
     int InstanceCounter;
 
     public PhxRuntimeScene(PhxRuntimeEnvironment env, Container c)
@@ -146,6 +148,11 @@ public class PhxRuntimeScene
             CurrCamIdx = 0;
         }
         return camShot;
+    }
+
+    public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
+    {
+        Projectiles.FireProjectile(owner, pos, rot, bolt);
     }
 
     public void Import(World[] worldLayers)
@@ -263,6 +270,7 @@ public class PhxRuntimeScene
             UnityEngine.Object.Destroy(WorldRoots[i]);
         }
         WorldRoots.Clear();
+        Projectiles.Destroy();
     }
 
     // TODO: implement object pooling

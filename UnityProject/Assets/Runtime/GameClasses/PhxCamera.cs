@@ -65,7 +65,7 @@ public class PhxCamera : MonoBehaviour
 
     void Update()
     {
-        Debug.DrawRay(transform.position, transform.forward * 1000f, Color.red);
+        
     }
 
     void FixedUpdate()
