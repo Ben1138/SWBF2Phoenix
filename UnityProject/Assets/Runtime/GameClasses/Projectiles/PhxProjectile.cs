@@ -9,7 +9,7 @@ public class PhxBolt : PhxClass
 {
     public PhxProp<Texture2D> LaserTexture = new PhxProp<Texture2D>(null);
     public PhxProp<Color> LaserGlowColor = new PhxProp<Color>(Color.white);
-    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.white);
+    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.black);
     public PhxProp<float> LightRadius = new PhxProp<float>(1f);
     public PhxProp<float> LaserLength = new PhxProp<float>(1f);
     public PhxProp<float> LaserWidth = new PhxProp<float>(1f);

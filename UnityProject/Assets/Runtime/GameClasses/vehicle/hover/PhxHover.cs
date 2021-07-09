@@ -166,7 +166,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         //PhysCollider.size = UnityUtils.GetMaxBounds(gameObject).extents * 2.0f;
         
         Body = gameObject.AddComponent<Rigidbody>();
-        Body.mass = 1.0f;// C.GravityScale;
+        Body.mass = C.GravityScale;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
         Body.interpolation = RigidbodyInterpolation.Interpolate;
@@ -226,6 +226,37 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
     Vector3 GroundNormal = Vector3.up;
 
+
+    // Maintain eased alignment with ground normal
+    private void AlignToGroundNormal(float deltaTime)
+    {
+        float angleFactor = 2f * (1f - Vector3.Dot(GroundNormal, transform.up));
+
+        float timeFactor = .1f; //Set to some ODF derived value...
+
+        float normalMult = angleFactor * deltaTime / timeFactor;
+        float upMult = 1f - normalMult;
+
+        upMult = 0f;
+        normalMult = 1f;
+
+        Vector3 newUp = upMult * transform.up + normalMult * GroundNormal;
+        Vector3 newFd = Vector3.Cross(transform.right, newUp);
+
+        /*
+        if (gameObject.name == "vehicle_9" && C.EntityClass.Name == "cis_hover_stap" && Input.GetKeyDown(KeyCode.L))
+        {
+            Debug.LogFormat("Up: {0}, GroundNormal: {1}, upMult: {2}, normalMult {3}, newUp: {4}, newFd: {5}",
+                            transform.up.ToString("F6"), GroundNormal.ToString("F6"), upMult,
+                            normalMult, newUp.ToString("F6"), newFd.ToString("F6"));
+        }
+        */
+
+        Body.MoveRotation(Quaternion.LookRotation(newFd, newUp));
+    }
+
+
+
     void UpdatePhysics(float deltaTime)
     {
         Vector3 localVel = transform.worldToLocalMatrix * Body.velocity;
@@ -236,12 +267,12 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
             GroundNormal = hit.normal;
             if (hit.distance < C.SetAltitude)
             {
-                Body.AddForce(Vector3.up * 1.5f * 9.8f, ForceMode.Acceleration);
+                Body.AddForce(Vector3.up * C.LiftSpring * 9.8f, ForceMode.Acceleration);
             }
         }
 
 
-        Body.MoveRotation(Quaternion.LookRotation(transform.forward, 0.7f * transform.up + 0.3f * GroundNormal));
+        AlignToGroundNormal(deltaTime);
 
 
         float rotRate = Vector3.Magnitude(localVel) < .1f ? C.SpinRate : C.TurnRate;
