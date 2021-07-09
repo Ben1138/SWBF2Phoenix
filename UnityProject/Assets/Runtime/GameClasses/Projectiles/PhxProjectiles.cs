@@ -11,20 +11,27 @@ using UnityEngine;
 //using Unity.Transforms;
 
 
-public class PhxPool<T> where T : Behaviour
+public class PhxPool<T> where T : Component
 {
     public T[] Objects { get; private set; }
     Dictionary<T, int> ObjToIdx;
+    
+    float MaxLifeTime;
+    float[] LifeTimes;
 
-    public PhxPool(T prefab, string rootName, int size)
+    public PhxPool(T prefab, string rootName, int size, float maxLifeTime=float.PositiveInfinity)
     {
         Objects = new T[size];
         ObjToIdx = new Dictionary<T, int>();
+
+        MaxLifeTime = maxLifeTime;
+        LifeTimes = new float[size];
 
         GameObject root = new GameObject(rootName);
         for (int i = 0; i < Objects.Length; ++i)
         {
             Objects[i] = Object.Instantiate(prefab, root.transform);
+            //Objects[i].gameObject.SetActive(false);
             ObjToIdx.Add(Objects[i], i);
         }
     }
@@ -37,6 +44,7 @@ public class PhxPool<T> where T : Behaviour
             if (!Objects[i].gameObject.activeSelf)
             {
                 Objects[i].gameObject.SetActive(true);
+                LifeTimes[i] = MaxLifeTime;
                 return Objects[i];
             }
         }
@@ -62,27 +70,47 @@ public class PhxPool<T> where T : Behaviour
         }
         Objects = null;
     }
+
+    public void Tick(float deltaTime)
+    {
+        for (int i = 0; i < Objects.Length; ++i)
+        {
+            if (Objects[i].gameObject.activeSelf)
+            {
+                LifeTimes[i] -= deltaTime;
+                if (LifeTimes[i] <= 0f)
+                {
+                    Objects[i].gameObject.SetActive(false);
+                }
+            }
+        }
+    }
 }
 
 public class PhxProjectiles
 {
+    const int COUNT = 128;
+
     PhxGameRuntime Game => PhxGameRuntime.Instance;
 
     PhxPool<PhxProjectile> Projectiles;
+    PhxPool<ParticleSystem> Sparks;
 
     public PhxProjectiles()
     {
-        Projectiles = new PhxPool<PhxProjectile>(Game.ProjPrefab, "Projectiles", 128);
+        Projectiles = new PhxPool<PhxProjectile>(Game.ProjPrefab, "Projectiles", COUNT, 2f);
         for (int i = 0; i < Projectiles.Objects.Length; ++i)
         {
             Projectiles.Objects[i].OnHit += ProjectileHit;
         }
+
+        Sparks = new PhxPool<ParticleSystem>(Game.SparkPrefab, "Sparks", COUNT, 1.5f);
     }
 
     public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
     {
         PhxProjectile proj = Projectiles.Alloc();
-        Physics.IgnoreCollision(proj.Collider, owner.Pawn.GetInstance().GetComponent<CapsuleCollider>());
+        Physics.IgnoreCollision(proj.Coll, owner.Pawn.GetInstance().GetComponent<CapsuleCollider>());
         if (proj != null)
         {
             proj.Setup(owner, pos, rot, bolt);
@@ -96,9 +124,18 @@ public class PhxProjectiles
         Projectiles = null;
     }
 
-    void ProjectileHit(PhxProjectile proj)
+    public void Tick(float deltaTime)
+    {
+        Projectiles.Tick(deltaTime);
+        Sparks.Tick(deltaTime);
+    }
+
+    void ProjectileHit(PhxProjectile proj, Collision coll)
     {
         Projectiles.Free(proj);
+        ParticleSystem spark = Sparks.Alloc();
+        spark.transform.position = coll.contacts[0].point;
+        spark.transform.forward = coll.contacts[0].normal;
     }
 }
 

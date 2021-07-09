@@ -86,7 +86,7 @@ public class PhxTimerDB
 		return null;
     }
 
-	public void Update(float deltaTime)
+	public void Tick(float deltaTime)
     {
 		for (int i = 0; i < InUseIndices.Count; ++i)
         {
