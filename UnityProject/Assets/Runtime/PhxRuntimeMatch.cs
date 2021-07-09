@@ -192,7 +192,7 @@ public class PhxRuntimeMatch
         // TODO: kill AI, clear all pools
     }
 
-    public void Update(float deltaTime)
+    public void Tick(float deltaTime)
     {
         Player.Update(deltaTime);
         for (int i = 0; i < AIControllers.Count; ++i)

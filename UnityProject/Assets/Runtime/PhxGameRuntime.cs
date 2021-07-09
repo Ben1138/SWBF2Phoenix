@@ -42,6 +42,7 @@ public class PhxGameRuntime : MonoBehaviour
     public PhysicMaterial     GroundPhyMat;
     public PhxHUD             HUDPrefab;
     public PhxProjectile      ProjPrefab;
+    public ParticleSystem     SparkPrefab;
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMapLoaded;
@@ -430,6 +431,7 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(GroundPhyMat         != null);
         Debug.Assert(HUDPrefab            != null);
         Debug.Assert(ProjPrefab           != null);
+        Debug.Assert(SparkPrefab          != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
         {
@@ -440,7 +442,6 @@ public class PhxGameRuntime : MonoBehaviour
         }
 
         Init();
-        
     }
 
     void Start()
@@ -450,11 +451,11 @@ public class PhxGameRuntime : MonoBehaviour
 
     void Update()
     {
-        Env?.Update(Time.deltaTime);
+        Env?.Tick(Time.deltaTime);
     }
 
     void FixedUpdate()
     {
-        Env?.FixedUpdate(Time.fixedDeltaTime);
+        Env?.FixedTick(Time.fixedDeltaTime);
     }
 }

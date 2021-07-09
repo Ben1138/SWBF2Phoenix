@@ -303,6 +303,11 @@ public class PhxRuntimeScene
         return CommandPosts.ToArray();
     }
 
+    public void Tick(float deltaTime)
+    {
+        Projectiles.Tick(deltaTime);
+    }
+
     PhxClass GetClass(EntityClass ec)
     {
         PhxClass odf = null;
