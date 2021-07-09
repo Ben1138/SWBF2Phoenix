@@ -345,7 +345,7 @@ public class PhxRuntimeEnvironment
         return EnvCon.GetProgress(handle);
     }
 
-    public void Update(float deltaTime)
+    public void Tick(float deltaTime)
     {
         for (int i = 0; i < LoadingLVLs.Count; ++i)
         {
@@ -436,12 +436,13 @@ public class PhxRuntimeEnvironment
             CreateScene();
         }
 
-        Match?.Update(deltaTime);
+        Match?.Tick(deltaTime);
+        RTScene.Tick(deltaTime);
     }
 
-    public void FixedUpdate(float deltaTime)
+    public void FixedTick(float deltaTime)
     {
-        Timers?.Update(deltaTime);
+        Timers?.Tick(deltaTime);
     }
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)

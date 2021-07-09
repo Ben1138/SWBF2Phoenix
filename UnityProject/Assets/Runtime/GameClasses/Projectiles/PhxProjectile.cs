@@ -23,8 +23,8 @@ public class PhxBolt : PhxClass
 [RequireComponent(typeof(LineRenderer), typeof(Rigidbody), typeof(Light))]
 public class PhxProjectile : MonoBehaviour
 {
-    public BoxCollider Collider { get; private set; }
-    public Action<PhxProjectile> OnHit;
+    public BoxCollider Coll { get; private set; }
+    public Action<PhxProjectile, Collision> OnHit;
 
     float EmissionIntensity = 25f;
 
@@ -32,8 +32,6 @@ public class PhxProjectile : MonoBehaviour
     Rigidbody Body;
     HDAdditionalLightData Light;
     LineRenderer Renderer;
-
-    public float LifeTime;
 
     public void Setup(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
     {
@@ -51,32 +49,21 @@ public class PhxProjectile : MonoBehaviour
         Renderer.material.SetTexture("_UnlitColorMap", bolt.LaserTexture);
         Renderer.material.SetTexture("_EmissiveColorMap", bolt.LaserTexture);
         Renderer.material.SetColor("_EmissiveColor", bolt.LightColor.Get() * EmissionIntensity);
-
-        LifeTime = bolt.LifeSpan;
     }
 
-    void Start()
+    void Awake()
     {
         EmissionIntensity = Mathf.Pow(2f, 20f);
 
-        Collider = GetComponent<BoxCollider>();
+        Coll = GetComponent<BoxCollider>();
         Body = GetComponent<Rigidbody>();
         Light = GetComponent<HDAdditionalLightData>();
         Renderer = GetComponent<LineRenderer>();
     }
 
-    void Update()
+    void OnCollisionEnter(Collision coll)
     {
-        LifeTime -= Time.deltaTime;
-        if (LifeTime <= 0f)
-        {
-            OnHit?.Invoke(this);
-        }
-    }
-
-    void OnCollisionEnter(Collision other)
-    {
-        Debug.Log($"Projectile '{name}' hit '{other.collider.name}'!");
-        OnHit?.Invoke(this);
+        Debug.Log($"Projectile '{name}' hit '{coll.collider.name}'!");
+        OnHit?.Invoke(this, coll);
     }
 }
