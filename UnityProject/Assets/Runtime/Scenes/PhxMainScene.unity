@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 11784, g: 11784, b: 11784, a: 1}
+  m_IndirectSpecularColor: {r: 11807.999, g: 11807.999, b: 11807.999, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -418,10 +418,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78d15e63002497340882c6c017ee0810, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  GamePathString: /Volumes/boot/Game
   Language: english
-  StartupBehaviour: 0
-  StartupSWBF2Map: geo1c_con
-  StartupUnityScene: PhxAnimTest
+  StartupBehaviour: 1
+  StartupSWBF2Map: kas2c_con
+  StartupUnityScene: PhxMainScene
   InfiniteAmmo: 0
   InitScreenPrefab: {fileID: 8116435525958827643, guid: b41f2353f3f33804b919c04b2fd29246, type: 3}
   LoadScreenPrefab: {fileID: 4217219954888887521, guid: 753242c13dd40b24f96abc9c00940f1d, type: 3}

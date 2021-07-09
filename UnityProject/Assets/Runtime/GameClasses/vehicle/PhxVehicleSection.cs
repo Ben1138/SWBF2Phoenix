@@ -21,58 +21,144 @@ Each frame the parent vehicle will call Update() on each section.
 
 public abstract class PhxVehicleSection : IPhxTrackable
 {    
-    public PhxHover OwnerVehicle;
+    static PhxCamera CAM => PhxGameRuntime.GetCamera();
+
+
+    protected PhxHover OwnerVehicle;
+    protected Transform BaseTransform;
 
     public PhxSoldier Occupant;
+    private PhxInstance Aim;
+
 
     public bool CanExit = true;
 
 
-    public Transform PilotPosition;
-    public string PilotAnimation = "";
+    protected Transform PilotPosition;
+    protected string PilotAnimation = "";
 
 
-    public Vector3 EyePointOffset;
-    public Vector3 TrackCenter;
-    public Vector3 TrackOffset;
-    public float TiltValue;
+    protected Vector3 EyePointOffset;
+    protected Vector3 TrackCenter;
+    protected Vector3 TrackOffset;
+    protected float TiltValue;
 
-    public Vector2 PitchLimits;
-    public Vector2 YawLimits;
+    protected Vector2 PitchLimits;
+    protected Vector2 YawLimits;
 
 
     protected int Index;
 
-
-    protected List<PhxAimer> Aimers;
-
-    // View direction in local space 
-    protected Vector3 ViewDirection;
 
     // Accumulators for view control
     protected float PitchAccum;
     protected float YawAccum;
 
 
-    public abstract Vector3 GetCameraPosition();
-    public abstract Quaternion GetCameraRotation();
+    // View position in local space
+    protected Vector3 ViewPoint;
 
+    // View direction in local space 
+    protected Vector3 ViewDirection = Vector3.forward;
 
-    public bool SetOccupant(PhxSoldier s) 
+    public Vector3 GetCameraPosition()
     {
-        if (Occupant != null) return false;
-        
-        Occupant = s;
+        return BaseTransform.transform.TransformPoint(ViewPoint);
+    }
 
-        s.SetPilot(PilotPosition,"");
-
-        return true;
+    public Quaternion GetCameraRotation()
+    {
+        return Quaternion.LookRotation(BaseTransform.TransformDirection(ViewDirection), Vector3.up);
     }
 
 
+    protected List<PhxWeaponSystem> WeaponSystems;
 
 
-    public abstract void Update();
+
+    public virtual void Update()
+    {
+        PhxPawnController Controller;
+        if (Occupant == null || ((Controller = Occupant.GetController()) == null)) 
+        {
+            return; 
+        }
+
+        if (Controller.SwitchSeat && OwnerVehicle.TrySwitchSeat(Index))
+        {
+            Occupant = null;
+            Controller.SwitchSeat = false;
+            return;
+        }
+
+        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(Index))
+        {
+            Occupant = null;
+            Controller.TryEnterVehicle = false;
+            return;
+        }
+        
+
+        if (Controller.ShootPrimary)
+        {   
+            if (WeaponSystems.Count > 0)
+            {
+                WeaponSystems[0].Fire();                
+            }
+        }
+
+        if (Controller.ShootSecondary)
+        {
+            if (WeaponSystems.Count > 1)
+            {
+                WeaponSystems[1].Fire();
+            }
+        }
+
+        PitchAccum += Controller.mouseY;
+        PitchAccum = Mathf.Clamp(PitchAccum, PitchLimits.x, PitchLimits.y);
+
+        YawAccum += Controller.mouseX;
+        YawAccum = Mathf.Clamp(YawAccum, YawLimits.x, YawLimits.y);        
+
+
+        // These need work, camera behaviour is slightly off and NormalDirection 
+        // hasn't been incorporated yet.  But I'm satisfied for now.  The commented
+        // aat's and Darth D.U.C.K's tut are both incomplete and wrong in some places w.r.t
+        // camera behaviour...
+        Vector3 CameraOffset = TrackOffset;
+        CameraOffset.z *= -1f;
+
+        ViewPoint = TrackCenter + Quaternion.Euler(3f * PitchAccum, 0f, 0f) * CameraOffset;
+        ViewDirection =  Quaternion.Euler(3f * PitchAccum, 0f, 0f) * Quaternion.Euler(-TiltValue, 0f, 0f) * Vector3.forward;
+
+
+        Vector3 TargetPos = BaseTransform.transform.TransformPoint(30f * ViewDirection + ViewPoint);
+
+        
+        if (Physics.Raycast(TargetPos, TargetPos - CAM.transform.position, out RaycastHit hit, 1000f))
+        {
+            TargetPos = hit.point;
+
+            PhxInstance GetInstance(Transform t)
+            {
+                PhxInstance inst = t.gameObject.GetComponent<PhxInstance>();
+                if (inst == null && t.parent != null)
+                {
+                    return GetInstance(t.parent);
+                }
+                return inst;
+            }
+
+            Aim = GetInstance(hit.collider.gameObject.transform);
+        }
+        
+
+        foreach (PhxWeaponSystem System in WeaponSystems)
+        {
+            System.Update(TargetPos);
+        }
+    }
 
 
     public bool HopToNextSeat()
@@ -82,7 +168,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
         bool r = OwnerVehicle.TrySwitchSeat(Index);
         if (r)
         {
-            Occupant = null;
+            ClearOccupant();
         }
         return r;
     }
@@ -94,28 +180,14 @@ public abstract class PhxVehicleSection : IPhxTrackable
     }
 
 
-
-    protected bool AddAimer(PhxAimer CurrAimer)
+    public bool SetOccupant(PhxSoldier s) 
     {
-        if (CurrAimer.Node == null){ return false; }
-        CurrAimer.Init();
+        if (Occupant != null) return false;
+        
+        Occupant = s;
 
-        //Debug.LogFormat("Attempting to add Aimer: {0}", CurrAimer.Node.name);
+        s.SetPilot(PilotPosition,"");
 
-        if (Aimers == null)
-        {
-            Aimers = new List<PhxAimer>();
-        }
-
-        if (Aimers.Count > 0 && Aimers[Aimers.Count - 1].HierarchyLevel > CurrAimer.HierarchyLevel)
-        {
-            Aimers[Aimers.Count - 1].ChildAimer = CurrAimer;
-        }
-        else 
-        {
-            Aimers.Add(CurrAimer);
-        }   
-
-        return true;     
+        return true;
     }
 }
