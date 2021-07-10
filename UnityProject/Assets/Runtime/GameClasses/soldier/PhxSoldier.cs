@@ -386,11 +386,17 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
     void Update()
     {
+        UpdatePhysics(Time.deltaTime);
+        UpdateState(Time.deltaTime);
+    }
+
+    void UpdateState(float deltaTime)
+    {
         // Update Animator BEFORE firing any projectiles!
-        Animator.Tick(Time.deltaTime);
+        Animator.Tick(deltaTime);
         AnimationCorrection();
 
-        AlertTimer = Mathf.Max(AlertTimer - Time.deltaTime, 0f);
+        AlertTimer = Mathf.Max(AlertTimer - deltaTime, 0f);
         //Weap.Fire = false;
 
         if (Controller != null)
@@ -586,7 +592,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 // Jump
                 if (State == PhxControlState.Jump)
                 {
-                    JumpTimer -= Time.deltaTime;
+                    JumpTimer -= deltaTime;
                     if (Grounded && JumpTimer < 0f)
                     {
                         State = PhxControlState.Stand;
@@ -601,7 +607,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         }
     }
 
-    void FixedUpdate()
+    void UpdatePhysics(float deltaTime)
     {
         Grounded = Physics.CheckSphere(transform.position, 0.4f, PhxGameRuntime.PlayerMask, QueryTriggerInteraction.Ignore);
 
@@ -633,7 +639,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
             }
             else
             {
-                LandTimer = Mathf.Max(LandTimer - Time.fixedDeltaTime, 0f);
+                LandTimer = Mathf.Max(LandTimer - deltaTime, 0f);
             }
             PrevGrounded = Grounded;
 
@@ -643,7 +649,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 lookWalkForward.y = 0f;
                 Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
 
-                float accStep      = C.Acceleration * Time.fixedDeltaTime;
+                float accStep      = C.Acceleration * deltaTime;
                 float thrustFactor = ControlValues[(int)State][0];
                 float strafeFactor = ControlValues[(int)State][1];
                 float turnFactor   = ControlValues[(int)State][2];
@@ -656,7 +662,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
                 if (moveDirLocal.magnitude == 0f)
                 {
-                    CurrSpeed *= 0.1f * Time.fixedDeltaTime;
+                    CurrSpeed *= 0.1f * deltaTime;
 
                     if (TurnTimer > 0f)
                     {
@@ -697,7 +703,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
                 if (!Grounded)
                 {
-                    FallTimer += Time.fixedDeltaTime;
+                    FallTimer += deltaTime;
                     if (FallTimer > 0.1f && State != PhxControlState.Jump)
                     {
                         Animator.SetState(0, Animator.Fall);
@@ -708,13 +714,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 }
                 else
                 {
-                    Body?.MovePosition(Body.position + CurrSpeed * Time.fixedDeltaTime);
+                    Body?.MovePosition(Body.position + CurrSpeed * deltaTime);
                 }
 
                 Body?.MoveRotation(lookRot);
             }
 
-            TurnTimer = Mathf.Max(TurnTimer - Time.fixedDeltaTime, 0f);
+            TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
         }
     }
 
