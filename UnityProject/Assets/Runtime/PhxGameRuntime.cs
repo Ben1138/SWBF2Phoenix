@@ -13,7 +13,12 @@ public class PhxGameRuntime : MonoBehaviour
 {
     public static PhxGameRuntime Instance { get; private set; } = null;
 
-    public static PhxPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
+
+    public PhxPath GamePath 
+    { 
+        get { return new PhxPath(GamePathString); } 
+        private set { GamePathString = value.ToString(); }
+    }
 
 
     public enum PhxStartupBehaviour
@@ -25,6 +30,8 @@ public class PhxGameRuntime : MonoBehaviour
 
 
     [Header("Settings")]
+    public string GamePathString = "";
+
     public string Language = "english";
     public PhxStartupBehaviour StartupBehaviour;
     public string StartupSWBF2Map;
