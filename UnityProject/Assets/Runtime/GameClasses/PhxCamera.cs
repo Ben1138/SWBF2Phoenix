@@ -15,7 +15,7 @@ public class PhxCamera : MonoBehaviour
     public float      FreeMoveSpeed              = 100.0f;
     public float      FreeRotationSpeed          = 5.0f;
     public Vector3    PositionOffset             = new Vector3(0f, 2f, -2f);
-    public float      FollowSpeed                = 10.0f;
+    public float      FollowSpeed                = 100.0f;
     public float      MouseSensitivity           = 5f;
 
     IPhxControlableInstance FollowInstance;
@@ -63,18 +63,15 @@ public class PhxCamera : MonoBehaviour
         while (euler.z < -180f) euler.z += 360f;
     }
 
-    void Update()
+    void LateUpdate()
     {
-        
-    }
+        float deltaTime = Time.deltaTime;
 
-    void FixedUpdate()
-    {
         if (Mode == CamMode.Free)
         {
-            transform.position += transform.forward * Input.GetAxis("Vertical") * Time.fixedDeltaTime * FreeMoveSpeed;
-            transform.position += transform.right * Input.GetAxis("Horizontal") * Time.fixedDeltaTime * FreeMoveSpeed;
-            transform.position += transform.up * Input.GetAxis("UpDown") * Time.fixedDeltaTime * FreeMoveSpeed;
+            transform.position += transform.forward * Input.GetAxis("Vertical") * deltaTime * FreeMoveSpeed;
+            transform.position += transform.right * Input.GetAxis("Horizontal") * deltaTime * FreeMoveSpeed;
+            transform.position += transform.up * Input.GetAxis("UpDown") * deltaTime * FreeMoveSpeed;
 
             if (Input.GetMouseButton(1))
             {
@@ -95,8 +92,8 @@ public class PhxCamera : MonoBehaviour
             Quaternion camTargetRot = Quaternion.LookRotation(viewDir);
             camTargetPos += camTargetRot * new Vector3(PositionOffset.x, 0f, 0f);
 
-            transform.position = Vector3.Lerp(transform.position, camTargetPos, Time.fixedDeltaTime * FollowSpeed);
-            transform.rotation = Quaternion.Slerp(transform.rotation, camTargetRot, Time.fixedDeltaTime * FollowSpeed);
+            transform.position = camTargetPos;// Vector3.Lerp(transform.position, camTargetPos, deltaTime * FollowSpeed);
+            transform.rotation = camTargetRot;// Quaternion.Slerp(transform.rotation, camTargetRot, deltaTime * FollowSpeed);
         }
     }
 }

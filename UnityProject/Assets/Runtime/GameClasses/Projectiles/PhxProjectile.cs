@@ -63,7 +63,7 @@ public class PhxProjectile : MonoBehaviour
 
     void OnCollisionEnter(Collision coll)
     {
-        Debug.Log($"Projectile '{name}' hit '{coll.collider.name}'!");
+        //Debug.Log($"Projectile '{name}' hit '{coll.collider.name}'!");
         OnHit?.Invoke(this, coll);
     }
 }

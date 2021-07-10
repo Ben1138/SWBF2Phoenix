@@ -134,8 +134,15 @@ public class PhxProjectiles
     {
         Projectiles.Free(proj);
         ParticleSystem spark = Sparks.Alloc();
-        spark.transform.position = coll.contacts[0].point;
-        spark.transform.forward = coll.contacts[0].normal;
+        if (spark != null)
+        {
+            spark.transform.position = coll.contacts[0].point;
+            spark.transform.forward = coll.contacts[0].normal;
+        }
+        else
+        {
+            Debug.LogWarning("Exceeded available spark effect instances!");
+        }
     }
 }
 
