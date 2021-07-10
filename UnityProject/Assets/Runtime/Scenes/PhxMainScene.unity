@@ -709,7 +709,7 @@ MonoBehaviour:
   FreeMoveSpeed: 100
   FreeRotationSpeed: 5
   PositionOffset: {x: 0.4, y: 2.2, z: -2.5}
-  FollowSpeed: 10
+  FollowSpeed: 50
   MouseSensitivity: 5
 --- !u!1 &1949427743
 GameObject:

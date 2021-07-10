@@ -60,16 +60,29 @@ public class PhxCharacterSelect : PhxMenuInterface
         item.SetHeaderText(cl.LocalizedName);
 
         string detailText = "";
-        //PhxMultiProp weapons = cl.P.Get<PhxMultiProp>("WeaponName");
-        //foreach (object[] weap in weapons.Values)
-        //{
-        //    PhxClass weapClass = RTS.GetClass(weap[0] as string);
-        //    if (weapClass != null)
-        //    {
-        //        detailText += weapClass.LocalizedName + '\n';
-        //    }
-        //}
-        item.SetDetailText(detailText);
+        PhxSoldier.ClassProperties soldier = cl as PhxSoldier.ClassProperties;
+        if (soldier != null)
+        {
+            foreach (Dictionary<string, IPhxPropRef> section in soldier.Weapons)
+            {
+                if (section.TryGetValue("WeaponName", out IPhxPropRef nameVal))
+                {
+                    PhxProp<string> weapName = (PhxProp<string>)nameVal;
+                    PhxClass weapClass = RTS.GetClass(weapName);
+                    if(weapClass != null)
+                    {
+                        PhxProp<int> medalProp = weapClass.P.Get<PhxProp<int>>("MedalsTypeToUnlock");
+                        if (medalProp != null && medalProp != 0)
+                        {
+                            // Skip medal/award weapons for display
+                            continue;
+                        }
+                        detailText += weapClass.LocalizedName + '\n';
+                    }
+                }
+            }
+            item.SetDetailText(detailText);
+        }
 
         Items.Add(item);
 
