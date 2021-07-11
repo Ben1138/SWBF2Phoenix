@@ -32,6 +32,7 @@ public class PhxVehicleTurret : PhxVehicleSection
         //BaseTransform = TurretNode;
 
         PhxAimer CurrAimer = new PhxAimer();
+        Weapon.AddAimer(CurrAimer);
 
         OwnerVehicle = parentVehicle.GetComponent<PhxHover>();
 
@@ -71,7 +72,7 @@ public class PhxVehicleTurret : PhxVehicleSection
             }
             else if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
             {
-                CurrAimer.HierarchyLevel = 1;
+                CurrAimer.HierarchyLevel = Int32.Parse(values[i]);
             }
             else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
             {
@@ -91,17 +92,17 @@ public class PhxVehicleTurret : PhxVehicleSection
             }  
             else if (properties[i] == HashUtils.GetFNV("NextAimer"))
             {
+                CurrAimer = new PhxAimer();
             	Weapon.AddAimer(CurrAimer);
-            	CurrAimer = new PhxAimer();
             }  
             else if (properties[i] == HashUtils.GetFNV("WeaponName"))
             {
                 Weapon.SetWeapon(values[i]);
             }         
-            else if (properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
-                    properties[i] == HashUtils.GetFNV("CHUNKSECTION"))
+            else if (properties[i] == HashUtils.GetFNV("BUILDINGSECTION") ||
+                    properties[i] == HashUtils.GetFNV("CHUNKSECTION") ||
+                    properties[i] == HashUtils.GetFNV("FLYERSECTION"))
             {
-                Weapon.AddAimer(CurrAimer);
                 break;
             }
         }
@@ -110,9 +111,10 @@ public class PhxVehicleTurret : PhxVehicleSection
 
     public override void Update()
     {
+        base.Update();
+
         if (Occupant == null) return;
 
-        base.Update();
-        BaseTransform.rotation = Quaternion.Euler(new Vector3(0f,YawAccum,0f));
+        BaseTransform.rotation *= Quaternion.Euler(new Vector3(0f,Occupant.GetController().mouseX,0f));
     }
 }

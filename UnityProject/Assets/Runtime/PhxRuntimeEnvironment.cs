@@ -205,14 +205,16 @@ public class PhxRuntimeEnvironment
             return false;
         }
 
-        /*
-        if (script.Name == "missionlist")
+        // Still have no idea why missionlist fails on Linux/Mac.  I'll have to dig into the compilation
+        // warnings produced when compiling the Lua lib.
+        if (script.Name == "missionlist" && PhxGameRuntime.Instance.MissionListPath != "")
         {
-            return LuaRT.ExecuteFile("/Volumes/boot/bf2modding/assets/Shell/scripts/missionlist.lua");
+            return LuaRT.ExecuteFile(PhxGameRuntime.Instance.MissionListPath);
         }
-        */
-
-        return LuaRT.Execute(luaBin, size, script.Name);
+        else 
+        {
+            return LuaRT.Execute(luaBin, size, script.Name);
+        }
     }
 
     public void Run(string initScript, string initFn = null, string postLoadFn = null)

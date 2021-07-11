@@ -503,16 +503,26 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         if (Controller.TryEnterVehicle)
         {
             Collider[] PossibleVehicles = Physics.OverlapSphere(transform.position, 5.0f);
+            string NinePAnim;
+            Transform seat;
             foreach (Collider PossibleVehicle in PossibleVehicles)
             {
                 PhxHover Vehicle = PossibleVehicle.GetComponent<PhxHover>();
-                if (Vehicle != null)
+                if (Vehicle != null && Vehicle.TryEnterVehicle(this, out NinePAnim, out seat))
                 {
-                    if (Vehicle.TryEnterVehicle(this, out string NinePAnim, out Transform seat))
+                    SetPilot(seat, NinePAnim);
+                    Controller.TryEnterVehicle = false;
+                    return;
+                }
+                else 
+                {
+                    PhxArmedBuilding tur = PossibleVehicle.GetComponent<PhxArmedBuilding>();
+                    if (tur != null && tur.TryEnterVehicle(this, out NinePAnim, out seat))
                     {
                         SetPilot(seat, NinePAnim);
                         Controller.TryEnterVehicle = false;
                         return;
+                        
                     }
                 }
             }
