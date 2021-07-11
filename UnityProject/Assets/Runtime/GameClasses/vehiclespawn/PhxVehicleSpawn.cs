@@ -143,8 +143,6 @@ public class PhxVehicleSpawn : PhxInstance
     public override void Init()
     {
         RespawnTimer = 1.0f;
-
-        //DecayTimer = 
     }
 
 

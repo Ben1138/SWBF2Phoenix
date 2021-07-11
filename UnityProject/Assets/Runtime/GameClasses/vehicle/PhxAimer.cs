@@ -6,10 +6,10 @@ using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
 
+
 /*
 Aims barrels at target. 
 */
-
 
 public class PhxAimer
 {
@@ -22,10 +22,8 @@ public class PhxAimer
 	}
 	*/
 
-
     public Transform Node;
     public Transform FireNode;
-
 
     public Vector2 PitchRange = new Vector2(-180f,180f);
     public Vector2 YawRange = new Vector2(-180f, 180f);
@@ -45,8 +43,20 @@ public class PhxAimer
     public int HierarchyLevel;
 
 
+    private bool IsInitialized;
+
+
     public bool GetLeafTarget(int index, out Vector3 pos, out Quaternion rot)
     {
+        if (!IsInitialized) Init();
+
+        if (Node == null)
+        {
+            pos = Vector3.zero;
+            rot = Quaternion.identity;
+            return false;
+        }
+
     	if (ChildAimer != null)
     	{
     		return ChildAimer.GetLeafTarget(index, out pos, out rot);
@@ -69,46 +79,20 @@ public class PhxAimer
     }
 
 
-
-    /*
-    void EulerClamp(ref Vector3 angles)
-    {
-        if (PitchRange.x > PitchRange.y)
-        {
-            if (angles.x < PitchRange.x && angles.x > 180f)
-            {
-                angles.x = PitchRange.x;
-            }
-
-            else if (angles.x < PitchRange.y)
-        }
-        else 
-        {
-            angles.x = Mathf.Clamp(angles.x, PitchRange.x, PitchRange.y);
-        }
-
-        if (YawRange.x > YawRange.y)
-        {
-
-        }
-        else 
-        {
-            angles.y = Mathf.Clamp(angles.y, YawRange.x, YawRange.y);   
-        }
-    }
-    */
-    
-
     public void AdjustAim(Vector3 TargetPos, bool print=false)
     {
+        if (!IsInitialized) Init();
+
+        if (Node == null) return;
+
         Vector3 AimDir = Node.parent.worldToLocalMatrix * (TargetPos - Node.position);
 
         Vector3 Angles = Quaternion.FromToRotation(RestDir, AimDir).eulerAngles;
 
-        if (print) Debug.LogFormat("X angle: {0}, Y angle: {1}", Angles.x, Angles.y);
+        PhxUtils.SanitizeEuler(ref Angles);
 
-        //Angles.x = Mathf.Clamp(Angles.x, PitchRange.x, PitchRange.y);
-        //Angles.y = Mathf.Clamp(Angles.y, YawRange.x, YawRange.y);
+        Angles.x = Mathf.Clamp(Angles.x, PitchRange.x, PitchRange.y);
+        Angles.y = Mathf.Clamp(Angles.y, YawRange.x, YawRange.y);
 
         Node.localEulerAngles = Angles;
 
@@ -124,6 +108,8 @@ public class PhxAimer
 
     public void Init()
     {
+        IsInitialized = true;
+
         if (Node != null)
         {
             RestDir = Node.parent.worldToLocalMatrix * Node.forward;
@@ -138,19 +124,13 @@ public class PhxAimer
         {
             FireNode = Node;
         }
-
-        //Adjust limits to conform to Unity degrees
-        /*
-        PitchRange.x = PitchRange.x < 0f ? PitchRange.x + 360f : PitchRange.x;
-        PitchRange.y = PitchRange.y < 0f ? PitchRange.y + 360f : PitchRange.y;
-        YawRange.x = YawRange.x < 0f ? YawRange.x + 360f : YawRange.x;
-        YawRange.y = YawRange.y < 0f ? YawRange.y + 360f : YawRange.y;
-        */
     }
 
 
     public void UpdateBarrel()
     {
+        if (!IsInitialized) Init();
+
         if (BarrelNode == null)
         {
             if (ChildAimer != null)
@@ -170,6 +150,8 @@ public class PhxAimer
 
     public bool Fire()
     {
+        if (!IsInitialized) Init();
+
         if (ChildAimer != null)
         {
             //Debug.LogFormat("Firing child of aimer: {0}", Node.name);
@@ -178,14 +160,11 @@ public class PhxAimer
 
         //Debug.LogFormat("Firing aimer {0}", Node.name);
 
-        if (BarrelNode == null)
+        if (BarrelNode != null)
         {
-            //Debug.Log("Barrel null...");
-            return true;
+            BarrelNode.position = BarrelNode.parent.TransformPoint(BarrelRestPos) - BarrelRecoil * BarrelNode.forward; 
+            RecoilTimer = 0.0f;            
         }
-
-        BarrelNode.position = BarrelNode.parent.TransformPoint(BarrelRestPos) - BarrelRecoil * BarrelNode.forward; 
-        RecoilTimer = 0.0f;
         
         return true;
     }

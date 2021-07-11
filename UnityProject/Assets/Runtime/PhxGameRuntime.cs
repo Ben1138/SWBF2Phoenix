@@ -9,6 +9,8 @@ using LibLog = LibSWBF2.Logging.Logger;
 using LibLogEntry = LibSWBF2.Logging.LoggerEntry;
 using ELibLogType = LibSWBF2.Logging.ELogType;
 
+
+
 public class PhxGameRuntime : MonoBehaviour
 {
     public static PhxGameRuntime Instance { get; private set; } = null;
@@ -52,6 +54,9 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxHUD             HUDPrefab;
     public PhxProjectile      ProjPrefab;
     public ParticleSystem     SparkPrefab;
+
+    [Header("For non-Windows Users")]
+    public string MissionListPath = Application.platform == RuntimePlatform.WindowsEditor ? "" : "path/to/missionlist.lua";
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMapLoaded;

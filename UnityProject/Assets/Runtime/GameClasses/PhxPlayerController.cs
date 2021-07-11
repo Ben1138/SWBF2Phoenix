@@ -62,7 +62,7 @@ public class PhxPlayerController : PhxPawnController
 
         Quaternion rot = Quaternion.LookRotation(ViewDirection);
         Vector3 euler = rot.eulerAngles;
-        SanitizeEuler(ref euler);
+        PhxUtils.SanitizeEuler(ref euler);
         euler.x = Mathf.Clamp(euler.x + turnX, -rotConstraints.x, rotConstraints.x);
         euler.y = Mathf.Clamp(euler.y + turnY, -rotConstraints.y, rotConstraints.y);
 

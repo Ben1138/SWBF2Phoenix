@@ -47,14 +47,14 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
 
-    private List<PhxVehicleSection> Sections;
-
 
     Rigidbody Body;
 
     PhxPawnController Controller = null;
 
     PhxHoverMainSection DriverSection = null;
+    private List<PhxVehicleSection> Sections;
+
 
     PhxInstance Aim;
 
@@ -182,7 +182,6 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         AudioAmbient.rolloffMode = AudioRolloffMode.Linear;
         AudioAmbient.minDistance = 2.0f;
         AudioAmbient.maxDistance = 30.0f;
-
 
 
         Sections = new List<PhxVehicleSection>();

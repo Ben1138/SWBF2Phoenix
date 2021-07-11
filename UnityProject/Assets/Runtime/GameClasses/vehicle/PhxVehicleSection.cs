@@ -43,8 +43,8 @@ public abstract class PhxVehicleSection : IPhxTrackable
     protected Vector3 TrackOffset;
     protected float TiltValue;
 
-    protected Vector2 PitchLimits;
-    protected Vector2 YawLimits;
+    protected Vector2 PitchLimits = new Vector2(0f,360f);
+    protected Vector2 YawLimits = new Vector2(0f,360f);
 
 
     protected int Index;
@@ -124,7 +124,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
 
         // These need work, camera behaviour is slightly off and NormalDirection 
         // hasn't been incorporated yet.  But I'm satisfied for now.  The commented
-        // aat's and Darth D.U.C.K's tut are both incomplete and wrong in some places w.r.t
+        // AAT and Darth D.U.C.K's tut are both incomplete and wrong in some places w.r.t
         // camera behaviour...
         Vector3 CameraOffset = TrackOffset;
         CameraOffset.z *= -1f;
@@ -152,7 +152,6 @@ public abstract class PhxVehicleSection : IPhxTrackable
 
             Aim = GetInstance(hit.collider.gameObject.transform);
         }
-        
 
         foreach (PhxWeaponSystem System in WeaponSystems)
         {
@@ -189,5 +188,11 @@ public abstract class PhxVehicleSection : IPhxTrackable
         s.SetPilot(PilotPosition,"");
 
         return true;
+    }
+
+
+    public bool IsOccupied()
+    {
+        return Occupant != null;
     }
 }
