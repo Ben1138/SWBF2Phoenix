@@ -29,4 +29,24 @@ public static class PhxUtils
         }
         return vOut;
     }
+
+
+    public static void SanitizeEuler(ref Vector3 euler)
+    {
+        while (euler.x > 180f) euler.x -= 360f;
+        while (euler.y > 180f) euler.y -= 360f;
+        while (euler.z > 180f) euler.z -= 360f;
+        while (euler.x < -180f) euler.x += 360f;
+        while (euler.y < -180f) euler.y += 360f;
+        while (euler.z < -180f) euler.z += 360f;
+    }
+
+
+    public static void SanitizeEuler(ref Vector2 euler)
+    {
+        while (euler.x > 180f) euler.x -= 360f;
+        while (euler.y > 180f) euler.y -= 360f;
+        while (euler.x < -180f) euler.x += 360f;
+        while (euler.y < -180f) euler.y += 360f;
+    }
 }

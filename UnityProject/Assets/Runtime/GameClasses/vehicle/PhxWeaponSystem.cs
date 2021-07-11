@@ -93,11 +93,9 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
 
             if (C.OrdnanceName.Get() != null)
             {
-                PhxBolt bolt = C.OrdnanceName.Get() as PhxBolt;
+                PhxBolt bolt = Scene.GetClass("com_weap_veh_laser_ord") as PhxBolt;  // C.OrdnanceName.Get() as PhxBolt;
                 if (bolt != null)
                 {
-                	Debug.Log("Firing bolt!");
-
                     Vector3 dirVec = (targetPos - transform.position).normalized;
                     Quaternion dir = Quaternion.LookRotation(dirVec);
                     Scene.FireProjectile(owner, transform.position, dir, bolt);
@@ -209,10 +207,7 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
         }
     }
 
-    public override void TickPhysics(float deltaTime)
-    {
-
-    }
+    public override void TickPhysics(float deltaTime){}
 }
 
 
@@ -244,7 +239,6 @@ public class PhxWeaponSystem
 
     public void AddAimer(PhxAimer Aimer)
     {
-    	Aimer.Init();
         if (Aimers.Count > 0 && Aimers.Last().HierarchyLevel > Aimer.HierarchyLevel)
         {
             Aimers[Aimers.Count - 1].ChildAimer = Aimer;
@@ -258,6 +252,7 @@ public class PhxWeaponSystem
 
     public void SetWeapon(string WeaponName)
     {
+        WeaponName = "rep_weap_hover_fightertank_cannon";
     	Weapon = SCENE.CreateInstance(SCENE.GetClass(WeaponName), false) as IPhxWeapon;
 
     	if (Weapon == null)
@@ -308,15 +303,7 @@ public class PhxWeaponSystem
             Aimers[CurrAimer].Fire();
 
             CurrAimer++;
-            
-            if (CurrAimer >= Aimers.Count)
-            {
-                CurrAimer = 0;
-            }
-        }
-        else 
-        {
-        	Debug.LogError("No aimers to fire with!");
+            CurrAimer %= Aimers.Count;
         }
 
         return true;
