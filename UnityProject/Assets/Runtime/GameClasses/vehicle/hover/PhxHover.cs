@@ -6,15 +6,9 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
+public class PhxHover : PhxVehicle
 {
-    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
-    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
-    static PhxCamera CAM => PhxGameRuntime.GetCamera();
-
-
-    public class PhxHoverProperties : PhxVehicleProperties
+    public class ClassProperties : PhxVehicleProperties
     {
         public PhxProp<float> Acceleration = new PhxProp<float>(5.0f);
         public PhxProp<float> Deceleration = new PhxProp<float>(5.0f);
@@ -41,8 +35,6 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
         public PhxProp<AudioClip> EngineSound = new PhxProp<AudioClip>(null);
     }
-
-
     
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
@@ -50,104 +42,8 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
     Rigidbody Body;
 
-    PhxPawnController Controller = null;
-
     PhxHoverMainSection DriverSection = null;
-    private List<PhxVehicleSection> Sections;
-
-
-    PhxInstance Aim;
-
-
-    public int GetNextAvailableSeat(int startIndex = -1)
-    {
-        int numSeats = Sections.Count;
-        int i = (startIndex + 1) % numSeats;
-        
-        while (i != startIndex)
-        {
-            if (Sections[i].Occupant == null)
-            {
-                //Debug.LogFormat("Found open seat at index {0}", i);
-                return i;
-            }
-
-            if (startIndex == -1 && i == numSeats - 1)
-            {
-                return -1;
-            }
-
-            i = (i + 1) % numSeats;
-        }
-
-        return -1;
-    }
-
-
-    public bool TrySwitchSeat(int index)
-    {
-        // Get next index
-        int seat = GetNextAvailableSeat(index);
-
-        if (seat == -1)
-        {
-            return false;
-        }
-        else
-        {
-            Sections[seat].SetOccupant(Sections[index].Occupant);
-            Sections[index].Occupant = null;
-            CAM.FollowTrackable(Sections[seat]);
-
-            return true;
-        }
-    }
-
-
-
-    public bool TryEnterVehicle(PhxSoldier soldier, 
-                                out string NinePoseAnim, 
-                                out Transform PilotPosition)
-    {
-        NinePoseAnim = "";
-        PilotPosition = null;
-
-        // Find first available seat
-        int seat = GetNextAvailableSeat();
-
-        if (seat == -1)
-        {
-            return false;
-        }
-        else 
-        {
-            Sections[seat].SetOccupant(soldier);
-            PhxGameRuntime.GetCamera().FollowTrackable(Sections[seat]);
-            return true;
-        }
-    }
-
-
-    public bool Eject(int i)
-    {
-        if (i >= Sections.Count)
-        {
-            return false;
-        }
-
-        if (Sections[i] != null || Sections[i].Occupant != null)
-        {
-            Sections[i].Occupant.SetFree(transform.position + Vector3.up * 2.0f);
-            PhxGameRuntime.GetCamera().Follow(Sections[i].Occupant);
-            Sections[i].Occupant = null;
-
-            return true;
-        }
-        else 
-        {
-            return false;
-        }
-    }
+    PhxHover.ClassProperties H;
 
 
     AudioSource AudioAmbient;
@@ -158,7 +54,9 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         TestCollider.size = UnityUtils.GetMaxBounds(gameObject).extents * 2.5f;
         TestCollider.isTrigger = true;
 
-        FillSections(C.Flyer);
+        H = C as PhxHover.ClassProperties;
+
+        if (H == null) return;
 
         PruneMeshColliders(transform);
 
@@ -166,7 +64,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         //PhysCollider.size = UnityUtils.GetMaxBounds(gameObject).extents * 2.0f;
         
         Body = gameObject.AddComponent<Rigidbody>();
-        Body.mass = C.GravityScale;
+        Body.mass = H.GravityScale;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
         Body.interpolation = RigidbodyInterpolation.Interpolate;
@@ -176,7 +74,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
         AudioAmbient = gameObject.AddComponent<AudioSource>();
         AudioAmbient.spatialBlend = 1.0f;
-        AudioAmbient.clip = C.EngineSound;
+        AudioAmbient.clip = H.EngineSound;
         AudioAmbient.pitch = 1.0f;
         AudioAmbient.volume = 0.5f;
         AudioAmbient.rolloffMode = AudioRolloffMode.Linear;
@@ -186,7 +84,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
 
         Sections = new List<PhxVehicleSection>();
 
-        var EC = C.EntityClass;
+        var EC = H.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);
 
         int i = 0;
@@ -202,7 +100,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
                 }
                 else 
                 {
-                    Sections.Add(new PhxVehicleTurret(properties, values, ref i, transform, TurretIndex++));
+                    Sections.Add(new PhxVehicleTurret(properties, values, ref i, this, TurretIndex++));
                 }
             }
             else 
@@ -264,9 +162,9 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         if (Physics.Raycast(transform.position, -Vector3.up, out RaycastHit hit))
         {
             GroundNormal = hit.normal;
-            if (hit.distance < C.SetAltitude)
+            if (hit.distance < H.SetAltitude)
             {
-                Body.AddForce(Vector3.up * C.LiftSpring * 9.8f, ForceMode.Acceleration);
+                Body.AddForce(Vector3.up * H.LiftSpring * 9.8f, ForceMode.Acceleration);
             }
         }
 
@@ -274,7 +172,7 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         AlignToGroundNormal(deltaTime);
 
 
-        float rotRate = Vector3.Magnitude(localVel) < .1f ? C.SpinRate : C.TurnRate;
+        float rotRate = Vector3.Magnitude(localVel) < .1f ? H.SpinRate : H.TurnRate;
 
         Vector3 DriverInput = DriverSection.GetDriverInput();
 
@@ -291,40 +189,40 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         // If moving in opposite direction of current vel...
         if (localVel.z > 0.0f && drive < 0.0f)
         {
-            forwardForce = drive * C.Deceleration;
+            forwardForce = drive * H.Deceleration;
         }
         else
         {
-            forwardForce = drive * C.Acceleration;
+            forwardForce = drive * H.Acceleration;
         }
 
         // ''
         if (localVel.x - strafe > localVel.x)
         {
-            strafeForce = strafe * C.Deceleration;
+            strafeForce = strafe * H.Deceleration;
         }
         else 
         {
-            strafeForce = strafe * C.Acceleration;
+            strafeForce = strafe * H.Acceleration;
         }
 
         Body.AddRelativeForce(new Vector3(strafeForce, 0.0f, forwardForce), ForceMode.Acceleration);
 
 
         // Will scrap soon, keeping for now
-        localVel.x = Mathf.Clamp(localVel.x, -C.StrafeSpeed, C.StrafeSpeed);
-        localVel.z = Mathf.Clamp(localVel.z, -C.ReverseSpeed, C.ForwardSpeed);
+        localVel.x = Mathf.Clamp(localVel.x, -H.StrafeSpeed, H.StrafeSpeed);
+        localVel.z = Mathf.Clamp(localVel.z, -H.ReverseSpeed, H.ForwardSpeed);
 
         Body.velocity = transform.localToWorldMatrix * localVel;
     }
 
 
-    public Vector3 GetCameraPosition()
+    public override Vector3 GetCameraPosition()
     {
         return Sections[0].GetCameraPosition();
     }
 
-    public Quaternion GetCameraRotation()
+    public override Quaternion GetCameraRotation()
     {
         return Sections[0].GetCameraRotation();
     }
@@ -350,15 +248,4 @@ public class PhxHover : PhxVehicle<PhxHover.PhxHoverProperties>, IPhxTrackable
         UpdatePhysics(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }
-
-
-
-    public override void BindEvents(){}
-    public override void Fixate(){}
-    public override IPhxWeapon GetPrimaryWeapon(){ return null; }
-    public void AddAmmo(float amount){}
-    public override void PlayIntroAnim(){}
-    public PhxInstance GetAim(){ return Aim; }
-    void StateFinished(int layer){}
-    public void AddHealth(float amount){}
 }
