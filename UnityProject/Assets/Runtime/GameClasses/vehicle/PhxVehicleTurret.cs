@@ -20,7 +20,7 @@ public class PhxVehicleTurret : PhxVehicleSection
     string TurretStopSound = "";
 
 
-    public PhxVehicleTurret(uint[] properties, string[] values, ref int i, Transform parentVehicle, int sectionIndex)
+    public PhxVehicleTurret(uint[] properties, string[] values, ref int i, PhxVehicle parentVehicle, int sectionIndex)
     {
         Index = sectionIndex;
 
@@ -29,22 +29,20 @@ public class PhxVehicleTurret : PhxVehicleSection
         WeaponSystems = new List<PhxWeaponSystem>();
         WeaponSystems.Add(Weapon);
 
-        //BaseTransform = TurretNode;
-
         PhxAimer CurrAimer = new PhxAimer();
         Weapon.AddAimer(CurrAimer);
 
-        OwnerVehicle = parentVehicle.GetComponent<PhxHover>();
+        OwnerVehicle = parentVehicle;
 
         while (++i < properties.Length)
         {
             if (properties[i] == HashUtils.GetFNV("PilotPosition"))
             {
-                PilotPosition = UnityUtils.FindChildTransform(parentVehicle, values[i]);
+                PilotPosition = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
             }
             else if (properties[i] == HashUtils.GetFNV("TurretNodeName"))
             {
-                BaseTransform = UnityUtils.FindChildTransform(parentVehicle, values[i]);
+                BaseTransform = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
             }
             else if (properties[i] == HashUtils.GetFNV("YawLimits"))
             {
@@ -84,11 +82,11 @@ public class PhxVehicleTurret : PhxVehicleSection
             }
             else if (properties[i] == HashUtils.GetFNV("BarrelNodeName"))
             {
-                CurrAimer.BarrelNode = UnityUtils.FindChildTransform(parentVehicle, values[i]);
+                CurrAimer.BarrelNode = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
             }     
             else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))
             {
-                CurrAimer.Node = UnityUtils.FindChildTransform(parentVehicle, values[i]);
+                CurrAimer.Node = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
             }  
             else if (properties[i] == HashUtils.GetFNV("NextAimer"))
             {

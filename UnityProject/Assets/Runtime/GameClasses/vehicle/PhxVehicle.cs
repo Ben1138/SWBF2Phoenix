@@ -27,35 +27,38 @@ They can be entered, exited, sliced, repaired by soldiers
 
 */
 
-public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxVehicleProperties 
+public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>, IPhxTrackable 
 {
-    public Action<PhxInstance> OnDeath;
+    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
+    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
+    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
-    private List<PhxVehicleSection> Sections;
-    //private List<PhxChunk> Chunks;
+
+    public Action<PhxInstance> OnDeath;
 
     protected float SliceProgress;
 
 
     protected PhxSoldier Driver;
+    protected PhxInstance Aim;
+
+    protected List<PhxVehicleSection> Sections;
+
 
     // Will return true if vehicle is sliceable.  Out param is SliceProgress
-    public abstract bool IncrementSlice(out float progress); 
-
-
-    public bool AddSoldier(PhxSoldier soldier) { return false; }
-
-
-    
-
-    public void FillSections(PhxPropertySection sections){}
+    public virtual bool IncrementSlice(out float progress)
+    {
+        SliceProgress += 5.0f;
+        progress = SliceProgress;
+        return true;
+    }
 
 
     // Dealing with SWBF's use of concave colliders on physics objects will be a major challenge
     // unless we can reliably use the primitives found on each imported model...
     protected void PruneMeshColliders(Transform tx)
     {
-        
         MeshCollider coll = tx.gameObject.GetComponent<MeshCollider>();
         if (coll != null)
         {
@@ -70,15 +73,117 @@ public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxVeh
     }
 
 
-    
-
-    public void EjectOccupant(PhxSoldier occupant)
+    public int GetNextAvailableSeat(int startIndex = -1)
     {
-        //occupant.SetFree(transform.position + Vector3.up * 2.0f);
+        int numSeats = Sections.Count;
+        int i = (startIndex + 1) % numSeats;
+        
+        while (i != startIndex)
+        {
+            if (Sections[i].Occupant == null)
+            {
+                //Debug.LogFormat("Found open seat at index {0}", i);
+                return i;
+            }
+
+            if (startIndex == -1 && i == numSeats - 1)
+            {
+                return -1;
+            }
+
+            i = (i + 1) % numSeats;
+        }
+
+        return -1;
+    }
+
+
+    public bool TrySwitchSeat(int index)
+    {
+        // Get next index
+        int seat = GetNextAvailableSeat(index);
+
+        if (seat == -1)
+        {
+            return false;
+        }
+        else
+        {
+            Sections[seat].SetOccupant(Sections[index].Occupant);
+            Sections[index].Occupant = null;
+            CAM.FollowTrackable(Sections[seat]);
+
+            return true;
+        }
     }
 
 
 
+    public bool TryEnterVehicle(PhxSoldier soldier, 
+                                out string NinePoseAnim, 
+                                out Transform PilotPosition)
+    {
+        NinePoseAnim = "";
+        PilotPosition = null;
+
+        // Find first available seat
+        int seat = GetNextAvailableSeat();
+
+        if (seat == -1)
+        {
+            return false;
+        }
+        else 
+        {
+            Sections[seat].SetOccupant(soldier);
+            PhxGameRuntime.GetCamera().FollowTrackable(Sections[seat]);
+            return true;
+        }
+    }
+
+
+    public bool Eject(int i)
+    {
+        if (i >= Sections.Count)
+        {
+            return false;
+        }
+
+        if (Sections[i] != null || Sections[i].Occupant != null)
+        {
+            Sections[i].Occupant.SetFree(transform.position + Vector3.up * 2.0f);
+            CAM.Follow(Sections[i].Occupant);
+            Sections[i].Occupant = null;
+
+            return true;
+        }
+        else 
+        {
+            return false;
+        }
+    }
+
+
+    public virtual Vector3 GetCameraPosition()
+    {
+        return Sections[0].GetCameraPosition();
+    }
+
+    public virtual Quaternion GetCameraRotation()
+    {
+        return Sections[0].GetCameraRotation();
+    }
+
+
+
+    public override void BindEvents(){}
+    public override void Fixate(){}
+    public override IPhxWeapon GetPrimaryWeapon(){ return null; }
+    public void AddAmmo(float amount){}
+    public override void PlayIntroAnim(){}
+    public PhxInstance GetAim(){ return Aim; }
+    void StateFinished(int layer){}
+    public void AddHealth(float amount){}
 }
 
 
@@ -114,6 +219,7 @@ public class PhxVehicleProperties : PhxClass
 
     public PhxMultiProp SoldierCollision = new PhxMultiProp(typeof(string));
 
+    /*
     public PhxPropertySection Flyer = new PhxPropertySection(
         "FLYERSECTION",
         ("VehicleType",   new PhxProp<string>(null)),
@@ -124,7 +230,6 @@ public class PhxVehicleProperties : PhxClass
         ("TrackOffset",   new PhxProp<Vector3>(Vector3.zero))
     );
 
-    /*
     public PhxPropertySection Weapons = new PhxPropertySection(
         "WEAPONSECTION",
         ("WeaponName",    new PhxProp<string>(null)),

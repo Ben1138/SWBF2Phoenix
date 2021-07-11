@@ -24,7 +24,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
 
-    protected PhxHover OwnerVehicle;
+    protected PhxVehicle OwnerVehicle;
     protected Transform BaseTransform;
 
     public PhxSoldier Occupant;
