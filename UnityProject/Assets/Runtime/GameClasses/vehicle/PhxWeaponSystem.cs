@@ -252,7 +252,7 @@ public class PhxWeaponSystem
 
     public void SetWeapon(string WeaponName)
     {
-        WeaponName = "rep_weap_hover_fightertank_cannon";
+        //WeaponName = "rep_weap_hover_fightertank_cannon";
     	Weapon = SCENE.CreateInstance(SCENE.GetClass(WeaponName), false) as IPhxWeapon;
 
     	if (Weapon == null)
