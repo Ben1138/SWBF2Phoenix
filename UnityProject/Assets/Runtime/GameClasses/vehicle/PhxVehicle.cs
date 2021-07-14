@@ -110,6 +110,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         else
         {
             Sections[seat].SetOccupant(Sections[index].Occupant);
+            Sections[seat].Occupant.SetPilot(Sections[seat]);
             Sections[index].Occupant = null;
             CAM.FollowTrackable(Sections[seat]);
 
@@ -119,25 +120,21 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
 
 
 
-    public bool TryEnterVehicle(PhxSoldier soldier, 
-                                out string NinePoseAnim, 
-                                out Transform PilotPosition)
+    public PhxVehicleSection TryEnterVehicle(PhxSoldier soldier)
     {
-        NinePoseAnim = "";
-        PilotPosition = null;
-
         // Find first available seat
         int seat = GetNextAvailableSeat();
 
         if (seat == -1)
         {
-            return false;
+            return null;
         }
         else 
         {
             Sections[seat].SetOccupant(soldier);
             PhxGameRuntime.GetCamera().FollowTrackable(Sections[seat]);
-            return true;
+            
+            return Sections[seat];
         }
     }
 
@@ -164,6 +161,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     }
 
 
+
     public virtual Vector3 GetCameraPosition()
     {
         return Sections[0].GetCameraPosition();
@@ -175,7 +173,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     }
 
 
-
+    // Not sure if/how some of these should be implemented
     public override void BindEvents(){}
     public override void Fixate(){}
     public override IPhxWeapon GetPrimaryWeapon(){ return null; }
@@ -210,10 +208,13 @@ public class PhxVehicleProperties : PhxClass
     public PhxProp<string> HealthType = new PhxProp<string>("vehicle");
 	public PhxProp<float>  MaxHealth = new PhxProp<float>(100.0f);
 
+    // In the "human" bank with name: "human_{Pilot9Pose}" ?
+    public PhxProp<string> Pilot9Pose = new PhxProp<string>("");
 
+    // animation bank containing vehicle 9Pose
     public PhxProp<string> AnimationName = new PhxProp<string>("");
 
-    // Pilot poses, most relevant for speeders, where pilot's body is fully visible
+    // vehicle 9Pose
     public PhxProp<string> FinAnimation = new PhxProp<string>("");
 
 

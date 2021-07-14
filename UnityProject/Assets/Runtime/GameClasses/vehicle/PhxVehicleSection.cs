@@ -34,8 +34,9 @@ public abstract class PhxVehicleSection : IPhxTrackable
     public bool CanExit = true;
 
 
-    protected Transform PilotPosition;
-    protected string PilotAnimation = "";
+    public Transform PilotPosition { get; protected set; }
+    public string PilotAnimation { get; protected set; }
+    public string Pilot9Pose { get; protected set; }
 
 
     protected Vector3 EyePointOffset;
@@ -98,7 +99,6 @@ public abstract class PhxVehicleSection : IPhxTrackable
             return;
         }
         
-
         if (Controller.ShootPrimary)
         {   
             if (WeaponSystems.Count > 0)
@@ -184,8 +184,6 @@ public abstract class PhxVehicleSection : IPhxTrackable
         if (Occupant != null) return false;
         
         Occupant = s;
-
-        s.SetPilot(PilotPosition,"");
 
         return true;
     }

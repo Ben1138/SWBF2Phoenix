@@ -88,6 +88,18 @@ public class PhxVehicleTurret : PhxVehicleSection
             {
                 CurrAimer.Node = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
             }  
+            else if (properties[i] == HashUtils.GetFNV("PilotPosition"))
+            {
+                PilotPosition = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);   
+            }            
+            else if (properties[i] == HashUtils.GetFNV("PilotAnimation"))
+            {
+                PilotAnimation = values[i];
+            }           
+            else if (properties[i] == HashUtils.GetFNV("Pilot9Pose"))
+            {
+                Pilot9Pose = values[i];
+            }
             else if (properties[i] == HashUtils.GetFNV("NextAimer"))
             {
                 CurrAimer = new PhxAimer();
