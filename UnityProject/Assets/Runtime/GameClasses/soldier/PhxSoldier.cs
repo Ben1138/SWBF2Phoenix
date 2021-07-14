@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -369,9 +370,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     // Undoes SetPilot; called by vehicles/turrets when ejecting soldiers
     public void SetFree(Vector3 position)
     {
-        //Body.isKinematic = false;
-        //Body.detectCollisions = true;
-        //Body.useGravity = true;
+        Context = PhxSoldierContext.Free;
 
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 80f;
@@ -381,17 +380,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
-
         GetComponent<SkinnedMeshRenderer>().enabled = true;
         GetComponent<CapsuleCollider>().enabled = true;
 
         transform.parent = null;
         transform.position = position;
 
-        NinePoseAnim = null;
-        Context = PhxSoldierContext.Free;
-
-        //Debug.Log("Soldier free");
+        NinePoser = null;
 
         Controller.TryEnterVehicle = false;
 
@@ -405,31 +400,52 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     }
 
 
-    public void SetPilot(Transform pilotNode, string NinePAnim)
+    PhxNinePoser NinePoser = null;
+
+    public void SetPilot(PhxVehicleSection section)
     {
         Context = PhxSoldierContext.Pilot;
-        NinePoseAnim = NinePAnim;
 
-        Destroy(Body);
+        if (Body != null)
+        {
+            Destroy(Body);
+            Body = null;
+        }
 
         GetComponent<CapsuleCollider>().enabled = false;
 
-        if (true)//pilotNode == null)
+        //Animator.SetActive(false);
+
+        if (section.PilotPosition == null)
         {
             GetComponent<SkinnedMeshRenderer>().enabled = false;
         }
         else
         {
-            transform.parent = pilotNode;
+            GetComponent<SkinnedMeshRenderer>().enabled = true;
+
+            transform.parent = section.PilotPosition;
             transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+
+            if (!String.IsNullOrEmpty(section.PilotAnimation))
+            {
+
+            }
+            else if (!String.IsNullOrEmpty(section.Pilot9Pose))
+            {
+                NinePoser = new PhxNinePoser("human_4", "human_" + section.Pilot9Pose, transform);
+            }
+            else 
+            {
+                Debug.LogErrorFormat("When entering vehicle, pilot had position but no anim!");
+            }     
         }
 
         if (WeaponIdx[0] >= 0 && Weapons[0][WeaponIdx[0]] != null)
         {
             Weapons[0][WeaponIdx[0]].GetInstance().gameObject.SetActive(false);
         }
-
-        //Debug.Log("Soldier piloting");
     }
 
 
@@ -467,15 +483,17 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Profiler.EndSample();
     }
 
+
+    System.Random r = new System.Random();
+
     void UpdateNinePose()
     {
-        if (NinePoseAnim == null)
+        if (NinePoser != null)
         {
-            return;
-        }
-        else 
-        {
-            return;
+            var enumz = Enum.GetValues(typeof(PhxNinePoseState)).Cast<PhxNinePoseState>().ToList();
+
+            NinePoser.SetState(enumz[r.Next(enumz.Count)], 1f);
+            //NinePoser.SetState(PhxNinePoseState.StrafeLeft, 1f);
         }
     }
 
@@ -507,22 +525,16 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Transform seat;
             foreach (Collider PossibleVehicle in PossibleVehicles)
             {
-                PhxHover Vehicle = PossibleVehicle.GetComponent<PhxHover>();
-                if (Vehicle != null && Vehicle.TryEnterVehicle(this, out NinePAnim, out seat))
+                PhxVehicle Vehicle = PossibleVehicle.GetComponent<PhxVehicle>();
+                if (Vehicle != null)
                 {
-                    SetPilot(seat, NinePAnim);
-                    Controller.TryEnterVehicle = false;
-                    return;
-                }
-                else 
-                {
-                    PhxArmedBuilding tur = PossibleVehicle.GetComponent<PhxArmedBuilding>();
-                    if (tur != null && tur.TryEnterVehicle(this, out NinePAnim, out seat))
+                    PhxVehicleSection Section = Vehicle.TryEnterVehicle(this);
+
+                    if (Section != null)
                     {
-                        SetPilot(seat, NinePAnim);
+                        SetPilot(Section);
                         Controller.TryEnterVehicle = false;
                         return;
-                        
                     }
                 }
             }

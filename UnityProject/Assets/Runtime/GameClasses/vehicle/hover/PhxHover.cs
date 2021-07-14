@@ -1,5 +1,6 @@
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -34,6 +35,13 @@ public class PhxHover : PhxVehicle
         public PhxProp<Vector2> YawLimits = new PhxProp<Vector2>(Vector2.zero); 
 
         public PhxProp<AudioClip> EngineSound = new PhxProp<AudioClip>(null);
+
+        public PhxPropertySection Wheels = new PhxPropertySection(
+            "WHEELSECTION",
+            ("WheelTexture",  new PhxProp<string>("")),
+            ("WheelVelocToV", new PhxProp<float>(0f)),
+            ("WheelOmegaToV", new PhxProp<float>(0f))
+        );
     }
     
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
@@ -44,6 +52,14 @@ public class PhxHover : PhxVehicle
 
     PhxHoverMainSection DriverSection = null;
     PhxHover.ClassProperties H;
+
+
+    // If the vehicle has treads, we programmatically set the UV offset
+    // of the mat used by the WheelTexture node via its MeshRenderer.
+    List<MeshRenderer> WheelRenderers; 
+
+
+    PhxNinePoser NinePoser;
 
 
     AudioSource AudioAmbient;
@@ -70,7 +86,6 @@ public class PhxHover : PhxVehicle
         Body.interpolation = RigidbodyInterpolation.Interpolate;
         Body.constraints = RigidbodyConstraints.FreezeRotationZ;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-
 
         AudioAmbient = gameObject.AddComponent<AudioSource>();
         AudioAmbient.spatialBlend = 1.0f;
@@ -108,8 +123,59 @@ public class PhxHover : PhxVehicle
                 i++;
             }
         }
+
+
+        if (H.AnimationName.Get() != "" && H.FinAnimation.Get() != "")
+        {
+            NinePoser = new PhxNinePoser(H.AnimationName.Get(), H.FinAnimation.Get(), transform);
+        }
+
+        /*
+        Get necessary wheel info.  Implementation on hold until PhxModel sorted out.
+
+
+        WheelRenderers = new List<MeshRenderer>();
+
+        foreach (Dictionary<string, IPhxPropRef> section in H.Wheels)
+        {   
+            // Named texture, actually refers to node.
+            section.TryGetValue("WheelTexture", out IPhxPropRef wheelNode);
+
+            PhxProp<string> WheelNodeName = (PhxProp<string>) wheelNode;
+
+            Debug.LogFormat("Yea found a wheel: {0}", WheelNodeName.Get());
+
+            Model model = ModelLoader.Instance.GetModelWrapper();
+            foreach (Segment seg in model.GetSegments())
+            {
+                if (seg.Tag.Equals(WheelNodeName.Get(), StringComparison.OrdinalIgnoreCase))
+                {
+                    Transform WheelTx;
+                    if (seg.BoneName != "")
+                    {
+                        WheelTx = UnityUtils.FindChildTransform(transform, WheelNodeName.Get());
+                           
+                    }
+                    else 
+                    {
+                        WheelTx = transform;
+                    }
+
+                    MeshRenderer r = WheelTx.gameObject.GetComponent<MeshRenderer>();
+                    foreach (var mat in r.materials)
+                    {
+                        if (mat.mainTexture.name.Equals())
+                    }
+
+                }
+            }
+        }
+        */
     }
 
+    System.Random random = new System.Random();
+
+    Vector2 uvOffset = Vector2.zero;
 
     void UpdateState(float deltaTime)
     {
@@ -117,6 +183,50 @@ public class PhxHover : PhxVehicle
         {
             section.Update();
         }
+
+
+        if (NinePoser != null)
+        {
+            if (Vector3.Magnitude(localVel) < 1f)
+            {
+                NinePoser.SetState(PhxNinePoseState.Forward, deltaTime);
+            }
+
+            if (localVel.x > .1f)
+            {
+                NinePoser.SetState(PhxNinePoseState.StrafeRight, deltaTime);           
+            }
+
+            if (localVel.x < .1f)
+            {
+                NinePoser.SetState(PhxNinePoseState.StrafeLeft, deltaTime);            
+            }
+        }
+
+        /*
+        if (DriverSection.IsOccupied())
+        {
+            if (NinePoser != null)
+            {
+                NinePoser.SetState(t, 1f);
+            }
+        }
+        */
+
+        /*
+        if (DriverSection.IsOccupied())
+        {
+            uvOffset.x += deltaTime;
+
+            foreach (var renderer in WheelRenderers)
+            {
+                if(renderer.enabled)
+                {
+                    renderer.materials[0].SetTextureOffset(renderer.materials[0].mainTexture.name, uvOffset);
+                }
+            }
+        }
+        */
     }
 
 
@@ -153,10 +263,11 @@ public class PhxHover : PhxVehicle
     }
 
 
+    Vector3 localVel;
 
     void UpdatePhysics(float deltaTime)
     {
-        Vector3 localVel = transform.worldToLocalMatrix * Body.velocity;
+        localVel = transform.worldToLocalMatrix * Body.velocity;
 
         // Maintain hover
         if (Physics.Raycast(transform.position, -Vector3.up, out RaycastHit hit))
