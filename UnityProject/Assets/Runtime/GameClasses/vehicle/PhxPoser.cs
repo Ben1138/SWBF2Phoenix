@@ -32,7 +32,7 @@ public enum PhxNinePoseState : int
 }
 
 
-public class PhxNinePoser
+public class PhxPoser
 {
     private Transform[] Bones;
     private Quaternion[] Rotations;
@@ -41,9 +41,10 @@ public class PhxNinePoser
     uint IgnoreMask = 0;
 
 
-    private static Quaternion[] GetCurveRotations(AnimationBank bank, uint animCRC, uint boneCRC, int numFrames = 9)
+    private static (Quaternion[], Vector3[])? GetFullCurve(AnimationBank bank, uint animCRC, uint boneCRC, int numFrames = 9)
     {
-        Quaternion[] result = new Quaternion[numFrames];
+        Quaternion[] rots = new Quaternion[numFrames];
+        Vector3[] locs = new Vector3[numFrames];
         uint ComponentIndex = 0;
         float[] values;
         ushort[] inds;
@@ -54,7 +55,7 @@ public class PhxNinePoser
                 return null;
             }
 
-            float mult = (ComponentIndex == 0 || ComponentIndex == 3) ? -1f : 1f;
+            float mult = (ComponentIndex == 0 || ComponentIndex == 3 || ComponentIndex == 4) ? -1f : 1f;
             float curValue;
             int frameIndex = 0;
             int valueIndex = 0;
@@ -71,14 +72,22 @@ public class PhxNinePoser
 
                 curValue = values[frameIndex];
 
-                result[i][(int) ComponentIndex] = mult * curValue;
-            }            
-        } while (++ComponentIndex < 4);
+                if (ComponentIndex < 4)
+                {
+                    rots[i][(int) ComponentIndex] = mult * curValue;
+                }
+                else 
+                {
+                    locs[i][(int) ComponentIndex - 4] = mult * curValue;
+                }
 
-        return result;
+            }            
+        } while (++ComponentIndex < 7);
+
+        return (rots, locs);
     }
 
-
+    /*
     private static Vector3[] GetCurvePositions(AnimationBank bank, uint animCRC, uint boneCRC, int numFrames = 9)
     {
         Vector3[] result = new Vector3[numFrames];
@@ -115,9 +124,10 @@ public class PhxNinePoser
 
         return result;
     }
+    */
 
 
-    public PhxNinePoser(string animBankName, string animName, Transform objRoot, bool IgnoreRoot = true)
+    public PhxPoser(string animBankName, string animName, Transform objRoot, bool IgnoreRoot = true)
     {
         AnimationBank NinePose = AnimationLoader.Instance.GetRawAnimationBank(animBankName);
 
@@ -140,17 +150,16 @@ public class PhxNinePoser
             {
                 if (IgnoreRoot && childTx.parent == objRoot) continue;
 
-                Quaternion[] rots = GetCurveRotations(NinePose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name));
-                Vector3[] locs = GetCurvePositions(NinePose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name));
+                (Quaternion[], Vector3[])? Curve = GetFullCurve(NinePose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name));
 
-                if (rots == null || locs == null) continue;
+                if (!Curve.HasValue) continue;
 
                 Bones[offset / 9] = childTx;
 
                 for (int i = 0; i < 9; i++)
                 {
-                    Rotations[offset + i] = rots[i];
-                    Positions[offset + i] = locs[i];
+                    Rotations[offset + i] = Curve.Value.Item1[i];
+                    Positions[offset + i] = Curve.Value.Item2[i];
                 }
 
                 offset += 9;
@@ -213,13 +222,12 @@ public class PhxNinePoser
 
             foreach (Transform childTx in children)
             {
-                Quaternion[] rots = GetCurveRotations(Pose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name), 1);
-                Vector3[] locs = GetCurvePositions(Pose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name), 1);
+                (Quaternion[], Vector3[])? Curve = GetFullCurve(Pose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name), 1);
 
-                if (rots == null || locs == null) continue;
+                if (!Curve.HasValue) continue;
 
-                childTx.localRotation = rots[0];
-                childTx.localPosition = locs[0];
+                childTx.localRotation = Curve.Value.Item1[0];
+                childTx.localPosition = Curve.Value.Item2[0];
             }
         }
         else
