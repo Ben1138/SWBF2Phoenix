@@ -233,8 +233,7 @@ public class PhxWeaponSystem
 
     PhxVehicleSection OwnerSection; 
 
-    public List<PhxAimer> Aimers;
-
+    List<PhxAimer> Aimers;
 
 
     public void AddAimer(PhxAimer Aimer)
