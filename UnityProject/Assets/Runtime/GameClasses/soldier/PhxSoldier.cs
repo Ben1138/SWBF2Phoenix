@@ -94,8 +94,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
 
     // Vehicle related fields
-    public string NinePoseAnim = null;
-
+    PhxVehicleSection CurrentSection;
+    PhxNinePoser NinePoser;
 
 
 
@@ -371,6 +371,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     public void SetFree(Vector3 position)
     {
         Context = PhxSoldierContext.Free;
+        CurrentSection = null;
 
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 80f;
@@ -395,16 +396,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         {
             Weapons[0][WeaponIdx[0]].GetInstance().gameObject.SetActive(true);
         }
-
-
     }
 
-
-    PhxNinePoser NinePoser = null;
 
     public void SetPilot(PhxVehicleSection section)
     {
         Context = PhxSoldierContext.Pilot;
+        CurrentSection = section;
 
         if (Body != null)
         {
@@ -430,7 +428,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
             if (!String.IsNullOrEmpty(section.PilotAnimation))
             {
-
+                PhxNinePoser.PoseSkeletonStatically("human_4", "human_" + section.PilotAnimation, transform);
             }
             else if (!String.IsNullOrEmpty(section.Pilot9Pose))
             {
@@ -486,14 +484,93 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     System.Random r = new System.Random();
 
-    void UpdateNinePose()
+    void UpdateNinePose(float deltaTime)
     {
-        if (NinePoser != null)
-        {
-            var enumz = Enum.GetValues(typeof(PhxNinePoseState)).Cast<PhxNinePoseState>().ToList();
+        if (Controller == null) return;
 
-            NinePoser.SetState(enumz[r.Next(enumz.Count)], 1f);
-            //NinePoser.SetState(PhxNinePoseState.StrafeLeft, 1f);
+        Vector4 Input = new Vector4(Controller.MoveDirection.x, Controller.MoveDirection.y, Controller.mouseX, Controller.mouseY);
+
+        if (NinePoser != null && CurrentSection != null)
+        {
+            float blend = 2f * deltaTime;
+
+            PhxVehicleTurret t = CurrentSection as PhxVehicleTurret;
+
+            if (t == null)
+            {
+                if (Vector4.Magnitude(Input) < .001f)
+                {
+                    NinePoser.SetState(PhxNinePoseState.Idle, blend);
+                    return;
+                }
+
+                if (Input.x > .01f)
+                {
+                    NinePoser.SetState(PhxNinePoseState.StrafeRight, blend);           
+                }
+
+                if (Input.x < -.01f)
+                {
+                    NinePoser.SetState(PhxNinePoseState.StrafeLeft, blend);            
+                }
+
+                if (Input.y < 0f) 
+                {
+                    if (Input.z > .01f)
+                    {
+                        NinePoser.SetState(PhxNinePoseState.BackwardsTurnLeft, blend);            
+                    }
+                    else if (Input.z < -.01f)
+                    {
+                        NinePoser.SetState(PhxNinePoseState.BackwardsTurnRight, blend);            
+                    }
+                    else
+                    {
+                        NinePoser.SetState(PhxNinePoseState.Backwards, blend);            
+                    }
+                }
+                else
+                {
+                    if (Input.z > .01f)
+                    {
+                        NinePoser.SetState(PhxNinePoseState.ForwardTurnLeft, blend);            
+                    }
+                    else if (Input.z < -.01f)
+                    {
+                        NinePoser.SetState(PhxNinePoseState.ForwardTurnRight, blend);            
+                    }
+                    else
+                    {
+                        NinePoser.SetState(PhxNinePoseState.Forward, blend);            
+                    }
+                }
+            }
+            else 
+            {
+                if (Mathf.Abs(Input.z) + Mathf.Abs(Input.w) < .001f)
+                {
+                    NinePoser.SetState(PhxFivePoseState.Idle, blend);
+                    return;
+                }
+
+                if (Input.z > .01f)
+                {
+                NinePoser.SetState(PhxFivePoseState.TurnRight, blend);            
+                }
+                else
+                {
+                    NinePoser.SetState(PhxFivePoseState.TurnLeft, blend);            
+                }
+
+                if (Input.w > .01f)
+                {
+                    NinePoser.SetState(PhxFivePoseState.TurnDown, blend);            
+                }
+                else
+                {
+                    NinePoser.SetState(PhxFivePoseState.TurnUp, blend);            
+                }
+            }
         }
     }
 
@@ -504,7 +581,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     {
         if (Context == PhxSoldierContext.Pilot)
         {
-            UpdateNinePose();
+            Animator.SetActive(false);
+            UpdateNinePose(deltaTime);
             return;
         }
 
@@ -528,11 +606,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 PhxVehicle Vehicle = PossibleVehicle.GetComponent<PhxVehicle>();
                 if (Vehicle != null)
                 {
-                    PhxVehicleSection Section = Vehicle.TryEnterVehicle(this);
+                    CurrentSection = Vehicle.TryEnterVehicle(this);
 
-                    if (Section != null)
+                    if (CurrentSection != null)
                     {
-                        SetPilot(Section);
+                        SetPilot(CurrentSection);
                         Controller.TryEnterVehicle = false;
                         return;
                     }

@@ -23,22 +23,28 @@ public abstract class PhxVehicleSection : IPhxTrackable
 {    
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
+    // Max 2, min 1
+    protected List<PhxWeaponSystem> WeaponSystems;
 
+    // Vehicle to which section belongs
     protected PhxVehicle OwnerVehicle;
+
+    // Transform that moves with the pilot's input 
+    // (will have to build in MountPoint soon for turrets)
     protected Transform BaseTransform;
 
     public PhxSoldier Occupant;
     private PhxInstance Aim;
 
-
+    // eg with flyers one cannot exit
     public bool CanExit = true;
 
-
+    // Pilot params common to all sections
     public Transform PilotPosition { get; protected set; }
     public string PilotAnimation { get; protected set; }
     public string Pilot9Pose { get; protected set; }
 
-
+    // Camera control values, common to all sections
     protected Vector3 EyePointOffset;
     protected Vector3 TrackCenter;
     protected Vector3 TrackOffset;
@@ -47,14 +53,12 @@ public abstract class PhxVehicleSection : IPhxTrackable
     protected Vector2 PitchLimits = new Vector2(0f,360f);
     protected Vector2 YawLimits = new Vector2(0f,360f);
 
-
+    // Index in OwnerVehicle's Sections list
     protected int Index;
-
 
     // Accumulators for view control
     protected float PitchAccum;
     protected float YawAccum;
-
 
     // View position in local space
     protected Vector3 ViewPoint;
@@ -71,10 +75,6 @@ public abstract class PhxVehicleSection : IPhxTrackable
     {
         return Quaternion.LookRotation(BaseTransform.TransformDirection(ViewDirection), Vector3.up);
     }
-
-
-    protected List<PhxWeaponSystem> WeaponSystems;
-
 
 
     public virtual void Update()
@@ -193,4 +193,121 @@ public abstract class PhxVehicleSection : IPhxTrackable
     {
         return Occupant != null;
     }
+
+
+
+    protected PhxVehicleSection(uint[] properties, string[] values, ref int i, PhxVehicle v, int SectionIndex)
+    {
+        Index = SectionIndex;
+
+        OwnerVehicle = v;
+        BaseTransform = v.gameObject.transform;
+
+        WeaponSystems = new List<PhxWeaponSystem>();
+        WeaponSystems.Add(new PhxWeaponSystem(this));
+        int WeaponIndex = 0;
+        
+        PhxAimer CurrAimer = new PhxAimer();
+
+
+        while (++i < properties.Length)
+        {
+            if (properties[i] == HashUtils.GetFNV("EyePointOffset"))
+            {
+                EyePointOffset = PhxUtils.Vec3FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("TrackCenter"))
+            {
+                TrackCenter = PhxUtils.Vec3FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("YawLimits"))
+            {
+                YawLimits = PhxUtils.Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("PitchLimits"))
+            {
+                PitchLimits = PhxUtils.Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("TiltValue"))
+            {
+                TiltValue = float.Parse(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("TrackOffset"))
+            {
+                TrackOffset = PhxUtils.Vec3FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
+            {
+                CurrAimer.HierarchyLevel = Int32.Parse(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
+            {
+                CurrAimer.PitchRange = PhxUtils.Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("AimerYawLimits"))
+            {
+                CurrAimer.YawRange = PhxUtils.Vec2FromString(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("BarrelNodeName"))
+            {
+                CurrAimer.BarrelNode = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);
+            }     
+            else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))
+            {
+                CurrAimer.Node = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("FirePointName"))
+            {
+                CurrAimer.FirePoint = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("NextAimer"))
+            {
+                WeaponSystems[WeaponIndex].AddAimer(CurrAimer);
+                CurrAimer = new PhxAimer();
+            }
+            else if (properties[i] == HashUtils.GetFNV("PilotPosition"))
+            {
+                PilotPosition = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);   
+            }  
+            else if (properties[i] == HashUtils.GetFNV("PilotAnimation"))
+            {
+                PilotAnimation = values[i];
+            }            
+            else if (properties[i] == HashUtils.GetFNV("Pilot9Pose"))
+            {
+                Pilot9Pose = values[i];
+            }
+            else if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
+            {
+                int newSlot = Int32.Parse(values[i]);
+                
+                if (newSlot > WeaponSystems.Count)
+                {
+                    WeaponSystems[WeaponIndex].AddAimer(CurrAimer);
+
+                    WeaponSystems.Add(new PhxWeaponSystem(this));
+                    WeaponIndex = newSlot - 1;
+
+                    // New WeapSec indicates that the last defined aimer should be added to
+                    // the previous WeapSec
+                    CurrAimer = new PhxAimer();                  
+                }
+
+            }   
+            else if (properties[i] == HashUtils.GetFNV("WeaponName"))
+            {
+                WeaponSystems[WeaponIndex].SetWeapon(values[i]);
+            }         
+            else if (properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
+                    properties[i] == HashUtils.GetFNV("CHUNKSECTION")  || 
+                    properties[i] == HashUtils.GetFNV("WALKERSECTION") ||
+                    properties[i] == HashUtils.GetFNV("TURRETSECTION") ||
+                    properties[i] == HashUtils.GetFNV("BUILDINGSECTION")||
+                    i == properties.Length - 1)
+            {
+                WeaponSystems[WeaponIndex].AddAimer(CurrAimer);  
+                break;   
+            }
+        }
+    } 
 }

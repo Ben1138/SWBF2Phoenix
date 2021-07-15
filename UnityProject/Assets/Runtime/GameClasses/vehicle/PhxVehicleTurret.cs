@@ -20,102 +20,32 @@ public class PhxVehicleTurret : PhxVehicleSection
     string TurretStopSound = "";
 
 
-    public PhxVehicleTurret(uint[] properties, string[] values, ref int i, PhxVehicle parentVehicle, int sectionIndex)
+    public PhxVehicleTurret(uint[] properties, string[] values, 
+                            ref int i, PhxVehicle parentVehicle, int sectionIndex) : 
+                            base(properties, values, ref i, parentVehicle, sectionIndex)
+
     {
-        Index = sectionIndex;
+        int EndIndex = i;
 
-        PhxWeaponSystem Weapon = new PhxWeaponSystem(this);
-
-        WeaponSystems = new List<PhxWeaponSystem>();
-        WeaponSystems.Add(Weapon);
-
-        PhxAimer CurrAimer = new PhxAimer();
-        Weapon.AddAimer(CurrAimer);
-
-        OwnerVehicle = parentVehicle;
-
-        while (++i < properties.Length)
+        // Goofy, but didn't want to use static pattern and couldn't call base() midway through...
+        // A more robust soln is coming
+        while (--i > 0)
         {
-            if (properties[i] == HashUtils.GetFNV("PilotPosition"))
-            {
-                PilotPosition = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("TurretNodeName"))
+            if (properties[i] == HashUtils.GetFNV("TurretNodeName"))
             {
                 BaseTransform = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("YawLimits"))
-            {
-                YawLimits = PhxUtils.Vec2FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("PitchLimits"))
-            {
-                PitchLimits = PhxUtils.Vec2FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("EyePointOffset"))
-            {
-                EyePointOffset = PhxUtils.Vec3FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("TrackCenter"))
-            {
-                TrackCenter = PhxUtils.Vec3FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("TrackOffset"))
-            {
-                TrackOffset = PhxUtils.Vec3FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("TiltValue"))
-            {
-                TiltValue = float.Parse(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
-            {
-                CurrAimer.HierarchyLevel = Int32.Parse(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
-            {
-                CurrAimer.PitchRange = PhxUtils.Vec2FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("AimerYawLimits"))
-            {
-                CurrAimer.YawRange = PhxUtils.Vec2FromString(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("BarrelNodeName"))
-            {
-                CurrAimer.BarrelNode = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
-            }     
-            else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))
-            {
-                CurrAimer.Node = UnityUtils.FindChildTransform(parentVehicle.transform, values[i]);
-            }  
-            else if (properties[i] == HashUtils.GetFNV("PilotPosition"))
-            {
-                PilotPosition = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);   
-            }            
-            else if (properties[i] == HashUtils.GetFNV("PilotAnimation"))
-            {
-                PilotAnimation = values[i];
-            }           
-            else if (properties[i] == HashUtils.GetFNV("Pilot9Pose"))
-            {
-                Pilot9Pose = values[i];
-            }
-            else if (properties[i] == HashUtils.GetFNV("NextAimer"))
-            {
-                CurrAimer = new PhxAimer();
-            	Weapon.AddAimer(CurrAimer);
-            }  
-            else if (properties[i] == HashUtils.GetFNV("WeaponName"))
-            {
-                Weapon.SetWeapon(values[i]);
-            }         
+            }      
             else if (properties[i] == HashUtils.GetFNV("BUILDINGSECTION") ||
                     properties[i] == HashUtils.GetFNV("CHUNKSECTION") ||
-                    properties[i] == HashUtils.GetFNV("FLYERSECTION"))
+                    properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
+                    properties[i] == HashUtils.GetFNV("WALKERSECTION") ||
+                    properties[i] == HashUtils.GetFNV("TURRETSECTION"))
             {
                 break;
             }
         }
+
+        i = EndIndex;
     }
 
 
