@@ -45,6 +45,10 @@ public class PhxRuntimeScene
     {
         ENV = env;
         EnvCon = c;
+
+        ModelLoader.Instance.PhyMat = PhxGameRuntime.Instance.GroundPhyMat;
+        ModelLoader.Instance.CollFlagToUnityLayer[ECollisionMaskFlags.Vehicle] = 7;
+        ModelLoader.Instance.CollFlagToUnityLayer[ECollisionMaskFlags.Soldier] = 10;
     }
 
     public void SetProperty(string instName, string propName, object propValue)
@@ -215,7 +219,7 @@ public class PhxRuntimeScene
 
 
             //Lighting
-            var lightingRoots = WorldLoader.Instance.ImportLights(EnvCon.FindConfig(ConfigType.Lighting, world.Name));
+            var lightingRoots = WorldLoader.Instance.ImportLights(EnvCon.FindConfig(EConfigType.Lighting, world.Name));
             foreach (var lightingRoot in lightingRoots)
             {
                 lightingRoot.transform.parent = worldRoot.transform;
@@ -225,7 +229,7 @@ public class PhxRuntimeScene
             //Skydome, check if already loaded first
             if (!LoadedSkydomes.ContainsKey(world.SkydomeName))
             {
-                var skyRoot = WorldLoader.Instance.ImportSkydome(EnvCon.FindConfig(ConfigType.Skydome, world.SkydomeName));
+                var skyRoot = WorldLoader.Instance.ImportSkydome(EnvCon.FindConfig(EConfigType.Skydome, world.SkydomeName));
                 if (skyRoot != null)
                 {
                     skyRoot.transform.parent = worldRoot.transform;
@@ -376,8 +380,6 @@ public class PhxRuntimeScene
 
     List<GameObject> ImportInstances(Instance[] instances)
     {
-        ModelLoader.Instance.PhyMat = PhxGameRuntime.Instance.GroundPhyMat;
-
         List<GameObject> instanceObjects = new List<GameObject>();
         foreach (Instance inst in instances)
         {
