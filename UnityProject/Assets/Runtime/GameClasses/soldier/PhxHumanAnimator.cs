@@ -97,7 +97,7 @@ public static class PhxAnimationBanks
 //    TurnRight
 //}
 
-public class PhxHumanAnimator : CraAnimator
+public struct PhxHumanAnimator
 {
     //[Range(-1f, 1f)]
     //public float Forward;

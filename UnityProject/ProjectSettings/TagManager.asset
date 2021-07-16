@@ -12,11 +12,11 @@ TagManager:
   - Water
   - UI
   - Projectile
-  - 
+  - VehicleCollision
   - PostProcessing
   - Not in Reflection
-  - 
-  - 
+  - SoldierCollision
+  - Vehicle
   - 
   - 
   - 

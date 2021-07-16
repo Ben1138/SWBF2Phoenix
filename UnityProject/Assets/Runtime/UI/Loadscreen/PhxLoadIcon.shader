@@ -7,17 +7,10 @@ Shader "Phoenix/PhxLoadIcon"
     }
     SubShader
     {
-        Tags
-        {
-            "Queue" = "Transparent"
-            "IgnoreProjector" = "True"
-            "RenderType" = "Transparent"
-            "PreviewType" = "Plane"
-            "CanUseSpriteAtlas" = "True"
-        }
+        Tags{ "Queue" = "Transparent" "RenderType" = "Transparent" }
 
-        Lighting Off
-        ZWrite Off
+        // No culling or depth
+        Cull Off ZWrite Off ZTest Always Blend SrcAlpha OneMinusSrcAlpha
 
         Pass
         {
@@ -111,34 +104,35 @@ Shader "Phoenix/PhxLoadIcon"
                 float rt = ((sin(time + theta * 4.0 * sin((theta + time) * 1.0))));
                 float rt2 = ((sin(theta * 2.0 - time + cos(theta * 5.0 + time))));
 
-                // outer boarder
-                if (c < .228 && c > 0.225)  // outerCircle
+                // outer circle
+                if (c < 0.9 && c > 0.87)
                     circles += .5 + dflow;
 
-                if (c < .223 && c > 0.205)  // dotted 
-                    circles += .75 * (.5 + .5 * sin(theta * 200.0 + time * 10.0));
+                // dotted
+                if (c < .83 && c > 0.7)
+                    circles += .75 * (.5 + .5 * sin(theta * 100.0 + time * 10.0));
 
-                if (c < .203 && c > 0.200)  // outerCircle
+                // inner circle
+                if (c < .66 && c > 0.64)
                     circles += .5;
 
 
-
-                float layer1 = lerp(.04, .08, clamp(_Percent / .33, 0, 1));
-                float layer2 = lerp(.08, .13, clamp((_Percent - .33) / .33, 0, 1));
-                float layer3 = lerp(.13, .18, clamp((_Percent - .66) / .33, 0, 1));
+                float layer1 = lerp(.05, .2, clamp(_Percent / .33, 0, 1));
+                float layer2 = lerp(.25, .40, clamp((_Percent - .33) / .33, 0, 1));
+                float layer3 = lerp(.45, .6, clamp((_Percent - .66) / .33, 0, 1));
 
                 // loading - layer 3 (outermost)
-                if (c < layer3 && c > 0.13)
+                if (c < layer3 && c > 0.45)
                     if (rt < 0.4 && rt < 0.1)
                         circles += .55 + cflow;
 
                 // loading - layer 2
-                if (c < layer2 && c > 0.08)
+                if (c < layer2 && c > 0.25)
                     if (rt2 < 0.3 && rt2 < 0.7)
                         circles += .55 + dflow;
 
                 // loading - layer 3 (innermost)
-                if (c < layer1 && c > 0.04)
+                if (c < layer1 && c > 0.05)
                     if (rt < 0.84 && rt < 0.4)
                         circles += .45;
 
