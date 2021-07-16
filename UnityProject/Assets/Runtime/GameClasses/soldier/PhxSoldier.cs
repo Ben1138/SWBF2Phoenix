@@ -408,7 +408,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 aimStart = CAM.transform.position;
             }
 
-            if (Physics.Raycast(aimStart, aimDir, out RaycastHit hit, 1000f))
+            // ignore vehicle colliders
+            int layerMask = 7;
+            if (Physics.Raycast(aimStart, aimDir, out RaycastHit hit, 1000f, layerMask))
             {
                 TargetPos = hit.point;
                 Debug.DrawLine(aimStart, TargetPos, Color.blue);
