@@ -95,7 +95,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     // Vehicle related fields
     PhxVehicleSection CurrentSection;
-    PhxNinePoser NinePoser;
+    PhxPoser Poser;
 
 
 
@@ -188,7 +188,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Body.mass = 80f;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
-        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.interpolation = RigidbodyInterpolation.Interpolate;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
@@ -377,7 +377,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Body.mass = 80f;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
-        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.interpolation = RigidbodyInterpolation.Interpolate;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
@@ -387,9 +387,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         transform.parent = null;
         transform.position = position;
 
-        NinePoser = null;
+        Poser = null;
 
-        Controller.TryEnterVehicle = false;
+        Controller.Enter = false;
 
 
         if (WeaponIdx[0] >= 0 && Weapons[0][WeaponIdx[0]] != null)
@@ -412,7 +412,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         GetComponent<CapsuleCollider>().enabled = false;
 
-        //Animator.SetActive(false);
 
         if (section.PilotPosition == null)
         {
@@ -426,18 +425,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
 
-            if (!String.IsNullOrEmpty(section.PilotAnimation))
+            if (CurrentSection.PilotAnimationType != PilotAnimationType.None)
             {
-                PhxNinePoser.PoseSkeletonStatically("human_4", "human_" + section.PilotAnimation, transform);
-            }
-            else if (!String.IsNullOrEmpty(section.Pilot9Pose))
-            {
-                NinePoser = new PhxNinePoser("human_4", "human_" + section.Pilot9Pose, transform);
-            }
-            else 
-            {
-                Debug.LogErrorFormat("When entering vehicle, pilot had position but no anim!");
-            }     
+                bool isStatic = CurrentSection.PilotAnimationType == PilotAnimationType.StaticPose;
+                string animName = isStatic ? CurrentSection.PilotAnimation : CurrentSection.Pilot9Pose;
+                
+                Poser = new PhxPoser("human_4", "human_" + animName, transform, isStatic);   
+            }    
         }
 
         if (WeaponIdx[0] >= 0 && Weapons[0][WeaponIdx[0]] != null)
@@ -482,94 +476,96 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     }
 
 
-    System.Random r = new System.Random();
-
-    void UpdateNinePose(float deltaTime)
+    void UpdatePose(float deltaTime)
     {
-        if (Controller == null) return;
-
         Vector4 Input = new Vector4(Controller.MoveDirection.x, Controller.MoveDirection.y, Controller.mouseX, Controller.mouseY);
 
-        if (NinePoser != null && CurrentSection != null)
+        if (Poser != null && CurrentSection != null)
         {
             float blend = 2f * deltaTime;
 
-            PhxVehicleTurret t = CurrentSection as PhxVehicleTurret;
-
-            if (t == null)
+            if (CurrentSection.PilotAnimationType == PilotAnimationType.NinePose)
             {
                 if (Vector4.Magnitude(Input) < .001f)
                 {
-                    NinePoser.SetState(PhxNinePoseState.Idle, blend);
+                    Poser.SetState(PhxNinePoseState.Idle, blend);
                     return;
                 }
 
                 if (Input.x > .01f)
                 {
-                    NinePoser.SetState(PhxNinePoseState.StrafeRight, blend);           
+                    Poser.SetState(PhxNinePoseState.StrafeRight, blend);           
                 }
 
                 if (Input.x < -.01f)
                 {
-                    NinePoser.SetState(PhxNinePoseState.StrafeLeft, blend);            
+                    Poser.SetState(PhxNinePoseState.StrafeLeft, blend);            
                 }
 
                 if (Input.y < 0f) 
                 {
                     if (Input.z > .01f)
                     {
-                        NinePoser.SetState(PhxNinePoseState.BackwardsTurnLeft, blend);            
+                        Poser.SetState(PhxNinePoseState.BackwardsTurnLeft, blend);            
                     }
                     else if (Input.z < -.01f)
                     {
-                        NinePoser.SetState(PhxNinePoseState.BackwardsTurnRight, blend);            
+                        Poser.SetState(PhxNinePoseState.BackwardsTurnRight, blend);            
                     }
                     else
                     {
-                        NinePoser.SetState(PhxNinePoseState.Backwards, blend);            
+                        Poser.SetState(PhxNinePoseState.Backwards, blend);            
                     }
                 }
                 else
                 {
                     if (Input.z > .01f)
                     {
-                        NinePoser.SetState(PhxNinePoseState.ForwardTurnLeft, blend);            
+                        Poser.SetState(PhxNinePoseState.ForwardTurnLeft, blend);            
                     }
                     else if (Input.z < -.01f)
                     {
-                        NinePoser.SetState(PhxNinePoseState.ForwardTurnRight, blend);            
+                        Poser.SetState(PhxNinePoseState.ForwardTurnRight, blend);            
                     }
                     else
                     {
-                        NinePoser.SetState(PhxNinePoseState.Forward, blend);            
+                        Poser.SetState(PhxNinePoseState.Forward, blend);            
                     }
                 }
             }
-            else 
+            else if (CurrentSection.PilotAnimationType == PilotAnimationType.FivePose)
             {
                 if (Mathf.Abs(Input.z) + Mathf.Abs(Input.w) < .001f)
                 {
-                    NinePoser.SetState(PhxFivePoseState.Idle, blend);
+                    Poser.SetState(PhxFivePoseState.Idle, blend);
                     return;
                 }
 
                 if (Input.z > .01f)
                 {
-                NinePoser.SetState(PhxFivePoseState.TurnRight, blend);            
+                Poser.SetState(PhxFivePoseState.TurnRight, blend);            
                 }
                 else
                 {
-                    NinePoser.SetState(PhxFivePoseState.TurnLeft, blend);            
+                    Poser.SetState(PhxFivePoseState.TurnLeft, blend);            
                 }
 
                 if (Input.w > .01f)
                 {
-                    NinePoser.SetState(PhxFivePoseState.TurnDown, blend);            
+                    Poser.SetState(PhxFivePoseState.TurnDown, blend);            
                 }
                 else
                 {
-                    NinePoser.SetState(PhxFivePoseState.TurnUp, blend);            
+                    Poser.SetState(PhxFivePoseState.TurnUp, blend);            
                 }
+            }
+            else if (CurrentSection.PilotAnimationType == PilotAnimationType.StaticPose)
+            {
+                Poser.SetState();
+            }
+            else 
+            {
+                // Not sure what happens if PilotPosition is defined but PilotAnimation/Pilot9Pose are missing...
             }
         }
     }
@@ -579,10 +575,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     void UpdateState(float deltaTime)
     {
-        if (Context == PhxSoldierContext.Pilot)
+        if (Context == PhxSoldierContext.Pilot && Controller != null)
         {
             Animator.SetActive(false);
-            UpdateNinePose(deltaTime);
+            UpdatePose(deltaTime);
             return;
         }
 
@@ -596,22 +592,36 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
 
         // Will work into specific control schema.  Not sure when you can't enter vehicles...
-        if (Controller.TryEnterVehicle)
+        if (Controller.Enter)
         {
-            Collider[] PossibleVehicles = Physics.OverlapSphere(transform.position, 5.0f);
-            string NinePAnim;
-            Transform seat;
-            foreach (Collider PossibleVehicle in PossibleVehicles)
+            if (Context == PhxSoldierContext.Free)
             {
-                PhxVehicle Vehicle = PossibleVehicle.GetComponent<PhxVehicle>();
-                if (Vehicle != null)
+                PhxVehicle ClosestVehicle = null;
+                float ClosestDist = float.MaxValue;
+                
+                Collider[] PossibleVehicles = Physics.OverlapSphere(transform.position, 5.0f, ~0, QueryTriggerInteraction.Collide);
+                foreach (Collider PossibleVehicle in PossibleVehicles)
                 {
-                    CurrentSection = Vehicle.TryEnterVehicle(this);
+                    PhxVehicle Vehicle = PossibleVehicle.GetComponent<PhxVehicle>();
+                    if (Vehicle != null && Vehicle.HasAvailableSeat())
+                    {
+                        float Dist = Vector3.Magnitude(transform.position - Vehicle.transform.position);
+                        if (Dist < ClosestDist)
+                        {
+                            ClosestDist = Dist;
+                            ClosestVehicle = Vehicle;
+                        }
+                    }
+                    
+                }
 
+                if (ClosestVehicle != null)
+                {
+                    CurrentSection = ClosestVehicle.TryEnterVehicle(this);
                     if (CurrentSection != null)
                     {
                         SetPilot(CurrentSection);
-                        Controller.TryEnterVehicle = false;
+                        Controller.Enter = false;
                         return;
                     }
                 }
