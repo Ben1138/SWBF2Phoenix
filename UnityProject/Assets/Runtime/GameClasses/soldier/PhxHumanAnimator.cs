@@ -249,4 +249,16 @@ public struct PhxHumanAnimator
             Anim.SetState(1, CraSettings.STATE_NONE);
         }
     }
+
+
+    public void SetActive(bool status = true)
+    {
+        CraPlayer state0 = Anim.GetCurrentState(0);
+        state0.Reset();
+
+        // Not sure why, but this causes an array OoB exception, despite 
+        // the fact that Anim clearly has 2 layers...
+        //CraPlayer state1 = Anim.GetCurrentState(1);
+        //state1.Reset();
+    }
 }
