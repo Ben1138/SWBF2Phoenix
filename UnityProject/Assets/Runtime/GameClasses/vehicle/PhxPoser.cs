@@ -32,16 +32,26 @@ public enum PhxNinePoseState : int
 }
 
 
+/*
+Class for posing hierarchies.  Assumes one is passing a 9Pose animation,
+but if IsStatic is passed then only a single pose is maintained.  In both
+cases, the frames of the animation will be extracted as separate poses.
+
+Will implement jobs/burst functionality soon.  
+*/
+
 public class PhxPoser
 {
     private Transform[] Bones;
     private Quaternion[] Rotations;
     private Vector3[] Positions;
 
-    uint IgnoreMask = 0;
+    int NumFrames;
 
 
-    private static (Quaternion[], Vector3[])? GetFullCurve(AnimationBank bank, uint animCRC, uint boneCRC, int numFrames = 9)
+    // Takes bank + anim + bone and extracts numFrames different states as rotations/positions.
+    // numFrames can be greater than the actual number of frames in the anim.
+    private static (Quaternion[], Vector3[])? GetFullCurve(AnimationBank bank, uint animCRC, uint boneCRC, int numFrames)
     {
         Quaternion[] rots = new Quaternion[numFrames];
         Vector3[] locs = new Vector3[numFrames];
@@ -87,157 +97,97 @@ public class PhxPoser
         return (rots, locs);
     }
 
-    /*
-    private static Vector3[] GetCurvePositions(AnimationBank bank, uint animCRC, uint boneCRC, int numFrames = 9)
-    {
-        Vector3[] result = new Vector3[numFrames];
-        uint ComponentIndex = 4;
-        float[] values;
-        ushort[] inds;
-
-        do {
-            if (!bank.GetCurve(animCRC, boneCRC, ComponentIndex, out inds, out values))
-            {
-                return null;
-            }
-
-            float mult = ComponentIndex == 4 ? -1f : 1f;
-            float curValue;
-            int frameIndex = 0;
-            int valueIndex = 0;
-
-            for (int i = 0; i < numFrames; i++)
-            {
-                if (i > inds[frameIndex] && frameIndex < inds.Length - 1)
-                {
-                    if (i == inds[frameIndex + 1])
-                    {
-                        frameIndex++;
-                    }
-                }
-
-                curValue = values[frameIndex];
-
-                result[i][(int) ComponentIndex - 4] = mult * curValue;
-            }            
-        } while (++ComponentIndex < 7);
-
-        return result;
-    }
-    */
 
 
-    public PhxPoser(string animBankName, string animName, Transform objRoot, bool IgnoreRoot = true)
+    public PhxPoser(string animBankName, string animName, Transform objRoot, bool IsStatic = false)
     {
         AnimationBank NinePose = AnimationLoader.Instance.GetRawAnimationBank(animBankName);
+        NumFrames = IsStatic ? 1 : 9;
 
-        if (NinePose != null && NinePose.GetAnimationMetadata(HashUtils.GetCRC(animName), out int numFrames, out int numBones))
+        if (NinePose != null && NinePose.GetAnimationMetadata(HashUtils.GetCRC(animName), out int actualNumFrames, out int numBones))
         {
-            if (numFrames != 9)
+            if (!IsStatic && actualNumFrames != 9)
             {
-                Debug.LogErrorFormat("Found NinePose ({0}, {1}), but has {2} frames...", animBankName, animName, numFrames);
+                // For sake of knowledge
+                Debug.LogWarningFormat("Found NinePose ({0}, {1}), but has {2} frames...", animBankName, animName, actualNumFrames);
             }
 
             List<Transform> children = UnityUtils.GetChildTransforms(objRoot);
             children.Add(objRoot);
 
-            Rotations = new Quaternion[9 * numBones];
+            Rotations = new Quaternion[NumFrames * numBones];
             Bones = new Transform[numBones];
-            Positions = new Vector3[9 * numBones];
+            Positions = new Vector3[NumFrames * numBones];
 
-            int offset = 0;
+            int offset = 0, AcutalNumBones = 0;
             foreach (Transform childTx in children)
             {
-                if (IgnoreRoot && childTx.parent == objRoot) continue;
+                // No root motion
+                if (childTx.parent == objRoot) continue;
 
-                (Quaternion[], Vector3[])? Curve = GetFullCurve(NinePose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name));
+                (Quaternion[], Vector3[])? Curve = GetFullCurve(NinePose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name), NumFrames);
 
                 if (!Curve.HasValue) continue;
 
-                Bones[offset / 9] = childTx;
+                Bones[offset / NumFrames] = childTx;
 
-                for (int i = 0; i < 9; i++)
+                for (int i = 0; i < NumFrames; i++)
                 {
                     Rotations[offset + i] = Curve.Value.Item1[i];
                     Positions[offset + i] = Curve.Value.Item2[i];
                 }
 
-                offset += 9;
+                offset += NumFrames;
+                AcutalNumBones++;
             }
+
+            //Array.Resize(ref Rotations, AcutalNumBones * NumFrames);
+            //Array.Resize(ref Bones, AcutalNumBones);
+            //Array.Resize(ref Positions, AcutalNumBones * NumFrames);
         }
         else
         {
-            Debug.LogErrorFormat("NinePose not found... ({0}, {1})", animBankName, animName);
+            Debug.LogErrorFormat("Pose not found... ({0}, {1})", animBankName, animName);
         }
     }
 
 
-    public void IgnoreBone(string name)
+
+    public void SetState()
     {
-
+        SetStateByFrame(0, 1f);
     }
-
 
     public void SetState(PhxFivePoseState state, float blendValue)
     {
-        SetStateByFrame((int) state, blendValue);
+        SetStateByFrame(NumFrames == 9 ? (int) state : 0, blendValue);
     }
 
     public void SetState(PhxNinePoseState state, float blendValue)
     {
-        SetStateByFrame((int) state, blendValue);
+        SetStateByFrame(NumFrames == 9 ? (int) state : 0, blendValue);
     }
 
+    // Probably slow, will use jobs soon.
     private void SetStateByFrame(int frameNum, float blendValue)
     {
-        if (Rotations == null)
+        if (Rotations == null || Bones == null || Positions == null)
         {
-            Debug.LogErrorFormat("No info set!!!!");
+            Debug.LogErrorFormat("No pose data initialized.");
             return;
         }
 
+        int Index;
         for (int i = 0; i < Bones.Length; i++)
         {
             if (Bones[i] == null) continue;
 
-            Bones[i].localPosition = Vector3.Lerp(Bones[i].localPosition, Positions[i * 9 + frameNum], blendValue);
-            Bones[i].localRotation = Quaternion.Slerp(Bones[i].localRotation, Rotations[i * 9 + frameNum], blendValue);
+            Index = i * NumFrames + frameNum;
+
+            Bones[i].localPosition = Vector3.Lerp(Bones[i].localPosition, Positions[Index], blendValue);
+            Bones[i].localRotation = Quaternion.Slerp(Bones[i].localRotation, Rotations[Index], blendValue);
         }
     }
-
-
-
-    public static void PoseSkeletonStatically(string animBankName, string animName, Transform objRoot)
-    {
-        AnimationBank Pose = AnimationLoader.Instance.GetRawAnimationBank(animBankName);
-
-        if (Pose != null && Pose.GetAnimationMetadata(HashUtils.GetCRC(animName), out int numFrames, out int numBones))
-        {
-            if (numFrames != 1)
-            {
-                Debug.LogErrorFormat("Found static pose ({0}, {1}), but has {2} frames...", animBankName, animName, numFrames);
-            }
-
-            List<Transform> children = UnityUtils.GetChildTransforms(objRoot);
-
-            foreach (Transform childTx in children)
-            {
-                (Quaternion[], Vector3[])? Curve = GetFullCurve(Pose, HashUtils.GetCRC(animName), HashUtils.GetCRC(childTx.name), 1);
-
-                if (!Curve.HasValue) continue;
-
-                childTx.localRotation = Curve.Value.Item1[0];
-                childTx.localPosition = Curve.Value.Item2[0];
-            }
-        }
-        else
-        {
-            Debug.LogErrorFormat("Static pose not found... ({0}, {1})", animBankName, animName);
-        }
-
-    }
-
-
 }
 
 

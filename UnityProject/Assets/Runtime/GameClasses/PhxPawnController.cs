@@ -20,7 +20,7 @@ public abstract class PhxPawnController
     public bool NextPrimaryWeapon;
     public bool NextSecondaryWeapon;
 
-    public bool TryEnterVehicle;
+    public bool Enter;
 
     public Vector2 MoveDirection;
     public Vector3 ViewDirection;
