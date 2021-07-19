@@ -110,10 +110,10 @@ public class PhxPlayerController : PhxPawnController
 
         if (Input.GetKeyDown(KeyCode.E))
         {
-            TryEnterVehicle = true;
+            Enter = true;
         }
 
-        if (TryEnterVehicle)
+        if (Enter)
         {
             if (VehicleEnterTimer <= 0.0f)
             {
@@ -121,7 +121,7 @@ public class PhxPlayerController : PhxPawnController
             }
             else 
             {
-                TryEnterVehicle = false;
+                Enter = false;
             }
         }
 

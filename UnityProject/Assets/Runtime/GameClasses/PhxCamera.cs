@@ -37,11 +37,6 @@ public class PhxCamera : MonoBehaviour
     {
         Mode = CamMode.Follow;
         FollowInstance = follow;
-
-        FreeMoveSpeed              = 100.0f;
-        FreeRotationSpeed          = 5.0f;
-        PositionOffset             = new Vector3(0f, 2f, -2f);
-        FollowSpeed                = 10.0f;
     }
 
     public void Fixed()
@@ -101,7 +96,6 @@ public class PhxCamera : MonoBehaviour
         {
             Vector3 rotPoint = FollowInstance.GetInstance().transform.position;
             rotPoint.y += PositionOffset.y;
-
 
             //Vector3 viewDir = (FollowInstance.GetTargetPosition() - rotPoint).normalized;
             Vector3 viewDir = PhxGameRuntime.GetMatch().Player.ViewDirection;

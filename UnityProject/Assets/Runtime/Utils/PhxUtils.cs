@@ -8,6 +8,17 @@ using System.Runtime.ExceptionServices;
 
 public static class PhxUtils
 {
+    public static Vector4 Vec4FromString(string val)
+    {
+        string[] v = val.Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
+        Vector4 vOut = new Vector4();
+        for (int i = 0; i < 4 && i < v.Length; i++)
+        {
+            vOut[i] = float.Parse(v[i]);
+        }
+        return vOut;
+    }
+
 	public static Vector3 Vec3FromString(string val)
 	{
         string[] v = val.Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
