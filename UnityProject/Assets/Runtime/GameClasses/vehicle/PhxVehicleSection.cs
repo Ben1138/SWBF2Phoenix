@@ -5,6 +5,18 @@ using UnityEngine;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Utils;
 
+
+
+public enum PilotAnimationType : int 
+{
+    NinePose,
+    FivePose,
+    StaticPose,
+    None
+}
+
+
+
 /*
 All VehicleSections have camera properties, movement ranges, and pilot configurations.
 Many have Weapons and related Aimers.
@@ -27,7 +39,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
     protected List<PhxWeaponSystem> WeaponSystems;
 
     // Vehicle to which section belongs
-    protected PhxVehicle OwnerVehicle;
+    public PhxVehicle OwnerVehicle  { get; protected set; }
 
     // Transform that moves with the pilot's input 
     // (will have to build in MountPoint soon for turrets)
@@ -43,6 +55,9 @@ public abstract class PhxVehicleSection : IPhxTrackable
     public Transform PilotPosition { get; protected set; }
     public string PilotAnimation { get; protected set; }
     public string Pilot9Pose { get; protected set; }
+
+    // How to interpret pilot anim fields
+    public PilotAnimationType PilotAnimationType { get; protected set; } = PilotAnimationType.None;
 
     // Camera control values, common to all sections
     protected Vector3 EyePointOffset;
@@ -92,10 +107,10 @@ public abstract class PhxVehicleSection : IPhxTrackable
             return;
         }
 
-        if (Controller.TryEnterVehicle && OwnerVehicle.Eject(Index))
+        if (Controller.Enter && OwnerVehicle.Eject(Index))
         {
             Occupant = null;
-            Controller.TryEnterVehicle = false;
+            Controller.Enter = false;
             return;
         }
         
@@ -124,8 +139,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
 
         // These need work, camera behaviour is slightly off and NormalDirection 
         // hasn't been incorporated yet.  But I'm satisfied for now.  The commented
-        // AAT and Darth D.U.C.K's tut are both incomplete and wrong in some places w.r.t
-        // camera behaviour...
+        // AAT and Darth D.U.C.K's tut are both incomplete and wrong in some places...
         Vector3 CameraOffset = TrackOffset;
         CameraOffset.z *= -1f;
 
@@ -153,6 +167,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
             Aim = GetInstance(hit.collider.gameObject.transform);
         }
 
+        // Update aimers for each weapon system
         foreach (PhxWeaponSystem System in WeaponSystems)
         {
             System.Update(TargetPos);
@@ -160,24 +175,10 @@ public abstract class PhxVehicleSection : IPhxTrackable
     }
 
 
-    public bool HopToNextSeat()
-    {
-        if (OwnerVehicle == null) {return false;}
-
-        bool r = OwnerVehicle.TrySwitchSeat(Index);
-        if (r)
-        {
-            ClearOccupant();
-        }
-        return r;
-    }
-
-
     public void ClearOccupant()
     {
         Occupant = null;
     }
-
 
     public bool SetOccupant(PhxSoldier s) 
     {
@@ -188,12 +189,10 @@ public abstract class PhxVehicleSection : IPhxTrackable
         return true;
     }
 
-
     public bool IsOccupied()
     {
         return Occupant != null;
     }
-
 
 
     protected PhxVehicleSection(uint[] properties, string[] values, ref int i, PhxVehicle v, int SectionIndex)
@@ -272,10 +271,12 @@ public abstract class PhxVehicleSection : IPhxTrackable
             else if (properties[i] == HashUtils.GetFNV("PilotAnimation"))
             {
                 PilotAnimation = values[i];
+                PilotAnimationType = PilotAnimationType.StaticPose;
             }            
             else if (properties[i] == HashUtils.GetFNV("Pilot9Pose"))
             {
                 Pilot9Pose = values[i];
+                PilotAnimationType = PilotAnimationType.NinePose;
             }
             else if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
             {

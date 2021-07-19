@@ -57,23 +57,31 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
 
     // Dealing with SWBF's use of concave colliders on physics objects will be a major challenge
     // unless we can reliably use the primitives found on each imported model...
-    protected void PruneMeshColliders(Transform tx)
+    protected List<MeshCollider> GetMeshColliders(Transform tx)
     {
+        List<MeshCollider> Result = new List<MeshCollider>();
         MeshCollider coll = tx.gameObject.GetComponent<MeshCollider>();
-        if (coll != null)
+        if (coll != null && coll.convex)
         {
-            //Destroy(coll);
-            coll.convex = true;
+            Result.Add(coll);
         }
 
         for (int j = 0; j < tx.childCount; j++)
         {
-            PruneMeshColliders(tx.GetChild(j));
+            Result.AddRange(GetMeshColliders(tx.GetChild(j)));
         }
+
+        return Result;
     }
 
 
-    public int GetNextAvailableSeat(int startIndex = -1)
+    public bool HasAvailableSeat()
+    {
+        return GetNextAvailableSeat() != -1;
+    }
+
+
+    protected int GetNextAvailableSeat(int startIndex = -1)
     {
         int numSeats = Sections.Count;
         int i = (startIndex + 1) % numSeats;
@@ -119,7 +127,6 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     }
 
 
-
     public PhxVehicleSection TryEnterVehicle(PhxSoldier soldier)
     {
         // Find first available seat
@@ -141,12 +148,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
 
     public bool Eject(int i)
     {
-        if (i >= Sections.Count)
-        {
-            return false;
-        }
-
-        if (Sections[i] != null || Sections[i].Occupant != null)
+        if (i < Sections.Count || Sections[i] != null || Sections[i].Occupant != null)
         {
             Sections[i].Occupant.SetFree(transform.position + Vector3.up * 2.0f);
             CAM.Follow(Sections[i].Occupant);
@@ -159,6 +161,34 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
             return false;
         }
     }
+
+
+    public List<Collider> GetAllColliders()
+    {
+        List<Collider> Colliders = new List<Collider>();
+        List<Transform> ChildTransforms = UnityUtils.GetChildTransforms(transform);
+
+        ChildTransforms.Add(transform);
+
+        foreach (Transform childTx in ChildTransforms)
+        {
+            foreach (Collider coll in childTx.gameObject.GetComponents<Collider>())
+            {
+                Colliders.Add(coll);
+            }
+        }
+
+        return Colliders;
+    }
+
+
+    protected void SetupEnterTrigger()
+    {
+        BoxCollider EnterTrigger = gameObject.AddComponent<BoxCollider>();
+        EnterTrigger.size = UnityUtils.GetMaxBounds(gameObject).extents * 2.5f;
+        EnterTrigger.isTrigger = true;
+    }
+
 
 
 
