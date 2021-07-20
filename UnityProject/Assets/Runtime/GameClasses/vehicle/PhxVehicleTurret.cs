@@ -45,6 +45,12 @@ public class PhxVehicleTurret : PhxVehicleSection
             }
         }
 
+        // Turrets use just five poses out of nine given
+        if (PilotAnimationType == PilotAnimationType.NinePose)
+        {
+            PilotAnimationType = PilotAnimationType.FivePose;
+        }
+
         i = EndIndex;
     }
 

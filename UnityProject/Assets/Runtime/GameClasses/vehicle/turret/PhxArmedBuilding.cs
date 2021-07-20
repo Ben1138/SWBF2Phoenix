@@ -17,6 +17,8 @@ public class PhxArmedBuilding : PhxVehicle
 
     public override void Init()
     {
+        SetupEnterTrigger();
+        
         var EC = C.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);
 
@@ -38,7 +40,10 @@ public class PhxArmedBuilding : PhxVehicle
 
     void UpdateState(float deltaTime)
     {
-        TurretSection.Update();
+        if (TurretSection != null)
+        {
+            TurretSection.Update();        
+        }
     }
 
     void UpdatePhysics(float deltaTime){}
