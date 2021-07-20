@@ -107,6 +107,28 @@ public class PhxProjectiles
         Sparks = new PhxPool<ParticleSystem>(Game.SparkPrefab, "Sparks", COUNT, 1.5f);
     }
 
+
+    public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt, List<Collider> Colliders)
+    {
+        PhxProjectile proj = Projectiles.Alloc();
+        if (proj == null)
+        {
+            Debug.LogWarning($"Ran out of projectile instances! Maximum of {Projectiles.Objects.Length} reached!");
+            return;
+        }
+
+        foreach (Collider coll in Colliders)
+        {
+            Physics.IgnoreCollision(proj.Coll, coll);
+        }
+
+        if (proj != null)
+        {
+            proj.Setup(owner, pos, rot, bolt);
+        }
+    }
+
+
     public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
     {
         PhxProjectile proj = Projectiles.Alloc();

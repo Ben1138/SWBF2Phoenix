@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Runtime/Scenes/Testing/PhxAnimTest.unity
     guid: c232eade6a0f21444a2036218a029cff
+  - enabled: 1
+    path: Assets/Runtime/Scenes/Testing/PhxVehicleTesting.unity
+    guid: c8887481e3b5a4538b53a158a8962715
   m_configObjects: {}
