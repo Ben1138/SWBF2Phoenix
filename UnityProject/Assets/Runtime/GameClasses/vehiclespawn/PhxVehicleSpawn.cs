@@ -113,7 +113,13 @@ public class PhxVehicleSpawn : PhxInstance
 
     PhxClass GetAppropriateVehicle()
     {
-        PhxRuntimeMatch.PhxTeam CPTeam = Match.Teams[Team.Get() - 1];
+        int index = Team.Get() - 1;
+        if (index < 0 || index > 1)
+        {
+            return null;
+        }
+
+        PhxRuntimeMatch.PhxTeam CPTeam = Match.Teams[index];
         string ClassName;
         switch (CPTeam.Name)
         {
@@ -130,7 +136,7 @@ public class PhxVehicleSpawn : PhxInstance
                 ClassName = Team == 1 ? ClassAllATK : ClassAllDEF;
                 break;
             default:
-                ClassName = "";
+                return null;
                 break;
         }
 
@@ -156,7 +162,7 @@ public class PhxVehicleSpawn : PhxInstance
             Scene.CreateInstance(
                         VehicleClass,
                         "vehicle_" + VehicleCount++.ToString(),
-                        transform.position + new Vector3(0.0f, 1.0f, 0.0f),
+                        transform.position,
                         transform.rotation
             );
         }
