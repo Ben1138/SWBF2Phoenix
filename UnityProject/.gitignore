@@ -77,3 +77,6 @@ crashlytics-build.properties
 
 # Ignore build folder
 .Build
+
+# Ignore all metas, why not?
+*.meta
