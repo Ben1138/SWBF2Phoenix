@@ -30,25 +30,51 @@ public class PhxProjectile : MonoBehaviour
 
     PhxPawnController Owner;
     Rigidbody Body;
-    HDAdditionalLightData Light;
+
+    bool RenderHD = true;
+    Light Light;
+    HDAdditionalLightData HDLightData;
+
     LineRenderer Renderer;
 
     public void Setup(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
     {
+        RenderHD = !(GraphicsSettings.renderPipelineAsset == null); 
+
         Owner = owner;
 
         Body.transform.position = pos;
         Body.transform.rotation = rot;
         Body.velocity = Body.transform.forward * bolt.Velocity;
 
-        Light.color = bolt.LightColor;
+        if (RenderHD)
+        {
+            HDLightData.color = bolt.LightColor;
+        }
+        else
+        {
+            Light.color = bolt.LightColor;
+        }
 
         Renderer.startWidth = bolt.LaserWidth;
         Renderer.endWidth = bolt.LaserWidth;
         Renderer.SetPosition(1, new Vector3(0f, 0f, bolt.LaserLength * 2f));
-        Renderer.material.SetTexture("_UnlitColorMap", bolt.LaserTexture);
-        Renderer.material.SetTexture("_EmissiveColorMap", bolt.LaserTexture);
-        Renderer.material.SetColor("_EmissiveColor", bolt.LightColor.Get() * EmissionIntensity);
+
+        if (RenderHD)
+        {
+            Renderer.material.SetTexture("_UnlitColorMap", bolt.LaserTexture);
+            Renderer.material.SetTexture("_EmissiveColorMap", bolt.LaserTexture);
+            Renderer.material.SetColor("_EmissiveColor", bolt.LightColor.Get() * EmissionIntensity);
+        }
+        else 
+        {
+            Renderer.material.SetTexture("_MainTex", bolt.LaserTexture);
+            Renderer.material.EnableKeyword("_EMISSION");
+            Renderer.material.SetTexture("_EmissionMap", bolt.LaserTexture);
+            //Renderer.material.SetColor("_EmissionColor", Color.white);
+        }
+
+
     }
 
     void Awake()
@@ -57,7 +83,8 @@ public class PhxProjectile : MonoBehaviour
 
         Coll = GetComponent<BoxCollider>();
         Body = GetComponent<Rigidbody>();
-        Light = GetComponent<HDAdditionalLightData>();
+        Light = GetComponent<Light>();
+        HDLightData = GetComponent<HDAdditionalLightData>();
         Renderer = GetComponent<LineRenderer>();
     }
 

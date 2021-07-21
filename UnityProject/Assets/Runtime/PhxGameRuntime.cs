@@ -323,8 +323,8 @@ public class PhxGameRuntime : MonoBehaviour
     void Init()
     {
         Instance = this;
-        WorldLoader.UseHDRP = true;
-        MaterialLoader.UseHDRP = true;
+        WorldLoader.UseHDRP = false;
+        MaterialLoader.UseHDRP = false;
 
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
         if (GamePath.IsFile()              || 

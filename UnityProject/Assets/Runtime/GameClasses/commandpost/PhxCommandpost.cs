@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Rendering;
 using LibSWBF2.Wrappers;
 
 public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
@@ -31,7 +32,10 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
     [Header("References")]
     public LineRenderer HoloRay;
     public GameObject   HoloIcon;
-    public HDAdditionalLightData Light;
+
+    private bool RenderHD = true;
+    public Light Light;
+    public HDAdditionalLightData HDLightData;
 
     [Header("Settings")]
     public Vector2 CapturePitch = new Vector2(0.5f, 1.5f);
@@ -85,18 +89,30 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
 
     public override void Init()
     {
+        RenderHD = !(GraphicsSettings.renderPipelineAsset == null); 
+
         Transform hpHolo = transform.Find(string.Format("{0}/hp_hologram", C.Name));
         if (hpHolo != null)
         {
             GameObject holoPrefab = Resources.Load<GameObject>("cp_holo");
             GameObject holo = Instantiate(holoPrefab, hpHolo);
             HoloRay = holo.GetComponent<LineRenderer>();
-            Light = holo.GetComponentInChildren<HDAdditionalLightData>();
+
+            Light = holo.GetComponentInChildren<Light>();
+            HDLightData = holo.GetComponentInChildren<HDAdditionalLightData>();
 
             HoloWidthStart = HoloRay.startWidth;
             HoloWidthEnd = HoloRay.endWidth;
-            HoloAlpha = HoloRay.material.GetColor("_UnlitColor").a;
-            LightIntensity = Light.intensity;
+            HoloAlpha = RenderHD ? HoloRay.material.GetColor("_UnlitColor").a : HoloRay.material.GetColor("_Color").a;
+
+            if (RenderHD)
+            {
+                LightIntensity = Light.intensity;
+            }
+            else
+            {
+                LightIntensity = 3f;
+            }
         }
 
         AudioAmbient = gameObject.AddComponent<AudioSource>();
@@ -293,7 +309,16 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
             {
                 HoloRay.startWidth = Mathf.Lerp(0.0f, HoloWidthStart, HoloPresence);
                 HoloRay.endWidth   = Mathf.Lerp(0.0f, HoloWidthEnd, HoloPresence);
-                HoloRay.material.SetColor("_UnlitColor", HoloColor);
+
+                if (RenderHD)
+                {
+                    HoloRay.material.SetColor("_UnlitColor", HoloColor);
+                }
+                else 
+                {
+                    HoloRay.material.SetColor("_Color", HoloColor);
+                }
+
             }
             LastHoloPresence = HoloPresence;
         }
