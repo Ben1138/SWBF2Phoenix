@@ -592,40 +592,43 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
 
         // Will work into specific control schema.  Not sure when you can't enter vehicles...
-        if (Controller.Enter)
+        if (Controller.Enter && Context == PhxSoldierContext.Free)
         {
-            if (Context == PhxSoldierContext.Free)
+            PhxVehicle ClosestVehicle = null;
+            float ClosestDist = float.MaxValue;
+            
+            Collider[] PossibleVehicles = Physics.OverlapSphere(transform.position, 5.0f, ~0, QueryTriggerInteraction.Collide);
+            foreach (Collider PossibleVehicle in PossibleVehicles)
             {
-                PhxVehicle ClosestVehicle = null;
-                float ClosestDist = float.MaxValue;
-                
-                Collider[] PossibleVehicles = Physics.OverlapSphere(transform.position, 5.0f, ~0, QueryTriggerInteraction.Collide);
-                foreach (Collider PossibleVehicle in PossibleVehicles)
+                GameObject CollidedObj = PossibleVehicle.gameObject;
+                if (PossibleVehicle.attachedRigidbody != null)
                 {
-                    PhxVehicle Vehicle = PossibleVehicle.GetComponent<PhxVehicle>();
-                    if (Vehicle != null && Vehicle.HasAvailableSeat())
-                    {
-                        float Dist = Vector3.Magnitude(transform.position - Vehicle.transform.position);
-                        if (Dist < ClosestDist)
-                        {
-                            ClosestDist = Dist;
-                            ClosestVehicle = Vehicle;
-                        }
-                    }
-                    
+                    CollidedObj = PossibleVehicle.attachedRigidbody.gameObject;
                 }
 
-                if (ClosestVehicle != null)
+                PhxVehicle Vehicle = CollidedObj.GetComponent<PhxVehicle>();
+                if (Vehicle != null && Vehicle.HasAvailableSeat())
                 {
-                    CurrentSection = ClosestVehicle.TryEnterVehicle(this);
-                    if (CurrentSection != null)
+                    float Dist = Vector3.Magnitude(transform.position - Vehicle.transform.position);
+                    if (Dist < ClosestDist)
                     {
-                        SetPilot(CurrentSection);
-                        Controller.Enter = false;
-                        return;
+                        ClosestDist = Dist;
+                        ClosestVehicle = Vehicle;
                     }
                 }
             }
+
+            if (ClosestVehicle != null)
+            {
+                CurrentSection = ClosestVehicle.TryEnterVehicle(this);
+                if (CurrentSection != null)
+                {
+                    SetPilot(CurrentSection);
+                    Controller.Enter = false;
+                    return;
+                }
+            }
+            
         }
 
         Vector3 lookWalkForward = Controller.ViewDirection;
