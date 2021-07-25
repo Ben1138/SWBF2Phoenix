@@ -247,27 +247,14 @@ public class PhxVehicleProperties : PhxClass
     // vehicle 9Pose
     public PhxProp<string> FinAnimation = new PhxProp<string>("");
 
+    public PhxProp<string> GeometryName = new PhxProp<string>("");
+
 
     public PhxMultiProp SoldierCollision = new PhxMultiProp(typeof(string));
-
-    /*
-    public PhxPropertySection Flyer = new PhxPropertySection(
-        "FLYERSECTION",
-        ("VehicleType",   new PhxProp<string>(null)),
-        ("PilotPosition", new PhxProp<string>(null)),
-        ("Pilot9Pose",    new PhxProp<string>(null)),
-        ("EyePointOffset",new PhxProp<Vector3>(Vector3.zero)),
-        ("TrackCenter",   new PhxProp<Vector3>(Vector3.zero)),
-        ("TrackOffset",   new PhxProp<Vector3>(Vector3.zero))
-    );
-
-    public PhxPropertySection Weapons = new PhxPropertySection(
-        "WEAPONSECTION",
-        ("WeaponName",    new PhxProp<string>(null)),
-        ("WeaponAmmo",    new PhxProp<int>(0)),
-        ("WeaponChannel", new PhxProp<int>(0))
-    );
-    */
+    public PhxMultiProp BuildingCollision = new PhxMultiProp(typeof(string));
+    public PhxMultiProp VehicleCollision = new PhxMultiProp(typeof(string));
+    public PhxMultiProp OrdnanceCollision = new PhxMultiProp(typeof(string));
+    public PhxMultiProp TargetableCollision = new PhxMultiProp(typeof(string));
 
     public PhxProp<string> VehicleType = new PhxProp<string>("light");
     public PhxProp<string> AISizeType =  new PhxProp<string>("MEDIUM");
