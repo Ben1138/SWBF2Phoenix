@@ -23,6 +23,8 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
     public float FireDelay;
     float ReloadDelay;
 
+    public List<Collider> IgnoredColliders;
+
 	public class ClassProperties : PhxClass
 	{
 		public PhxProp<float> ShotDelay     = new PhxProp<float>(0.2f);
@@ -75,6 +77,11 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
         
     }
 
+    public void SetIgnoredColliders(List<Collider> Colliders)
+    {
+        IgnoredColliders = Colliders;
+    }
+
     public PhxInstance GetInstance()
     {
         return this;
@@ -98,7 +105,7 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
                 {
                     Vector3 dirVec = (targetPos - transform.position).normalized;
                     Quaternion dir = Quaternion.LookRotation(dirVec);
-                    Scene.FireProjectile(owner, transform.position, dir, bolt);
+                    Scene.FireProjectile(owner, transform.position, dir, bolt, IgnoredColliders);
                     Debug.DrawRay(transform.position, dirVec * 1000f, Color.red);
                 }
             }
@@ -235,6 +242,8 @@ public class PhxWeaponSystem
 
     List<PhxAimer> Aimers;
 
+    List<Collider> IgnoredColliders;
+
 
     public void AddAimer(PhxAimer Aimer)
     {
@@ -253,6 +262,7 @@ public class PhxWeaponSystem
     {
         //WeaponName = "rep_weap_hover_fightertank_cannon";
     	Weapon = SCENE.CreateInstance(SCENE.GetClass(WeaponName), false) as IPhxWeapon;
+        Weapon.SetIgnoredColliders(IgnoredColliders);
 
     	if (Weapon == null)
     	{
@@ -269,6 +279,8 @@ public class PhxWeaponSystem
     {
     	OwnerSection = Section;
         Aimers = new List<PhxAimer>();
+
+        IgnoredColliders = OwnerSection.OwnerVehicle.GetOrdnanceColliders();
     }
 
 

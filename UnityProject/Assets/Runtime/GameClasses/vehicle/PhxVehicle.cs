@@ -46,6 +46,10 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     protected List<PhxVehicleSection> Sections;
 
 
+    protected SWBFModel ModelMapping = null;
+
+
+
     // Will return true if vehicle is sliceable.  Out param is SliceProgress
     public virtual bool IncrementSlice(out float progress)
     {
@@ -187,6 +191,25 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         BoxCollider EnterTrigger = gameObject.AddComponent<BoxCollider>();
         EnterTrigger.size = UnityUtils.GetMaxBounds(gameObject).extents * 2.5f;
         EnterTrigger.isTrigger = true;
+    }
+
+
+    // So projectiles don't hit the vehicles that shot them 
+    public List<Collider> GetOrdnanceColliders()
+    {
+        if (ModelMapping != null)
+        {
+            List<Collider> R = ModelMapping.GetCollidersByLayer(LibSWBF2.Enums.ECollisionMaskFlags.Ordnance);
+            if (R.Count == 0)
+            {
+                return null;
+            }
+            else 
+            {
+                return R;
+            }
+        }
+        return null;
     }
 
 

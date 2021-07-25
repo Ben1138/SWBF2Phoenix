@@ -117,9 +117,12 @@ public class PhxProjectiles
             return;
         }
 
-        foreach (Collider coll in Colliders)
+        if (Colliders != null)
         {
-            Physics.IgnoreCollision(proj.Coll, coll);
+            foreach (Collider coll in Colliders)
+            {
+                Physics.IgnoreCollision(proj.Coll, coll);
+            }            
         }
 
         if (proj != null)

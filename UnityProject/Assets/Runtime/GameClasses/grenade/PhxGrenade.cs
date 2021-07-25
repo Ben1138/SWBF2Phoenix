@@ -22,6 +22,8 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
         }
     }
 
+    public void SetIgnoredColliders(List<Collider> Colliders){}
+
     public override void BindEvents()
     {
 

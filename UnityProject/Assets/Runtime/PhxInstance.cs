@@ -1,6 +1,8 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using System.Collections.Generic;
+
 using LibSWBF2.Wrappers;
 
 public abstract class PhxInstance : MonoBehaviour
@@ -146,6 +148,8 @@ public interface IPhxWeapon
     public void OnShot(Action callback);
     public void OnReload(Action callback);
     public string GetAnimBankName();
+
+    public void SetIgnoredColliders(List<Collider> Colliders);
 
     public int GetMagazineSize();
     public int GetTotalAmmo();
