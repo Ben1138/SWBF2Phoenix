@@ -9,6 +9,13 @@ using System.Runtime.ExceptionServices;
 
 public class PhxHover : PhxVehicle
 {
+    /*
+    Pretty sure all the default values are correct.
+    Unsure of how Length and Scale relate...
+        The higher Length is, the more the string compresses and if 
+        Length >= 2 * Scale, the hover will fall through terrain
+    */
+
     protected class PhxHoverSpring
     {
         public float OmegaXFactor = 0f; // neg if z coord is pos 
@@ -50,6 +57,28 @@ public class PhxHover : PhxVehicle
     }
 
 
+    protected class PhxHoverWheel 
+    {
+        public Vector2 VelocityFactor = Vector2.zero;
+        public Vector2 TurnFactor = Vector2.zero;
+
+        public Material WheelMaterial;
+
+        Vector2 TexOffset = Vector2.zero;
+
+        public string ToString()
+        {
+            return String.Format("WheelMaterial: {0} Vel Factors: {1} Turn Factors: {2}", WheelMaterial.name, VelocityFactor.ToString("F2"), TurnFactor.ToString("F2"));
+        }
+
+        public void Update(float deltaTime, float vel, float turn)
+        {
+            TexOffset += deltaTime * (vel * VelocityFactor + turn * TurnFactor);
+            WheelMaterial.SetTextureOffset("_MainTex", TexOffset);
+        }
+    }
+
+
     public class ClassProperties : PhxVehicleProperties
     {
         public PhxProp<float> Acceleration = new PhxProp<float>(5.0f);
@@ -81,6 +110,8 @@ public class PhxHover : PhxVehicle
         public PhxPropertySection Wheels = new PhxPropertySection(
             "WHEELSECTION",
             ("WheelTexture",  new PhxProp<string>("")),
+            ("WheelVelocToU", new PhxProp<float>(0f)),
+            ("WheelOmegaToU", new PhxProp<float>(0f)),
             ("WheelVelocToV", new PhxProp<float>(0f)),
             ("WheelOmegaToV", new PhxProp<float>(0f))
         );
@@ -103,15 +134,14 @@ public class PhxHover : PhxVehicle
     PhxHover.ClassProperties H;
 
 
-    // If the vehicle has treads, we update the UV offset
-    // of the mat used by the WheelTexture node via its MeshRenderer.
-    List<MeshRenderer> WheelRenderers; 
-
     // Poser for movement anims
     PhxPoser Poser;
 
     // Springs for precise movement
     List<PhxHoverSpring> Springs;
+
+    // For scrolling-texture wheels
+    List<PhxHoverWheel> Wheels;
 
     AudioSource AudioAmbient;
 
@@ -126,6 +156,7 @@ public class PhxHover : PhxVehicle
     // can be used on vehicle.
     GameObject SOColliderObject;
 
+    // Just for quick editor debugging
     [Serializable]
     public class SpringForce 
     {
@@ -166,41 +197,28 @@ public class PhxHover : PhxVehicle
     HashSet<Collider> ObjectColliders;
 
 
+    SWBFModel ModelMapping = null;
 
     // for debugging
     bool DBG = false;
 
-    Vector3 startPos;
 
     public override void Init()
     {
         SetupEnterTrigger();
+
+        ModelMapping = ModelLoader.Instance.GetModelMapping(gameObject, C.GeometryName); 
+        ModelMapping.StripMeshCollider();
+
+
+
+        //ModelMapping.SetAllCollidersExcept(LibSWBF2.Enums.ECollisionMaskFlags.Soldier, false);
 
         H = C as PhxHover.ClassProperties;
 
         if (H == null) return;
 
         transform.position += Vector3.up * H.SetAltitude;
-
-        startPos = transform.position;
-
-        List<MeshCollider> MeshColliders = GetMeshColliders(transform);
-        if (MeshColliders.Count > 0)
-        {
-            //SOColliderObject = new GameObject(gameObject.name + "_SO");
-            //var soBody = SOColliderObject.AddComponent<Rigidbody>();
-            //soBody.isKinematic = true;
-
-            foreach (MeshCollider MC in MeshColliders)
-            {
-                //var SOMC = SOColliderObject.AddComponent<MeshCollider>();
-                //SOMC.sharedMesh = MC.sharedMesh;
-                //SOMC.enabled = false;
-                Destroy(MC);
-            }
-
-            //SOColliderObject.AddComponent<PhxSeparateCollider>();
-        }
 
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = H.GravityScale;
@@ -225,6 +243,11 @@ public class PhxHover : PhxVehicle
         AudioAmbient.minDistance = 2.0f;
         AudioAmbient.maxDistance = 30.0f;
 
+
+
+        /*
+        SECTIONS
+        */
 
         Sections = new List<PhxVehicleSection>();
 
@@ -252,6 +275,11 @@ public class PhxHover : PhxVehicle
                 i++;
             }
         }
+
+
+        /*
+        SPRINGS
+        */
 
         i = 0;
         PhxHoverSpring CurrSpring = null;
@@ -299,6 +327,10 @@ public class PhxHover : PhxVehicle
         }
         
 
+        /*
+        POSER
+        */
+
         if (H.AnimationName.Get() != "" && H.FinAnimation.Get() != "")
         {
             Poser = new PhxPoser(H.AnimationName.Get(), H.FinAnimation.Get(), transform);
@@ -321,46 +353,65 @@ public class PhxHover : PhxVehicle
 
 
         /*
-        Get necessary wheel info.  Implementation on hold until PhxModel sorted out.
-
-
-        WheelRenderers = new List<MeshRenderer>();
+        WHEELS
+        */
 
         foreach (Dictionary<string, IPhxPropRef> section in H.Wheels)
         {   
-            // Named texture, actually refers to node.
+            // Named texture, actually refers to segment tag.
             section.TryGetValue("WheelTexture", out IPhxPropRef wheelNode);
 
             PhxProp<string> WheelNodeName = (PhxProp<string>) wheelNode;
 
-            Debug.LogFormat("Yea found a wheel: {0}", WheelNodeName.Get());
+            Debug.LogFormat("Found wheel: {0}", WheelNodeName.Get());
 
-            Model model = ModelLoader.Instance.GetModelWrapper();
-            foreach (Segment seg in model.GetSegments())
+            List<SWBFSegment> TaggedSegments = ModelMapping.GetSegmentsWithTag(WheelNodeName.Get());
+
+            foreach (SWBFSegment Segment in TaggedSegments)
             {
-                if (seg.Tag.Equals(WheelNodeName.Get(), StringComparison.OrdinalIgnoreCase))
+                if (Segment.Node == null)
                 {
-                    Transform WheelTx;
-                    if (seg.BoneName != "")
+                    Debug.LogErrorFormat("Tagged segment node is null for {0}", gameObject.name);
+                    continue;
+                }
+
+                Renderer NodeRenderer = Segment.Node.GetComponent<Renderer>();
+                if (NodeRenderer != null && Segment.Index < NodeRenderer.sharedMaterials.Length)
+                {
+                    if (Wheels == null)
                     {
-                        WheelTx = UnityUtils.FindChildTransform(transform, WheelNodeName.Get());
-                           
-                    }
-                    else 
-                    {
-                        WheelTx = transform;
+                        Wheels = new List<PhxHoverWheel>();
                     }
 
-                    MeshRenderer r = WheelTx.gameObject.GetComponent<MeshRenderer>();
-                    foreach (var mat in r.materials)
+                    PhxHoverWheel Wheel = new PhxHoverWheel();
+                    Wheel.WheelMaterial = NodeRenderer.materials[Segment.Index];
+
+                    if (section.TryGetValue("WheelVelocToV", out IPhxPropRef V2VRef))
                     {
-                        if (mat.mainTexture.name.Equals())
+                        Wheel.VelocityFactor.y = ((PhxProp<float>) V2VRef).Get();
                     }
 
+                    if (section.TryGetValue("WheelOmegaToV", out IPhxPropRef O2VRef))
+                    {
+                        Wheel.TurnFactor.y = ((PhxProp<float>) O2VRef).Get();
+                    }
+
+                    if (section.TryGetValue("WheelVelocToU", out IPhxPropRef V2URef))
+                    {
+                        Wheel.VelocityFactor.x = ((PhxProp<float>) V2URef).Get();
+                    }
+
+                    if (section.TryGetValue("WheelOmegaToU", out IPhxPropRef O2URef))
+                    {
+                        Wheel.TurnFactor.x = ((PhxProp<float>) O2URef).Get();
+                    }
+
+                    Debug.Log("Added wheel: " + Wheel.ToString());
+
+                    Wheels.Add(Wheel);
                 }
             }
         }
-        */
     }
 
 
@@ -445,20 +496,14 @@ public class PhxHover : PhxVehicle
             }
         }
 
-        /*
-        if (DriverSection.IsOccupied())
-        {
-            WhellUVOffset.x += deltaTime;
 
-            foreach (var renderer in WheelRenderers)
+        if (Wheels != null)
+        {
+            foreach (PhxHoverWheel Wheel in Wheels)
             {
-                if(renderer.enabled)
-                {
-                    renderer.materials[0].SetTextureOffset(renderer.materials[0].mainTexture.name, WhellUVOffset);
-                }
+                Wheel.Update(deltaTime, LocalVel.z, LocalAngVel.z);
             }
         }
-        */
     }
 
 
@@ -551,6 +596,8 @@ public class PhxHover : PhxVehicle
 
         ResetCollisionLayer();
     }
+
+
 
 
     Vector3 LocalVel = Vector3.zero;
