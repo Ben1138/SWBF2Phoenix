@@ -80,6 +80,8 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
         MagazineAmmo = C.RoundsPerClip;
     }
 
+    public void SetIgnoredColliders(List<Collider> Colliders){}
+
     public override void BindEvents()
     {
         

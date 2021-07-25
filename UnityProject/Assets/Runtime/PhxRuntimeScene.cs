@@ -230,6 +230,7 @@ public class PhxRuntimeScene
                 terrainGameObject = WorldLoader.Instance.ImportTerrainAsMesh(terrain, "terrain");
 
                 terrainGameObject.transform.parent = worldRoot.transform;
+                terrainGameObject.layer = 11;
                 bTerrainImported = true;
             }
 
