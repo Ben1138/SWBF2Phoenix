@@ -70,7 +70,7 @@ public class PhxAnimTest : PhxUnityScene
                 {
                     Vector3 pos = new Vector3(x * -Padding, 0f, y * -Padding);
                     pos.x += Random.Range(-0.2f, 0.2f);
-                    pos.y += Random.Range(-0.2f, 0.2f);
+                    pos.z += Random.Range(-0.2f, 0.2f);
 
                     PhxClass spawnClass = classes[Random.Range(0, classes.Length)];
 
