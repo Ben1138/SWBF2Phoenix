@@ -7,6 +7,7 @@ using LibSWBF2.Utils;
 
 
 
+
 public enum PilotAnimationType : int 
 {
     NinePose,
@@ -16,37 +17,40 @@ public enum PilotAnimationType : int
 }
 
 
+public interface IPhxSeatable
+{
+    public bool HasAvailableSeat();
 
-/*
-All VehicleSections have camera properties, movement ranges, and pilot configurations.
-Many have Weapons and related Aimers.
-They can be followed by cameras, entered, exited, hopped to/from by different pilots,
-and each maintains a ref to its parent vehicle.
+    public int GetNextAvailableSeat(int startIndex = -1);
 
-As of now, the Lua inaccessible properties are read directly from the EntityClass properties and values,
-which are passed by the parent vehicle to the constructor.  The current reflection based assignment system
-doesn't map well to implied groups eg Aimers, Springs. Lua accessible properties will use the 
-reflection system and but will be limited to the parent vehicle.
+    public bool TrySwitchSeat(int index);
 
-Each frame the parent vehicle will call Update() on each section. 
-*/
+    public PhxSeat TryEnterVehicle(PhxSoldier soldier);
 
-public abstract class PhxVehicleSection : IPhxTrackable
+    public bool Eject(int i);
+
+    public Transform GetRootTransform();
+}
+    
+
+
+
+public abstract class PhxSeat : IPhxTrackable
 {    
-    static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
     // Max 2, min 1
-    protected List<PhxWeaponSystem> WeaponSystems;
+    public List<PhxWeaponSystem> WeaponSystems;
 
     // Vehicle to which section belongs
-    public PhxVehicle OwnerVehicle  { get; protected set; }
+    public IPhxSeatable Owner { get; protected set; }
 
     // Transform that moves with the pilot's input 
     // (will have to build in MountPoint soon for turrets)
     protected Transform BaseTransform;
 
     public PhxSoldier Occupant;
-    private PhxInstance Aim;
+    protected PhxInstance Aim;
 
     // eg with flyers one cannot exit
     public bool CanExit = true;
@@ -65,8 +69,8 @@ public abstract class PhxVehicleSection : IPhxTrackable
     protected Vector3 TrackOffset;
     protected float TiltValue;
 
-    protected Vector2 PitchLimits = new Vector2(0f,360f);
-    protected Vector2 YawLimits = new Vector2(0f,360f);
+    protected Vector2 PitchLimits = new Vector2(0f,0f);
+    protected Vector2 YawLimits = new Vector2(0f,0f);
 
     // Index in OwnerVehicle's Sections list
     protected int Index;
@@ -81,12 +85,12 @@ public abstract class PhxVehicleSection : IPhxTrackable
     // View direction in local space 
     protected Vector3 ViewDirection = Vector3.forward;
 
-    public Vector3 GetCameraPosition()
+    public virtual Vector3 GetCameraPosition()
     {
         return BaseTransform.transform.TransformPoint(ViewPoint);
     }
 
-    public Quaternion GetCameraRotation()
+    public virtual Quaternion GetCameraRotation()
     {
         return Quaternion.LookRotation(BaseTransform.TransformDirection(ViewDirection), Vector3.up);
     }
@@ -100,14 +104,14 @@ public abstract class PhxVehicleSection : IPhxTrackable
             return; 
         }
 
-        if (Controller.SwitchSeat && OwnerVehicle.TrySwitchSeat(Index))
+        if (Controller.SwitchSeat && Owner.TrySwitchSeat(Index))
         {
             Occupant = null;
             Controller.SwitchSeat = false;
             return;
         }
 
-        if (Controller.Enter && OwnerVehicle.Eject(Index))
+        if (Controller.Enter && Owner.Eject(Index))
         {
             Occupant = null;
             Controller.Enter = false;
@@ -132,7 +136,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
         ViewDirection =  Quaternion.Euler(3f * PitchAccum, 0f, 0f) * Quaternion.Euler(-TiltValue, 0f, 0f) * Vector3.forward;
 
 
-        Vector3 TargetPos = BaseTransform.transform.TransformPoint(3000f * ViewDirection + ViewPoint);
+        Vector3 TargetPos = BaseTransform.transform.TransformPoint(30000f * ViewDirection + ViewPoint);
 
         
         if (Physics.Raycast(TargetPos, TargetPos - CAM.transform.position, out RaycastHit hit, 1000f))
@@ -197,10 +201,10 @@ public abstract class PhxVehicleSection : IPhxTrackable
     }
 
 
-    protected PhxVehicleSection(PhxVehicle v, int index)
+    protected PhxSeat(IPhxSeatable v, int index)
     {
-        OwnerVehicle = v;
-        BaseTransform = v.gameObject.transform;
+        Owner = v;
+        BaseTransform = v.GetRootTransform();
         Index = index;
     }
 
@@ -218,45 +222,45 @@ public abstract class PhxVehicleSection : IPhxTrackable
 
         while (i < properties.Length)
         {
-            if (properties[i] == HashUtils.GetFNV("EyePointOffset"))
+            if (properties[i] == 0x41568c97 /*EyePointOffset*/)
             {
                 EyePointOffset = PhxUtils.Vec3FromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("TrackCenter"))
+            else if (properties[i] == 0xe85d5895 /*TrackCenter*/)
             {
                 TrackCenter = PhxUtils.Vec3FromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("YawLimits"))
+            else if (properties[i] == 0x2c3e8078 /*YawLimits*/)
             {
                 YawLimits = PhxUtils.Vec2FromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("PitchLimits"))
+            else if (properties[i] == 0x3403b139 /*PitchLimits*/)
             {
                 PitchLimits = PhxUtils.Vec2FromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("TiltValue"))
+            else if (properties[i] == 0x359d5227 /*TiltValue*/)
             {
-                TiltValue = float.Parse(values[i]);
+                TiltValue =  PhxUtils.FloatFromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("TrackOffset"))
+            else if (properties[i] == 0xfd3d9507 /*TrackOffset*/)
             {
                 TrackOffset = PhxUtils.Vec3FromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("PilotPosition"))
+            else if (properties[i] == 0x51ca39a6 /*PilotPosition*/)
             {
-                PilotPosition = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);   
+                PilotPosition = UnityUtils.FindChildTransform(Owner.GetRootTransform(), values[i]);   
             }  
-            else if (properties[i] == HashUtils.GetFNV("PilotAnimation"))
+            else if (properties[i] == 0x6e4fc069 /*PilotAnimation*/)
             {
                 PilotAnimation = values[i];
                 PilotAnimationType = PilotAnimationType.StaticPose;
             }            
-            else if (properties[i] == HashUtils.GetFNV("Pilot9Pose"))
+            else if (properties[i] == 0xa976d065 /*Pilot9Pose*/)
             {
                 Pilot9Pose = values[i];
                 PilotAnimationType = PilotAnimationType.NinePose;
             }
-            else if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
+            else if (properties[i] == 0xd0329e80 /*WEAPONSECTION*/)
             {
                 WeaponsSet = true;
 
