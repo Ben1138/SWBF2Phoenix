@@ -9,7 +9,7 @@ public class PhxCamera : MonoBehaviour
         Fixed,
         Free,
         Follow,
-        FollowTrackable,
+        Track,
     }
                      
     public CamMode    Mode { get; private set; } = CamMode.Free;
@@ -26,10 +26,10 @@ public class PhxCamera : MonoBehaviour
 
 
 
-    public void FollowTrackable(IPhxTrackable follow)
+    public void Track(IPhxTrackable Track)
     {
-        Mode = CamMode.FollowTrackable;
-        TrackableInstance = follow;
+        Mode = CamMode.Track;
+        TrackableInstance = Track;
     }
 
 
@@ -65,15 +65,6 @@ public class PhxCamera : MonoBehaviour
         rb.MoveRotation(rb.transform.rotation * q);
     }
 
-    void SanitizeEuler(ref Vector3 euler)
-    {
-        while (euler.x > 180f) euler.x -= 360f;
-        while (euler.y > 180f) euler.y -= 360f;
-        while (euler.z > 180f) euler.z -= 360f;
-        while (euler.x < -180f) euler.x += 360f;
-        while (euler.y < -180f) euler.y += 360f;
-        while (euler.z < -180f) euler.z += 360f;
-    }
 
     void LateUpdate()
     {
@@ -106,7 +97,7 @@ public class PhxCamera : MonoBehaviour
             transform.position = camTargetPos;// Vector3.Lerp(transform.position, camTargetPos, deltaTime * FollowSpeed);
             transform.rotation = camTargetRot;// Quaternion.Slerp(transform.rotation, camTargetRot, deltaTime * FollowSpeed);
         }
-        else if (Mode == CamMode.FollowTrackable)
+        else if (Mode == CamMode.Track)
         {
             transform.rotation = TrackableInstance.GetCameraRotation();
             transform.position = TrackableInstance.GetCameraPosition();

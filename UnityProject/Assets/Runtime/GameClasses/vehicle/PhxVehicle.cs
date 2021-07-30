@@ -145,7 +145,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
             Sections[seat].SetOccupant(Sections[index].Occupant);
             Sections[seat].Occupant.SetPilot(Sections[seat]);
             Sections[index].Occupant = null;
-            CAM.FollowTrackable(Sections[seat]);
+            CAM.Track(Sections[seat]);
 
             return true;
         }
@@ -164,7 +164,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         else 
         {
             Sections[seat].SetOccupant(soldier);
-            PhxGameRuntime.GetCamera().FollowTrackable(Sections[seat]);
+            PhxGameRuntime.GetCamera().Track(Sections[seat]);
             
             return Sections[seat];
         }
@@ -187,24 +187,6 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         }
     }
 
-
-    public List<Collider> GetAllColliders()
-    {
-        List<Collider> Colliders = new List<Collider>();
-        List<Transform> ChildTransforms = UnityUtils.GetChildTransforms(transform);
-
-        ChildTransforms.Add(transform);
-
-        foreach (Transform childTx in ChildTransforms)
-        {
-            foreach (Collider coll in childTx.gameObject.GetComponents<Collider>())
-            {
-                Colliders.Add(coll);
-            }
-        }
-
-        return Colliders;
-    }
 
 
     protected void SetupEnterTrigger()
