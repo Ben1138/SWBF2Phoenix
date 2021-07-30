@@ -67,6 +67,35 @@ public class PhxHover : PhxVehicle
         public Material WheelMaterial;
 
         Vector2 TexOffset = Vector2.zero;
+        int PropertyID;
+
+
+        public PhxHoverWheel(Material WheelMat)
+        {
+            WheelMaterial = WheelMat;
+
+            int BaseColorMapID = Shader.PropertyToID("_BaseColorMap");
+            int UnlitColorMapID = Shader.PropertyToID("_UnlitColorMap");
+            int MainTextureID = Shader.PropertyToID("_MainTexture");
+
+            if (WheelMaterial.HasProperty(BaseColorMapID))
+            {
+                PropertyID = BaseColorMapID;
+            }
+            else if (WheelMaterial.HasProperty(UnlitColorMapID))
+            {
+                PropertyID = UnlitColorMapID;
+            }
+            else if (WheelMaterial.HasProperty(MainTextureID))
+            {
+                PropertyID = MainTextureID;
+            }
+            else 
+            {
+                PropertyID = -1;
+            }
+        }
+
 
         public string ToString()
         {
@@ -76,7 +105,11 @@ public class PhxHover : PhxVehicle
         public void Update(float deltaTime, float vel, float turn)
         {
             TexOffset += deltaTime * (vel * VelocityFactor + turn * TurnFactor);
-            WheelMaterial.SetTextureOffset("_MainTex", TexOffset);
+            
+            if (PropertyID != -1)
+            {
+                WheelMaterial.SetTextureOffset(PropertyID, TexOffset);
+            }
         }
     }
 
@@ -340,8 +373,7 @@ public class PhxHover : PhxVehicle
                         Wheels = new List<PhxHoverWheel>();
                     }
 
-                    PhxHoverWheel Wheel = new PhxHoverWheel();
-                    Wheel.WheelMaterial = NodeRenderer.materials[Segment.Index];
+                    PhxHoverWheel Wheel = new PhxHoverWheel(NodeRenderer.materials[Segment.Index]);
 
                     if (section.TryGetValue("WheelVelocToV", out IPhxPropRef V2VRef))
                     {
@@ -540,6 +572,7 @@ public class PhxHover : PhxVehicle
                 	// Check for imminent hard collision
                 	// ...
 
+                    // This is all pretty hand wavy, parameters are too sensitive
                     float XRotCoeff = 2f * H.OmegaXSpring * CurrSpring.OmegaXFactor;
                     float XDampRotCoeff = .3f * H.OmegaXDamp * -Vector3.Dot(Body.angularVelocity, transform.right);
                     Body.AddRelativeTorque(60f * Penetration * deltaTime * Vector3.right * (XRotCoeff + XDampRotCoeff), ForceMode.Acceleration);
