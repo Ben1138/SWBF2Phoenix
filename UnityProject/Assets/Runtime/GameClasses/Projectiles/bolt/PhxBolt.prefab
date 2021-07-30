@@ -143,7 +143,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7829044120544574352}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2f76e83572c3b4c9c9a4f9cf25e6cafd, type: 3}
+  m_Script: {fileID: 11500000, guid: 40431786060564a0aa1903d7b59b95e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!54 &7677994318560125848
@@ -187,7 +187,7 @@ Light:
   m_Type: 2
   m_Shape: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 3
+  m_Intensity: 2880000
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -244,7 +244,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7829044120544574352}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa234b5eeaa98012, type: 3}
   m_Name: 
