@@ -30,8 +30,6 @@ public class PhxBolt : PhxOrdnance
 
     Rigidbody Body;
 
-    bool RenderHD = true;
-
     Light Light;
     HDAdditionalLightData HDLightData;
 
@@ -65,33 +63,17 @@ public class PhxBolt : PhxOrdnance
 
         BoltClass = OClass as ClassProperties;
 
-        RenderHD = !(GraphicsSettings.renderPipelineAsset == null); 
-        if (RenderHD)
-        {
-            HDLightData.color = BoltClass.LightColor;
-        }
-        else
-        {
-            Light.color = BoltClass.LightColor;
-        }
+
+        HDLightData.color = BoltClass.LightColor;
+
 
         Renderer.startWidth = BoltClass.LaserWidth;
         Renderer.endWidth = BoltClass.LaserWidth;
         Renderer.SetPosition(1, new Vector3(0f, 0f, BoltClass.LaserLength * 2f));
 
-        if (RenderHD)
-        {
-            Renderer.material.SetTexture("_UnlitColorMap", BoltClass.LaserTexture);
-            Renderer.material.SetTexture("_EmissiveColorMap", BoltClass.LaserTexture);
-            Renderer.material.SetColor("_EmissiveColor", BoltClass.LightColor.Get() * EmissionIntensity);
-        }
-        else 
-        {
-            Renderer.material.SetTexture("_MainTex", BoltClass.LaserTexture);
-            Renderer.material.EnableKeyword("_EMISSION");
-            Renderer.material.SetTexture("_EmissionMap", BoltClass.LaserTexture);
-            //Renderer.material.SetColor("_EmissionColor", Color.white);
-        }    
+        Renderer.material.SetTexture("_UnlitColorMap", BoltClass.LaserTexture);
+        Renderer.material.SetTexture("_EmissiveColorMap", BoltClass.LaserTexture);
+        Renderer.material.SetColor("_EmissiveColor", BoltClass.LightColor.Get() * EmissionIntensity); 
     }
 
 

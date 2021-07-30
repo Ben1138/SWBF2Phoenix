@@ -32,7 +32,12 @@ public class PhxBeam : PhxOrdnance
     ClassProperties BeamClass;
    
     LineRenderer Renderer;
+
     Light Light;
+    HDAdditionalLightData HDLightData;
+
+    float EmissionIntensity = 25f;
+
 
 
     List<Collider> IgnoredColliders;
@@ -42,13 +47,15 @@ public class PhxBeam : PhxOrdnance
     public override void Init(PhxClass OClass)
     {
         BeamClass = OClass as ClassProperties;
-
+        
+        HDLightData.color = BeamClass.LightColor;
+        
         Renderer.startWidth = BeamClass.LaserWidth;
         Renderer.endWidth = BeamClass.LaserWidth;
 
-        Renderer.material.SetTexture("_MainTex", BeamClass.LaserTexture);
-        Renderer.material.EnableKeyword("_EMISSION");
-        Renderer.material.SetTexture("_EmissionMap", BeamClass.LaserTexture);
+        Renderer.material.SetTexture("_UnlitColorMap", BeamClass.LaserTexture);
+        Renderer.material.SetTexture("_EmissiveColorMap", BeamClass.LaserTexture);
+        Renderer.material.SetColor("_EmissiveColor", BeamClass.LightColor.Get() * EmissionIntensity);
 
         IsInitialized = true;
     }
@@ -62,10 +69,6 @@ public class PhxBeam : PhxOrdnance
         OwnerWeapon = Originator;
 
         TimeAlive = 0f;
-
-        //Originator.GetFirePoint(out Vector3 Pos, out Quaternion Rot);
-        //transform.position = Pos;
-        //transform.rotation = Rot;
 
         BeamRoot = transform.parent;
         transform.SetParent(Originator.GetFirePoint());
@@ -144,7 +147,9 @@ public class PhxBeam : PhxOrdnance
     void Awake()
     {
         Light = GetComponent<Light>();
-        Light.type = LightType.Point;
+        HDLightData = GetComponent<HDAdditionalLightData>();
+        
+        EmissionIntensity = Mathf.Pow(2f, 20f);
 
         Renderer = GetComponent<LineRenderer>();
 
