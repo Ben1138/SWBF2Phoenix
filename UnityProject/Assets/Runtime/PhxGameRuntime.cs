@@ -347,8 +347,8 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(Instance == null);
 
         Instance = this;
-        WorldLoader.UseHDRP = false;
-        MaterialLoader.UseHDRP = false;
+        WorldLoader.UseHDRP = true;
+        MaterialLoader.UseHDRP = true;
 
         AddonPath = GamePath / "GameData/addon";
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
