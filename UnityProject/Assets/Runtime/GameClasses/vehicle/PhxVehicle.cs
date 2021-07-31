@@ -99,25 +99,6 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     }
 
 
-    // Dealing with SWBF's use of concave colliders on physics objects will be a major challenge
-    // unless we can reliably use the primitives found on each imported model...
-    protected List<MeshCollider> GetMeshColliders(Transform tx)
-    {
-        List<MeshCollider> Result = new List<MeshCollider>();
-        MeshCollider coll = tx.gameObject.GetComponent<MeshCollider>();
-        if (coll != null && coll.convex)
-        {
-            Result.Add(coll);
-        }
-
-        for (int j = 0; j < tx.childCount; j++)
-        {
-            Result.AddRange(GetMeshColliders(tx.GetChild(j)));
-        }
-
-        return Result;
-    }
-
 
     public bool HasAvailableSeat()
     {
