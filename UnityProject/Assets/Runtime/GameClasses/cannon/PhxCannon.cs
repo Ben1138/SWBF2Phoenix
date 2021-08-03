@@ -187,13 +187,13 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
         return 1f - ReloadDelay / C.ReloadTime;
     }
 
-    void Update()
+    public override void Tick(float deltaTime)
     {
-        FireDelay -= Time.deltaTime;
+        FireDelay -= deltaTime;
 
         if (ReloadDelay > 0f)
         {
-            ReloadDelay -= Time.deltaTime;
+            ReloadDelay -= deltaTime;
             if (ReloadDelay <= 0f)
             {
                 int reloadAmount = C.RoundsPerClip - MagazineAmmo;

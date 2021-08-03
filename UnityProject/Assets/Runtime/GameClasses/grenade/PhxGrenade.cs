@@ -43,7 +43,7 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
         return null;
     }
 
-    void Update()
+    public override void Tick(float deltaTime)
     {
 
     }

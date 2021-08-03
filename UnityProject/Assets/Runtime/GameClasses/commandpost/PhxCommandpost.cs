@@ -221,7 +221,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         }
     }
 
-    void Update()
+    public override void Tick(float deltaTime)
     {
         if (!bInitInstance) return;
 
@@ -235,7 +235,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
             {
                 float progress;
                 float captureMultiplier = Mathf.Sqrt(CaptureCount);
-                CaptureTimer += Time.deltaTime * captureMultiplier;
+                CaptureTimer += deltaTime * captureMultiplier;
                 if (Team == 0)
                 {
                     if (C.CaptureTime - CaptureTimer <= HoloPresenceSpeed * captureMultiplier * 2f)
@@ -275,12 +275,12 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         else
         {
             HoloPresenceDest = 1.0f;
-            CaptureTimer = Mathf.Max(CaptureTimer - Time.deltaTime * 0.1f, 0.0f);
+            CaptureTimer = Mathf.Max(CaptureTimer - deltaTime * 0.1f, 0.0f);
             AudioCapture.pitch = 0.0f;
         }
 
         HoloPresence = Mathf.SmoothDamp(HoloPresence, HoloPresenceDest, ref HoloPresenceVel, HoloPresenceSpeed);
-        //HoloPresence = Mathf.Lerp(HoloPresence, HoloPresenceDest, Time.deltaTime * HoloPresenceSpeed);
+        //HoloPresence = Mathf.Lerp(HoloPresence, HoloPresenceDest, deltaTime * HoloPresenceSpeed);
         if (HoloPresence != LastHoloPresence)
         {
             HoloColor.a = Mathf.Lerp(0.0f, HoloAlpha, HoloPresence);

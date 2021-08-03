@@ -181,7 +181,7 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         return null;
     }
 
-    void Update()
+    public override void Tick(float deltaTime)
     {
         if (!IsInit) return;
 
@@ -193,16 +193,16 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         {
             if (IdleWaitTimer < 0.0f)
             {
-                IdleWobble = Mathf.Min(IdleWobble + Time.deltaTime, 1f);
-                if (RootRotation.Step(Time.deltaTime))
+                IdleWobble = Mathf.Min(IdleWobble + deltaTime, 1f);
+                if (RootRotation.Step(deltaTime))
                 {
                     IdleWaitTimer = 0.0f;
                 }
             }
             else
             {
-                IdleWobble = Mathf.Max(IdleWobble - Time.deltaTime, 0f);
-                IdleWaitTimer += Time.deltaTime;
+                IdleWobble = Mathf.Max(IdleWobble - deltaTime, 0f);
+                IdleWaitTimer += deltaTime;
                 if (IdleWaitTimer >= C.IdleWaitTime)
                 {
                     RootRotation.SetRandomTarget(new Vector3(0f, 0f, 0f), new Vector3(0f, 360f, 0f));
@@ -242,7 +242,7 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
 
         if (ActiveSpinNode != null)
         {
-            if (ActiveSpinNode.Step(Time.deltaTime))
+            if (ActiveSpinNode.Step(deltaTime))
             {
                 ActiveSpinNode.SetRandomTarget(new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, 360f));
             }
@@ -255,7 +255,7 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
                 continue;
             }
 
-            if (ActiveRotateNodes[i].Step(Time.deltaTime))
+            if (ActiveRotateNodes[i].Step(deltaTime))
             {
                 ActiveRotateNodes[i].SetRandomTarget(new Vector3(140f, 0f, 0f), new Vector3(220f, 0f, 0f));
             }
@@ -265,7 +265,7 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         // Ammo / Healing
         // -----------------------------------------------------------------------------------
 
-        PowerupTimer += Time.deltaTime;
+        PowerupTimer += deltaTime;
         if (PowerupTimer >= 1.0f)
         {
             foreach (PhxSoldier soldier in Soldiers)
