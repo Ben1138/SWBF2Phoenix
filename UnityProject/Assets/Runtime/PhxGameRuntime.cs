@@ -5,6 +5,9 @@ using UnityEngine.Audio;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
+using LibLog = LibSWBF2.Logging.Logger;
+using LibLogEntry = LibSWBF2.Logging.LoggerEntry;
+using ELibLogType = LibSWBF2.Logging.ELogType;
 
 public class PhxGameRuntime : MonoBehaviour
 {
@@ -410,6 +413,8 @@ public class PhxGameRuntime : MonoBehaviour
 
     void Awake()
     {
+        LibLog.SetLogLevel(ELibLogType.Warning);
+
         Debug.Assert(InitScreenPrefab     != null);
         Debug.Assert(LoadScreenPrefab     != null);
         Debug.Assert(MainMenuPrefab       != null);
@@ -442,6 +447,23 @@ public class PhxGameRuntime : MonoBehaviour
     void Update()
     {
         Env?.Tick(Time.deltaTime);
+
+        while (LibLog.GetNextLog(out LibLogEntry entry))
+        {
+            switch (entry.Level)
+            {
+                case ELibLogType.Info:
+                    Debug.Log($"[LibSWBF2] {entry}");
+                    break;
+                case ELibLogType.Warning:
+                    Debug.LogWarning($"[LibSWBF2] {entry}");
+                    break;
+
+                case ELibLogType.Error:
+                    Debug.LogError($"[LibSWBF2] {entry}");
+                    break;
+            }
+        }    
     }
 
     void FixedUpdate()
