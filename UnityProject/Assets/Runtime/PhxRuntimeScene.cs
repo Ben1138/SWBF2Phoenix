@@ -38,6 +38,7 @@ public class PhxRuntimeScene
     int CurrCamIdx;
 
     PhxProjectiles Projectiles = new PhxProjectiles();
+    CraMain Cra;
 
     int InstanceCounter;
 
@@ -45,6 +46,7 @@ public class PhxRuntimeScene
     {
         ENV = env;
         EnvCon = c;
+        Cra = new CraMain();
 
         ModelLoader.Instance.PhyMat = PhxGameRuntime.Instance.GroundPhyMat;
         ModelLoader.Instance.CollFlagToUnityLayer[ECollisionMaskFlags.Vehicle] = 7;
@@ -275,6 +277,7 @@ public class PhxRuntimeScene
         }
         WorldRoots.Clear();
         Projectiles.Destroy();
+        Cra.Destroy();
     }
 
     // TODO: implement object pooling
@@ -310,6 +313,14 @@ public class PhxRuntimeScene
     public void Tick(float deltaTime)
     {
         Projectiles.Tick(deltaTime);
+        Cra.Tick();
+
+        // Update instances AFTER animation update!
+        // Instances might adapt some bone transformations (e.g. PhxSoldier)
+        for (int i = 0; i < Instances.Count; ++i)
+        {
+            Instances[i].Tick(deltaTime);
+        }
     }
 
     PhxClass GetClass(EntityClass ec)

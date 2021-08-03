@@ -373,16 +373,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         return null;
     }
 
-    void Update()
+    public override void Tick(float deltaTime)
     {
-        UpdatePhysics(Time.deltaTime);
-        UpdateState(Time.deltaTime);
+        UpdatePhysics(deltaTime);
+        UpdateState(deltaTime);
     }
 
     void UpdateState(float deltaTime)
     {
-        // Update Animator BEFORE firing any projectiles!
-        //Animator.Tick(deltaTime);
         AnimationCorrection();
 
         AlertTimer = Mathf.Max(AlertTimer - deltaTime, 0f);
