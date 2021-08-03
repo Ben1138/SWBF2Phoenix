@@ -5,7 +5,7 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
+public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
@@ -85,7 +85,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
-    public PhxHumanAnimator Animator { get; private set; }
+    PhxHumanAnimator Animator;
     Rigidbody Body;
 
     // Important skeleton bones
@@ -251,12 +251,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        Animator = gameObject.AddComponent<PhxHumanAnimator>();
-        Animator.OnStateFinished += StateFinished;
-
         string[] weapAnimBanks = new string[weaponAnimBanks.Count];
         weaponAnimBanks.CopyTo(weapAnimBanks);
-        Animator.Init(weapAnimBanks);
+        Animator = new PhxHumanAnimator(transform, weapAnimBanks);
 
 
         // this needs to happen after the Animator is initialized, since swicthing
@@ -340,8 +337,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
     void FireAnimation(bool primary)
     {
-        Animator.SetState(1, Animator.StandShootPrimary);
-        Animator.RestartState(1);
+        Animator.Anim.SetState(1, Animator.StandShootPrimary);
+        Animator.Anim.RestartState(1);
     }
 
     void Reload()
@@ -349,10 +346,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         IPhxWeapon weap = Weapons[0][WeaponIdx[0]];
         if (weap != null)
         {
-            Animator.SetState(1, Animator.StandReload);
-            Animator.RestartState(1);
-            float animTime = Animator.GetCurrentState(1).GetDuration();
-            Animator.SetPlaybackSpeed(1, Animator.StandReload, 1f / (weap.GetReloadTime() / animTime));
+            Animator.Anim.SetState(1, Animator.StandReload);
+            Animator.Anim.RestartState(1);
+            float animTime = Animator.Anim.GetCurrentState(1).GetDuration();
+            Animator.Anim.SetPlaybackSpeed(1, Animator.StandReload, 1f / (weap.GetReloadTime() / animTime));
         }
     }
 
@@ -376,14 +373,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
         return null;
     }
 
-    void StateFinished(int layer)
-    {
-        if (layer == 1)
-        {
-            Animator.SetState(1, CraSettings.STATE_NONE);
-        }
-    }
-
     void Update()
     {
         UpdatePhysics(Time.deltaTime);
@@ -393,7 +382,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
     void UpdateState(float deltaTime)
     {
         // Update Animator BEFORE firing any projectiles!
-        Animator.Tick(deltaTime);
+        //Animator.Tick(deltaTime);
         AnimationCorrection();
 
         AlertTimer = Mathf.Max(AlertTimer - deltaTime, 0f);
@@ -449,26 +438,26 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
                     if (State == PhxControlState.Sprint)
                     {
-                        Animator.SetState(0, Animator.StandSprint);
+                        Animator.Anim.SetState(0, Animator.StandSprint);
                     }
                     else if (walk > 0.2f && walk <= 0.75f)
                     {
-                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertWalk : Animator.StandWalk);
-                        Animator.SetPlaybackSpeed(0, Animator.StandWalk, walk / 0.75f);
+                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertWalk : Animator.StandWalk);
+                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandWalk, walk / 0.75f);
                     }
                     else if (walk > 0.75f)
                     {
-                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
-                        Animator.SetPlaybackSpeed(0, Animator.StandRun, walk / 1f);
+                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
+                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandRun, walk / 1f);
                     }
                     else if (walk < -0.2f)
                     {
-                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
-                        Animator.SetPlaybackSpeed(0, Animator.StandBackward, -walk / 1f);
+                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
+                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandBackward, -walk / 1f);
                     }
                     else
                     {
-                        Animator.SetState(0, AlertTimer > 0f ? Animator.StandAlertIdle : Animator.StandIdle);
+                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertIdle : Animator.StandIdle);
                     }
                     // ---------------------------------------------------------------------------------------------
                 }
@@ -552,8 +541,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                         State = PhxControlState.Jump;
                         JumpTimer = JumpTime;
 
-                        Animator.SetState(0, Animator.Jump);
-                        Animator.SetState(1, CraSettings.STATE_NONE);
+                        Animator.Anim.SetState(0, Animator.Jump);
+                        Animator.Anim.SetState(1, CraSettings.STATE_NONE);
                     }
                     // ---------------------------------------------------------------------------------------------
                 }
@@ -620,22 +609,22 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 if (FallTimer > 1.5f)
                 {
                     LandTimer = 0.9f;
-                    Animator.SetState(0, Animator.LandHard);
-                    Animator.SetState(1, CraSettings.STATE_NONE);
+                    Animator.Anim.SetState(0, Animator.LandHard);
+                    Animator.Anim.SetState(1, CraSettings.STATE_NONE);
                     //Debug.Log($"Land HARD {FallTimer}");
                 }
                 else if (FallTimer > 1.1f || Controller.MoveDirection.magnitude < 0.1f)
                 {
                     LandTimer = 0.6f;
-                    Animator.SetState(0, Animator.LandSoft);
-                    Animator.SetState(1, CraSettings.STATE_NONE);
+                    Animator.Anim.SetState(0, Animator.LandSoft);
+                    Animator.Anim.SetState(1, CraSettings.STATE_NONE);
                     //Debug.Log($"Land Soft {FallTimer}");
                 }
                 else
                 {
                     LandTimer = 0.05f;
-                    Animator.SetState(0, Animator.LandSoft);
-                    Animator.SetState(1, CraSettings.STATE_NONE);
+                    Animator.Anim.SetState(0, Animator.LandSoft);
+                    Animator.Anim.SetState(1, CraSettings.STATE_NONE);
                     //Debug.Log($"Land very Soft {FallTimer}");
                 }
             }
@@ -678,9 +667,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                         {
                             TurnTimer = TurnTime;
                             TurnStart = transform.rotation;
-                            Animator.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
-                            Animator.SetState(1, CraSettings.STATE_NONE);
-                            Animator.RestartState(0);
+                            Animator.Anim.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
+                            Animator.Anim.SetState(1, CraSettings.STATE_NONE);
+                            Animator.Anim.RestartState(0);
                         }
 
                         lookRot = transform.rotation;
@@ -708,8 +697,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                     FallTimer += deltaTime;
                     if (FallTimer > 0.1f && State != PhxControlState.Jump)
                     {
-                        Animator.SetState(0, Animator.Fall);
-                        Animator.SetState(1, CraSettings.STATE_NONE);
+                        Animator.Anim.SetState(0, Animator.Fall);
+                        Animator.Anim.SetState(1, CraSettings.STATE_NONE);
                         State = PhxControlState.Jump;
                         Body?.AddForce(CurrSpeed, ForceMode.VelocityChange);
                     }
@@ -737,7 +726,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
 
         if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
         {
-            if (Animator.GetCurrentStateIdx(1) == Animator.StandShootPrimary)
+            if (Animator.Anim.GetCurrentStateIdx(1) == Animator.StandShootPrimary)
             {
                 Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt4);
             }
@@ -757,5 +746,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>
                 Neck.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt1);
             }
         }
+    }
+
+    public CraAnimator GetAnimator()
+    {
+        return Animator.Anim;
     }
 }

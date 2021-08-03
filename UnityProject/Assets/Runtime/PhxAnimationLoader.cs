@@ -107,7 +107,7 @@ public static class PhxAnimationLoader
         if (clip == null)
         {
             Debug.LogWarning($"Cannot find animation clip '{animName}' in bank '{animBank}'!");
-            return null;
+            return CraPlayer.CreateEmpty();
         }
 
         CraPlayer player = CraPlayer.CreateNew();
@@ -140,7 +140,7 @@ public static class PhxAnimationLoader
         if (clip == null)
         {
             Debug.LogWarning($"Cannot find animation clip '{animName}' in any of the specified banks '{animBanks}'!");
-            return null;
+            return CraPlayer.CreateEmpty();
         }
 
         CraPlayer player = CraPlayer.CreateNew();
