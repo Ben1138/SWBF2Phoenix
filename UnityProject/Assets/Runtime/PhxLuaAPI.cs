@@ -129,7 +129,7 @@ public static class PhxLuaAPI
 		Array.Copy(args, 1, placements, 0, placements.Length);
 
 		string localized = ENV.GetLocalized(localizePath);
-		string res = SWBFHelpers.Format(localized, placements);
+		string res = PhxSWBFHelpers.Format(localized, placements);
 		return res;
 	}
 
@@ -837,7 +837,7 @@ public static class PhxLuaAPI
 
     }
 
-	public static void ReadDataFile(object[] args)
+	public static void ReadDataFile(params object[] args)
 	{
 		// NOTE: ReadDataFile has dynamic parameters and can be either called like:
 		// - ReadDataFile("file.lvl", "subLVL1", "subLVL2", ...)
@@ -896,36 +896,36 @@ public static class PhxLuaAPI
 	}
 	public static void OnTimerElapse(PhxLuaRuntime.LFunction callback, int timer)
 	{
-		GameLuaEvents.Register(GameLuaEvents.Event.OnTimerElapse, callback, timer);
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnTimerElapse, callback, timer);
 	}
 	public static void OnEnterRegion(PhxLuaRuntime.LFunction callback, string regionName)
     {
-		GameLuaEvents.Register(GameLuaEvents.Event.OnEnterRegion, callback, regionName);
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnEnterRegion, callback, regionName);
 	}
 	public static void OnEnterRegionTeam(PhxLuaRuntime.LFunction callback, string regionName, int teamIdx)
 	{
-		GameLuaEvents.Register(GameLuaEvents.Event.OnEnterRegionTeam, callback, (regionName, teamIdx));
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnEnterRegionTeam, callback, (regionName, teamIdx));
 	}
 	public static void OnLeaveRegion(PhxLuaRuntime.LFunction callback, string regionName)
     {
-		GameLuaEvents.Register(GameLuaEvents.Event.OnLeaveRegion, callback, regionName);
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnLeaveRegion, callback, regionName);
 
 	}
 	public static void OnFinishCapture(PhxLuaRuntime.LFunction callback)
 	{
-		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishCapture, callback);
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnFinishCapture, callback);
 		// callback paramters:
 		// - postPtr
 	}
 	public static void OnFinishCaptureName(PhxLuaRuntime.LFunction callback, string cpName)
 	{
-		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishCaptureName, callback, cpName);
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnFinishCaptureName, callback, cpName);
 		// callback paramters:
 		// - postPtr
 	}
 	public static void OnFinishNeutralize(PhxLuaRuntime.LFunction callback)
 	{
-		GameLuaEvents.Register(GameLuaEvents.Event.OnFinishNeutralize, callback);
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnFinishNeutralize, callback);
 		// callback paramters:
 		// - postPtr
 	}
@@ -972,7 +972,7 @@ public static class PhxLuaAPI
 	}
 }
 
-public static class GameLuaEvents
+public static class PhxLuaEvents
 {
 	static PhxRuntimeEnvironment ENV { get { return PhxGameRuntime.GetEnvironment(); } }
 	static PhxLuaRuntime RT { get { return PhxGameRuntime.GetLuaRuntime(); } }
@@ -1088,7 +1088,7 @@ public static class GameLuaEvents
 	}
 }
 
-public static class SWBFHelpers
+public static class PhxSWBFHelpers
 {
 	// format string using SWBFs C-style printf format (%s, ...)
 	public static string Format(string fmt, params object[] args)

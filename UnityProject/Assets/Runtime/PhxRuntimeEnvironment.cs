@@ -100,17 +100,23 @@ public class PhxRuntimeEnvironment
 
     ~PhxRuntimeEnvironment()
     {
-        Delete();
+        Destroy();
     }
 
-    public void Delete()
+    public void Destroy()
     {
         WorldLevel = null;
-        ClearScene();
+        Match.Destroy();
+        Match = null;
+        Timers = null;
+        RTScene.Destroy();
+        RTScene = null;
+        OnLoadscreenLoaded = null;
+        OnExecuteMain = null;
+        OnLoaded = null;
         LuaRT?.Close();
         EnvCon?.Delete();
         PathToHandle.Clear();
-        CraPlaybackManager.Instance.Clear();
     }
 
     public PhxRuntimeScene GetScene()
@@ -143,7 +149,7 @@ public class PhxRuntimeEnvironment
         Debug.Assert(fallbackPath.Exists());
 
         PhxAnimationLoader.ClearDB();
-        GameLuaEvents.Clear();
+        PhxLuaEvents.Clear();
 
         PhxRuntimeEnvironment rt = new PhxRuntimeEnvironment(envPath, fallbackPath);
         rt.ScheduleLVLRel("core.lvl");
@@ -456,18 +462,6 @@ public class PhxRuntimeEnvironment
             return localizedUnicode;
         }
         return bReturnNullIfNotFound ? null : localizedPath;
-    }
-
-    void ClearScene()
-    {
-        RTScene.Clear();
-        RTScene = null;
-        Match.Clear();
-        Match = null;
-        Timers = null;
-        OnLoadscreenLoaded = null;
-        OnExecuteMain = null;
-        OnLoaded = null;
     }
 
     bool GetLocalized(string language, string localizedPath, out string localizedUnicode)

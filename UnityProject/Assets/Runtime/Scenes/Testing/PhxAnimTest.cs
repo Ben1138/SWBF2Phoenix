@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PhxAnimTest : PhxUnityScene
+public class PhxAnimTest : PhxUnityScript
 {
     static PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
 
@@ -18,17 +18,13 @@ public class PhxAnimTest : PhxUnityScene
     IPhxControlableInstance[] Instances;
 
 
-    void Awake()
+    public override void ScriptInit()
     {
-        ScheduleLVLs = new string[]
-        {
-            "side/rep.lvl"
-        };
-
-        PhxGameRuntime.Instance.OnMapLoaded += Loaded;
+        PhxLuaAPI.ReadDataFile("ingame.lvl");
+        PhxLuaAPI.ReadDataFile("side/rep.lvl");
     }
 
-    void Loaded()
+    public override void ScriptPostLoad()
     {
         Debug.Log("Loaded.");
 
