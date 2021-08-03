@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 
+// EXAMPLE CLASS
 public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
 {
     // ODF properties
@@ -14,7 +15,7 @@ public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
 
     // SWBF instance properties
     // Names must match instance property names!
-    public PhxProp<int> Team = new PhxProp<int>(0);
+    public PhxProp<float> CurrHealth = new PhxProp<float>(100.0f);
 
 
     public override void Init()
@@ -25,6 +26,8 @@ public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
 
     public override void BindEvents()
     {
+        // Use this to bind property change events
+
         Team.OnValueChanged += OnTeamChange;
     }
 
@@ -33,7 +36,7 @@ public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
         // this object's Team has been changed, e.g. through Lua
     }
 
-    void Update()
+    public override void Tick(float deltaTime)
     {
 
     }
