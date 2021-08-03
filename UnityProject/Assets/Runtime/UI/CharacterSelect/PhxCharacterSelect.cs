@@ -33,7 +33,7 @@ public class PhxCharacterSelect : PhxMenuInterface
     {
         for (int i = 0; i < UnitPreviews.Count; ++i)
         {
-            Destroy(UnitPreviews[i].GetInstance().gameObject);
+            RTS.DestroyInstance(UnitPreviews[i].GetInstance());
         }
         UnitPreviews.Clear();
     }

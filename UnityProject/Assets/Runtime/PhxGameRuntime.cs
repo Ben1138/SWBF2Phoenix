@@ -155,7 +155,7 @@ public class PhxGameRuntime : MonoBehaviour
             UnitySceneName = null;
         }
 
-        Env?.Delete();
+        Env?.Destroy();
         Env = PhxRuntimeEnvironment.Create(StdLVLPC);
 
         if (!bInit)
@@ -190,12 +190,11 @@ public class PhxGameRuntime : MonoBehaviour
             UnitySceneName = null;
         }
 
-        Env?.Delete();
+        Env?.Destroy();
         Env = PhxRuntimeEnvironment.Create(envPath, StdLVLPC);
         Env.ScheduleLVLRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
         Env.OnLoaded += OnEnvLoaded;
-        Env.OnExecuteMain += OnEnvExecutionMain;
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
     }
 
@@ -217,7 +216,7 @@ public class PhxGameRuntime : MonoBehaviour
 
         SceneManager.sceneLoaded += (Scene scene, LoadSceneMode mode) =>
         {
-            PhxUnityScene sceneInit = FindObjectOfType<PhxUnityScene>();
+            PhxUnityScript sceneInit = FindObjectOfType<PhxUnityScript>();
 
             // for some reason, this event fires twice...
             // and only the second time, the script is found
@@ -226,20 +225,16 @@ public class PhxGameRuntime : MonoBehaviour
                 return;
             }
 
-            Env?.Delete();
+            Env?.Destroy();
             Env = PhxRuntimeEnvironment.Create(StdLVLPC);
             Env.ScheduleLVLRel("load/common.lvl");
-            Env.ScheduleLVLRel("ingame.lvl");
-            if (sceneInit.ScheduleLVLs != null)
-            {
-                for (int i = 0; i < sceneInit.ScheduleLVLs.Length; ++i)
-                {
-                    Env.ScheduleLVLRel(sceneInit.ScheduleLVLs[i]);
-                }
-            }
+
             Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
             Env.OnLoaded += OnEnvLoaded;
-            Env.OnExecuteMain += OnEnvExecutionMain;
+
+            Env.OnExecuteMain += sceneInit.ScriptInit;
+            Env.OnLoaded += sceneInit.ScriptPostLoad;
+
             Env.Run(null);
         };
     }
@@ -393,11 +388,6 @@ public class PhxGameRuntime : MonoBehaviour
     {
         RemoveLoadscreen();
         ShowMenu(MainMenuPrefab);
-    }
-
-    void OnEnvExecutionMain()
-    {
-        // after script execution, but BEFORE map conversion
     }
 
     void OnEnvLoaded()
