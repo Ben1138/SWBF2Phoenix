@@ -15,7 +15,11 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
     {
         // Hide grenade mesh in hand
         gameObject.layer = 6; // Projectiles
-        transform.GetChild(0).gameObject.SetActive(false);
+
+        if (transform.childCount > 0)
+        {
+            transform.GetChild(0).gameObject.SetActive(false);
+        }
     }
 
     public override void BindEvents()
