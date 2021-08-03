@@ -199,12 +199,12 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
 
         if (Team == 0)
         {
-            GameLuaEvents.Invoke(GameLuaEvents.Event.OnFinishNeutralize, Scene.GetInstanceIndex(this));
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishNeutralize, Scene.GetInstanceIndex(this));
         }
         else
         {
-            GameLuaEvents.Invoke(GameLuaEvents.Event.OnFinishCapture, Scene.GetInstanceIndex(this));
-            GameLuaEvents.Invoke(GameLuaEvents.Event.OnFinishCaptureName, name, Scene.GetInstanceIndex(this));
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCapture, Scene.GetInstanceIndex(this));
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCaptureName, name, Scene.GetInstanceIndex(this));
         }
 
         RefreshCapture();

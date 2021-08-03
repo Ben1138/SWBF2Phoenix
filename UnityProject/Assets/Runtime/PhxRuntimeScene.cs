@@ -191,8 +191,8 @@ public class PhxRuntimeScene
                     PhxRegion reg = region.Value.gameObject.AddComponent<PhxRegion>();
 
                     // invoke Lua events
-                    reg.OnEnter += (IPhxControlableInstance obj) => GameLuaEvents.InvokeParameterized(GameLuaEvents.Event.OnEnterRegion, region.Key, region.Key, obj.GetInstance().name);
-                    reg.OnLeave += (IPhxControlableInstance obj) => GameLuaEvents.InvokeParameterized(GameLuaEvents.Event.OnLeaveRegion, region.Key, region.Key, obj.GetInstance().name);
+                    reg.OnEnter += (IPhxControlableInstance obj) => PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnEnterRegion, region.Key, region.Key, obj.GetInstance().name);
+                    reg.OnLeave += (IPhxControlableInstance obj) => PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnLeaveRegion, region.Key, region.Key, obj.GetInstance().name);
 
                     Regions.Add(region.Key, reg);
                 }
@@ -269,15 +269,18 @@ public class PhxRuntimeScene
         return null;
     }
 
-    public void Clear()
+    public void Destroy()
     {
+        Cra.Destroy();
+        Cra = null;
+        Projectiles.Destroy();
+        Instances.Clear();
+        Classes.Clear();
         for (int i = 0; i < WorldRoots.Count; ++i)
         {
             UnityEngine.Object.Destroy(WorldRoots[i]);
         }
         WorldRoots.Clear();
-        Projectiles.Destroy();
-        Cra.Destroy();
     }
 
     // TODO: implement object pooling
@@ -289,6 +292,15 @@ public class PhxRuntimeScene
     public PhxInstance CreateInstance(PhxClass cl, bool withCollision=true, Transform parent=null)
     {
         return CreateInstance(cl.EntityClass, cl.Name + InstanceCounter++, Vector3.zero, Quaternion.identity, withCollision, parent).GetComponent<PhxInstance>();
+    }
+
+    public void DestroyInstance(PhxInstance instance)
+    {
+        int idx = Instances.IndexOf(instance);
+        Debug.Assert(idx >= 0);
+
+        UnityEngine.Object.Destroy(instance.gameObject);
+        Instances.RemoveAt(idx);
     }
 
     public PhxClass GetClass(string odfClassName)
@@ -313,7 +325,7 @@ public class PhxRuntimeScene
     public void Tick(float deltaTime)
     {
         Projectiles.Tick(deltaTime);
-        Cra.Tick();
+        Cra?.Tick();
 
         // Update instances AFTER animation update!
         // Instances might adapt some bone transformations (e.g. PhxSoldier)

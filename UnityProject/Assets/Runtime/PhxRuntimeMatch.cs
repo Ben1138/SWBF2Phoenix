@@ -175,7 +175,7 @@ public class PhxRuntimeMatch
         LVLsLoaded = true;
     }
 
-    public void Clear()
+    public void Destroy()
     {
         CAM.Fixed();
 
@@ -186,7 +186,7 @@ public class PhxRuntimeMatch
         if (pawn != null)
         {
             pawn.UnAssign();
-            UnityEngine.Object.Destroy(pawn.GetInstance().gameObject);
+            RTS.DestroyInstance(pawn.GetInstance());
         }
 
         // TODO: kill AI, clear all pools
@@ -227,7 +227,7 @@ public class PhxRuntimeMatch
         if (pawn != null)
         {
             pawn.UnAssign();
-            UnityEngine.Object.Destroy(pawn.GetInstance().gameObject);
+            RTS.DestroyInstance(pawn.GetInstance());
             SetPlayerState(PhxPlayerState.CharacterSelection);
         }
     }

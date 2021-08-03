@@ -96,7 +96,7 @@ public class PhxTimerDB
 				Timers[idx].Time -= Timers[idx].Rate * deltaTime;
 				if (Timers[idx].Time <= 0f)
                 {
-					GameLuaEvents.InvokeParameterized(GameLuaEvents.Event.OnTimerElapse, idx);
+					PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnTimerElapse, idx);
 
 					Timers[idx].Time = 0f;
 					Timers[idx].IsRunning = false;
