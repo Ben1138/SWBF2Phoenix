@@ -154,15 +154,21 @@ public struct PhxHumanAnimator
         "human_sabre"
     };
 
-    Dictionary<string, CraPlayer> ClipPlayers = new Dictionary<string, CraPlayer>();
+    public CraAnimator Anim { get; private set; }
+    Dictionary<string, CraPlayer> ClipPlayers;
 
     PhxAnimBank[] Banks;
-    int CurrentBankIdx = 0;
-    Dictionary<string, int> NameToBankIdx = new Dictionary<string, int>();
+    int CurrentBankIdx;
+    Dictionary<string, int> NameToBankIdx;
 
 
-    public void Init(string[] weaponAnimBanks)
+    public PhxHumanAnimator(Transform root, string[] weaponAnimBanks)
     {
+        Anim = CraAnimator.CreateNew(2, 128);
+        ClipPlayers = new Dictionary<string, CraPlayer>();
+        NameToBankIdx = new Dictionary<string, int>();
+        CurrentBankIdx = 0;
+
         if (weaponAnimBanks == null || weaponAnimBanks.Length == 0)
         {
             // fallback
@@ -174,24 +180,24 @@ public struct PhxHumanAnimator
         {
             if (PhxAnimationBanks.Banks["human"].TryGetValue(weaponAnimBanks[i], out PhxAnimationBanks.PhxAnimBank bank))
             {
-                Banks[i].StandIdle = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandIdle, true));
-                Banks[i].StandWalk = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandWalk, true));
-                Banks[i].StandRun = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandRun, true));
-                Banks[i].StandSprint = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandSprint, true));
-                Banks[i].StandBackward = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandBackward, true));
-                Banks[i].StandReload = AddState(1, GetPlayer(transform, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine"));
-                Banks[i].StandShootPrimary = AddState(1, GetPlayer(transform, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine"));
-                Banks[i].StandShootSecondary = AddState(1, GetPlayer(transform, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine"));
-                Banks[i].StandAlertIdle = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandAlertIdle, true));
-                Banks[i].StandAlertWalk = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandAlertWalk, true));
-                Banks[i].StandAlertRun = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandAlertRun, true));
-                Banks[i].StandAlertBackward = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.StandAlertBackward, true));
-                Banks[i].Jump = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.Jump, false));
-                Banks[i].Fall = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.Fall, true));
-                Banks[i].LandSoft = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.LandSoft, false));
-                Banks[i].LandHard = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.LandHard, false));
-                Banks[i].TurnLeft = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.TurnLeft, false));
-                Banks[i].TurnRight = AddState(0, GetPlayer(transform, HUMANM_BANKS, bank.TurnRight, false));
+                Banks[i].StandIdle = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandIdle, true));
+                Banks[i].StandWalk = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandWalk, true));
+                Banks[i].StandRun = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandRun, true));
+                Banks[i].StandSprint = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandSprint, true));
+                Banks[i].StandBackward = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandBackward, true));
+                Banks[i].StandReload = Anim.AddState(1, GetPlayer(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine"));
+                Banks[i].StandShootPrimary = Anim.AddState(1, GetPlayer(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine"));
+                Banks[i].StandShootSecondary = Anim.AddState(1, GetPlayer(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine"));
+                Banks[i].StandAlertIdle = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertIdle, true));
+                Banks[i].StandAlertWalk = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertWalk, true));
+                Banks[i].StandAlertRun = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertRun, true));
+                Banks[i].StandAlertBackward = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertBackward, true));
+                Banks[i].Jump = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.Jump, false));
+                Banks[i].Fall = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.Fall, true));
+                Banks[i].LandSoft = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.LandSoft, false));
+                Banks[i].LandHard = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.LandHard, false));
+                Banks[i].TurnLeft = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.TurnLeft, false));
+                Banks[i].TurnRight = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.TurnRight, false));
 
                 NameToBankIdx.Add(weaponAnimBanks[i], i);
             }
@@ -201,13 +207,15 @@ public struct PhxHumanAnimator
             }
         }
 
-        SetState(0, StandIdle);
-        SetState(1, CraSettings.STATE_NONE);
+        Anim.SetState(0, StandIdle);
+        Anim.SetState(1, CraSettings.STATE_NONE);
+
+        Anim.AddOnStateFinishedListener(StateFinished);
     }
 
     public void PlayIntroAnim()
     {
-        SetState(1, StandReload);
+        Anim.SetState(1, StandReload);
     }
 
     public void SetAnimBank(string bankName)
@@ -232,5 +240,13 @@ public struct PhxHumanAnimator
         player = PhxAnimationLoader.CreatePlayer(root, animBanks, animName, loop, maskBone);
         ClipPlayers.Add(animName, player);
         return player;
+    }
+
+    void StateFinished(int layerIdx)
+    {
+        if (layerIdx == 1)
+        {
+            Anim.SetState(1, CraSettings.STATE_NONE);
+        }
     }
 }
