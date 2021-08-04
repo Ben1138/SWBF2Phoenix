@@ -14,7 +14,14 @@ public static class PhxUtils
         Vector4 vOut = new Vector4();
         for (int i = 0; i < 4 && i < v.Length; i++)
         {
-            vOut[i] = float.Parse(v[i]);
+            try {
+                vOut[i] = float.Parse(v[i], System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch 
+            {
+                vOut[i] = 0f;
+                Debug.LogErrorFormat("Failed to convert {0} to Vector4", val);
+            }
         }
         return vOut;
     }
@@ -25,7 +32,14 @@ public static class PhxUtils
         Vector3 vOut = new Vector3();
         for (int i = 0; i < 3 && i < v.Length; i++)
         {
-            vOut[i] = float.Parse(v[i]);
+            try {
+                vOut[i] = float.Parse(v[i], System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch 
+            {
+                vOut[i] = 0f;
+                Debug.LogErrorFormat("Failed to convert {0} to Vector3", val);
+            }
         }
         return vOut;
     }
@@ -36,9 +50,39 @@ public static class PhxUtils
         Vector2 vOut = new Vector2();
         for (int i = 0; i < 2; i++)
         {
-            vOut[i] = float.Parse(v[i]);
+            try {
+                vOut[i] = float.Parse(v[i], System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch 
+            {
+                vOut[i] = 0f;
+                Debug.LogErrorFormat("Failed to convert {0} to Vector2", val);
+            }
         }
         return vOut;
+    }
+
+
+    // Unfortunately, a custom parser is needed because mungers do not enforce any
+    // standards of string-float representations
+    static char[] FloatChars = new char[100];
+    static int NumDigits = 0;
+    static int FloatPosition = 0;
+    static bool Positive;
+    public static float FloatFromString(string FloatString)
+    {
+        float r;
+        try 
+        {
+            r = float.Parse(FloatString, System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch 
+        {
+            Debug.LogErrorFormat("Failed to parse float from: {0}", FloatString);
+            r = 0f;
+        }
+
+        return r;
     }
 
 
