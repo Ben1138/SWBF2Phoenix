@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Enums;
+using LibSWBF2.Utils;
 
 
 /*
 Implement if you want object to be followed by the camera.
-Added so that PhxVehicleSections, which are not Lua-accessible instances,
+Added so that PhxVehicleSeats, which are not Lua-accessible instances,
 could be followed.
 */
 
@@ -28,7 +29,59 @@ They can be entered, exited, sliced, repaired by soldiers
 
 */
 
-public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>, IPhxTrackable 
+
+public class PhxVehicleProperties : PhxClass
+{
+    public PhxPropertySection ChunkSection = new PhxPropertySection(
+        "CHUNKSECTION",
+        ("ChunkGeometryName", new PhxProp<string>(null)),
+        ("ChunkNodeName", new PhxProp<string>(null)),
+        ("ChunkTerrainCollisions", new PhxProp<int>(1)),
+        ("ChunkTerrainEffect", new PhxProp<string>("")),
+        ("ChunkPhysics", new PhxProp<string>("")),
+        ("ChunkOmega", new PhxMultiProp(typeof(float), typeof(float), typeof(float))), //not sure how to handle this yet...
+        ("ChunkBounciness", new PhxProp<float>(0.0f)),
+        ("ChunkStickiness", new PhxProp<float>(0.0f)),
+        ("ChunkSpeed", new PhxProp<float>(1.0f)),
+        ("ChunkUpFactor", new PhxProp<float>(0.5f)),
+        ("ChunkTrailEffect", new PhxProp<string>("")),
+        ("ChunkSmokeEffect", new PhxProp<string>("")),
+        ("ChunkSmokeNodeName", new PhxProp<string>("")) 
+    );
+
+    public PhxProp<string> HealthType = new PhxProp<string>("vehicle");
+    public PhxProp<float>  MaxHealth = new PhxProp<float>(100.0f);
+
+    // In the "human" bank with name: "human_{Pilot9Pose}" ?
+    public PhxProp<string> Pilot9Pose = new PhxProp<string>("");
+
+    // animation bank containing vehicle 9Pose
+    public PhxProp<string> AnimationName = new PhxProp<string>("");
+
+    // vehicle 9Pose
+    public PhxProp<string> FinAnimation = new PhxProp<string>("");
+
+    public PhxProp<string> GeometryName = new PhxProp<string>("");
+
+
+    public PhxMultiProp SoldierCollision = new PhxMultiProp(typeof(string));
+    public PhxMultiProp BuildingCollision = new PhxMultiProp(typeof(string));
+    public PhxMultiProp VehicleCollision = new PhxMultiProp(typeof(string));
+    public PhxMultiProp OrdnanceCollision = new PhxMultiProp(typeof(string));
+    public PhxMultiProp TargetableCollision = new PhxMultiProp(typeof(string));
+
+    public PhxProp<string> VehicleType = new PhxProp<string>("light");
+    public PhxProp<string> AISizeType =  new PhxProp<string>("MEDIUM");
+}
+
+
+
+
+public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>, 
+                                    IPhxTrackable, 
+                                    IPhxSeatable,
+                                    IPhxTickablePhysics,
+                                    IPhxTickable 
 {
     protected static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     protected static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
@@ -47,7 +100,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     protected PhxSoldier Driver;
     protected PhxInstance Aim;
 
-    protected List<PhxVehicleSection> Sections;
+    protected List<PhxSeat> Seats;
 
 
     protected SWBFModel ModelMapping = null;
@@ -61,7 +114,6 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         */
 
         ModelMapping = ModelLoader.Instance.GetModelMapping(gameObject, C.GeometryName); 
-        //ModelMapping.StripMeshCollider();
 
         void SetODFCollision(PhxMultiProp Props, ECollisionMaskFlags Flag)
         {
@@ -84,6 +136,30 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         ModelMapping.GameRole = SWBFGameRole.Vehicle;
         ModelMapping.ExpandMultiLayerColliders();
         ModelMapping.SetColliderLayerFromMaskAll();
+        ModelMapping.ConvexifyMeshColliders();
+
+        C.EntityClass.GetAllProperties(out uint[] properties, out string[] values);
+    }
+
+
+    public virtual void Tick(float deltaTime){}
+    public virtual void TickPhysics(float deltaTime){}
+
+
+    protected void SetIgnoredCollidersOnAllWeapons()
+    {
+        List<Collider> R = ModelMapping.GetCollidersByLayer(LibSWBF2.Enums.ECollisionMaskFlags.Ordnance);
+
+        foreach (PhxSeat Seat in Seats)
+        {
+            foreach (PhxWeaponSystem WeaponSystem in Seat.WeaponSystems)
+            {
+                if (WeaponSystem.Weapon != null)
+                {
+                    WeaponSystem.Weapon.SetIgnoredColliders(R);
+                }
+            }
+        }
     }
 
 
@@ -99,6 +175,25 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     }
 
 
+    // Dealing with SWBF's use of concave colliders on physics objects will be a major challenge
+    // unless we can reliably use the primitives found on each imported model...
+    protected List<MeshCollider> GetMeshColliders(Transform tx)
+    {
+        List<MeshCollider> Result = new List<MeshCollider>();
+        MeshCollider coll = tx.gameObject.GetComponent<MeshCollider>();
+        if (coll != null && coll.convex)
+        {
+            Result.Add(coll);
+        }
+
+        for (int j = 0; j < tx.childCount; j++)
+        {
+            Result.AddRange(GetMeshColliders(tx.GetChild(j)));
+        }
+
+        return Result;
+    }
+
 
     public bool HasAvailableSeat()
     {
@@ -106,14 +201,22 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     }
 
 
-    protected int GetNextAvailableSeat(int startIndex = -1)
+    public int GetNextAvailableSeat(int startIndex = -1)
     {
-        int numSeats = Sections.Count;
+        int numSeats = Seats.Count;
+
+        if (numSeats == 0)
+        {
+            // This isn't error worthy, plenty of armedbuildings dont have any seats
+            return -1;
+        }
+
+
         int i = (startIndex + 1) % numSeats;
         
         while (i != startIndex)
         {
-            if (Sections[i].Occupant == null)
+            if (Seats[i].Occupant == null)
             {
                 //Debug.LogFormat("Found open seat at index {0}", i);
                 return i;
@@ -142,17 +245,17 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         }
         else
         {
-            Sections[seat].SetOccupant(Sections[index].Occupant);
-            Sections[seat].Occupant.SetPilot(Sections[seat]);
-            Sections[index].Occupant = null;
-            CAM.Track(Sections[seat]);
+            Seats[seat].SetOccupant(Seats[index].Occupant);
+            Seats[seat].Occupant.SetPilot(Seats[seat]);
+            Seats[index].Occupant = null;
+            CAM.Track(Seats[seat]);
 
             return true;
         }
     }
 
 
-    public PhxVehicleSection TryEnterVehicle(PhxSoldier soldier)
+    public PhxSeat TryEnterVehicle(PhxSoldier soldier)
     {
         // Find first available seat
         int seat = GetNextAvailableSeat();
@@ -163,21 +266,21 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         }
         else 
         {
-            Sections[seat].SetOccupant(soldier);
-            PhxGameRuntime.GetCamera().Track(Sections[seat]);
+            Seats[seat].SetOccupant(soldier);
+            PhxGameRuntime.GetCamera().Track(Seats[seat]);
             
-            return Sections[seat];
+            return Seats[seat];
         }
     }
 
 
     public bool Eject(int i)
     {
-        if (i < Sections.Count || Sections[i] != null || Sections[i].Occupant != null)
+        if (i < Seats.Count || Seats[i] != null || Seats[i].Occupant != null)
         {
-            Sections[i].Occupant.SetFree(transform.position + Vector3.up * 2.0f);
-            CAM.Follow(Sections[i].Occupant);
-            Sections[i].Occupant = null;
+            Seats[i].Occupant.SetFree(transform.position + Vector3.up * 2.0f);
+            CAM.Follow(Seats[i].Occupant);
+            Seats[i].Occupant = null;
 
             return true;
         }
@@ -187,6 +290,29 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         }
     }
 
+    public Transform GetRootTransform()
+    {
+        return transform;
+    }
+
+
+    public List<Collider> GetAllColliders()
+    {
+        List<Collider> Colliders = new List<Collider>();
+        List<Transform> ChildTransforms = UnityUtils.GetChildTransforms(transform);
+
+        ChildTransforms.Add(transform);
+
+        foreach (Transform childTx in ChildTransforms)
+        {
+            foreach (Collider coll in childTx.gameObject.GetComponents<Collider>())
+            {
+                Colliders.Add(coll);
+            }
+        }
+
+        return Colliders;
+    }
 
 
     protected void SetupEnterTrigger()
@@ -220,12 +346,17 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
 
     public virtual Vector3 GetCameraPosition()
     {
-        return Sections[0].GetCameraPosition();
+        return Seats[0].GetCameraPosition();
     }
 
     public virtual Quaternion GetCameraRotation()
     {
-        return Sections[0].GetCameraRotation();
+        return Seats[0].GetCameraRotation();
+    }
+
+    public override void Destroy()
+    {
+
     }
 
 
@@ -238,81 +369,3 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     void StateFinished(int layer){}
     public void AddHealth(float amount){}
 }
-
-
-
-public class PhxVehicleProperties : PhxClass
-{
-    public PhxPropertySection ChunkSection = new PhxPropertySection(
-    	"CHUNKSECTION",
-        ("ChunkGeometryName", new PhxProp<string>(null)),
-    	("ChunkNodeName", new PhxProp<string>(null)),
-    	("ChunkTerrainCollisions", new PhxProp<int>(1)),
-    	("ChunkTerrainEffect", new PhxProp<string>("")),
-    	("ChunkPhysics", new PhxProp<string>("")),
-    	("ChunkOmega", new PhxMultiProp(typeof(float), typeof(float), typeof(float))), //not sure how to handle this yet...
-    	("ChunkBounciness", new PhxProp<float>(0.0f)),
-    	("ChunkStickiness", new PhxProp<float>(0.0f)),
-    	("ChunkSpeed", new PhxProp<float>(1.0f)),
-    	("ChunkUpFactor", new PhxProp<float>(0.5f)),
-    	("ChunkTrailEffect", new PhxProp<string>("")),
-    	("ChunkSmokeEffect", new PhxProp<string>("")),
-    	("ChunkSmokeNodeName", new PhxProp<string>("")) 
-    );
-
-    public PhxPropertySection Weapons = new PhxPropertySection(
-        "WEAPONSECTION",        
-        ("WeaponName",    new PhxProp<string>(null)),
-        ("WeaponAmmo",    new PhxProp<int>(0)),
-        ("WeaponChannel", new PhxProp<int>(0))
-        
-    );
-
-    public PhxProp<string> HealthType = new PhxProp<string>("vehicle");
-	public PhxProp<float>  MaxHealth = new PhxProp<float>(100.0f);
-
-    // In the "human" bank with name: "human_{Pilot9Pose}" ?
-    public PhxProp<string> Pilot9Pose = new PhxProp<string>("");
-
-    // animation bank containing vehicle 9Pose
-    public PhxProp<string> AnimationName = new PhxProp<string>("");
-
-    // vehicle 9Pose
-    public PhxProp<string> FinAnimation = new PhxProp<string>("");
-
-    public PhxProp<string> GeometryName = new PhxProp<string>("");
-
-
-    public PhxMultiProp SoldierCollision = new PhxMultiProp(typeof(string));
-    public PhxMultiProp BuildingCollision = new PhxMultiProp(typeof(string));
-    public PhxMultiProp VehicleCollision = new PhxMultiProp(typeof(string));
-    public PhxMultiProp OrdnanceCollision = new PhxMultiProp(typeof(string));
-    public PhxMultiProp TargetableCollision = new PhxMultiProp(typeof(string));
-
-    public PhxProp<string> VehicleType = new PhxProp<string>("light");
-    public PhxProp<string> AISizeType =  new PhxProp<string>("MEDIUM");
-}
-
-
-
-public class PhxDamageEffect 
-{
-    public float DamageStartPercent;
-    public float DamageStopPercent;
-    public PhxEffect Effect;
-    public Transform DamageAttachPoint;
-
-    public bool IsOn;
-}
-
-
-
-
-
-
-
-
-
-
-
-
