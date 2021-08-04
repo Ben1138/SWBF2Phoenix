@@ -14,7 +14,7 @@ public static class PhxUtils
         Vector4 vOut = new Vector4();
         for (int i = 0; i < 4 && i < v.Length; i++)
         {
-            vOut[i] = FloatFromString(val);
+            vOut[i] = FloatFromString(v[i]);
         }
         return vOut;
     }
@@ -25,7 +25,7 @@ public static class PhxUtils
         Vector3 vOut = new Vector3();
         for (int i = 0; i < 3 && i < v.Length; i++)
         {
-            vOut[i] = FloatFromString(val);        
+            vOut[i] = FloatFromString(v[i]);        
         }
         return vOut;
     }
@@ -34,9 +34,9 @@ public static class PhxUtils
     {
         string[] v = val.Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
         Vector2 vOut = new Vector2();
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 2 && i < v.Length; i++)
         {
-            vOut[i] = FloatFromString(val);
+            vOut[i] = FloatFromString(v[i]);
         }
         return vOut;
     }
@@ -149,7 +149,7 @@ public static class PhxUtils
         catch 
         {
             Result = 0f;
-            Debug.LogErrorFormat("Failed to convert {0} to Vector2", FloatString);
+            Debug.LogErrorFormat("Failed to parse a float from: {0}", FloatString);
         }
         return Result;
     }    

@@ -7,7 +7,7 @@ using LibSWBF2.Utils;
 using LibSWBF2.Wrappers;
 using System.Runtime.ExceptionServices;
 
-public class PhxHoverMainSection : PhxVehicleSection
+public class PhxHoverMainSection : PhxSeat
 {
     public PhxHoverMainSection(PhxHover Hover) : base(Hover, 0){} 
 

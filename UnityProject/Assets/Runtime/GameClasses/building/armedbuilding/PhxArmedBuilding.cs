@@ -6,7 +6,13 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxArmedBuilding : PhxVehicle, IPhxTrackable, IPhxTickable
+
+
+/*
+No pooling needed for these, will eventually inherit from PhxDestructableBuilding
+*/
+
+public class PhxArmedBuilding : PhxVehicle
 {
     public class ClassProperties : PhxVehicleProperties{}
 
@@ -18,11 +24,13 @@ public class PhxArmedBuilding : PhxVehicle, IPhxTrackable, IPhxTickable
     {
         base.Init();
         SetupEnterTrigger();
+
+        ModelMapping.ConvexifyMeshColliders(false);
         
         var EC = C.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);
 
-        Sections = new List<PhxVehicleSection>();
+        Seats = new List<PhxSeat>();
 
         int i = 0;
         while (i < properties.Length)
@@ -32,17 +40,15 @@ public class PhxArmedBuilding : PhxVehicle, IPhxTrackable, IPhxTickable
             {
                 TurretSection = new PhxVehicleTurret(this, 0);
                 TurretSection.InitManual(EC, i, "BUILDINGSECTION", "TURRET1");
-                Sections.Add(TurretSection);
+                Seats.Add(TurretSection);
             }
 
             i++;
         }
+
+        SetIgnoredCollidersOnAllWeapons();
     }
 
-    public override void Destroy()
-    {
-        
-    }
 
     void UpdateState(float deltaTime)
     {
@@ -51,6 +57,9 @@ public class PhxArmedBuilding : PhxVehicle, IPhxTrackable, IPhxTickable
             TurretSection.Tick(deltaTime);        
         }
     }
+
+    void UpdatePhysics(float deltaTime){}
+
 
     public override Vector3 GetCameraPosition()
     {
@@ -63,10 +72,18 @@ public class PhxArmedBuilding : PhxVehicle, IPhxTrackable, IPhxTickable
     }
 
 
-    public void Tick(float deltaTime)
+    public override void Tick(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick ArmedBuilding");
+        base.Tick(deltaTime);
         UpdateState(deltaTime);
+        UnityEngine.Profiling.Profiler.EndSample();
+    }
+
+    public override void TickPhysics(float deltaTime)
+    {
+        UnityEngine.Profiling.Profiler.BeginSample("Tick ArmedBuilding Physics");
+        UpdatePhysics(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }
 }
