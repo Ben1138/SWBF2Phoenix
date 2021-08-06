@@ -129,7 +129,7 @@ public class PhxHover : PhxVehicle
 
     Rigidbody Body;
 
-    PhxHoverMainSection DriverSection = null;
+    PhxHoverMainSection DriverSeat = null;
     PhxHover.ClassProperties H;
 
 
@@ -175,14 +175,6 @@ public class PhxHover : PhxVehicle
 
     public List<SpringForce> SpringForces;
 
-
-
-    List<PhxDamageEffect> DamageEffects;
-
-
-
-
-    Vector3 startPos;
 
     public override void Init()
     {
@@ -231,7 +223,7 @@ public class PhxHover : PhxVehicle
         SECTIONS
         */
 
-        Sections = new List<PhxVehicleSection>();
+        Seats = new List<PhxSeat>();
 
         var EC = H.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);
@@ -244,20 +236,22 @@ public class PhxHover : PhxVehicle
             {
                 if (values[i].Equals("BODY", StringComparison.OrdinalIgnoreCase))
                 {
-                    DriverSection = new PhxHoverMainSection(this);
-                    DriverSection.InitManual(EC, i, "FLYERSECTION", "BODY");
-                    Sections.Add(DriverSection);                
+                    DriverSeat = new PhxHoverMainSection(this);
+                    DriverSeat.InitManual(EC, i, "FLYERSECTION", "BODY");
+                    Seats.Add(DriverSeat);                
                 }
                 else 
                 {
                     PhxVehicleTurret Turret = new PhxVehicleTurret(this, TurretIndex++);
                     Turret.InitManual(EC, i, "FLYERSECTION", values[i]);
-                    Sections.Add(Turret);
+                    Seats.Add(Turret);
                 }
             }
 
             i++;
         }
+
+        SetIgnoredCollidersOnAllWeapons();
 
 
         /*
@@ -285,7 +279,6 @@ public class PhxHover : PhxVehicle
                 sc.isTrigger = true;
                 sc.enabled = false;
                 */
-                
                 
                 SpringForces.Add(new SpringForce());
             }
@@ -381,41 +374,6 @@ public class PhxHover : PhxVehicle
                 }
             }
         }
-
-
-
-
-        /*
-        DamageEffects = new List<PhxDamageEffect>();
-        PhxDamageEffect CurrDamageEffect = null;
-
-
-        i = 0;
-        while (i < properties.Length)
-        {
-            if (properties[i] == HashUtils.GetFNV("DamageStartPercent"))
-            {
-            	CurrDamageEffect = new PhxDamageEffect();
-            	DamageEffects.Add(CurrDamageEffect);
-
-            	CurrDamageEffect.DamageStartPercent = float.Parse(values[i]) / 100f;
-            }
-            else if (properties[i] == HashUtils.GetFNV("DamageStopPercent"))
-            {
-            	CurrDamageEffect.DamageStopPercent = float.Parse(values[i]) / 100f;
-            }
-            else if (properties[i] == HashUtils.GetFNV("DamageEffect"))
-            {
-            	CurrDamageEffect.Effect = SCENE.EffectsManager.LendEffect(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("DamageAttachPoint"))
-            {
-            	CurrDamageEffect.DamageAttachPoint = UnityUtils.FindChildTransform(transform, values[i]);
-            }
-
-        	i++;
-        }
-        */
     }
 
 
@@ -429,10 +387,10 @@ public class PhxHover : PhxVehicle
     void UpdateState(float deltaTime)
     {
         /* 
-        Sections
+        Seats
         */
 
-        foreach (var section in Sections)
+        foreach (var section in Seats)
         {
             section.Update();
         }
@@ -443,7 +401,7 @@ public class PhxHover : PhxVehicle
         */
 
         Vector3 Input = Vector3.zero;
-        DriverController = DriverSection.GetController();
+        DriverController = DriverSeat.GetController();
         if (DriverController != null) 
         {
             Input.x = DriverController.MoveDirection.x;
@@ -521,40 +479,6 @@ public class PhxHover : PhxVehicle
                 Wheel.Update(deltaTime, LocalVel.z, LocalAngVel.z);
             }
         }
-
-
-        // Update damage effects
-        /*
-        CurHealth.Set(Mathf.Clamp(CurHealth.Get() - ((deltaTime / 15f) * C.MaxHealth.Get()), 1f, C.MaxHealth.Get()));
-
-        float HealthPercent = CurHealth.Get() / C.MaxHealth.Get();
-        
-
-        foreach (PhxDamageEffect DamageEffect in DamageEffects)
-        {
-        	if (HealthPercent < DamageEffect.DamageStartPercent && HealthPercent > DamageEffect.DamageStopPercent)
-        	{
-        		if (!DamageEffect.IsOn && DamageEffect.Effect != null)
-        		{
-        			Debug.LogFormat("Playing effect: {0} at node: {1}...", DamageEffect.Effect.EffectName, DamageEffect.DamageAttachPoint.name);
-        			DamageEffect.IsOn = true;
-        			DamageEffect.Effect.SetParent(DamageEffect.DamageAttachPoint);
-        			DamageEffect.Effect.SetLocalTransform(Vector3.zero, Quaternion.identity);
-        			DamageEffect.Effect.Play();
-        		}
-        	}
-        	else 
-        	{
-        		if (DamageEffect.IsOn && DamageEffect.Effect != null)
-        		{
-        			Debug.LogFormat("Stopping effect: {0}...", DamageEffect.Effect.EffectName);
-
-        			DamageEffect.IsOn = false;
-        			DamageEffect.Effect.Stop();
-        		}
-        	}
-        }
-        */
     }
 
     
@@ -656,7 +580,7 @@ public class PhxHover : PhxVehicle
         UpdateSprings(deltaTime);
 
 
-        DriverController = DriverSection.GetController();
+        DriverController = DriverSeat.GetController();
         if (DriverController == null) 
         {
             return;
@@ -707,12 +631,12 @@ public class PhxHover : PhxVehicle
 
     public override Vector3 GetCameraPosition()
     {
-        return Sections[0].GetCameraPosition();
+        return Seats[0].GetCameraPosition();
     }
 
     public override Quaternion GetCameraRotation()
     {
-        return Sections[0].GetCameraRotation();
+        return Seats[0].GetCameraRotation();
     }
 
 
@@ -726,6 +650,7 @@ public class PhxHover : PhxVehicle
     public override void Tick(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick Hover");
+        base.Tick(deltaTime);
         UpdateState(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }
