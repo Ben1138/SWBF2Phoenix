@@ -16,13 +16,17 @@ public class PhxAnimatedProp : PhxProp
         public PhxMultiProp Animation = new PhxMultiProp(typeof(string));
 
         // These can be quite complex, best to parse manually
-        public PhxProp<string> AttachTrigger = new PhxProp<string>(null);
         public PhxProp<string> AnimationTrigger = new PhxProp<string>(null);
+        public PhxProp<string> AttachTrigger = new PhxProp<string>(null);
     }
 
     PhxAnimatedProp.ClassProperties APropClass;
 
-    CraPlayer Player;
+    CraAnimator Animator;
+
+    Dictionary<string, int> AnimStates = new Dictionary<string, int>();
+
+    bool IsIdling;
 
 
     public override void Init()
@@ -32,19 +36,90 @@ public class PhxAnimatedProp : PhxProp
         APropClass = C as PhxAnimatedProp.ClassProperties;
 
 
-        bool HasIdle = false;
+        Animator = CraAnimator.CreateNew(1, APropClass.Animation.Values.Count);
+
+        // Add each Animation as a separate state
         foreach (object[] values in APropClass.Animation.Values)
         {
-            HasIdle = (values[0] as string).Equals("idle", StringComparison.OrdinalIgnoreCase);
-            if (HasIdle) break;
+            string CurrAnimName = (values[0] as string);
+
+            CraPlayer CurrPlayer = PhxAnimationLoader.CreatePlayer(transform, APropClass.AnimationName.Get(), CurrAnimName, false);
+            if (CurrPlayer.IsValid())
+            {
+                if (CurrAnimName.Equals("idle", StringComparison.OrdinalIgnoreCase))
+                {
+                    CurrPlayer.SetLooping(true);
+                }
+
+                AnimStates[CurrAnimName] = Animator.AddState(0, CurrPlayer);
+            }
+            else 
+            {
+                Debug.LogErrorFormat("Animatedprop failed to add anim state: {0}", CurrAnimName);
+            }
         }
 
-        if (HasIdle && APropClass.AnimationName.Get() != null)
+        if (APropClass.AnimationTrigger.Get() != null)
         {
-            Player = PhxAnimationLoader.CreatePlayer(transform, APropClass.AnimationName.Get(), "idle", false);
-            Player.SetPlaybackSpeed(1f);
-            Player.SetLooping(true);  
-            Player.Play();            
+            var Body = gameObject.AddComponent<Rigidbody>();
+            Body.isKinematic = true;
+
+            string[] Parts = APropClass.AnimationTrigger.Get().Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
+
+            if (Parts.Length >= 3)
+            {
+                string AnimName = Parts[0];
+                Transform TriggerNode = UnityUtils.FindChildTransform(transform, Parts[1]);
+                float TriggerRadius = PhxUtils.FloatFromString(Parts[2]);
+
+                if (TriggerNode != null && AnimStates.ContainsKey(AnimName))
+                {
+                    TriggerNode.gameObject.layer = LayerMask.NameToLayer("BuildingSoldier");
+                    PhxTrigger Trigger = TriggerNode.gameObject.AddComponent<PhxTrigger>();
+                    Trigger.Init(TriggerRadius, () => PlayTriggerAnim(AnimName), null);
+                }          
+            }
+        }
+
+        if (AnimStates.ContainsKey("idle"))
+        {
+            IsIdling = true;
+            Animator.SetState(0, AnimStates["idle"]);            
         }
     }
+
+
+    public void PlayTriggerAnim(string ColliderName)
+    {
+        if (IsIdling)
+        {
+            //Debug.LogFormat("Animatedprop playing trigger anim: {0}", ColliderName);
+            IsIdling = false;
+            Animator.SetState(0, AnimStates[ColliderName]);
+        }
+    }
+
+
+    public override void Tick(float deltaTime)
+    {
+        if (!IsIdling)
+        {
+            //Debug.Log("Not idling...");
+
+            if (Animator.GetCurrentState(0).IsPlaying())
+            {
+                //Debug.Log("Current state is playing...");
+            }
+            else 
+            {
+                //Debug.Log("But current state isnt playing...");
+            }
+
+            /*
+            Debug.LogFormat("Detected end of grab state");
+            IsIdling = true;
+            Animator.SetState(0, AnimStates["idle"]);   
+            */         
+        }
+    } 
 }
