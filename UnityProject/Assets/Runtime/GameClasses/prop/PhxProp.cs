@@ -10,7 +10,7 @@ using System.Runtime.ExceptionServices;
 
 public class PhxProp : PhxInstance<PhxProp.ClassProperties>
 {
-    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
 
     public class ClassProperties : PhxClass 
     {
@@ -22,6 +22,9 @@ public class PhxProp : PhxInstance<PhxProp.ClassProperties>
         public PhxProp<string> GeometryName = new PhxProp<string>("");
     }
 
+
+    public string EntityClassName;
+
     [Serializable]
     public class AttachedODF
     {
@@ -31,62 +34,147 @@ public class PhxProp : PhxInstance<PhxProp.ClassProperties>
 
     public List<AttachedODF> AttachedODFs = new List<AttachedODF>();
 
+    [Serializable]
+    public class AttachedEffect
+    {
+        public string EffectName;
+        public float RespawnDelay = 0f;
+        public float RespawnDelayTimer = 0f;        
+        public GameObject EffectObject;
+        public PhxEffect Effect;
+    }
+
+    public List<AttachedEffect> AttachedEffects = new List<AttachedEffect>();
+
+
+    
 
 
     public override void Init()
     {
         SWBFModel ModelMapping = ModelLoader.Instance.GetModelMapping(gameObject, C.GeometryName); 
 
-        void SetODFCollision(PhxMultiProp Props, ECollisionMaskFlags Flag)
+        EntityClassName = C.EntityClass.Name;
+
+        if (ModelMapping != null)
         {
-            foreach (object[] values in Props.Values)
+            void SetODFCollision(PhxMultiProp Props, ECollisionMaskFlags Flag)
             {
-                ModelMapping.SetColliderMask(values[0] as string, Flag);
+                foreach (object[] values in Props.Values)
+                {
+                    ModelMapping.SetColliderMask(values[0] as string, Flag);
+                }
             }
+
+            SetODFCollision(C.SoldierCollision,  ECollisionMaskFlags.Soldier);
+            SetODFCollision(C.BuildingCollision, ECollisionMaskFlags.Building);
+            SetODFCollision(C.OrdnanceCollision, ECollisionMaskFlags.Ordnance);
+            SetODFCollision(C.VehicleCollision,  ECollisionMaskFlags.Vehicle);
+
+            foreach (object[] TCvalues in C.TargetableCollision.Values)
+            {
+                ModelMapping.EnableCollider(TCvalues[0] as string, false);
+            }
+
+            ModelMapping.GameRole = SWBFGameRole.Building;
+            ModelMapping.ExpandMultiLayerColliders();
+            ModelMapping.SetColliderLayerFromMaskAll();            
         }
-
-        SetODFCollision(C.SoldierCollision,  ECollisionMaskFlags.Soldier);
-        SetODFCollision(C.BuildingCollision, ECollisionMaskFlags.Building);
-        SetODFCollision(C.OrdnanceCollision, ECollisionMaskFlags.Ordnance);
-        SetODFCollision(C.VehicleCollision,  ECollisionMaskFlags.Vehicle);
-
-        foreach (object[] TCvalues in C.TargetableCollision.Values)
-        {
-            ModelMapping.EnableCollider(TCvalues[0] as string, false);
-        }
-
-        ModelMapping.GameRole = SWBFGameRole.Building;
-        ModelMapping.ExpandMultiLayerColliders();
-        ModelMapping.SetColliderLayerFromMaskAll();
 
         var EC = C.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);
 
         PhxClass CurrentODFToAttach = null;
+        string CurrentEffectToAttach = null;
+
         for (int i = 0; i < properties.Length && i < values.Length; i++)
         {
-            if (properties[i] == HashUtils.GetFNV("AttachOdf"))
+            if (properties[i] == 0xa9d0d48b /*AttachOdf*/)
             {
                 CurrentODFToAttach = SCENE.GetClass(values[i]);
+                CurrentEffectToAttach = null;
             }
-            else if (properties[i] == HashUtils.GetFNV("AttachToHardPoint"))
+            else if (properties[i] == 0x6a6c7e0d /*AttachEffect*/)
             {
-                var newODF = new AttachedODF();
-                AttachedODFs.Add(newODF);
+                CurrentEffectToAttach = values[i]; 
+                CurrentODFToAttach = null;
+            }
+            else if (properties[i] == 0x3be7b80a /*AttachToHardPoint*/)
+            {
+                string[] Parts = values[i].Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
 
-                Transform ChildTx = UnityUtils.FindChildTransform(transform, values[i]);
-                GameObject AttachedODFObject = SCENE.InstantiateClass(CurrentODFToAttach, true, ChildTx);
+                // AttachToHardPoint can have a second float parameter that determines how the long the
+                // AttachedEffect will take to respawn
 
-                if (AttachedODFObject != null && ChildTx != null)
+                string HpName = Parts[0];
+
+                float RespawnTime = 0f;
+                try {
+                    RespawnTime = Parts.Length > 1 ? float.Parse(Parts[1], System.Globalization.CultureInfo.InvariantCulture) : 0f;
+                }
+                catch 
                 {
-                    newODF.ObjectClass = CurrentODFToAttach.EntityClass.Name;
-                    newODF.Object = AttachedODFObject;                    
-                }                
+                    Debug.LogErrorFormat("Failed to parse float from: {0}", Parts[1]);
+                }
+
+
+                Transform ChildTx = UnityUtils.FindChildTransform(transform, HpName);
+
+                if (ChildTx != null)
+                {
+                    if (CurrentODFToAttach != null)
+                    {
+                        var newODF = new AttachedODF();
+                        AttachedODFs.Add(newODF);
+
+                        GameObject AttachedODFObject = SCENE.InstantiateClass(CurrentODFToAttach, true, ChildTx);
+
+                        newODF.ObjectClass = CurrentODFToAttach.EntityClass.Name;
+                        newODF.Object = AttachedODFObject;                   
+                    }
+
+                    if (CurrentEffectToAttach != null)
+                    {
+                        PhxEffect Effect = SCENE.EffectsManager.LendEffect(CurrentEffectToAttach);
+
+                        if (Effect == null || Effect.EffectObject == null) return;
+
+                        Effect.SetParent(ChildTx);
+                        Effect.SetLooping(false);
+                        Effect.Stop();
+
+                        AttachedEffect NewAttachedEffect = new AttachedEffect();
+                        NewAttachedEffect.RespawnDelay = RespawnTime;
+                        NewAttachedEffect.RespawnDelayTimer = RespawnTime + UnityEngine.Random.Range(0f, RespawnTime + .001f);
+                        NewAttachedEffect.Effect = Effect;
+                        NewAttachedEffect.EffectObject = Effect.EffectObject;
+                        NewAttachedEffect.EffectName = NewAttachedEffect.EffectObject.name;
+
+                        AttachedEffects.Add(NewAttachedEffect);  
+                    }
+                }              
             }
         }
     }
 
-    public override void Tick(float deltaTime){}
+
+    public override void Tick(float deltaTime)
+    {
+        foreach (AttachedEffect Effect in AttachedEffects)
+        {
+            if (!Effect.Effect.IsStillPlaying())
+            {
+                Effect.RespawnDelayTimer -= deltaTime;
+            }
+
+            if (Effect.RespawnDelayTimer < 0f)
+            {
+                Effect.Effect.Play();
+                Effect.RespawnDelayTimer = Effect.RespawnDelay;
+            }
+        }
+    }
+
     public override void TickPhysics(float deltaTime){}
     public override void BindEvents(){}
 }
