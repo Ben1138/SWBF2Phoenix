@@ -40,4 +40,9 @@ public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
     {
 
     }
+
+    public override void TickPhysics(float deltaTime)
+    {
+
+    }
 }
