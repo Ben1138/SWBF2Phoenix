@@ -75,7 +75,6 @@ public interface IPhxControlableInstance
     public PhxInstance GetInstance();
     public Vector2 GetViewConstraint();
     public Vector2 GetMaxTurnSpeed();
-    public Vector3 GetTargetPosition();
 
     PhxPawnController GetController();
     void Assign(PhxPawnController controller);
@@ -88,15 +87,11 @@ public interface IPhxControlableInstance
     public void PlayIntroAnim();
 
     IPhxWeapon GetPrimaryWeapon();
-
-    PhxInstance GetAim();
 }
 
 public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlableInstance where T : PhxClass
 {
     protected PhxPawnController Controller;
-    
-    protected Vector3 TargetPos;
     protected Vector2 ViewConstraint = Vector2.positiveInfinity;
 
     // degrees per second
@@ -116,11 +111,6 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
     public Vector2 GetMaxTurnSpeed()
     {
         return MaxTurnSpeed;
-    }
-
-    public Vector3 GetTargetPosition()
-    {
-        return TargetPos;
     }
 
     public PhxPawnController GetController()
@@ -146,7 +136,6 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
     public abstract void Fixate();
     public abstract void PlayIntroAnim();
     public abstract IPhxWeapon GetPrimaryWeapon();
-    public abstract PhxInstance GetAim();
 }
 
 public interface IPhxWeapon

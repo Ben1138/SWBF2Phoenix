@@ -89,7 +89,7 @@ public class PhxPool<T> where T : Component
 
 public class PhxProjectiles
 {
-    const int COUNT = 128;
+    const int COUNT = 1024;
 
     PhxGameRuntime Game => PhxGameRuntime.Instance;
 
@@ -110,12 +110,24 @@ public class PhxProjectiles
     public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
     {
         PhxProjectile proj = Projectiles.Alloc();
-        Physics.IgnoreCollision(proj.Coll, owner.Pawn.GetInstance().GetComponent<CapsuleCollider>());
+        if (proj == null)
+        {
+            Debug.LogWarning($"Ran out of projectile instances! Maximum of {Projectiles.Objects.Length} reached!");
+            return;
+        }
+        PhxInstance inst = owner.Pawn.GetInstance();
+        if (inst != null)
+        {
+            CapsuleCollider coll = inst.GetComponent<CapsuleCollider>();
+            if (coll != null)
+            {
+                Physics.IgnoreCollision(proj.Coll, coll);
+            }            
+        }
         if (proj != null)
         {
             proj.Setup(owner, pos, rot, bolt);
         }
-        //Debug.Break();
     }
 
     public void Destroy()
@@ -141,7 +153,7 @@ public class PhxProjectiles
         }
         else
         {
-            Debug.LogWarning("Exceeded available spark effect instances!");
+            Debug.LogWarning($"Exceeded available spark effect instances of {Sparks.Objects.Length}!");
         }
     }
 }

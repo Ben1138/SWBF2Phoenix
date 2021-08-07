@@ -194,10 +194,10 @@ public class PhxRuntimeMatch
 
     public void Tick(float deltaTime)
     {
-        Player.Update(deltaTime);
+        Player.Tick(deltaTime);
         for (int i = 0; i < AIControllers.Count; ++i)
         {
-            AIControllers[i].Update(deltaTime);
+            AIControllers[i].Tick(deltaTime);
         }
 
         if (AvailablePauseMenu && Player.CancelPressed)

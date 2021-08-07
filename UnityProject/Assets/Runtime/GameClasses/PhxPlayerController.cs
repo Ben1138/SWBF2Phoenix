@@ -5,8 +5,10 @@ using UnityEngine;
 public class PhxPlayerController : PhxPawnController
 {
     PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
-    public bool CancelPressed { get; private set; }
+    PhxCamera Camera => PhxGameRuntime.GetCamera();
 
+    public bool CancelPressed { get; private set; }
+    Vector3? TargetPos;
 
 
     public PhxPlayerController()
@@ -14,9 +16,14 @@ public class PhxPlayerController : PhxPawnController
         Team = 1;
     }
 
-    public override void Update(float deltaTime)
+    public override Vector3 GetAimPosition()
     {
-        base.Update(deltaTime);
+        return TargetPos.HasValue ? TargetPos.Value : Camera.transform.position + ViewDirection * 1000f;
+    }
+
+    public override void Tick(float deltaTime)
+    {
+        base.Tick(deltaTime);
 
         // UI Controls, are always checked
         CancelPressed = Input.GetButtonDown("Cancel");
@@ -71,6 +78,30 @@ public class PhxPlayerController : PhxPawnController
         if (Input.GetButtonDown("Crouch"))
         {
             Crouch = !Crouch;
+        }
+
+        Debug.DrawRay(Camera.transform.position, ViewDirection * 1000f, Color.blue);
+
+        // ignore vehicle colliders
+        int layerMask = 7;
+        if (Physics.Raycast(Camera.transform.position, ViewDirection, out RaycastHit hit, 1000f, layerMask))
+        {
+            PhxInstance GetInstance(Transform t)
+            {
+                PhxInstance inst = t.gameObject.GetComponent<PhxInstance>();
+                if (inst == null && t.parent != null)
+                {
+                    return GetInstance(t.parent);
+                }
+                return inst;
+            }
+
+            Target = GetInstance(hit.collider.gameObject.transform);
+            TargetPos = hit.point;
+        }
+        else
+        {
+            TargetPos = null;
         }
     }
 }

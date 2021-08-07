@@ -16,14 +16,23 @@ public abstract class PhxPawnController
     public bool NextSecondaryWeapon;
     public Vector2 MoveDirection;
     public Vector3 ViewDirection;
+    protected PhxInstance Target;
 
     public PhxCommandpost CapturePost;
     public int Team = 0;
 
 
+
     public bool IsIdle => !ShootPrimary && !Crouch && MoveDirection == Vector2.zero;
     public float IdleTime { get; private set; }
 
+
+    public abstract Vector3 GetAimPosition();
+
+    public PhxInstance GetAimObject()
+    {
+        return Target;
+    }
 
     // For assignment, use IPhxControlableInstance.Assign()!
     public void SetPawn(IPhxControlableInstance pawn)
@@ -46,7 +55,7 @@ public abstract class PhxPawnController
         IdleTime = 0f;
     }
 
-    public virtual void Update(float deltaTime)
+    public virtual void Tick(float deltaTime)
     {
         if (IsIdle)
         {
