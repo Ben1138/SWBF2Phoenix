@@ -28,15 +28,13 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
 
     public PhxProp<float> CurHealth = new PhxProp<float>(1f);
 
-
-
     public List<PhxDamageEffect> DamageEffects = new List<PhxDamageEffect>();
-
-
-    bool IsBuilt = true;
 
     public GameObject BuiltGeometry;
     public GameObject DestroyedGeometry;
+
+    protected bool IsBuilt = true;
+
 
 
     public override void Init()
@@ -123,10 +121,9 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
     }
 
 
-
     public override void Tick(float deltaTime)
     {
-        float HealthPercent = CurHealth.Get();
+        float HealthPercent = CurHealth.Get() / C.MaxHealth.Get();
 
         if (HealthPercent > 0.0001f)
         {
@@ -157,15 +154,12 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
         }
     }
 
-
     public override void TickPhysics(float deltaTime){}
     public override void BindEvents(){}
 
-
     public void AddDamage(float Damage)
     {
-        CurHealth.Set(Mathf.Clamp((CurHealth.Get() * C.MaxHealth.Get() - Damage) / C.MaxHealth.Get(), 0f, 1f));
-
-        Debug.LogFormat("Destructable building: {0} has health: {1} after {2} damage was dealt", gameObject.name, CurHealth.Get(), Damage);
+        CurHealth.Set(CurHealth.Get() - Damage);
+        //Debug.LogFormat("Destructable building: {0} has health: {1} after {2} damage was dealt", gameObject.name, CurHealth.Get(), Damage);
     }
 }

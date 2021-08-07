@@ -14,7 +14,6 @@ public class PhxMissileClass : PhxOrdnanceClass
 
     public PhxProp<float> MinSpeed = new PhxProp<float>(10f);
     public PhxProp<float> Acceleration = new PhxProp<float>(50f);
-    // public PhxProp<float> Gravity = new PhxProp<float>(0f);
     public PhxProp<float> Rebound = new PhxProp<float>(0f);
     public PhxProp<float> TurnRate = new PhxProp<float>(0f);
 
@@ -41,11 +40,11 @@ public class PhxMissile : PhxOrdnance
     protected Rigidbody Body;
     Light Light;
 
-    List<Collider> Colliders;
-    List<Collider> IgnoredColliders;
+    protected List<Collider> Colliders;
+    protected List<Collider> IgnoredColliders;
 
 
-    PhxEffect TrailEffect;
+    protected PhxEffect TrailEffect;
 
 
     public override void Init(PhxOrdnanceClass OClass)
@@ -64,6 +63,10 @@ public class PhxMissile : PhxOrdnance
         Body.angularDrag = 0f;
         Body.interpolation = RigidbodyInterpolation.Interpolate;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        Body.centerOfMass = Vector3.zero;
+        Body.inertiaTensor = new Vector3(1f,1f,1f);
+        Body.inertiaTensorRotation = Quaternion.identity;
 
         SWBFModel Mapping = ModelLoader.Instance.GetModelMapping(gameObject, MissileClass.GeometryName.Get());
         if (Mapping != null)
@@ -86,6 +89,7 @@ public class PhxMissile : PhxOrdnance
             TrailEffect.SetLooping();
             TrailEffect.SetParent(transform);
             TrailEffect.SetLocalTransform(Vector3.zero, Quaternion.identity);
+            TrailEffect.SetDynamic(true);
         } 
     }
 
@@ -175,7 +179,7 @@ public class PhxMissile : PhxOrdnance
         gameObject.layer = LayerMask.NameToLayer("OrdnanceAll");
         
         Body = GetComponent<Rigidbody>();
-        Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ; 
+        //Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ; 
 
         Light = GetComponent<Light>();
         Light.type = LightType.Point;
@@ -189,14 +193,37 @@ public class PhxMissile : PhxOrdnance
         {
             ContactPoint Contact = coll.GetContact(0);
 
+            /*
+            EXPLOSION
+
+            TODO: Figure out what explosion param to use when...
+            */
+
             PhxClass Exp = MissileClass.ExplosionImpact.Get();
             if (Exp == null)
             {
                 Exp = MissileClass.ExplosionName.Get();
             }
             
+            PhxExplosionManager.AddExplosion(null, Exp as PhxExplosionClass, Contact.point, Quaternion.identity);
 
-            PhxExplosionManager.AddExplosion(null, Exp as PhxExplosionClass, Contact.point, Quaternion.LookRotation(Contact.normal, Vector3.up));
+
+            /*
+            DAMAGE
+            */
+
+            Rigidbody HitBody = coll.rigidbody;
+            if (HitBody != null)
+            {
+                GameObject HitGameObject = HitBody.gameObject;
+                IPhxDamageableInstance HitDamageable = HitGameObject.GetComponent<PhxInstance>() as IPhxDamageableInstance;
+
+                // TODO: Add layer based damage multipliers
+                if (HitDamageable != null)
+                {
+                    HitDamageable.AddDamage(MissileClass.MaxDamage.Get());
+                }
+            }
 
             Release();
         }
