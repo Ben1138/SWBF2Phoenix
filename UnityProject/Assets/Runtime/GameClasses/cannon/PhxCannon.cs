@@ -106,10 +106,10 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
                 PhxBolt bolt = C.OrdnanceName.Get() as PhxBolt;
                 if (HpFire != null && bolt != null)
                 {
-                    Vector3 dirVec = targetPos - HpFire.position;
+                    Vector3 dirVec = (targetPos - HpFire.position).normalized;
                     Quaternion dir = Quaternion.LookRotation(dirVec);
                     Scene.FireProjectile(owner, HpFire.position, dir, bolt);
-                    Debug.DrawRay(HpFire.position, dirVec, Color.red);
+                    Debug.DrawRay(HpFire.position, dirVec * 1000f, Color.red);
                 }
             }
 
