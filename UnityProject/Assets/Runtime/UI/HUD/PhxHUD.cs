@@ -91,7 +91,7 @@ public class PhxHUD : PhxMenuInterface
                 AmmoPrim.text = "-";
             }
 
-            PhxInstance aim = Match.Player.Pawn.GetAim();
+            PhxInstance aim = Match.Player.GetAimObject();
             if (aim != null)
             {
                 if (aim.Team != 0)

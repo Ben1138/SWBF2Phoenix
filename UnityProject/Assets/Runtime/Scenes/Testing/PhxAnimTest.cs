@@ -4,6 +4,7 @@ public class PhxAnimTest : PhxUnityScript
 {
     static PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
 
+    public Transform AITarget;
     public int Width;
     public int Height;
     public float Padding;
@@ -31,17 +32,17 @@ public class PhxAnimTest : PhxUnityScript
         string[] classNames =
         {
             "rep_inf_ep2_rifleman",
-            "rep_inf_ep2_rocketeer",
+            //"rep_inf_ep2_rocketeer",
             "rep_inf_ep2_sniper",
             "rep_inf_ep2_engineer",
-            "rep_inf_ep2_jettrooper",
+            //"rep_inf_ep2_jettrooper",
             "rep_inf_ep3_rifleman",
-            "rep_inf_ep3_rocketeer",
+            //"rep_inf_ep3_rocketeer",
             "rep_inf_ep3_sniper",
             "rep_inf_ep3_sniper_felucia",
             "rep_inf_ep3_engineer",
-            "rep_inf_ep3_officer",
-            "rep_inf_ep3_jettrooper",
+            //"rep_inf_ep3_officer",
+            //"rep_inf_ep3_jettrooper",
         };
 
         PhxRuntimeScene scene = PhxGameRuntime.GetScene();
@@ -73,13 +74,15 @@ public class PhxAnimTest : PhxUnityScript
                     int idx = x + (Width * y);
                     Instances[idx] = MATCH.SpawnAI<PhxAnimTestController>(spawnClass, pos, Quaternion.identity);
                     Instances[idx].Fixate();
+                    PhxAnimTestController ai = Instances[idx].GetController() as PhxAnimTestController;
+                    ai.TestAim = AITarget;
                 }
             }
         }
 
         if (SpawnPlayer)
         {
-            MATCH.SpawnPlayer(classes[5], transform.position, Quaternion.identity);
+            MATCH.SpawnPlayer(classes[3], transform.position, Quaternion.identity);
         }
     }
 

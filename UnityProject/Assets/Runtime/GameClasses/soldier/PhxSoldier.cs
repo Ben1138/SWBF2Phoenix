@@ -140,8 +140,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     IPhxWeapon[][] Weapons = new IPhxWeapon[2][];
     int[] WeaponIdx = new int[2] { -1, -1 };
 
-    PhxInstance Aim;
-
 
     public override void Init()
     {
@@ -335,11 +333,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.PlayIntroAnim();
     }
 
-    public override PhxInstance GetAim()
-    {
-        return Aim;
-    }
-
     void FireAnimation(bool primary)
     {
         Animator.Anim.SetState(1, Animator.StandShootPrimary);
@@ -390,19 +383,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Profiler.BeginSample("Tick Soldier Physics");
         UpdatePhysics(deltaTime);
         Profiler.EndSample();
-    }
-
-    void CheckAndApplyTurn()
-    {
-        float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, LookRot.eulerAngles.y);
-        if (rotDiff < -40f || rotDiff > 60f)
-        {
-            TurnTimer = TurnTime;
-            TurnStart = transform.rotation;
-            Animator.Anim.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
-            Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-            Animator.Anim.RestartState(0);
-        }
     }
 
     void UpdateState(float deltaTime)
@@ -560,12 +540,12 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                         // only fire when not currently turning
                         //Weap.Fire = TurnTimer <= 0f;
 
-                        Weapons[0][WeaponIdx[0]].Fire(Controller, TargetPos);
+                        Weapons[0][WeaponIdx[0]].Fire(Controller, Controller.GetAimPosition());
                         AlertTimer = AlertTime;
                     }
                     else if (Controller.ShootSecondary)
                     {
-                        Weapons[1][WeaponIdx[1]].Fire(Controller, TargetPos);
+                        Weapons[1][WeaponIdx[1]].Fire(Controller, Controller.GetAimPosition());
                         AlertTimer = AlertTime;
                     }
                     else if (Controller.Reload)
@@ -688,6 +668,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     {
         if (IsFixated)
         {
+            transform.rotation = LookRot;
             return;
         }
 
@@ -697,57 +678,23 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Grounded = Physics.CheckSphere(transform.position, 0.4f);
         gameObject.layer = 10; // soldier
 
-        if (Controller != null)
+        if ((PrevState == PhxControlState.Stand || PrevState == PhxControlState.Sprint) && State == PhxControlState.Jump)
         {
-            Vector3 aimStart = Neck.position;
-            Vector3 aimDir = Controller.ViewDirection;
-            if (Controller is PhxPlayerController)
+            if (JumpTimer > 0f)
             {
-                aimStart = CAM.transform.position;
-            }
-
-            // ignore vehicle colliders
-            int layerMask = 7;
-            if (Physics.Raycast(aimStart, aimDir, out RaycastHit hit, 1000f, layerMask))
-            {
-                TargetPos = hit.point;
-                Debug.DrawLine(aimStart, TargetPos, Color.blue);
-
-                PhxInstance GetInstance(Transform t)
-                {
-                    PhxInstance inst = t.gameObject.GetComponent<PhxInstance>();
-                    if (inst == null && t.parent != null)
-                    {
-                        return GetInstance(t.parent);
-                    }
-                    return inst;
-                }
-                Aim = GetInstance(hit.collider.gameObject.transform);
+                // Intentional jump
+                Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
             }
             else
             {
-                TargetPos = aimStart + aimDir * 1000f;
-                Debug.DrawRay(aimStart, aimDir * 1000f, Color.blue);
+                // Falling, (from a cliff or whatnot) / no intentional jump
+                Body.AddForce(CurrSpeed, ForceMode.VelocityChange);
             }
-
-            if ((PrevState == PhxControlState.Stand || PrevState == PhxControlState.Sprint) && State == PhxControlState.Jump)
-            {
-                if (JumpTimer > 0f)
-                {
-                    // Intentional jump
-                    Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
-                }
-                else
-                {
-                    // Falling, (from a cliff or whatnot) / no intentional jump
-                    Body.AddForce(CurrSpeed, ForceMode.VelocityChange);
-                }
-            }
-            else if ((State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint) && LandTimer == 0f)
-            {
-                Body.MovePosition(Body.position + CurrSpeed * deltaTime);
-                Body.MoveRotation(LookRot);
-            }
+        }
+        else if ((State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint) && LandTimer == 0f)
+        {
+            Body.MovePosition(Body.position + CurrSpeed * deltaTime);
+            Body.MoveRotation(LookRot);
         }
 
         PrevState = State;

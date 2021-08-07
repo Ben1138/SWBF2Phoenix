@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PhxAnimTestController : PhxPawnController
+public class PhxAnimTestController : PhxAIController
 {
+    public Transform TestAim;
+
     float ReloadTimer;
     float ForwardOffset;
 
@@ -12,9 +14,14 @@ public class PhxAnimTestController : PhxPawnController
         ForwardOffset = Random.Range(0f, 3.1416f * 2f);
     }
 
-    public override void Update(float deltaTime)
+    public override Vector3 GetAimPosition()
     {
-        base.Update(deltaTime);
+        return TestAim != null ? TestAim.position : ViewDirection * 1000f;
+    }
+
+    public override void Tick(float deltaTime)
+    {
+        //base.Tick(deltaTime);
 
         // nothing to do
         if (Pawn == null)
@@ -33,10 +40,16 @@ public class PhxAnimTestController : PhxPawnController
             Reload = false;
         }
 
-        MoveDirection.x = Mathf.Sin(ForwardOffset + Time.timeSinceLevelLoad);
-        MoveDirection.y = Mathf.Sin(ForwardOffset + Time.timeSinceLevelLoad);
-        ViewDirection = Vector3.forward;
+        float sin = Mathf.Sin(ForwardOffset + Time.timeSinceLevelLoad);
 
-        //ShootPrimary = true;
+        MoveDirection.x = sin;
+        MoveDirection.y = sin;
+
+        ShootPrimary = sin > -0.5f;
+
+        if (TestAim != null)
+        {
+            ViewDirection = (TestAim.transform.position - Pawn.GetInstance().transform.position).normalized;
+        }
     }
 }
