@@ -25,15 +25,15 @@ public class PhxLeafPatchClass : PhxClass
     public PhxProp<float> Radius = new PhxProp<float>(2.0f);
     public PhxProp<float> Height = new PhxProp<float>(1.5f);
 
-    public PhxProp<float> DarknessMin = new PhxProp<float>(1.0f);
-    public PhxProp<float> DarknessMax = new PhxProp<float>(1.0f);
+    public PhxProp<float> DarknessMin = new PhxProp<float>(0.0f);
+    public PhxProp<float> DarknessMax = new PhxProp<float>(0.0f);
 
     public PhxProp<int> MaxScatterBirds = new PhxProp<int>(0);
 }
 
 
 
-
+// TODO: Custom leafpatch shader
 [RequireComponent(typeof(ParticleSystem))]
 public class PhxLeafPatch : PhxInstance<PhxLeafPatchClass>
 {
@@ -63,7 +63,7 @@ public class PhxLeafPatch : PhxInstance<PhxLeafPatchClass>
 
         var LeavesMainModule = Leaves.main;
         LeavesMainModule.startSpeed = 0f;
-        LeavesMainModule.startLifetime = float.PositiveInfinity;
+        LeavesMainModule.startLifetime = 1f;
         LeavesMainModule.startSize = new ParticleSystem.MinMaxCurve(C.MinSize, C.MaxSize);
         LeavesMainModule.maxParticles = C.NumParticles;
         LeavesMainModule.simulationSpace = ParticleSystemSimulationSpace.Local;
@@ -100,10 +100,17 @@ public class PhxLeafPatch : PhxInstance<PhxLeafPatchClass>
             LeavesRenderer.sharedMaterial = mat;
         }
 
-        Leaves.Emit(C.NumParticles);
-
-
         byte ByteAlpha = (byte) (255f * C.Alpha);
+
+        for (int j = 0; j < C.NumParticles; j++)
+        {
+            byte ByteDarkness = (byte) (255f * UnityEngine.Random.Range(C.DarknessMin, C.DarknessMax));
+
+            var emitParams = new ParticleSystem.EmitParams();
+            emitParams.startColor = new Color32(ByteDarkness, ByteDarkness, ByteDarkness, ByteAlpha);
+            emitParams.startSize = UnityEngine.Random.Range(C.MinSize, C.MaxSize);
+            Leaves.Emit(emitParams, 1);            
+        }
 
         ParticleSystem.Particle[] LeafParticles = new ParticleSystem.Particle[C.NumParticles];
         int NumParticles = Leaves.GetParticles(LeafParticles);
@@ -115,13 +122,15 @@ public class PhxLeafPatch : PhxInstance<PhxLeafPatchClass>
                 0f
             );
 
-            byte ByteDarkness = (byte) (255f * UnityEngine.Random.Range(C.DarknessMin, C.DarknessMax));
-            LeafParticles[i].startColor = new Color32(ByteDarkness, ByteDarkness, ByteDarkness, ByteAlpha);
+            //byte ByteDarkness = (byte) (255f * UnityEngine.Random.Range(C.DarknessMin, C.DarknessMax));
+            //LeafParticles[i].startColor = new Color32(ByteDarkness, ByteDarkness, ByteDarkness, ByteAlpha);
         }
 
         Leaves.SetParticles(LeafParticles);  
 
         Leaves.Emit(C.NumParticles);
+
+        Leaves.Pause();
     }
 
     public override void BindEvents(){}
