@@ -6,6 +6,12 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
+
+
+/*
+No pooling needed for these
+*/
+
 public class PhxArmedBuilding : PhxVehicle
 {
     public class ClassProperties : PhxVehicleProperties{}
@@ -18,11 +24,13 @@ public class PhxArmedBuilding : PhxVehicle
     {
         base.Init();
         SetupEnterTrigger();
+
+        ModelMapping.ConvexifyMeshColliders(false);
         
         var EC = C.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);
 
-        Sections = new List<PhxVehicleSection>();
+        Seats = new List<PhxSeat>();
 
         int i = 0;
         while (i < properties.Length)
@@ -32,11 +40,13 @@ public class PhxArmedBuilding : PhxVehicle
             {
                 TurretSection = new PhxVehicleTurret(this, 0);
                 TurretSection.InitManual(EC, i, "BUILDINGSECTION", "TURRET1");
-                Sections.Add(TurretSection);
+                Seats.Add(TurretSection);
             }
 
             i++;
         }
+
+        SetIgnoredCollidersOnAllWeapons();
     }
 
 
@@ -65,6 +75,7 @@ public class PhxArmedBuilding : PhxVehicle
     public override void Tick(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick ArmedBuilding");
+        base.Tick(deltaTime);
         UpdateState(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }

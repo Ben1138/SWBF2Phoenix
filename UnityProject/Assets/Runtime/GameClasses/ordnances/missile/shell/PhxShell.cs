@@ -23,7 +23,7 @@ public class PhxShellClass : PhxMissileClass
 
 
 
-[RequireComponent(typeof(Rigidbody), typeof(Light))]
+//[RequireComponent(typeof(Rigidbody), typeof(Light))]
 public class PhxShell : PhxMissile
 {
     PhxShellClass ShellClass;
@@ -35,12 +35,54 @@ public class PhxShell : PhxMissile
     }
 
 
-    // Only differs in that it applies gravity
-    protected override void FixedUpdate()
+    public override void Setup(IPhxWeapon OriginatorWeapon, Vector3 Position, Quaternion Rotation)
     {
-        base.FixedUpdate();
+        OwnerWeapon = OriginatorWeapon;
+        Owner = OwnerWeapon.GetOwnerController();
 
-        // Manual gravity, since it varies
+        Body.constraints = RigidbodyConstraints.None;
+
+        // Can be null of course
+        // Target = OwnerWeapon.GetLockedTarget();
+
+        TimeAlive = 0f;
+
+        gameObject.SetActive(true);
+
+        //OwnerWeapon.GetFirePoint(out Vector3 Pos, out Quaternion Rot);
+        transform.position = Position;
+        transform.rotation = Rotation;
+
+        Body.velocity = transform.forward * ShellClass.Velocity.Get();
+
+        // Will need to unignore these in Release, but how to check
+        // if they still exist?  Points to per-weapon pools
+        // so this can be done easily when weapon is reused or detached, etc
+        IgnoredColliders = OriginatorWeapon.GetIgnoredColliders();
+        foreach (Collider IgnoredCollider in IgnoredColliders)
+        {
+            foreach (Collider MissileCollider in Colliders)
+            {
+                //Debug.LogFormat("Ignoring collider objects: {0}, {1}", IgnoredCollider.gameObject.name, MissileCollider.gameObject.name);
+                Physics.IgnoreCollision(MissileCollider, IgnoredCollider);
+            }                   
+        }
+
+        TrailEffect?.Play();
+    }
+
+
+    protected virtual void FixedUpdate()
+    {
+        float deltaTime = Time.deltaTime;
+
+        TimeAlive += deltaTime;
+        if (TimeAlive > ShellClass.LifeSpan)
+        {
+            Release();
+            return;
+        }
+
         Body.AddForce(9.8f * ShellClass.Gravity * Vector3.down, ForceMode.Acceleration);
     }
 }
