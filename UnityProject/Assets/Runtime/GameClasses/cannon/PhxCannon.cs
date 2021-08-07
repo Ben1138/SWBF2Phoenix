@@ -209,4 +209,9 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
             }
         }
     }
+
+    public override void TickPhysics(float deltaTime)
+    {
+
+    }
 }

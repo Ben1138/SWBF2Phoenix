@@ -14,6 +14,7 @@ public abstract class PhxInstance : MonoBehaviour
     public abstract void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties);
 
     public abstract void Tick(float deltaTime);
+    public abstract void TickPhysics(float deltaTime);
 }
 
 public abstract class PhxInstance<T> : PhxInstance where T : PhxClass

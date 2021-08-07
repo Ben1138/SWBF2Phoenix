@@ -93,7 +93,7 @@ public class PhxRuntimeEnvironment
         WorldLevel = null;
 
         LuaRT = new PhxLuaRuntime();
-        EnvCon = new LibSWBF2.Wrappers.Container();
+        EnvCon = new Container();
 
         Loader.SetGlobalContainer(EnvCon);
     }
@@ -116,6 +116,7 @@ public class PhxRuntimeEnvironment
         OnLoaded = null;
         LuaRT?.Close();
         EnvCon?.Delete();
+        EnvCon = null;
         PathToHandle.Clear();
     }
 
@@ -442,13 +443,14 @@ public class PhxRuntimeEnvironment
             CreateScene();
         }
 
+        Timers?.Tick(deltaTime);
         Match?.Tick(deltaTime);
         RTScene.Tick(deltaTime);
     }
 
-    public void FixedTick(float deltaTime)
+    public void TickPhysics(float deltaTime)
     {
-        Timers?.Tick(deltaTime);
+        RTScene.TickPhysics(deltaTime);
     }
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)

@@ -335,6 +335,14 @@ public class PhxRuntimeScene
         }
     }
 
+    public void TickPhysics(float deltaTime)
+    {
+        for (int i = 0; i < Instances.Count; ++i)
+        {
+            Instances[i].TickPhysics(deltaTime);
+        }
+    }
+
     PhxClass GetClass(EntityClass ec)
     {
         PhxClass odf = null;

@@ -277,6 +277,11 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         }
     }
 
+    public override void TickPhysics(float deltaTime)
+    {
+
+    }
+
     Transform FindChildRecursive(string name)
     {
         return FindChildRecursive(transform, name);
