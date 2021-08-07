@@ -52,6 +52,11 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
 
     }
 
+    public override void TickPhysics(float deltaTime)
+    {
+
+    }
+
     public void Reload()
     {
         

@@ -297,4 +297,9 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
             LastHoloPresence = HoloPresence;
         }
     }
+
+    public override void TickPhysics(float deltaTime)
+    {
+
+    }
 }

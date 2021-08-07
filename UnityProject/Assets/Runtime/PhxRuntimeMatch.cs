@@ -258,7 +258,6 @@ public class PhxRuntimeMatch
             return null;
         }
 
-        pawn.GetInstance().gameObject.layer = 3;
         pawn.Assign(Player);
         SetPlayerState(PhxPlayerState.Spawned);
 
