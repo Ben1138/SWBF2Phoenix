@@ -105,10 +105,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     const float AlertTime = 3f;
     float AlertTimer;
 
-    // Minimum time we're still considered standing, while actually not grounded
-    const float OffGroundTime = 0.5f;
-    float OffGroundTimer;
-
     // Count time while jumping/falling
     float FallTimer;
 
@@ -598,7 +594,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 if (Controller.Jump)
                 {
                     State = PhxControlState.Jump;
-                    Debug.Log("Jump");
                     JumpTimer = JumpTime;
 
                     Animator.Anim.SetState(0, Animator.Jump);
@@ -644,17 +639,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         // Handle falling / jumping
         if (State != PhxControlState.Jump && !Grounded)
         {
-            //OffGroundTimer += deltaTime;
-
-            //if (OffGroundTimer >= OffGroundTime)
-            //{
-                State = PhxControlState.Jump;
-                Debug.Log("Fall");
-                Animator.Anim.SetState(0, Animator.Fall);
-                Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-
-            //    OffGroundTimer = 0f;
-            //}
+            State = PhxControlState.Jump;
+            Animator.Anim.SetState(0, Animator.Fall);
+            Animator.Anim.SetState(1, CraSettings.STATE_NONE);
         }
 
         // Jump
@@ -666,28 +653,27 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             if (Grounded && JumpTimer < 0f)
             {
                 State = PhxControlState.Stand;
-                Debug.Log("Stand");
 
                 if (FallTimer > 1.5f)
                 {
                     LandTimer = 0.9f;
                     Animator.Anim.SetState(0, Animator.LandHard);
                     Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-                    Debug.Log($"Land HARD {FallTimer}");
+                    //Debug.Log($"Land HARD {FallTimer}");
                 }
                 else if (FallTimer > 1.2f || Controller.MoveDirection.magnitude < 0.1f)
                 {
                     LandTimer = 0.6f;
                     Animator.Anim.SetState(0, Animator.LandSoft);
                     Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-                    Debug.Log($"Land Soft {FallTimer}");
+                    //Debug.Log($"Land Soft {FallTimer}");
                 }
                 else
                 {
                     LandTimer = 0.05f;
                     Animator.Anim.SetState(0, Animator.LandSoft);
                     Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-                    Debug.Log($"Land very Soft {FallTimer}");
+                    //Debug.Log($"Land very Soft {FallTimer}");
                 }
 
                 FallTimer = 0f;

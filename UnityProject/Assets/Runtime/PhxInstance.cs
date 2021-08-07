@@ -7,20 +7,8 @@ public abstract class PhxInstance : MonoBehaviour
 {
     public PhxPropertyDB P { get; private set; } = new PhxPropertyDB();
 
-
+    // Every SWBF2 object has a Team
     public PhxProp<int> Team = new PhxProp<int>(0);
-
-
-    public abstract void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties);
-
-    public abstract void Tick(float deltaTime);
-    public abstract void TickPhysics(float deltaTime);
-}
-
-public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
-{
-    public bool IsInit => C != null;
-    public T C { get; private set; } = null;
 
 
     // Use this as constructor (MonoBehaviour constructors don't get called, and
@@ -32,10 +20,9 @@ public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
     // the intended behaviour (e.g. Team.OnValueChanged)
     public abstract void BindEvents();
 
-    public override void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties)
-    {
-        C = (T)classProperties;
 
+    public virtual void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties)
+    {
         Init();
 
         Type type = GetType();
@@ -62,6 +49,24 @@ public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
                 PhxPropertyDB.AssignProp(instOrClass, member.Name, refValue);
             }
         }
+    }
+
+    public abstract void Tick(float deltaTime);
+    public abstract void TickPhysics(float deltaTime);
+}
+
+public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
+{
+    public bool IsInit => C != null;
+    public T C { get; private set; } = null;
+
+
+    public override void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties)
+    {
+        Debug.Assert(classProperties is T);
+        C = (T)classProperties;
+
+        base.InitInstance(instOrClass, null);
     }
 }
 
