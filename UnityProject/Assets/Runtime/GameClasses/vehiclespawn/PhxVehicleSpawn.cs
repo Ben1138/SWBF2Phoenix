@@ -159,9 +159,9 @@ public class PhxVehicleSpawn : PhxInstance
 
         if (VehicleClass != null)
         {
-            Scene.CreateInstance(
+            var inst = Scene.CreateInstance(
                         VehicleClass,
-                        "vehicle_" + VehicleCount++.ToString(),
+                        VehicleClass.EntityClass.Name + VehicleCount++.ToString(),
                         transform.position,
                         transform.rotation
             );
