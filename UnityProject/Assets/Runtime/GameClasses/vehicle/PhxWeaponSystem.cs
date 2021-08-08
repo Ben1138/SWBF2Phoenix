@@ -11,28 +11,31 @@ using System.Runtime.ExceptionServices;
 /*
 Equivalent to WEAPONSECTIONs in vehicles.  Maintains aimers, barrels, firing configurations,
 and fires weapons.
+
+
+
+MAYBE PhxGenericWeapon should just read from assigned aimers and PhxSeat + PhxSoldier
+should assign and maintain aimers?
 */
 
 public class PhxWeaponSystem
 {
     static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
 
-    IPhxWeapon Weapon;
+    public IPhxWeapon Weapon;
     Transform WeaponTransform;
 
-    PhxVehicleSection OwnerSection; 
+    PhxSeat OwnerSeat; 
 
     List<PhxAimer> Aimers;
 
-    List<Collider> IgnoredColliders;
+    public List<Collider> IgnoredColliders;
 
 
-    public PhxWeaponSystem(PhxVehicleSection Section)
+    public PhxWeaponSystem(PhxSeat Section)
     {
-        OwnerSection = Section;
+        OwnerSeat = Section;
         Aimers = new List<PhxAimer>();
-
-        IgnoredColliders = OwnerSection.OwnerVehicle.GetOrdnanceColliders();
     }
 
 
@@ -46,43 +49,44 @@ public class PhxWeaponSystem
 
         int i = StartIndex;
 
+
         while (i < properties.Length)
         {
-            if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
+            if (properties[i] == 0x407e801e /*HierarchyLevel*/)
             {
                 CurrAimer.HierarchyLevel = Int32.Parse(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
+            else if (properties[i] == 0x2d6487bd /*AimerPitchLimits*/)
             {
                 CurrAimer.PitchRange = PhxUtils.Vec2FromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("AimerYawLimits"))
+            else if (properties[i] == 0xa9c3675c /*AimerYawLimits*/)
             {
                 CurrAimer.YawRange = PhxUtils.Vec2FromString(values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("BarrelNodeName"))
+            else if (properties[i] == 0x1e534b12 /*BarrelNodeName*/)
             {
                 if (CurrBarrel == null)
                 {
                     CurrBarrel = new PhxBarrel();
                     CurrAimer.AddBarrel(CurrBarrel);
                 }
-                CurrBarrel.Node = UnityUtils.FindChildTransform(OwnerSection.OwnerVehicle.transform, values[i]);
+                CurrBarrel.Node = UnityUtils.FindChildTransform(OwnerSeat.Owner.GetRootTransform(), values[i]);
             } 
-            else if (properties[i] == HashUtils.GetFNV("BarrelRecoil"))
+            else if (properties[i] == 0x5a29d1cb /*BarrelRecoil*/)
             {
                 if (CurrBarrel != null)
                 {
-                    CurrBarrel.RecoilDistance = float.Parse(values[i]);
+                    CurrBarrel.RecoilDistance = PhxUtils.FloatFromString(values[i]);
                 }
             }     
-            else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))
+            else if (properties[i] == 0xc182abc2 /*AimerNodeName*/)
             {
-                CurrAimer.Node = UnityUtils.FindChildTransform(OwnerSection.OwnerVehicle.transform, values[i]);
+                CurrAimer.Node = UnityUtils.FindChildTransform(OwnerSeat.Owner.GetRootTransform(), values[i]);
             }
-            else if (properties[i] == HashUtils.GetFNV("FirePointName"))
+            else if (properties[i] == 0x4274fc96 /*FirePointName*/ || properties[i] == 0x2e5375da /*FireNodeName*/)
             {
-                Transform FirePoint = UnityUtils.FindChildTransform(OwnerSection.OwnerVehicle.transform, values[i]);
+                Transform FirePoint = UnityUtils.FindChildTransform(OwnerSeat.Owner.GetRootTransform(), values[i]);
                 if (CurrBarrel != null)
                 {
                     CurrBarrel.FirePoint = FirePoint;
@@ -92,22 +96,22 @@ public class PhxWeaponSystem
                     CurrAimer.FireNode = FirePoint;
                 }
             }
-            else if (properties[i] == HashUtils.GetFNV("NextBarrel"))
+            else if (properties[i] == 0xe98f377c /*NextBarrel*/)
             {
                 CurrBarrel = new PhxBarrel();
                 CurrAimer.AddBarrel(CurrBarrel);
             }
-            else if (properties[i] == HashUtils.GetFNV("NextAimer"))
+            else if (properties[i] == 0x665d96ea /*NextAimer*/)
             {
                 AddAimer(CurrAimer);
                 CurrAimer = new PhxAimer();
                 CurrBarrel = null;
             }
-            else if (properties[i] == HashUtils.GetFNV("WeaponName"))
+            else if (properties[i] == 0xfbf47dba /*WeaponName*/)
             {
                 SetWeapon(values[i]);
             }  
-            else if (properties[i] == HashUtils.GetFNV("WEAPONSECTION"))
+            else if (properties[i] == 0xd0329e80 /*WEAPONSECTION*/)
             {
                 if (!values[i].Equals(WeaponIndex, StringComparison.OrdinalIgnoreCase))
                 {
@@ -149,20 +153,27 @@ public class PhxWeaponSystem
 
     public void SetWeapon(string WeaponName)
     {
-    	Weapon = SCENE.CreateInstance(SCENE.GetClass(WeaponName), false) as IPhxWeapon;
+        try 
+        {
+        	Weapon = string.IsNullOrEmpty(WeaponName) ? null : SCENE.CreateInstance(SCENE.GetClass(WeaponName), false) as IPhxWeapon;
 
-    	if (Weapon == null)
-    	{
-    		Debug.LogErrorFormat("Couldn't get weapon class: {0}", WeaponName);
-    	}
-    	else 
-    	{
-    		WeaponTransform = Weapon.GetInstance().gameObject.transform;
-            WeaponTransform.SetParent(OwnerSection.OwnerVehicle.transform);
-            WeaponTransform.localPosition = Vector3.zero;
-            WeaponTransform.localRotation = Quaternion.identity;
-            Weapon.SetIgnoredColliders(IgnoredColliders);
-    	}
+        	if (Weapon == null)
+        	{
+        		Debug.LogErrorFormat("Couldn't get weapon class: {0}", WeaponName);
+        	}
+        	else 
+        	{
+        		WeaponTransform = Weapon.GetInstance().gameObject.transform;
+                WeaponTransform.SetParent(OwnerSeat.Owner.GetRootTransform());
+                WeaponTransform.localPosition = Vector3.zero;
+                WeaponTransform.localRotation = Quaternion.identity;
+                Weapon.SetIgnoredColliders(IgnoredColliders);
+        	}
+        }            
+        catch 
+        {
+            Debug.LogErrorFormat("Failed to assign weapon to weapon system {0}", WeaponName == null ? "" : WeaponName);
+        }
     }
 
 
@@ -187,9 +198,14 @@ public class PhxWeaponSystem
         {
             CurrBarrel.Recoil();
         }
+
+        do 
+        {
+            FirePointIndex = (FirePointIndex + 1) % FirePoints.Count;
+
+        } while (FirePoints[FirePointIndex] == null);
         
-        FirePointIndex = (FirePointIndex + 1) % FirePoints.Count;
-        Weapon.SetFirePoint(FirePoints[FirePointIndex]);
+        Weapon?.SetFirePoint(FirePoints[FirePointIndex]);
     }
 
 
@@ -213,10 +229,10 @@ public class PhxWeaponSystem
 
             if (FirePoints.Count > 0)
             {
-                Weapon.SetFirePoint(FirePoints[0]);
+                Weapon?.SetFirePoint(FirePoints[0]);
             }
 
-            Weapon.OnShot(AimerFire);
+            Weapon?.OnShot(AimerFire);
 
             WeaponFirePointsSet = true;
         }
@@ -224,9 +240,11 @@ public class PhxWeaponSystem
 
         if (Aimers.Count > 0 && WeaponTransform != null)
         {
-        	if (!Weapon.Fire(OwnerSection.Occupant.GetController(), Target))
+            if (Weapon == null) return false;
+
+        	if (Weapon.Fire(OwnerSeat.Occupant.GetController(), Target))
         	{
-                return false;
+                return true;
             }
         }
 
