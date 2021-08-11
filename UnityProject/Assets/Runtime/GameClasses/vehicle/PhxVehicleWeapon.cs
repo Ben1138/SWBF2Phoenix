@@ -20,7 +20,7 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
     int Ammunition;
     int MagazineAmmo;
 
-    float FireDelay;
+    public float FireDelay;
     float ReloadDelay;
 
 	public class ClassProperties : PhxClass
@@ -80,9 +80,9 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
         return this;
     }
 
-	public void Fire(PhxPawnController owner, Vector3 targetPos)
+	public bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
-        if (true)
+        if (FireDelay < 0.0f)
         {
             if (Audio != null)
             {
@@ -116,6 +116,12 @@ public class PhxWeapon : PhxInstance<PhxWeapon.ClassProperties>, IPhxWeapon
             {
                 Reload();
             }
+
+            return true;
+        }
+        else 
+        {
+            return false;
         }
     }
 
@@ -294,9 +300,11 @@ public class PhxWeaponSystem
         	WeaponTransform.rotation = rot;
         	WeaponTransform.position = pos;
 
-        	Weapon.Fire(OwnerSection.Occupant.GetController(), pos + WeaponTransform.forward);
-        	
-        	
+        	if (!Weapon.Fire(OwnerSection.Occupant.GetController(), pos + WeaponTransform.forward))
+        	{
+                return false;
+            }
+
             Aimers[CurrAimer].Fire();
 
             CurrAimer++;

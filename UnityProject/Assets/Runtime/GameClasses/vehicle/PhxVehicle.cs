@@ -55,10 +55,12 @@ public abstract class PhxVehicle<T> : PhxControlableInstance<T> where T : PhxVeh
     // unless we can reliably use the primitives found on each imported model...
     protected void PruneMeshColliders(Transform tx)
     {
+        
         MeshCollider coll = tx.gameObject.GetComponent<MeshCollider>();
         if (coll != null)
         {
-            Destroy(coll);
+            //Destroy(coll);
+            coll.convex = true;
         }
 
         for (int j = 0; j < tx.childCount; j++)
