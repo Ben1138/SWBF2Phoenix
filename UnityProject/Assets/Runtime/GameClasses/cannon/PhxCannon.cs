@@ -90,7 +90,7 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
         return this;
     }
 
-    public void Fire(PhxPawnController owner, Vector3 targetPos)
+    public bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
         if (FireDelay <= 0f && ReloadDelay == 0f && MagazineAmmo >= C.ShotsPerSalvo)
         {
@@ -124,6 +124,12 @@ public class PhxCannon : PhxInstance<PhxCannon.ClassProperties>, IPhxWeapon
             {
                 Reload();
             }
+
+            return true;
+        }
+        else 
+        {
+            return false;
         }
     }
 
