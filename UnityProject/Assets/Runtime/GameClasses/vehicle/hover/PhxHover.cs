@@ -52,7 +52,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         	Length = Scale;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             return String.Format("Position: {0}, Scale: {1}, Length: {2}", Position.ToString("F2"), Scale, Length);
         }
@@ -97,7 +97,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         }
 
 
-        public string ToString()
+        public override string ToString()
         {
             return String.Format("WheelMaterial: {0} Vel Factors: {1} Turn Factors: {2}", WheelMaterial.name, VelocityFactor.ToString("F2"), TurnFactor.ToString("F2"));
         }
