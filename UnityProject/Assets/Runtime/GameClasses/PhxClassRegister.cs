@@ -26,8 +26,12 @@ public static class PhxClassRegister
         { "door",           new GameBaseClass(typeof(PhxDoor.ClassProperties),           typeof(PhxDoor))           },
         { "animatedprop",   new GameBaseClass(typeof(PhxAnimatedProp.ClassProperties),   typeof(PhxAnimatedProp))   },
 
-        { "destructablebuilding", new GameBaseClass(typeof(PhxDestructableBuilding.ClassProperties),   typeof(PhxDestructableBuilding))   },
+        { "destructablebuilding", new GameBaseClass(typeof(PhxDestructableBuilding.ClassProperties), typeof(PhxDestructableBuilding))   },
+        { "armedbuilding",  new GameBaseClass(typeof(PhxArmedBuilding.ClassProperties),  typeof(PhxArmedBuilding))  },
+
         
+        // This probably doesn't need to be an instance, but skin changer mods might modify leafpatch classes
+        // e.g. season changer on Marth's Pioneer Trails...
         { "leafpatch",      new GameBaseClass(typeof(PhxLeafPatchClass),                 typeof(PhxLeafPatch))      },
 
         { "commandpost",    new GameBaseClass(typeof(PhxCommandpost.ClassProperties),    typeof(PhxCommandpost))    },
@@ -36,7 +40,9 @@ public static class PhxClassRegister
         
         { "hover",          new GameBaseClass(typeof(PhxHover.ClassProperties),          typeof(PhxHover))          },
         { "commandhover",   new GameBaseClass(typeof(PhxHover.ClassProperties),          typeof(PhxHover))          },
-        { "armedbuilding",  new GameBaseClass(typeof(PhxArmedBuilding.ClassProperties),  typeof(PhxArmedBuilding))  },
+
+        { "flyer",          new GameBaseClass(typeof(PhxFlyer.ClassProperties),          typeof(PhxFlyer))          },
+        { "commandflyer",   new GameBaseClass(typeof(PhxFlyer.ClassProperties),          typeof(PhxFlyer))          },
         
         { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn))   },
         

@@ -26,7 +26,6 @@ public sealed class PhxPropertyDB
 
     public void Register<T>(string propName, T variable) where T : IPhxPropRef
     {
-        //Properties.Add(propName.ToLowerInvariant(), variable);
         Properties[propName.ToLowerInvariant()] = variable;
     }
 
@@ -141,12 +140,12 @@ public sealed class PhxPropertyDB
         }
         else if (destType == typeof(int))
         {
-            float floatVal = float.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+            float floatVal = PhxUtils.FloatFromString(value);
             outVal = (int) floatVal;
         }
         else if (destType == typeof(float))
         {
-            outVal = float.Parse(value, System.Globalization.CultureInfo.InvariantCulture);            
+            outVal = PhxUtils.FloatFromString(value);                       
         }
         else
         {
@@ -156,7 +155,6 @@ public sealed class PhxPropertyDB
             catch (Exception e)
             {
                 Debug.LogErrorFormat("Failed to convert string {0} to type {1}...", value, destType.ToString());
-                // Debug.LogError(e.ToString());
                 outVal = 0;
             }
         }
