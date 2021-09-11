@@ -20,11 +20,11 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientSkyColor: {r: 0.19607843, g: 0.19607843, b: 0.23529412, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
-  m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
+  m_AmbientGroundColor: {r: 0.1764706, g: 0.1764706, b: 0.1764706, a: 1}
   m_AmbientIntensity: 1
-  m_AmbientMode: 0
+  m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
   m_SkyboxMaterial: {fileID: 0}
   m_HaloStrength: 0.5
@@ -420,8 +420,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   GamePathString: /Volumes/boot/Game
   Language: english
-  StartupBehaviour: 1
-  StartupSWBF2Map: kas2c_con
+  StartupBehaviour: 0
+  StartupSWBF2Map: pol1c_con
   StartupUnityScene: PhxVehicleTesting
   InfiniteAmmo: 0
   InitScreenPrefab: {fileID: 8116435525958827643, guid: b41f2353f3f33804b919c04b2fd29246, type: 3}
@@ -435,9 +435,8 @@ MonoBehaviour:
   Camera: {fileID: 1823688469}
   GroundPhyMat: {fileID: 13400000, guid: 7458103be9a58244089e1784868fb4ae, type: 2}
   HUDPrefab: {fileID: 7293890149350655508, guid: 694c8bdb39040774686521aa6d278167, type: 3}
-  BoltPrefab: {fileID: 6623684661408825687, guid: c080d2bb7368548388f928288c09d3f7, type: 3}
-  BeamPrefab: {fileID: -7815452322436354814, guid: 06a4fe199ec1c454089dd9c49fadd41f, type: 3}
-  SparkPrefab: {fileID: 2297860178784766108, guid: cd38aa7c78556634d9a9d46c052e5ca5, type: 3}
+  BoltPrefab: {fileID: 6623684661408825687, guid: 5f79eb9d150084b989289c64c63ff226, type: 3}
+  BeamPrefab: {fileID: -7815452322436354814, guid: 3f690e39c0af5415e81fec09235a6732, type: 3}
   MissionListPath: /Volumes/boot/bf2modding/assets/Shell/scripts/missionlist.lua
 --- !u!4 &1641162174
 Transform:
