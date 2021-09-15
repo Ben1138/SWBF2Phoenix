@@ -72,6 +72,8 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxPath AddonPath { get; private set; }
     public PhxPath StdLVLPC { get; private set; }
 
+    // Used only when registering addons
+    PhxPath CurrentAddonFolder;
 
     PhxLoadscreen    CurrentLS;
     PhxMenuInterface CurrentMenu;
@@ -82,6 +84,9 @@ public class PhxGameRuntime : MonoBehaviour
 
     PhxRuntimeEnvironment Env;
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
+    
+    // Maps addons to their root folders
+    Dictionary<string, PhxPath> AddonRoots = new Dictionary<string, PhxPath>();
 
     bool bInitMainMenu;
     string UnitySceneName = null;
@@ -173,12 +178,16 @@ public class PhxGameRuntime : MonoBehaviour
 
     public void RegisterAddonScript(string scriptName, string addonName)
     {
-        if (RegisteredAddons.TryGetValue(scriptName, out string addNm))
+        if (RegisteredAddons.TryGetValue(scriptName.ToLower(), out string addNm))
         {
             Debug.LogWarningFormat("Addon script '{0}' already registered to '{1}'!", scriptName, addNm);
-            return;
         }
-        RegisteredAddons.Add(scriptName, addonName);
+        else 
+        {
+            // CurrentAddonFolder is set in OnMainMenuExecution
+            AddonRoots[addonName] = CurrentAddonFolder;
+            RegisteredAddons.Add(scriptName.ToLower(), addonName);
+        }
     }
 
     public void EnterMainMenu(bool bInit = false)
@@ -222,10 +231,11 @@ public class PhxGameRuntime : MonoBehaviour
         RemoveMenu(false);
 
         PhxPath envPath = StdLVLPC;
-        if (RegisteredAddons.TryGetValue(mapScript, out string addonName))
+        if (RegisteredAddons.TryGetValue(mapScript.ToLower(), out string addonName))
         {
-            envPath = AddonPath / addonName / "data/_lvl_pc";
+            envPath = AddonPath / AddonRoots[addonName] / "data/_lvl_pc";
         }
+        
 
         if (UnitySceneName != null)
         {
@@ -428,6 +438,8 @@ public class PhxGameRuntime : MonoBehaviour
                     Debug.LogWarningFormat("Seems like '{0}' has no 'addme' script chunk!", lvl.DisplayPath);
                     continue;
                 }
+
+                CurrentAddonFolder = lvl.DisplayPath - "addme.script";
                 Env.Execute(addme);
             }
         }
