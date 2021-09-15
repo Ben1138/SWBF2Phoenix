@@ -482,6 +482,7 @@ public class PhxGameRuntime : MonoBehaviour
             UIAudio[i].outputAudioMixerGroup = UIAudioMixer;
         }
 
+        
 #if UNIX
         if (PlayerPrefs.GetInt("PhoenixUnixRename") == 0)
         {
@@ -494,8 +495,11 @@ public class PhxGameRuntime : MonoBehaviour
                     string fileName = new PhxPath(files[i]).GetLeaf();
                     if (fileName.ToLower() != fileName)
                     {
-                        File.Move(p / fileName, p / fileName.ToLower());
-                        Debug.Log($"Renamed '{p / fileName}' to '{p / fileName.ToLower()}'");
+                        if (!File.Exists(p / fileName.ToLower()))
+                        {
+                            File.Move(p / fileName, p / fileName.ToLower());
+                            Debug.Log($"Renamed '{p / fileName}' to '{p / fileName.ToLower()}'");
+                        }
                     }
                 }
 
@@ -505,8 +509,11 @@ public class PhxGameRuntime : MonoBehaviour
                     string dirName = new PhxPath(subDirs[i]).GetLeaf();
                     if (dirName.ToLower() != dirName)
                     {
-                        Directory.Move(p / dirName, p / dirName.ToLower());
-                        Debug.Log($"Renamed '{p / dirName}' to '{p / dirName.ToLower()}'");
+                        if (!Directory.Exists(p / dirName.ToLower()))
+                        {
+                            Directory.Move(p / dirName, p / dirName.ToLower());
+                            Debug.Log($"Renamed '{p / dirName}' to '{p / dirName.ToLower()}'");
+                        }
                     }
 
                     LowerCaseRecursive(p / dirName.ToLower());
