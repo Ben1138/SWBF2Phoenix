@@ -19,7 +19,7 @@ public static class PhxClassRegister
     }
 
     // When setting either the class type or instance type to null, make sure that either noone will
-    // attempt to resolve the class string to a class type, or create an instance of it respectively.
+    // attempt to resolve the class string to a class type, or create an instance of it, respectively.
     static Dictionary<string, GameBaseClass> TypeDB = new Dictionary<string, GameBaseClass>()
     {
         { "commandpost",    new GameBaseClass(typeof(PhxCommandpost.ClassProperties),    typeof(PhxCommandpost))    },
