@@ -49,8 +49,9 @@ public class PhxGameRuntime : MonoBehaviour
     public Action OnMapLoaded;
     public Action<Type> OnRemoveMenu;
 
-    PhxPath AddonPath => GamePath / "GameData/addon";
-    PhxPath StdLVLPC;
+    public PhxPath AddonPath { get; private set; }
+    public PhxPath StdLVLPC { get; private set; }
+
 
     PhxLoadscreen    CurrentLS;
     PhxMenuInterface CurrentMenu;
@@ -161,7 +162,7 @@ public class PhxGameRuntime : MonoBehaviour
 
         if (!bInit)
         {
-            Env.ScheduleLVLRel("load/gal_con.lvl");
+            Env.ScheduleRel("load/gal_con.lvl");
         }
 
         RegisteredAddons.Clear();
@@ -193,7 +194,7 @@ public class PhxGameRuntime : MonoBehaviour
 
         Env?.Destroy();
         Env = PhxRuntimeEnvironment.Create(envPath, StdLVLPC);
-        Env.ScheduleLVLRel("load/common.lvl");
+        Env.ScheduleRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
         Env.OnLoaded += OnEnvLoaded;
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
@@ -228,7 +229,7 @@ public class PhxGameRuntime : MonoBehaviour
 
             Env?.Destroy();
             Env = PhxRuntimeEnvironment.Create(StdLVLPC);
-            Env.ScheduleLVLRel("load/common.lvl");
+            Env.ScheduleRel("load/common.lvl");
 
             Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
             Env.OnLoaded += OnEnvLoaded;
@@ -313,7 +314,9 @@ public class PhxGameRuntime : MonoBehaviour
         WorldLoader.UseHDRP = true;
         MaterialLoader.UseHDRP = true;
 
+        AddonPath = GamePath / "GameData/addon";
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
+
         if (GamePath.IsFile()              || 
             !GamePath.Exists()             || 
             !CheckExistence("common.lvl")  ||
@@ -352,7 +355,7 @@ public class PhxGameRuntime : MonoBehaviour
             PhxPath addme = addon / "addme.script";
             if (addme.Exists() && addme.IsFile())
             {
-                Env.ScheduleLVLAbs(addme);
+                Env.ScheduleAbs(addme);
             }
         }
     }
@@ -370,14 +373,14 @@ public class PhxGameRuntime : MonoBehaviour
             CurrentLS.SetLoadImage(TextureLoader.Instance.ImportUITexture("gal_con"));
         }
 
-        foreach (var lvl in Env.LVLs)
+        foreach (var lvl in Env.Loaded)
         {
-            if (lvl.RelativePath.GetLeaf() == "addme.script")
+            if (lvl.DisplayPath.GetLeaf() == "addme.script")
             {
                 var addme = lvl.Level.Get<LibSWBF2.Wrappers.Script>("addme");
                 if (addme == null)
                 {
-                    Debug.LogWarningFormat("Seems like '{0}' has no 'addme' script chunk!", lvl.RelativePath);
+                    Debug.LogWarningFormat("Seems like '{0}' has no 'addme' script chunk!", lvl.DisplayPath);
                     continue;
                 }
                 Env.Execute(addme);
