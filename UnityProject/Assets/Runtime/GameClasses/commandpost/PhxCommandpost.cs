@@ -205,6 +205,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         {
             PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCapture, Scene.GetInstanceIndex(this));
             PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCaptureName, name, Scene.GetInstanceIndex(this));
+            PhxLuaEvents.Invoke(PhxLuaEvents.Event.OnFinishCaptureTeam, Team.Get(), Scene.GetInstanceIndex(this));
         }
 
         RefreshCapture();
