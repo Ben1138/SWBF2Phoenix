@@ -398,7 +398,22 @@ public class PhxRuntimeScene
             script.InitInstance(instOrClass, odf);
 
             Instances.Add(script);
-            InstanceMap.Add(instanceObject.name, Instances.Count - 1);
+
+            if (!string.IsNullOrEmpty(instanceObject.name))
+            {
+                if (!InstanceMap.ContainsKey(instanceObject.name))
+                {
+                    InstanceMap.Add(instanceObject.name, Instances.Count - 1);
+                }
+                else
+                {
+                    Debug.LogError($"Instance with name '{instanceObject.name}' is already registered in scene!");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Encountered instance of type '{odf.Name}' with no Name!");
+            }
 
             if (script is PhxCommandpost)
             {

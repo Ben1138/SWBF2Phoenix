@@ -5,8 +5,9 @@ using UnityEngine;
 
 public static class PhxLuaAPI
 {
-	public class Unicode : Attribute {}
+	public class Unicode : Attribute { }
 
+	static PhxGameRuntime GAME => PhxGameRuntime.Instance;
 	static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
 	static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
 	static PhxRuntimeMatch MT => PhxGameRuntime.GetMatch();
@@ -22,7 +23,7 @@ public static class PhxLuaAPI
 	}
 
 	public static (float, float, float, float) ScriptCB_GetScreenInfo()
-    {
+	{
 		return (Screen.width, Screen.height, 0.0f, Screen.width / Screen.height);
 	}
 
@@ -49,18 +50,18 @@ public static class PhxLuaAPI
 
 	public static void ScriptCB_SetNumBots(int numBots)
 	{
-		
+
 	}
 
 	public static int ScriptCB_GetCTFNumBots()
-    {
+	{
 		return 0;
-    }
+	}
 
 	public static float ScriptCB_GetCTFMaxTimeLimit()
-    {
+	{
 		return 0.0f;
-    }
+	}
 
 	public static int ScriptCB_GetCTFCaptureLimit()
 	{
@@ -82,16 +83,16 @@ public static class PhxLuaAPI
 	}
 
 	public static void ScriptCB_SetDopplerFactor(float factor)
-    {
+	{
 
-    }
+	}
 
 	public static int ScriptCB_GetNumCameras()
-    {
+	{
 		// Apparently used to determine number of view ports in split screen
 		// 1 = no split screen
 		return 1;
-    }
+	}
 
 	[return: Unicode]
 	public static string ScriptCB_getlocalizestr(string localizePath)
@@ -133,13 +134,29 @@ public static class PhxLuaAPI
 		return res;
 	}
 
-	public static void ScriptCB_PlayInGameMovie(string mvsName, string movieName)
-    {
+	public static bool ScriptCB_IsFileExist(string path)
+	{
+		PhxPath p =  GAME.StdLVLPC / path;
+		return p.IsFile() && p.Exists();
+	}
 
-    }
+	public static void ScriptCB_OpenMovie(string mvsPath, string unkwn1)
+	{
+
+	}
+
+	public static void ScriptCB_CloseMovie()
+	{
+
+	}
+
+	public static void ScriptCB_PlayInGameMovie(string mvsName, string movieName)
+	{
+
+	}
 
 	public static void ScriptCB_SetGameRules(string ruleName)
-    {
+	{
 		// Known values are:
 		// - "campaign"
 		// - "instantaction"
@@ -150,6 +167,181 @@ public static class PhxLuaAPI
 	{
 		ENV.Execute(scriptName);
 	}
+
+	public static bool ScriptCB_AutoNetJoin()
+	{
+		return false;
+	}
+
+	public static void ScriptCB_SetAmHost(bool value)
+	{
+		// We are a networking Host
+		// Create socket here?
+	}
+
+	public static bool ScriptCB_GetAmHost()
+	{
+		// Are we the host?
+		return false;
+	}
+
+	public static void ScriptCB_SetInNetGame(bool value)
+	{
+		// Guess: Enabled or Disables multiplayer?
+	}
+
+	public static bool ScriptCB_InNetGame()
+	{
+		// Guess: Are we in a multiplayer game?
+		return false;
+	}
+
+	public static bool ScriptCB_InNetSession()
+	{
+		// Guess: Are we connected to someone?
+		return false;
+	}
+
+	public static void ScriptCB_SetDedicated(bool value)
+	{
+		// We are a dedicated networking Host ?
+	}
+
+	public static bool ScriptCB_IsDedicated()
+	{
+		return false;
+	}
+
+	public static bool ScriptCB_InMultiplayer()
+	{
+		return false;
+	}
+
+	public static bool ScriptCB_NetWasHost()
+	{
+		return false;
+	}
+
+	public static bool ScriptCB_NetWasDedicated()
+	{
+		return false;
+	}
+
+	public static bool ScriptCB_NetWasDedicatedQuit()
+	{
+		return false;
+	}
+
+	public static bool ScriptCB_NetWasClient()
+	{
+		return false;
+	}
+
+	public static bool ScriptCB_IsAutoNet()
+	{
+		return false;
+	}
+
+	// Unknown parameters and return value
+	public static void ScriptCB_EndAutoNet()
+	{
+
+	}
+
+	public static string ScriptCB_GetAutoNetMode()
+	{
+		// Unknown return values, appears only once in a print statement in ifs_mp_autonet.lua
+		return "";
+	}
+
+	public static void ScriptCB_SetGameName(string name)
+	{
+
+	}
+
+	public static string ScriptCB_GetGameName()
+	{
+		return "GAME";
+	}
+
+	public static bool ScriptCB_IsInShell()
+	{
+		return false;
+	}
+
+	public static void ScriptCB_OpenNetShell(bool value)
+	{
+		// false - login access only?
+	}
+
+	public static void ScriptCB_CloseNetShell(bool close)
+	{
+		// seems to be always called with 'true'
+	}
+
+	public static bool ScriptCB_IsNetworkOn()
+	{
+		return false;
+	}
+
+	public static bool ScriptCB_IsBootInvitePending()
+    {
+		return false;
+    }
+
+	public static bool ScriptCB_GetAutoAssignTeams()
+    {
+		// Whether auto assign teams is enabled or not
+		return false;
+    }
+
+	public static void ScriptCB_SetConnectType(string type)
+    {
+		// type can be:
+		//    - "lan"
+		//    - "wan"
+		//    - "direct"
+    }
+
+	public static string ScriptCB_GetConnectType()
+    {
+		return "lan";
+    }
+
+	public static void ScriptCB_EnableJournal()
+    {
+
+    }
+
+	public static void ScriptCB_EnablePlayback()
+    {
+
+    }
+
+	public static (int, string) ScriptCB_GetLatestError()
+    {
+		// return values are:
+		//    - Error Level
+		//        - Starting at 0, with 0 being 'info' or no error?
+		//    - Error Message
+		return (0, "");
+    }
+
+	public static (int, string) ScriptCB_GetError()
+	{
+		// return values are:
+		//    - Error Level
+		//        - Starting at 0, with 0 being 'info' or no error?
+		//        - == 6  -->  'in session error'?
+		//        - >= 8  -->  login error?
+		//    - Error Message
+		return (0, "");
+	}
+
+	public static void ScriptCB_ClearError()
+    {
+
+    }
 
 	public static void SetPS2ModelMemory(int PS2Mem)
 	{
@@ -236,6 +428,13 @@ public static class PhxLuaAPI
     {
 
     }
+
+	public static void EnableFlyerPath(string pathName, bool enable)
+    {
+		// Examples:
+		//   EnableFlyerPath('pickup', 0)
+		//   EnableFlyerPath('capture', 0)
+	}
 
 	public static void SetTeamAsEnemy(int teamIdx1, int teamIdx2)
 	{
@@ -652,7 +851,8 @@ public static class PhxLuaAPI
 
 	public static int GetObjectTeam(string objName)
     {
-		return RTS.GetInstance<PhxInstance>(objName).Team;
+		PhxInstance inst = RTS.GetInstance<PhxInstance>(objName);
+		return inst != null ? inst.Team : 0;
     }
 
 	public static int GetObjectTeam(int objPtr)
@@ -860,19 +1060,19 @@ public static class PhxLuaAPI
 			}
 		}
 
-		bool bForceLocal = path.StartsWith("dc:", StringComparison.InvariantCultureIgnoreCase);
-		if (bForceLocal)
+		bool bForceAddon = path.StartsWith("dc:", StringComparison.InvariantCultureIgnoreCase);
+		if (bForceAddon)
         {
 			path = path.Remove(0, 3);
 		}
 
 		//Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", subLVLs.Count, path);
-		ENV.ScheduleLVLRel(path, subLVLs.ToArray(), bForceLocal);
+		ENV.ScheduleRel(path, subLVLs.ToArray(), bForceAddon);
 	}
 
 	public static void AddDownloadableContent(string threeLetterName, string scriptName, int levelMemoryModifier)
 	{
-		PhxGameRuntime.Instance.RegisterAddonScript(scriptName, threeLetterName);
+		GAME.RegisterAddonScript(scriptName, threeLetterName);
 	}
 
 
@@ -905,6 +1105,9 @@ public static class PhxLuaAPI
 	public static void OnEnterRegionTeam(PhxLuaRuntime.LFunction callback, string regionName, int teamIdx)
 	{
 		PhxLuaEvents.Register(PhxLuaEvents.Event.OnEnterRegionTeam, callback, (regionName, teamIdx));
+		// callback parameters:
+		// - region    (string?)
+		// - carrier   (ptr?)
 	}
 	public static void OnLeaveRegion(PhxLuaRuntime.LFunction callback, string regionName)
     {
@@ -920,6 +1123,12 @@ public static class PhxLuaAPI
 	public static void OnFinishCaptureName(PhxLuaRuntime.LFunction callback, string cpName)
 	{
 		PhxLuaEvents.Register(PhxLuaEvents.Event.OnFinishCaptureName, callback, cpName);
+		// callback paramters:
+		// - postPtr
+	}
+	public static void OnFinishCaptureTeam(PhxLuaRuntime.LFunction callback, int teamIdx)
+	{
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnFinishCaptureTeam, callback, teamIdx);
 		// callback paramters:
 		// - postPtr
 	}
@@ -956,6 +1165,13 @@ public static class PhxLuaAPI
 		
 	}
 
+	public static void OnObjectRepairName(PhxLuaRuntime.LFunction callback, string objName)
+	{
+		// callback paramters:
+		// - objPtr
+		// - characterId
+	}
+
 	public static void OnObjectDamageName(PhxLuaRuntime.LFunction callback, string objName)
     {
 
@@ -986,7 +1202,8 @@ public static class PhxLuaEvents
 		OnTimerElapse,
 		OnFinishCapture,
 		OnFinishCaptureName,
-		OnFinishNeutralize
+		OnFinishCaptureTeam,
+		OnFinishNeutralize,
 	}
 
 	/// <summary>
