@@ -472,12 +472,7 @@ public class PhxRuntimeMatch
 
     void ShowCharacterSelection()
     {
-        PhxCharacterSelect charSel = ShowMenu(GAME.CharacterSelectPrefab);
-        foreach (PhxUnitClass cl in Teams[0].UnitClasses)
-        {
-            charSel.Add(cl.Unit);
-        }
-        //charSel.Add(Teams[0].HeroClass);
+        ShowMenu(GAME.CharacterSelectPrefab);
     }
 
     void ShowHUD()

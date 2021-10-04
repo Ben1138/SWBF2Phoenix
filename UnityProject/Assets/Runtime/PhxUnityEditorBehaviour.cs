@@ -15,7 +15,7 @@ public static class PhxUnityEditorBehaviour
     {
         if (state == PlayModeStateChange.ExitingPlayMode)
         {
-            Debug.Log("Exiting play mode, attempt to destroy PhxGamewRuntime...");
+            Debug.Log("Exiting play mode, attempt to destroy PhxGameRuntime...");
             PhxGameRuntime.Instance?.Destroy();
         }
     }
