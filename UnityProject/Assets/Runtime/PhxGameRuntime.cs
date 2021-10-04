@@ -70,6 +70,17 @@ public class PhxGameRuntime : MonoBehaviour
     List<string> MapRotation = new List<string>();
     int MapRotationIdx = -1;
 
+    // Do not call Destroy on destruction in Editor!
+    // For some reason, when switching between Edit and Play mode,
+    // Unity will create multiple instances of this, without calling
+    // 'Awake' and then destroy those instances again immediately...
+#if !UNITY_EDITOR
+    ~PhxGameRuntime()
+    {
+        Debug.Log("PhxGameRuntime destructor called");
+        Destroy();
+    }
+#endif
 
     public static PhxLuaRuntime GetLuaRuntime()
     {
@@ -103,6 +114,14 @@ public class PhxGameRuntime : MonoBehaviour
     {
         PhxRuntimeEnvironment env = GetEnvironment();
         return env == null ? null : env.GetTimerDB();
+    }
+
+    public void Destroy()
+    {
+        Env?.Destroy();
+        Env = null;
+        Instance = null;
+        Debug.Log("PhxGameRuntime destroyed");
     }
 
     public void AddToMapRotation(List<string> mapScripts)
@@ -310,6 +329,9 @@ public class PhxGameRuntime : MonoBehaviour
 
     void Init()
     {
+        Debug.Log("PhxGameRuntime Init");
+        Debug.Assert(Instance == null);
+
         Instance = this;
         WorldLoader.UseHDRP = true;
         MaterialLoader.UseHDRP = true;

@@ -120,6 +120,7 @@ public class PhxRuntimeEnvironment
         EnvCon?.Delete();
         EnvCon = null;
         PathToHandle.Clear();
+        Debug.Log("PhxRuntimeEnvironment destroyed");
     }
 
     public PhxRuntimeScene GetScene()
