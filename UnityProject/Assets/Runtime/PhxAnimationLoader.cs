@@ -1,9 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Utils;
-using System.Runtime.ExceptionServices;
 
 public static class PhxAnimationLoader
 {
@@ -11,13 +9,16 @@ public static class PhxAnimationLoader
 
     static Dictionary<uint, CraClip> ClipDB = new Dictionary<uint, CraClip>();
 
-    static readonly float[] ComponentMultipliers = {  -1.0f,
-                                                      1.0f,
-                                                     1.0f,
-                                                     -1.0f,
-                                                      -1.0f,
-                                                      1.0f,
-                                                     1.0f  };
+    static readonly float[] ComponentMultipliers = 
+    {
+        -1.0f,
+         1.0f,
+         1.0f,
+        -1.0f,
+        -1.0f,
+         1.0f,
+         1.0f  
+    };
 
     static PhxAnimationLoader()
     {

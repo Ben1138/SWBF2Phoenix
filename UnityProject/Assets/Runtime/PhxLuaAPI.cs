@@ -688,12 +688,12 @@ public static class PhxLuaAPI
 
 	}
 
-	public static void SetUberMode(int enable)
+	public static void SetUberMode(bool enable)
 	{
-		
+		Debug.Log(enable ? "Enabled" : "Disabled" + " Uber mode");
 	}
 
-	public static void SetGroundFlyerMap(int enable)
+	public static void SetGroundFlyerMap(bool enable)
     {
 
     }
