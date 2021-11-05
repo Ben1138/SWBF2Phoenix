@@ -11,10 +11,10 @@ public class PhxRuntimeMatch
     static PhxTimerDB TDB => PhxGameRuntime.GetTimerDB();
 
 
-    public static Color ColorNeutral   = Color.white;
-    public static Color ColorEnemy     = Color.red;
-    public static Color ColorFriendly  = Color.green;
-    public static Color ColorLocals    = Color.yellow;
+    public static readonly Color ColorNeutral   = Color.white;
+    public static readonly Color ColorEnemy     = Color.red;
+    public static readonly Color ColorFriendly  = Color.green;
+    public static readonly Color ColorLocals    = Color.yellow;
 
     public int? ShowTimer = null;
 
