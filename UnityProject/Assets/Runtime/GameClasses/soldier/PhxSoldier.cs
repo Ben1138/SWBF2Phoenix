@@ -484,12 +484,12 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     else if (walk > 0.75f)
                     {
                         Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
-                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandRun, walk / 1f);
+                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandRun, walk);
                     }
                     else if (walk < -0.2f)
                     {
                         Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
-                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandBackward, -walk / 1f);
+                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandBackward, -walk);
                     }
                     else
                     {
