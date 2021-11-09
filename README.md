@@ -8,4 +8,10 @@ This project aims for full compatibility with the vanilla game files, and as bes
 *Click image to view Video*<br/>
 [![Star Wars Battlefront II (2005) Unity Runtime - Update - Tech Demo](https://img.youtube.com/vi/Ltv1hqmzm4E/0.jpg)](https://www.youtube.com/watch?v=Ltv1hqmzm4E)
 <br/>
-This project does not distribute any original game files, neither full nor partial, and does not include any other Assets that might belong to the trade mark "Star Wars" in any way.<br/>
+
+
+# Legal Notice
+
+Please note that this game is neither developed by, nor endorsed by LucasArts, Lucasfilm Games or its parent company Disney.
+
+This project does not distribute any original game files, neither full nor partial, and does not include any other Assets that might belong to the trade mark "Star Wars" in any way.
