@@ -429,6 +429,11 @@ public static class PhxLuaAPI
 
     }
 
+    public static void EnableAIAutoBalance()
+    {
+
+    }
+
 	public static void EnableFlyerPath(string pathName, bool enable)
     {
 		// Examples:

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 11784, g: 11784, b: 11784, a: 1}
+  m_IndirectSpecularColor: {r: 11807.999, g: 11807.999, b: 11807.999, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -418,10 +418,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78d15e63002497340882c6c017ee0810, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  GamePathString: /Volumes/boot/Game
   Language: english
-  StartupBehaviour: 0
-  StartupSWBF2Map: geo1c_con
-  StartupUnityScene: PhxAnimTest
+  StartupBehaviour: 1
+  StartupSWBF2Map: kas2c_con
+  StartupUnityScene: PhxVehicleTesting
   InfiniteAmmo: 0
   InitScreenPrefab: {fileID: 8116435525958827643, guid: b41f2353f3f33804b919c04b2fd29246, type: 3}
   LoadScreenPrefab: {fileID: 4217219954888887521, guid: 753242c13dd40b24f96abc9c00940f1d, type: 3}
@@ -434,8 +435,10 @@ MonoBehaviour:
   Camera: {fileID: 1823688469}
   GroundPhyMat: {fileID: 13400000, guid: 7458103be9a58244089e1784868fb4ae, type: 2}
   HUDPrefab: {fileID: 7293890149350655508, guid: 694c8bdb39040774686521aa6d278167, type: 3}
-  ProjPrefab: {fileID: 6623684661408825687, guid: 269c5e6d5610a574785b3b43a51fc23a, type: 3}
+  BoltPrefab: {fileID: 6623684661408825687, guid: c080d2bb7368548388f928288c09d3f7, type: 3}
+  BeamPrefab: {fileID: -7815452322436354814, guid: 06a4fe199ec1c454089dd9c49fadd41f, type: 3}
   SparkPrefab: {fileID: 2297860178784766108, guid: cd38aa7c78556634d9a9d46c052e5ca5, type: 3}
+  MissionListPath: /Volumes/boot/bf2modding/assets/Shell/scripts/missionlist.lua
 --- !u!4 &1641162174
 Transform:
   m_ObjectHideFlags: 0

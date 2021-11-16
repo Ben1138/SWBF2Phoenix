@@ -14,6 +14,9 @@ using UnityEngine;
 public class PhxPool<T> where T : Component
 {
     public T[] Objects { get; private set; }
+
+    public GameObject Root { get; private set; }
+
     Dictionary<T, int> ObjToIdx;
     
     float MaxLifeTime;
@@ -27,11 +30,11 @@ public class PhxPool<T> where T : Component
         MaxLifeTime = maxLifeTime;
         LifeTimes = new float[size];
 
-        GameObject root = new GameObject(rootName);
+        Root = new GameObject(rootName);
         for (int i = 0; i < Objects.Length; ++i)
         {
-            Objects[i] = Object.Instantiate(prefab, root.transform);
-            //Objects[i].gameObject.SetActive(false);
+            Objects[i] = Object.Instantiate(prefab, Root.transform);
+            Objects[i].gameObject.SetActive(false);
             ObjToIdx.Add(Objects[i], i);
         }
     }
@@ -87,73 +90,119 @@ public class PhxPool<T> where T : Component
     }
 }
 
+
+
 public class PhxProjectiles
 {
     const int COUNT = 1024;
 
     PhxGameRuntime Game => PhxGameRuntime.Instance;
 
-    PhxPool<PhxProjectile> Projectiles;
-    PhxPool<ParticleSystem> Sparks;
+    GameObject ProjectileRoot;
+
+    /*
+    Per class pooling, figured it would be needed for more complex types
+    like missiles, which have a varying number of transforms/colliders etc.
+    Could also be useful for types that have varying upper bounds on numbers of
+    instances, eg, there will be a ton of standard blaster bolts, but few 
+    purple award bolts.
+
+    Feel free to change, of course, this could be too inefficient, or we could move
+    to per-weapon ordnance pooling.
+
+    See note in PhxOrdnance about why PhxClass is used instead of PhxOrdnance.ClassProperties
+    */
+
+    Dictionary<PhxClass, PhxPool<PhxOrdnance>> PoolDB;
+
+    /*
+    To avoid calling Update() in more trivial types like bolts,
+    we can check lifetimes from here. 
+    */ 
+    List<PhxPool<PhxOrdnance>> TickablePools;
+
+    // This won't be needed when effects are integrated
+    // PhxPool<ParticleSystem> Sparks;
 
     public PhxProjectiles()
     {
-        Projectiles = new PhxPool<PhxProjectile>(Game.ProjPrefab, "Projectiles", COUNT, 2f);
-        for (int i = 0; i < Projectiles.Objects.Length; ++i)
-        {
-            Projectiles.Objects[i].OnHit += ProjectileHit;
-        }
-
-        Sparks = new PhxPool<ParticleSystem>(Game.SparkPrefab, "Sparks", COUNT, 1.5f);
+        ProjectileRoot = new GameObject("Projectiles");
+    
+        PoolDB = new Dictionary<PhxClass, PhxPool<PhxOrdnance>>();
+        TickablePools = new List<PhxPool<PhxOrdnance>>(); 
     }
 
-    public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
+
+    /*
+    Checks if class has a pool, if not makes a new one, and returns available
+    instance from said pool.  Num instances in pool is thoughtlessly
+    hardcoded for now.  Lifetimes are set for trivial types like 'bolt'.
+    */
+
+    public void FireProjectile(IPhxWeapon OriginatorWeapon, PhxClass OrdnanceClass)
     {
-        PhxProjectile proj = Projectiles.Alloc();
-        if (proj == null)
-        {
-            Debug.LogWarning($"Ran out of projectile instances! Maximum of {Projectiles.Objects.Length} reached!");
-            return;
-        }
-        PhxInstance inst = owner.Pawn.GetInstance();
-        if (inst != null)
-        {
-            CapsuleCollider coll = inst.GetComponent<CapsuleCollider>();
-            if (coll != null)
+        if (!PoolDB.TryGetValue(OrdnanceClass, out PhxPool<PhxOrdnance> Pool)) 
+        {   
+            System.Type OClassType = OrdnanceClass.GetType();
+            
+            if (OClassType == typeof(PhxMissile.ClassProperties))
             {
-                Physics.IgnoreCollision(proj.Coll, coll);
-            }            
+                PhxMissile.ClassProperties MissileClass = OrdnanceClass as PhxMissile.ClassProperties;
+                
+                // Messy, will get a prefab sorted out.  That requires another
+                // method in ModelLoader for attaching meshes instead of freshly instantiating them...
+                GameObject MissileObj = ModelLoader.Instance.GetGameObjectFromModel(MissileClass.GeometryName.Get(),null);
+                PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
+                Missile.Init(MissileClass);
+                Pool = new PhxPool<PhxOrdnance>(Missile, MissileClass.EntityClass.Name, 5); 
+                GameObject.Destroy(MissileObj);
+            }
+            else if (OClassType == typeof(PhxBeam.ClassProperties))
+            {
+                Pool = new PhxPool<PhxOrdnance>(Game.BeamPrefab, OrdnanceClass.EntityClass.Name, 5);  
+            }
+            else if (OClassType == typeof(PhxBolt.ClassProperties))
+            {
+                Pool = new PhxPool<PhxOrdnance>(Game.BoltPrefab, OrdnanceClass.EntityClass.Name, 15, (OrdnanceClass as PhxBolt.ClassProperties).LifeSpan);                
+                // To avoid Update() call in 
+                TickablePools.Add(Pool);
+            }
+            else 
+            {
+                return;
+            }
+
+            Pool.Root.transform.SetParent(ProjectileRoot.transform);
+            PoolDB[OrdnanceClass] = Pool;
         }
-        if (proj != null)
+
+
+        PhxOrdnance Ordnance = Pool.Alloc();
+        if (Ordnance != null)
         {
-            proj.Setup(owner, pos, rot, bolt);
-        }
+            if (!Ordnance.IsInitialized)
+            {
+                Ordnance.Init(OrdnanceClass);
+            }
+
+            Ordnance.Setup(OriginatorWeapon); 
+        }           
     }
+
 
     public void Destroy()
     {
-        Projectiles.Destroy();
-        Projectiles = null;
+        TickablePools.Clear();
+        PoolDB.Clear();
+        GameObject.Destroy(ProjectileRoot);
     }
+
 
     public void Tick(float deltaTime)
     {
-        Projectiles.Tick(deltaTime);
-        Sparks.Tick(deltaTime);
-    }
-
-    void ProjectileHit(PhxProjectile proj, Collision coll)
-    {
-        Projectiles.Free(proj);
-        ParticleSystem spark = Sparks.Alloc();
-        if (spark != null)
+        foreach (PhxPool<PhxOrdnance> TickablePool in TickablePools)
         {
-            spark.transform.position = coll.contacts[0].point;
-            spark.transform.forward = coll.contacts[0].normal;
-        }
-        else
-        {
-            Debug.LogWarning($"Exceeded available spark effect instances of {Sparks.Objects.Length}!");
+            TickablePool.Tick(deltaTime);
         }
     }
 }

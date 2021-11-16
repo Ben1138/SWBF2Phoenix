@@ -27,11 +27,17 @@ public static class PhxClassRegister
         { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
         { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
         { "powerupstation", new GameBaseClass(typeof(PhxPowerupstation.ClassProperties), typeof(PhxPowerupstation)) },
-
+        { "hover",          new GameBaseClass(typeof(PhxHover.ClassProperties),          typeof(PhxHover))          },
+        { "armedbuilding",  new GameBaseClass(typeof(PhxArmedBuilding.ClassProperties),  typeof(PhxArmedBuilding))  },
+        { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn))   },
+        { "weapon",         new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
+        { "door",           new GameBaseClass(typeof(PhxDoor.ClassProperties),           typeof(PhxDoor))           },
         // Right now, there's custom object pooling just for projectiles, meaning, PhxBolt's are not instantiated via
         // PhxRuntimeScene.CreateInstance(), but with PhxProjectiles.FireProjectile()
         // Maybe this will be obsolete once we've got a generic object pooling for everything. Idk yet.
-        { "bolt",           new GameBaseClass(typeof(PhxBolt),                           null)                      },
+        { "missile",        new GameBaseClass(typeof(PhxMissile.ClassProperties),        null)                      },
+        { "beam",           new GameBaseClass(typeof(PhxBeam.ClassProperties),           null)                      },
+        { "bolt",           new GameBaseClass(typeof(PhxBolt.ClassProperties),           null)                      },
     };
 
     public static Type GetPhxInstanceType(string name)
