@@ -41,7 +41,7 @@ public class PhxWeaponSystem
         {
             if (properties[i] == HashUtils.GetFNV("HierarchyLevel"))
             {
-                CurrAimer.HierarchyLevel = Int32.Parse(values[i]);
+                CurrAimer.HierarchyLevel = Int32.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
             }
             else if (properties[i] == HashUtils.GetFNV("AimerPitchLimits"))
             {
@@ -64,7 +64,7 @@ public class PhxWeaponSystem
             {
                 if (CurrBarrel != null)
                 {
-                    CurrBarrel.RecoilDistance = float.Parse(values[i]);
+                    CurrBarrel.RecoilDistance = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
                 }
             }     
             else if (properties[i] == HashUtils.GetFNV("AimerNodeName"))

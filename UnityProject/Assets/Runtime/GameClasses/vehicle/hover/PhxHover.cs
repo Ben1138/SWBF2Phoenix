@@ -312,21 +312,21 @@ public class PhxHover : PhxVehicle
             {
                 if (CurrSpring != null)
                 {   
-                    CurrSpring.Length = float.Parse(values[i]);
+                    CurrSpring.Length = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
                 }
             }
             else if (properties[i] == HashUtils.GetFNV("BodyOmegaXSpringFactor"))
             {
                 if (CurrSpring != null)
                 {
-                    CurrSpring.OmegaXFactor = float.Parse(values[i]);
+                    CurrSpring.OmegaXFactor = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
                 }
             }
             else if (properties[i] == HashUtils.GetFNV("BodyOmegaZSpringFactor"))
             {
                 if (CurrSpring != null)
                 {
-                    CurrSpring.OmegaZFactor = float.Parse(values[i]);
+                    CurrSpring.OmegaZFactor = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
                 }
             }
 

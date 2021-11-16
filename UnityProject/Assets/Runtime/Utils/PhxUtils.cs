@@ -14,7 +14,7 @@ public static class PhxUtils
         Vector4 vOut = new Vector4();
         for (int i = 0; i < 4 && i < v.Length; i++)
         {
-            vOut[i] = float.Parse(v[i]);
+            vOut[i] = float.Parse(v[i], System.Globalization.CultureInfo.InvariantCulture);
         }
         return vOut;
     }
@@ -25,7 +25,7 @@ public static class PhxUtils
         Vector3 vOut = new Vector3();
         for (int i = 0; i < 3 && i < v.Length; i++)
         {
-            vOut[i] = float.Parse(v[i]);
+            vOut[i] = float.Parse(v[i], System.Globalization.CultureInfo.InvariantCulture);
         }
         return vOut;
     }
@@ -36,7 +36,7 @@ public static class PhxUtils
         Vector2 vOut = new Vector2();
         for (int i = 0; i < 2; i++)
         {
-            vOut[i] = float.Parse(v[i]);
+            vOut[i] = float.Parse(v[i], System.Globalization.CultureInfo.InvariantCulture);
         }
         return vOut;
     }

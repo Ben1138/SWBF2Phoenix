@@ -234,7 +234,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
             }
             else if (properties[i] == HashUtils.GetFNV("TiltValue"))
             {
-                TiltValue = float.Parse(values[i]);
+                TiltValue = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
             }
             else if (properties[i] == HashUtils.GetFNV("TrackOffset"))
             {
@@ -258,7 +258,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
             {
                 WeaponsSet = true;
 
-                int newSlot = Int32.Parse(values[i]);
+                int newSlot = Int32.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
                 
                 if (newSlot > WeaponSystems.Count)
                 {

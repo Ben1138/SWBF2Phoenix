@@ -125,9 +125,9 @@ public sealed class PhxPropertyDB
             else
             {
                 Color outCol = new Color();
-                outCol.r = float.Parse(vals[0]) / 255f;
-                outCol.g = float.Parse(vals[1]) / 255f;
-                outCol.b = float.Parse(vals[2]) / 255f;
+                outCol.r = float.Parse(vals[0], System.Globalization.CultureInfo.InvariantCulture) / 255f;
+                outCol.g = float.Parse(vals[1], System.Globalization.CultureInfo.InvariantCulture) / 255f;
+                outCol.b = float.Parse(vals[2], System.Globalization.CultureInfo.InvariantCulture) / 255f;
                 outCol.a = 1f;
 
                 if (vals.Length == 4)
