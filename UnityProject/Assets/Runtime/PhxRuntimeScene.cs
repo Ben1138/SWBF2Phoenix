@@ -49,13 +49,17 @@ public class PhxRuntimeScene
         Cra = new CraMain();
 
         ModelLoader.Instance.PhyMat = PhxGameRuntime.Instance.GroundPhyMat;
-        ModelLoader.Instance.CollFlagToUnityLayer[ECollisionMaskFlags.Vehicle] = 7;
-        ModelLoader.Instance.CollFlagToUnityLayer[ECollisionMaskFlags.Soldier] = 10;
     }
 
     public void SetProperty(string instName, string propName, object propValue)
     {
-        if (InstanceMap.TryGetValue(instName, out int instIdx))
+        int instIdx;
+        if (InstanceMap.TryGetValue(instName, out instIdx))
+        {
+            Instances[instIdx].P.SetProperty(propName, propValue);
+            return;
+        }
+        else if (InstanceMap.TryGetValue(instName.ToLower(), out instIdx))
         {
             Instances[instIdx].P.SetProperty(propName, propValue);
             return;
@@ -156,10 +160,12 @@ public class PhxRuntimeScene
         return camShot;
     }
 
-    public void FireProjectile(PhxPawnController owner, Vector3 pos, Quaternion rot, PhxBolt bolt)
+
+    public void FireProjectile(IPhxWeapon WeaponOfOrigin, PhxClass OrdnanceClass)
     {
-        Projectiles.FireProjectile(owner, pos, rot, bolt);
+        Projectiles.FireProjectile(WeaponOfOrigin, OrdnanceClass);
     }
+
 
     public void Import(World[] worldLayers)
     {
@@ -170,6 +176,8 @@ public class PhxRuntimeScene
         }
 
         Loader.ResetAllLoaders();
+
+        WorldLoader.Instance.TerrainAsMesh = true;
 
         foreach (World world in worldLayers)
         {
@@ -213,9 +221,10 @@ public class PhxRuntimeScene
             if (terrain != null && !bTerrainImported)
             {
                 GameObject terrainGameObject;
-                terrainGameObject = WorldLoader.Instance.ImportTerrainAsMeshHDRP(terrain);
+                terrainGameObject = WorldLoader.Instance.ImportTerrainAsMesh(terrain, "terrain");
 
                 terrainGameObject.transform.parent = worldRoot.transform;
+                terrainGameObject.layer = LayerMask.NameToLayer("TerrainAll");
                 bTerrainImported = true;
             }
 
@@ -362,6 +371,12 @@ public class PhxRuntimeScene
 
     GameObject CreateInstance(ISWBFProperties instOrClass, string instName, Vector3 position, Quaternion rotation, bool withCollision=true, Transform parent =null)
     {
+        if (InstanceMap.ContainsKey(instName))
+        {
+            Debug.LogWarningFormat("Instance with name: {0} already created!", instName);
+            return null;
+        }
+
         if (instOrClass == null)
         {
             Debug.LogWarning("Called 'CreateInstance' with NULL!");

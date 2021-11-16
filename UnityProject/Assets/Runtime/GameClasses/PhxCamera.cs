@@ -8,7 +8,8 @@ public class PhxCamera : MonoBehaviour
     {
         Fixed,
         Free,
-        Follow
+        Follow,
+        Track,
     }
                      
     public CamMode    Mode { get; private set; } = CamMode.Free;
@@ -18,7 +19,18 @@ public class PhxCamera : MonoBehaviour
     public float      FollowSpeed                = 100.0f;
     public float      MouseSensitivity           = 5f;
 
+
     IPhxControlableInstance FollowInstance;
+
+    IPhxTrackable TrackableInstance;
+
+
+
+    public void Track(IPhxTrackable Track)
+    {
+        Mode = CamMode.Track;
+        TrackableInstance = Track;
+    }
 
 
     public void Follow(IPhxControlableInstance follow)
@@ -53,15 +65,6 @@ public class PhxCamera : MonoBehaviour
         rb.MoveRotation(rb.transform.rotation * q);
     }
 
-    void SanitizeEuler(ref Vector3 euler)
-    {
-        while (euler.x > 180f) euler.x -= 360f;
-        while (euler.y > 180f) euler.y -= 360f;
-        while (euler.z > 180f) euler.z -= 360f;
-        while (euler.x < -180f) euler.x += 360f;
-        while (euler.y < -180f) euler.y += 360f;
-        while (euler.z < -180f) euler.z += 360f;
-    }
 
     void LateUpdate()
     {
@@ -85,7 +88,6 @@ public class PhxCamera : MonoBehaviour
             Vector3 rotPoint = FollowInstance.GetInstance().transform.position;
             rotPoint.y += PositionOffset.y;
 
-
             //Vector3 viewDir = (FollowInstance.GetTargetPosition() - rotPoint).normalized;
             Vector3 viewDir = PhxGameRuntime.GetMatch().Player.ViewDirection;
             Vector3 camTargetPos = rotPoint + viewDir * PositionOffset.z;
@@ -94,6 +96,11 @@ public class PhxCamera : MonoBehaviour
 
             transform.position = camTargetPos;// Vector3.Lerp(transform.position, camTargetPos, deltaTime * FollowSpeed);
             transform.rotation = camTargetRot;// Quaternion.Slerp(transform.rotation, camTargetRot, deltaTime * FollowSpeed);
+        }
+        else if (Mode == CamMode.Track)
+        {
+            transform.rotation = TrackableInstance.GetCameraRotation();
+            transform.position = TrackableInstance.GetCameraPosition();
         }
     }
 }

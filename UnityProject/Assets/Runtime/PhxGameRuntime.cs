@@ -9,10 +9,18 @@ using LibLog = LibSWBF2.Logging.Logger;
 using LibLogEntry = LibSWBF2.Logging.LoggerEntry;
 using ELibLogType = LibSWBF2.Logging.ELogType;
 
+
+
 public class PhxGameRuntime : MonoBehaviour
 {
     public static PhxGameRuntime Instance { get; private set; } = null;
-    public static PhxPath GamePath { get; private set; } = @"F:\SteamLibrary\steamapps\common\Star Wars Battlefront II";
+
+
+    public PhxPath GamePath 
+    { 
+        get { return new PhxPath(GamePathString); } 
+        private set { GamePathString = value.ToString(); }
+    }
 
 
     public enum PhxStartupBehaviour
@@ -24,6 +32,8 @@ public class PhxGameRuntime : MonoBehaviour
 
 
     [Header("Settings")]
+    public string GamePathString = "";
+
     public string Language = "english";
     public PhxStartupBehaviour StartupBehaviour;
     public string StartupSWBF2Map;
@@ -42,8 +52,12 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxCamera          Camera;
     public PhysicMaterial     GroundPhyMat;
     public PhxHUD             HUDPrefab;
-    public PhxProjectile      ProjPrefab;
+    public PhxBolt            BoltPrefab;
+    public PhxBeam            BeamPrefab;
     public ParticleSystem     SparkPrefab;
+
+    [Header("For non-Windows Users")]
+    public string MissionListPath = Application.platform == RuntimePlatform.WindowsEditor ? "" : "path/to/missionlist.lua";
 
     // This will only fire for maps, NOT for the main menu!
     public Action OnMapLoaded;
@@ -448,7 +462,8 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(Camera               != null);
         Debug.Assert(GroundPhyMat         != null);
         Debug.Assert(HUDPrefab            != null);
-        Debug.Assert(ProjPrefab           != null);
+        Debug.Assert(BoltPrefab           != null);
+        Debug.Assert(BeamPrefab           != null);
         Debug.Assert(SparkPrefab          != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)

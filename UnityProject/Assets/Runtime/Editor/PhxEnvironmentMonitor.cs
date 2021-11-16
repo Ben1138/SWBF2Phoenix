@@ -36,7 +36,7 @@ public class PhxEnvironmentMonitor : EditorWindow
             return;
         }
 
-        PhxPath gamePath = PhxGameRuntime.GamePath;
+        PhxPath gamePath = PhxGameRuntime.Instance.GamePath;
         EditorGUILayout.LabelField("Environment Path", env.Path - gamePath);
         EditorGUILayout.LabelField("Fallback Path", env.FallbackPath - gamePath);
         EditorGUILayout.Space();
