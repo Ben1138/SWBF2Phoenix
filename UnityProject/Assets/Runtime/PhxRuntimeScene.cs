@@ -221,7 +221,7 @@ public class PhxRuntimeScene
             if (terrain != null && !bTerrainImported)
             {
                 GameObject terrainGameObject;
-                terrainGameObject = WorldLoader.Instance.ImportTerrainAsMesh(terrain, "terrain");
+                terrainGameObject = WorldLoader.Instance.ImportTerrainAsMeshHDRP(terrain);
 
                 terrainGameObject.transform.parent = worldRoot.transform;
                 terrainGameObject.layer = LayerMask.NameToLayer("TerrainAll");

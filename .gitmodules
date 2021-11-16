@@ -10,5 +10,4 @@
 	branch = runtime
 [submodule "UnityProject/Assets/CraUnity"]
 	path = UnityProject/Assets/CraUnity
-	url = https://github.com/WHSnyder/CraUnity
-	branch = quickfixes
+	url = https://github.com/Ben1138/CraUnity
