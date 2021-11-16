@@ -14,13 +14,39 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
     public override void Init()
     {
         // Hide grenade mesh in hand
-        gameObject.layer = 6; // Projectiles
+        gameObject.layer = LayerMask.NameToLayer("OrdnanceAll");
 
         if (transform.childCount > 0)
         {
             transform.GetChild(0).gameObject.SetActive(false);
         }
     }
+
+    public List<Collider> GetIgnoredColliders()
+    {
+        return null;
+    }
+
+    public void SetFirePoint(Transform Point)
+    {
+        //FirePoint = FP;
+    }
+
+    public virtual void GetFirePoint(out Vector3 Pos, out Quaternion Rot)
+    {
+        Pos = Vector3.zero;
+        Rot = Quaternion.identity;
+    }
+
+    public virtual Transform GetFirePoint()
+    {
+        //return FirePoint;
+        return null;
+    }
+
+
+
+    public void SetIgnoredColliders(List<Collider> Colliders){}
 
     public override void BindEvents()
     {
@@ -32,9 +58,9 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
         return this;
     }
 
-    public void Fire(PhxPawnController owner, Vector3 targetPos)
+    public bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
-        
+        return true;   
     }
 
     public void OnShot(Action callback)
@@ -95,5 +121,15 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
     public float GetReloadProgress()
     {
         return 0f;
+    }
+
+    public bool IsFiring() 
+    {
+        return false;
+    }
+
+    public PhxPawnController GetOwnerController()
+    {
+        return null;
     }
 }

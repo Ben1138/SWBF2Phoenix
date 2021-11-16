@@ -6,6 +6,11 @@ public abstract class PhxPawnController
 {
     public IPhxControlableInstance Pawn { get; private set; }
 
+    public float mouseX;
+    public float mouseY;
+
+    public bool SwitchSeat;
+
     public bool ShootPrimary;
     public bool ShootSecondary;
     public bool Crouch;
@@ -14,6 +19,9 @@ public abstract class PhxPawnController
     public bool Reload;
     public bool NextPrimaryWeapon;
     public bool NextSecondaryWeapon;
+
+    public bool Enter;
+
     public Vector2 MoveDirection;
     public Vector3 ViewDirection;
     protected PhxInstance Target;
@@ -65,15 +73,5 @@ public abstract class PhxPawnController
         {
             IdleTime = 0f;
         }
-    }
-
-    protected static void SanitizeEuler(ref Vector3 euler)
-    {
-        while (euler.x > 180f) euler.x -= 360f;
-        while (euler.y > 180f) euler.y -= 360f;
-        while (euler.z > 180f) euler.z -= 360f;
-        while (euler.x < -180f) euler.x += 360f;
-        while (euler.y < -180f) euler.y += 360f;
-        while (euler.z < -180f) euler.z += 360f;
     }
 }
