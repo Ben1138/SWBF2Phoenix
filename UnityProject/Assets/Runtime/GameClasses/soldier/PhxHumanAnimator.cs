@@ -80,7 +80,31 @@ public static class PhxAnimationBanks
                         TurnLeft = "human_rifle_stand_turnleft",                            // rifle
                         TurnRight = "human_rifle_stand_turnright"                           // rifle
                     }
-                }
+                },
+                { 
+                    "bazooka", 
+                    new PhxAnimBank
+                    {
+                        StandIdle = "human_bazooka_stand_idle_emote", 
+                        StandRun = "human_bazooka_stand_runforward",
+                        StandWalk = "human_bazooka_stand_walkforward",
+                        StandSprint = "human_bazooka_sprint",
+                        StandBackward = "human_bazooka_stand_runbackward",
+                        StandReload = "human_bazooka_stand_reload_full",
+                        StandShootPrimary = "human_bazooka_stand_shoot_full",
+                        StandShootSecondary = "human_bazooka_stand_shoot_secondary",
+                        StandAlertIdle = "human_bazooka_standalert_idle_emote",
+                        StandAlertWalk = "human_bazooka_standalert_walkforward",
+                        StandAlertRun = "human_bazooka_standalert_runforward",
+                        StandAlertBackward = "human_bazooka_standalert_runbackward",
+                        Jump = "human_bazooka_jump",
+                        Fall = "human_bazooka_fall",
+                        LandSoft = "human_bazooka_landsoft",
+                        LandHard = "human_bazooka_landhard",
+                        TurnLeft = "human_rifle_stand_turnleft",
+                        TurnRight = "human_rifle_stand_turnright"
+                    }
+                },
             } 
         }
     };

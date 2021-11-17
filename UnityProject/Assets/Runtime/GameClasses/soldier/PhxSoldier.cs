@@ -235,6 +235,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     IPhxWeapon weap = SCENE.CreateInstance(weapClass, false, HpWeapons) as IPhxWeapon;
                     if (weap != null)
                     {
+                        weap.SetIgnoredColliders(new List<Collider>() {gameObject.GetComponent<CapsuleCollider>()});
+
                         string weapAnimName = weap.GetAnimBankName();
                         if (!string.IsNullOrEmpty(weapAnimName))
                         {

@@ -3,11 +3,38 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 
+
+
+
+
+public class PhxGrenade : PhxGenericWeapon
+{
+    public class ClassProperties : PhxGenericWeapon.ClassProperties
+    {
+        public PhxProp<bool> OffhandWeapon = new PhxProp<bool>(true);
+
+        public ClassProperties()
+        {
+            AnimationBank = new PhxProp<string>("grenade");
+        }
+    }
+}
+
+
+
+
+
+/*
 public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
 {
     public class ClassProperties : PhxClass
     {
         public PhxProp<bool> OffhandWeapon = new PhxProp<bool>(true);
+
+        public ClassProperties()
+        {
+            AnimationBank = new PhxProp<string>("grenade");
+        }
     }
 
 
@@ -133,3 +160,4 @@ public class PhxGrenade : PhxInstance<PhxGrenade.ClassProperties>, IPhxWeapon
         return null;
     }
 }
+*/
