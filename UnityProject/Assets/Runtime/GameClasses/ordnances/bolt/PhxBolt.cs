@@ -16,6 +16,8 @@ public class PhxBoltClass : PhxOrdnanceClass
     public PhxProp<float> Velocity = new PhxProp<float>(1f);
 
     public PhxProp<string> ImpactEffectStatic = new PhxProp<string>(null);
+
+    public PhxProp<PhxClass> ExplosionName = new PhxProp<PhxClass>(null);
 }
 
 
@@ -102,15 +104,20 @@ public class PhxBolt : PhxOrdnance
 
     void OnCollisionEnter(Collision coll)
     {
-        OnHit?.Invoke(this, coll);
+        if (gameObject.activeSelf)
+        {
+            OnHit?.Invoke(this, coll);
 
-        ContactPoint Point = coll.GetContact(0);
+            ContactPoint Point = coll.GetContact(0);
 
-        Vector3 Pos = Point.point;
-        Quaternion Rot = Quaternion.LookRotation(Point.normal, Vector3.up);
+            Vector3 Pos = Point.point;
+            Quaternion Rot = Quaternion.LookRotation(Point.normal, Vector3.up);
 
-        SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
+            SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
 
-        Release();
+            PhxExplosionManager.AddExplosion(null, BoltClass.ExplosionName.Get() as PhxExplosionClass, Pos, Rot);
+
+            Release();
+        }
     }
 }

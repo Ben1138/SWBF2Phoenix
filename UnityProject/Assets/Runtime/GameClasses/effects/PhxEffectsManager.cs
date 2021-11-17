@@ -141,7 +141,7 @@ public class PhxEffectsManager
 
     PhxEffect GetFreeEffect(string Name)
     {
-        if (Name == null) return null;
+        if (Name == null || Name == "") return null;
 
         uint NameHash = HashUtils.GetFNV(Name);
 
@@ -149,7 +149,7 @@ public class PhxEffectsManager
         if (Effects.ContainsKey(NameHash))
         {
             EffectsList = Effects[NameHash];
-            if (EffectsList.Count < 5)
+            if (EffectsList.Count < 10)
             {   
                 PhxEffect Effect = new PhxEffect(EffectsList[0]);
                 EffectsList.Add(Effect);
@@ -194,13 +194,14 @@ public class PhxEffectsManager
     public void PlayEffectOnce(string Name, Vector3 position, Quaternion rotation)
     {
         PhxEffect Effect = GetFreeEffect(Name);
-        Effect.SetLooping(false);
 
         if (Effect == null)
         {
             Debug.LogWarningFormat("Failed to play effect: {0}", Name);
+            return;
         }
 
+        Effect.SetLooping(false);
         Effect.SetLocalTransform(position, rotation);
         Effect.Play();
     }
@@ -209,12 +210,12 @@ public class PhxEffectsManager
     public PhxEffect LendEffect(string Name)
     {
         PhxEffect Effect = GetFreeEffect(Name);
-        Effect.SetLooping(false);
         if (Effect == null)
         {
             Debug.LogWarningFormat("Failed to lend effect: {0}", Name);
+            return null;
         }
-
+        Effect.SetLooping(false);
         return Effect;
     }
 }
