@@ -38,6 +38,8 @@ public class PhxRuntimeScene
     int CurrCamIdx;
 
     PhxProjectiles Projectiles = new PhxProjectiles();
+    public readonly PhxEffectsManager EffectsManager = new PhxEffectsManager();
+
     CraMain Cra;
 
     int InstanceCounter;
@@ -161,9 +163,11 @@ public class PhxRuntimeScene
     }
 
 
-    public void FireProjectile(IPhxWeapon WeaponOfOrigin, PhxClass OrdnanceClass)
+    public void FireProjectile(IPhxWeapon WeaponOfOrigin, 
+                                PhxOrdnanceClass OrdnanceClass,
+                                Vector3 Pos, Quaternion Rot)
     {
-        Projectiles.FireProjectile(WeaponOfOrigin, OrdnanceClass);
+        Projectiles.FireProjectile(WeaponOfOrigin, OrdnanceClass, Pos, Rot);
     }
 
 
