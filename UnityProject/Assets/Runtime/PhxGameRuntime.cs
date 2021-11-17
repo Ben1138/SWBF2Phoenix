@@ -349,6 +349,7 @@ public class PhxGameRuntime : MonoBehaviour
         Instance = this;
         WorldLoader.UseHDRP = true;
         MaterialLoader.UseHDRP = true;
+        EffectsLoader.UseHDRP = true;
 
         AddonPath = GamePath / "GameData/addon";
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
