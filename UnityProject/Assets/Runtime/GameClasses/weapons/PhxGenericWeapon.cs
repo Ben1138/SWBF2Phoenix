@@ -53,17 +53,28 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
         public PhxProp<string> AnimationBank = new PhxProp<string>("rifle");
 
         public PhxProp<float> ShotDelay = new PhxProp<float>(0.5f);
+        public PhxProp<float> InitialSalvoDelay = new PhxProp<float>(0f);
         public PhxProp<float> ReloadTime    = new PhxProp<float>(1.0f);
 	    public PhxProp<float> SalvoDelay    = new PhxProp<float>(1.0f);
 	    public PhxProp<int>   SalvoCount    = new PhxProp<int>(1);
 	    public PhxProp<int>   ShotsPerSalvo = new PhxProp<int>(1);
 
+        public PhxProp<float> ShotElevate = new PhxProp<float>(0f);        
+
+        public PhxProp<bool> TriggerSingle = new PhxProp<bool>(false);
+
+        public PhxProp<bool> OffhandWeapon = new PhxProp<bool>(false);
+
 	    public PhxProp<int> RoundsPerClip = new PhxProp<int>(50);
 
 	    public PhxProp<PhxClass> OrdnanceName = new PhxProp<PhxClass>(null);
 
+        // Spread
+        public PhxProp<float> PitchSpread = new PhxProp<float>(0f);
+        public PhxProp<float> YawSpread   = new PhxProp<float>(0f);
+
+
 	    // Sound
-	    public PhxProp<float>  PitchSpread = new PhxProp<float>(0.1f);
 	    public PhxProp<string> FireSound = new PhxProp<string>(null);
 
 	    public PhxProp<float> HeatRecoverRate = new PhxProp<float>(0.25f);
@@ -73,9 +84,10 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
 
     public override void Init()
-    {
-        //if (C.FireSound.Get() != null)
-        //{
+    {   
+        /*
+        if (C.FireSound.Get() != null)
+        {
             Audio = gameObject.AddComponent<AudioSource>();
             Audio.playOnAwake = false;
             Audio.spatialBlend = 1.0f;
@@ -86,11 +98,24 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
             // TODO: replace with class sound, once we can load sound LVLs
             Audio.clip = SoundLoader.LoadSound("wpn_rep_blaster_fire");
-        //}
+        }
+        */
+
 
         if (C.OrdnanceName.Get() == null)
         {
-            Debug.LogWarning($"Missing Ordnance class in cannon '{name}'!");
+            Debug.LogWarning($"Missing Ordnance class in weapon '{name}'!");
+        }
+
+        if (transform.childCount > 0)
+        {
+            FirePoint = transform.GetChild(0).Find("hp_fire");
+        }
+
+        if (FirePoint == null)
+        {
+            //Debug.LogWarning($"Cannot find 'hp_fire' in '{name}', class '{C.Name}'!");
+            FirePoint = transform;
         }
 
         // Total amount of 4 magazines
@@ -115,8 +140,8 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
     {
         if (FirePoint == null)
         {
-            Pos = Vector3.zero;
-            Rot = Quaternion.identity;
+            Pos = transform.position;
+            Rot = transform.rotation;
         }
         else 
         {
@@ -172,10 +197,22 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
 
     int SalvoIndex = 0;
+    Vector3 SalvoTargetPosition;
 
 	public virtual bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
+        //Debug.LogFormat("Attempting to fire weapon {0}", C.EntityClass.Name);
+
         if (WeaponState == PhxWeaponState.Free)
+        {
+            SalvoTargetPosition = targetPos;
+
+            WeaponState = PhxWeaponState.SalvoDelayed;
+            SalvoDelayTimer = C.InitialSalvoDelay;   
+        }
+
+
+        if (WeaponState == PhxWeaponState.SalvoDelayed && SalvoDelayTimer < .0001)
         {
             if (Audio != null)
             {
@@ -186,15 +223,32 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
             if (SalvoIndex < C.SalvoCount)
             {
-                PhxOrdnance.ClassProperties Ordnance = C.OrdnanceName.Get() as PhxOrdnance.ClassProperties;
+                PhxOrdnanceClass Ordnance = C.OrdnanceName.Get() as PhxOrdnanceClass;
                 if (Ordnance != null) 
                 {
-                    //Debug.LogFormat("Firing ordnance: {0}", Ordnance.EntityClass.Name);
-                    Scene.FireProjectile(this, Ordnance);   
+                    for (int i = 0; i < C.ShotsPerSalvo; i++)
+                    {
+                        Vector3 TargetPosition = SalvoTargetPosition;
+                        
+                        /*
+                        if (FirePoint == null)
+                        {
+                            FirePoint = transform;
+                        }
+                        float ShotLength = Vector3.Magnitude(SalvoTargetPosition - FirePoint.position);
+
+                        // We'll say 1 spread = 0.436332 rad of fp rotation
+                        TargetPosition += Mathf.Tan(C.PitchSpread * .436332f) * ShotLength * FirePoint.up;
+                        TargetPosition += Mathf.Tan(C.YawSpread * .436332f) * ShotLength * FirePoint.right;
+                        */
+                        
+                        Scene.FireProjectile(this, Ordnance, FirePoint.position + C.ShotElevate * Vector3.up,
+                                            Quaternion.LookRotation(TargetPosition - FirePoint.position, Vector3.up));   
+                    }
                 }
             }
 
-            if (++SalvoIndex >= C.SalvoCount)
+            if (++SalvoIndex >= C.SalvoCount || C.TriggerSingle.Get())
             {
                 SalvoIndex = 0;
                 WeaponState = PhxWeaponState.ShotDelayed;
@@ -314,8 +368,7 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
             SalvoDelayTimer -= deltaTime;
             if (SalvoDelayTimer < 0f)
             {
-                WeaponState = PhxWeaponState.Free;
-                Fire(null, Vector3.zero);
+                Fire(null, SalvoTargetPosition);
             }
         }
         else if (WeaponState == PhxWeaponState.ShotDelayed)
