@@ -114,21 +114,6 @@ public abstract class PhxVehicleSection : IPhxTrackable
             return;
         }
         
-        if (Controller.ShootPrimary)
-        {   
-            if (WeaponSystems.Count > 0)
-            {
-                WeaponSystems[0].Fire();                
-            }
-        }
-
-        if (Controller.ShootSecondary)
-        {
-            if (WeaponSystems.Count > 1)
-            {
-                WeaponSystems[1].Fire();
-            }
-        }
 
         PitchAccum += Controller.mouseY;
         PitchAccum = Mathf.Clamp(PitchAccum, PitchLimits.x, PitchLimits.y);
@@ -147,7 +132,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
         ViewDirection =  Quaternion.Euler(3f * PitchAccum, 0f, 0f) * Quaternion.Euler(-TiltValue, 0f, 0f) * Vector3.forward;
 
 
-        Vector3 TargetPos = BaseTransform.transform.TransformPoint(30f * ViewDirection + ViewPoint);
+        Vector3 TargetPos = BaseTransform.transform.TransformPoint(3000f * ViewDirection + ViewPoint);
 
         
         if (Physics.Raycast(TargetPos, TargetPos - CAM.transform.position, out RaycastHit hit, 1000f))
@@ -171,6 +156,23 @@ public abstract class PhxVehicleSection : IPhxTrackable
         foreach (PhxWeaponSystem System in WeaponSystems)
         {
             System.Update(TargetPos);
+        }
+
+
+        if (Controller.ShootPrimary)
+        {   
+            if (WeaponSystems.Count > 0)
+            {
+                WeaponSystems[0].Fire(TargetPos);                
+            }
+        }
+
+        if (Controller.ShootSecondary)
+        {
+            if (WeaponSystems.Count > 1)
+            {
+                WeaponSystems[1].Fire(TargetPos);
+            }
         }
     }
 

@@ -149,7 +149,7 @@ Material:
     - _AlphaSrcBlend: 1
     - _AlphaToMask: 0
     - _AlphaToMaskInspectorValue: 0
-    - _Ammo: 46
+    - _Ammo: 5
     - _Anisotropy: 0
     - _BlendMode: 0
     - _CoatMask: 0
@@ -207,7 +207,7 @@ Material:
     - _IridescenceMask: 1
     - _IridescenceThickness: 1
     - _LinkDetailsWithBase: 1
-    - _Magazin: 50
+    - _Magazin: 5
     - _MaterialID: 1
     - _Metallic: 0
     - _MetallicRemapMax: 1
