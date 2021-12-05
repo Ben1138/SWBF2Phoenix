@@ -30,10 +30,10 @@ They can be entered, exited, sliced, repaired by soldiers
 
 public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>, IPhxTrackable 
 {
-    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
-    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
-    static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    protected static PhxGameRuntime GAME => PhxGameRuntime.Instance;
+    protected static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
+    protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
@@ -295,6 +295,16 @@ public class PhxVehicleProperties : PhxClass
 }
 
 
+
+public class PhxDamageEffect 
+{
+    public float DamageStartPercent;
+    public float DamageStopPercent;
+    public PhxEffect Effect;
+    public Transform DamageAttachPoint;
+
+    public bool IsOn;
+}
 
 
 

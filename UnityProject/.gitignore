@@ -77,3 +77,7 @@ crashlytics-build.properties
 
 # Ignore build folder
 .Build
+
+# Ignore Samples
+/[Aa]ssets/[Ss]amples/*
+/[Aa]ssets/[Ss]amples.meta
