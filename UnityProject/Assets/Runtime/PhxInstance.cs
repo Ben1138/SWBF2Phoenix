@@ -5,17 +5,39 @@ using System.Collections.Generic;
 
 using LibSWBF2.Wrappers;
 
-public abstract class PhxInstance : MonoBehaviour
+// Bare minimum requirements
+public interface IPhxInstantiable
+{
+    // Use this as constructor (MonoBehaviour constructors don't get called, and
+    // Awake() won't be called until next frame)
+    public void Init();
+
+    // Use this as destructor
+    public void Destroy();
+
+    public void Tick(float deltaTime);
+    public void TickPhysics(float deltaTime);
+}
+
+// Use this whenever we're dealing with a Unity Component attached to a GameObject in general
+public abstract class PhxComponent : MonoBehaviour, IPhxInstantiable
+{
+    public PhxPool ParentPool;
+
+    public abstract void Init();
+    public abstract void Destroy();
+    public abstract void Tick(float deltaTime);
+    public abstract void TickPhysics(float deltaTime);
+}
+
+// Use this when we're dealing with instances, that contain properties that are exposed to Lua
+public abstract class PhxInstance : PhxComponent
 {
     public PhxPropertyDB P { get; private set; } = new PhxPropertyDB();
 
     // Every SWBF2 object has a Team
     public PhxProp<int> Team = new PhxProp<int>(0);
 
-
-    // Use this as constructor (MonoBehaviour constructors don't get called, and
-    // Awake() won't be called until next frame)
-    public abstract void Init();
 
     // Override this method in inheriting instance classes.
     // In this method, bind your custom property events and implement
@@ -52,9 +74,6 @@ public abstract class PhxInstance : MonoBehaviour
             }
         }
     }
-
-    public abstract void Tick(float deltaTime);
-    public abstract void TickPhysics(float deltaTime);
 }
 
 public abstract class PhxInstance<T> : PhxInstance where T : PhxClass

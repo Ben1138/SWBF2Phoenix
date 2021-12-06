@@ -54,7 +54,6 @@ public class PhxGameRuntime : MonoBehaviour
     public PhxHUD             HUDPrefab;
     public PhxBolt            BoltPrefab;
     public PhxBeam            BeamPrefab;
-    public ParticleSystem     SparkPrefab;
 
     [Header("For non-Windows Users")]
     public string MissionListPath = Application.platform == RuntimePlatform.WindowsEditor ? "" : "path/to/missionlist.lua";
@@ -465,7 +464,6 @@ public class PhxGameRuntime : MonoBehaviour
         Debug.Assert(HUDPrefab            != null);
         Debug.Assert(BoltPrefab           != null);
         Debug.Assert(BeamPrefab           != null);
-        Debug.Assert(SparkPrefab          != null);
 
         for (int i = 0; i < UIAudio.Length; ++i)
         {

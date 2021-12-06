@@ -123,6 +123,11 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
         MagazineAmmo = C.RoundsPerClip;
     }
 
+    public override void Destroy()
+    {
+        
+    }
+
     public override void BindEvents()
     {
         

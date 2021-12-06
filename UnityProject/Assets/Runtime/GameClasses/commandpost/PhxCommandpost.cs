@@ -127,6 +127,11 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         AudioAction.maxDistance = 30.0f;
     }
 
+    public override void Destroy()
+    {
+        
+    }
+
     public float GetCaptureProgress()
     {
         return CaptureTimer / C.CaptureTime;
