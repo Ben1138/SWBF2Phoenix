@@ -449,7 +449,10 @@ public class PhxHover : PhxVehicle
         */
     }
 
-
+    public override void Destroy()
+    {
+        
+    }
 
     /*
     Update each section, pose if the poser is set, and wheel texture offset if applicable.

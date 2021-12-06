@@ -38,6 +38,29 @@ public class PhxVehicleSpawn : PhxInstance
     PhxCommandpost CommandPost;
 
 
+    public override void Init()
+    {
+        if (ControlZone.Get() == null) return;
+
+        var CommandPosts = Scene.GetCommandPosts();
+        foreach (var Post in CommandPosts)
+        {
+            if (Post.gameObject.name.Equals(ControlZone.Get(), StringComparison.OrdinalIgnoreCase))
+            {
+                CommandPost = Post;
+                Team = Post.Team;
+                break;
+            }
+        }
+
+        RespawnTimer = 1.0f;
+    }
+
+    public override void Destroy()
+    {
+
+    }
+
     public override void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties)
     {
         Type type = GetType();
@@ -90,25 +113,6 @@ public class PhxVehicleSpawn : PhxInstance
 
     private PhxVehicleSpawnST SpawnState = PhxVehicleSpawnST.VehicleAwaitingSpawn;
 
-
-    void Start()
-    {
-        Init();
-
-        if (ControlZone.Get() == null) return;
-
-        var CommandPosts = Scene.GetCommandPosts();
-        foreach (var Post in CommandPosts)
-        {
-            if (Post.gameObject.name.Equals(ControlZone.Get(), StringComparison.OrdinalIgnoreCase))
-            {
-                CommandPost = Post;
-                Team = Post.Team;
-                break;
-            }
-        }
-    }
-
     
 
     PhxClass GetAppropriateVehicle()
@@ -142,16 +146,6 @@ public class PhxVehicleSpawn : PhxInstance
 
         return Scene.GetClass(ClassName);
     }
-
-
-
-
-    public override void Init()
-    {
-        RespawnTimer = 1.0f;
-    }
-
-
 
     private void SpawnVehicle()
     {

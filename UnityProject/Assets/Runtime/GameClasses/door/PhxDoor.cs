@@ -71,8 +71,11 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
         Player.SetLooping(false);
     }
 
+    public override void Destroy()
+    {
+        
+    }
 
-    
     void OnTriggerEnter(Collider Object)
     {
         if (Object.gameObject.layer != LayerMask.NameToLayer("SoldierAll"))

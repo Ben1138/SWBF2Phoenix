@@ -24,6 +24,12 @@ public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
         // Use this to create required Unity components (like AudioSource, SpotLight, Rigidbody, etc...)
     }
 
+    public override void Destroy()
+    {
+        // destructor
+        // Use this to free resources
+    }
+
     public override void BindEvents()
     {
         // Use this to bind property change events

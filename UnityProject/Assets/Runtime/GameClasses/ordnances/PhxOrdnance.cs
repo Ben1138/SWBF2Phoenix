@@ -23,8 +23,9 @@ public class PhxOrdnanceClass : PhxClass
 }
 
 
-public abstract class PhxOrdnance : MonoBehaviour
+public abstract class PhxOrdnance : PhxComponent
 {
+    public PhxOrdnanceClass OrdnanceClass;
 
     protected static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     protected static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
@@ -32,21 +33,12 @@ public abstract class PhxOrdnance : MonoBehaviour
     protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
 
-    [System.NonSerialized]
-    public bool IsInitialized;
-
-    /*
-    Previously this was kept in PhxPool, but will need to be updated
-    differently for different ordnances.
-    */
-    protected float TimeAlive;
-
     /* 
     Needed because changes to the weapon can affect changes in
     ordnance behavior.  E.g. a beam moves with it's weapon's firepoint
     but a bolt doesn't, a guided missile lasts until it's weapon is inactive
     but a standard missile flies regardless of its owner's status
-    */ 
+    */
     protected IPhxWeapon OwnerWeapon;
     
     /* 
@@ -55,9 +47,6 @@ public abstract class PhxOrdnance : MonoBehaviour
     behind the owner will persist.
     */
     protected PhxPawnController Owner;     
-    
-    // Class level setup, e.g. components, collision. Called once.
-    public abstract void Init(PhxOrdnanceClass Class);
 
     /*
     Use-specific setup, might need a better name.
@@ -66,7 +55,4 @@ public abstract class PhxOrdnance : MonoBehaviour
     to cover those needs.
     */  
     public abstract void Setup(IPhxWeapon Originator, Vector3 Position, Quaternion Rotation);
-
-    // Clear use-specific data,  release back to the manager instance
-    protected abstract void Release();
 }

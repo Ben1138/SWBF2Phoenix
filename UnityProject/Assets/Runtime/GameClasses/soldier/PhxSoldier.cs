@@ -282,6 +282,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         NextWeapon(1);
     }
 
+    public override void Destroy()
+    {
+        
+    }
+
     public override void BindEvents()
     {
         

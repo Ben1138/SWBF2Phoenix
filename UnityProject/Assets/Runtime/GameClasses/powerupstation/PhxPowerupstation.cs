@@ -113,6 +113,11 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         }
     }
 
+    public override void Destroy()
+    {
+        
+    }
+
     public override void BindEvents()
     {
         C.IdleRotateSpeed.OnValueChanged += (float _) => RootRotation.AnglesPerSec = C.IdleRotateSpeed;
