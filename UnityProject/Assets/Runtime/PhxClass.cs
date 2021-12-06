@@ -35,8 +35,11 @@ public abstract class PhxClass
         {
             string locPath = "entity.";
             int splitIdx = Name.IndexOf('_');
-            locPath += Name.Substring(0, splitIdx) + '.' + Name.Substring(splitIdx + 1);
-            LocalizedName = ENV?.GetLocalized(locPath);
+            if (splitIdx >= 0)
+            {
+                locPath += Name.Substring(0, splitIdx) + '.' + Name.Substring(splitIdx + 1);
+                LocalizedName = ENV?.GetLocalized(locPath);
+            }
         }
 
         Type type = GetType();

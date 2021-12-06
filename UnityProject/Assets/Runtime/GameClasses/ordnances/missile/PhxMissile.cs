@@ -48,11 +48,17 @@ public class PhxMissile : PhxOrdnance
     PhxEffect TrailEffect;
 
 
-    public override void Init(PhxOrdnanceClass OClass)
+    public override void Init()
     {
-        IsInitialized = true;
+        gameObject.layer = LayerMask.NameToLayer("OrdnanceAll");
 
-        MissileClass = OClass as PhxMissileClass;
+        Body = GetComponent<Rigidbody>();
+        Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+
+        Light = GetComponent<Light>();
+        Light.type = LightType.Point;
+
+        MissileClass = OrdnanceClass as PhxMissileClass;
 
         Light.color = MissileClass.LightColor;
         Light.range = MissileClass.LightRadius;
@@ -89,7 +95,6 @@ public class PhxMissile : PhxOrdnance
         } 
     }
 
-
     public override void Setup(IPhxWeapon OriginatorWeapon, Vector3 Position, Quaternion Rotation)
     {
         OwnerWeapon = OriginatorWeapon;
@@ -97,8 +102,6 @@ public class PhxMissile : PhxOrdnance
 
         // Can be null of course
         // Target = OwnerWeapon.GetLockedTarget();
-
-        TimeAlive = 0f;
 
         gameObject.SetActive(true);
 
@@ -124,9 +127,7 @@ public class PhxMissile : PhxOrdnance
         TrailEffect?.Play();
     }
 
-
-
-    protected override void Release()
+    public override void Destroy()
     {
         //IgnoredColliders.Clear();
 
@@ -134,23 +135,15 @@ public class PhxMissile : PhxOrdnance
         Target = null;
 
         TrailEffect?.Stop();
-
-        gameObject.SetActive(false);
     }
 
-
-
-    void FixedUpdate()
+    public override void Tick(float deltaTime)
     {
-        float deltaTime = Time.deltaTime;
 
-        TimeAlive += deltaTime;
-        if (TimeAlive > MissileClass.LifeSpan)
-        {
-            Release();
-            return;
-        }
+    }
 
+    public override void TickPhysics(float deltaTime)
+    {
         // Manual gravity, since it varies
         Body.AddForce(9.8f * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
 
@@ -169,20 +162,6 @@ public class PhxMissile : PhxOrdnance
         }
     }
 
-
-    void Awake()
-    {
-        gameObject.layer = LayerMask.NameToLayer("OrdnanceAll");
-        
-        Body = GetComponent<Rigidbody>();
-        Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ; 
-
-        Light = GetComponent<Light>();
-        Light.type = LightType.Point;
-    }
-
-
-
     void OnCollisionEnter(Collision coll)
     {
         if (gameObject.activeSelf)
@@ -200,7 +179,7 @@ public class PhxMissile : PhxOrdnance
 
             PhxExplosionManager.AddExplosion(null, Exp as PhxExplosionClass, Contact.point, Quaternion.LookRotation(Contact.normal, Vector3.up));
 
-            Release();
+            ParentPool.Free(this);
         }
     }
 }

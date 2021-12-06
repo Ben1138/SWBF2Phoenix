@@ -39,6 +39,10 @@ public class PhxArmedBuilding : PhxVehicle
         }
     }
 
+    public override void Destroy()
+    {
+        
+    }
 
     void UpdateState(float deltaTime)
     {

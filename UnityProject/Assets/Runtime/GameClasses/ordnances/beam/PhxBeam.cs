@@ -37,15 +37,28 @@ public class PhxBeam : PhxOrdnance
 
     float EmissionIntensity = 25f;
 
-
-
     List<Collider> IgnoredColliders;
     List<int> IgnoredColliderLayers;
 
 
-    public override void Init(PhxOrdnanceClass OClass)
+    public override void Init()
     {
-        BeamClass = OClass as PhxBeamClass;
+        Light = GetComponent<Light>();
+        HDLightData = GetComponent<HDAdditionalLightData>();
+
+        EmissionIntensity = Mathf.Pow(2f, 20f);
+
+        Renderer = GetComponent<LineRenderer>();
+
+        BeamMask = (1 << LayerMask.NameToLayer("SoldierAll")) |
+                    (1 << LayerMask.NameToLayer("TerrainAll")) |
+                    (1 << LayerMask.NameToLayer("VehicleAll")) |
+                    (1 << LayerMask.NameToLayer("VehicleOrdnance")) |
+                    (1 << LayerMask.NameToLayer("BuildingAll")) |
+                    (1 << LayerMask.NameToLayer("BuildingOrdnance"));
+
+        
+        BeamClass = OrdnanceClass as PhxBeamClass;
         
         HDLightData.color = BeamClass.LightColor;
         
@@ -55,8 +68,6 @@ public class PhxBeam : PhxOrdnance
         Renderer.material.SetTexture("_UnlitColorMap", BeamClass.LaserTexture);
         Renderer.material.SetTexture("_EmissiveColorMap", BeamClass.LaserTexture);
         Renderer.material.SetColor("_EmissiveColor", BeamClass.LightColor.Get() * EmissionIntensity);
-
-        IsInitialized = true;
     }
 
 
@@ -66,8 +77,6 @@ public class PhxBeam : PhxOrdnance
 
         Owner = Originator.GetOwnerController();
         OwnerWeapon = Originator;
-
-        TimeAlive = 0f;
 
         BeamRoot = transform.parent;
         transform.SetParent(Originator.GetFirePoint());
@@ -81,11 +90,10 @@ public class PhxBeam : PhxOrdnance
         {
             IgnoredColliderLayers.Add(Coll.gameObject.layer);
         }
-
     }
 
 
-    protected override void Release()
+    public override void Destroy()
     {
         Owner = null;
         OwnerWeapon = null;
@@ -96,67 +104,42 @@ public class PhxBeam : PhxOrdnance
         IgnoredColliderLayers = null;
     }
 
-
-    void Update()
+    public override void Tick(float deltaTime)
     {
-        TimeAlive += Time.deltaTime;
-
-        // Will eventually need to check if weapon is still firing
-        if (TimeAlive > BeamClass.LifeSpan)
+        // Probably need something more efficient
+        if (IgnoredColliders != null)
         {
-            Release();
-            return;
+            foreach (Collider Coll in IgnoredColliders)
+            {
+                Coll.gameObject.layer = 2;
+            }
         }
-        else 
+
+        // Do raycast (how to ignore Originator's colliders??)
+        // Todo: Stop only if not PassThrough, generalize layers
+        if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, BeamClass.Range, BeamMask, QueryTriggerInteraction.Ignore))
         {
-            // Probably need something more efficient
-            if (IgnoredColliders != null)
-            {
-                foreach (Collider Coll in IgnoredColliders)
-                {
-                    Coll.gameObject.layer = 2;
-                }
-            }
+            // Extend linerender to hit
+            Renderer.SetPosition(1, new Vector3(0f, 0f, hit.distance));
+        }
+        else
+        {
+            // Extend linerender to full range
+            Renderer.SetPosition(1, new Vector3(0f, 0f, BeamClass.Range));
+        }
 
-            // Do raycast (how to ignore Originator's colliders??)
-            // Todo: Stop only if not PassThrough, generalize layers
-            if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, BeamClass.Range, BeamMask, QueryTriggerInteraction.Ignore))
+        // ''
+        if (IgnoredColliders != null && IgnoredColliderLayers != null)
+        {
+            for (int i = 0; i < IgnoredColliders.Count; i++)
             {
-                // Extend linerender to hit
-                Renderer.SetPosition(1, new Vector3(0f, 0f, hit.distance));
-            }
-            else 
-            {
-                // Extend linerender to full range
-                Renderer.SetPosition(1, new Vector3(0f, 0f, BeamClass.Range));
-            }
-
-            // ''
-            if (IgnoredColliders != null && IgnoredColliderLayers != null)
-            {
-                for (int i = 0; i < IgnoredColliders.Count; i++)
-                {
-                    IgnoredColliders[i].gameObject.layer = IgnoredColliderLayers[i];
-                }
+                IgnoredColliders[i].gameObject.layer = IgnoredColliderLayers[i];
             }
         }
     }
 
-
-    void Awake()
+    public override void TickPhysics(float deltaTime)
     {
-        Light = GetComponent<Light>();
-        HDLightData = GetComponent<HDAdditionalLightData>();
-        
-        EmissionIntensity = Mathf.Pow(2f, 20f);
-
-        Renderer = GetComponent<LineRenderer>();
-
-        BeamMask =  (1 << LayerMask.NameToLayer("SoldierAll")) |
-                    (1 << LayerMask.NameToLayer("TerrainAll")) |
-                    (1 << LayerMask.NameToLayer("VehicleAll")) |
-                    (1 << LayerMask.NameToLayer("VehicleOrdnance")) | 
-                    (1 << LayerMask.NameToLayer("BuildingAll")) |
-                    (1 << LayerMask.NameToLayer("BuildingOrdnance"));
+    
     }
 }

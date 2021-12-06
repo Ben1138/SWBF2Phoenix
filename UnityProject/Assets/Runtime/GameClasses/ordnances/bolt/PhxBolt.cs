@@ -8,8 +8,8 @@ using UnityEngine.Rendering.HighDefinition;
 public class PhxBoltClass : PhxOrdnanceClass
 {
     public PhxProp<Texture2D> LaserTexture = new PhxProp<Texture2D>(null);
-    public PhxProp<Color> LaserGlowColor = new PhxProp<Color>(Color.white);
-    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.black);
+    public PhxProp<Color> LaserGlowColor = new PhxProp<Color>(Color.red);
+    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.red);
     public PhxProp<float> LightRadius = new PhxProp<float>(1f);
     public PhxProp<float> LaserLength = new PhxProp<float>(1f);
     public PhxProp<float> LaserWidth = new PhxProp<float>(1f);
@@ -40,6 +40,7 @@ public class PhxBolt : PhxOrdnance
     LineRenderer Renderer;
 
 
+
     public override void Setup(IPhxWeapon Originator, Vector3 Pos, Quaternion Rot)
     {
         gameObject.SetActive(true);
@@ -55,40 +56,11 @@ public class PhxBolt : PhxOrdnance
         {
             Physics.IgnoreCollision(IgnoredCollider, Coll);
         }
-
-        TimeAlive = 0f;
     }
 
 
 
-    public override void Init(PhxOrdnanceClass OClass)
-    {
-        IsInitialized = true;
-
-        BoltClass = OClass as PhxBoltClass;
-
-
-        HDLightData.color = BoltClass.LightColor;
-
-
-        Renderer.startWidth = BoltClass.LaserWidth;
-        Renderer.endWidth = BoltClass.LaserWidth;
-        Renderer.SetPosition(1, new Vector3(0f, 0f, BoltClass.LaserLength * 2f));
-
-        Renderer.material.SetTexture("_UnlitColorMap", BoltClass.LaserTexture);
-        Renderer.material.SetTexture("_EmissiveColorMap", BoltClass.LaserTexture);
-        Renderer.material.SetColor("_EmissiveColor", BoltClass.LightColor.Get() * EmissionIntensity); 
-    }
-
-
-    protected override void Release()
-    {
-        gameObject.SetActive(false);
-    }
-
-
-
-    void Awake()
+    public override void Init()
     {
         EmissionIntensity = Mathf.Pow(2f, 20f);
 
@@ -99,8 +71,24 @@ public class PhxBolt : PhxOrdnance
         Renderer = GetComponent<LineRenderer>();
 
         gameObject.layer = LayerMask.NameToLayer("OrdnanceAll");
+
+        BoltClass = OrdnanceClass as PhxBoltClass;
+
+        HDLightData.color = BoltClass.LightColor;
+
+        Renderer.startWidth = BoltClass.LaserWidth;
+        Renderer.endWidth = BoltClass.LaserWidth;
+        Renderer.SetPosition(1, new Vector3(0f, 0f, BoltClass.LaserLength * 2f));
+
+        Renderer.material.SetTexture("_UnlitColorMap", BoltClass.LaserTexture);
+        Renderer.material.SetTexture("_EmissiveColorMap", BoltClass.LaserTexture);
+        Renderer.material.SetColor("_EmissiveColor", BoltClass.LightColor.Get() * EmissionIntensity); 
     }
 
+    public override void Destroy()
+    {
+        
+    }
 
     void OnCollisionEnter(Collision coll)
     {
@@ -117,7 +105,17 @@ public class PhxBolt : PhxOrdnance
 
             PhxExplosionManager.AddExplosion(null, BoltClass.ExplosionName.Get() as PhxExplosionClass, Pos, Rot);
 
-            Release();
+            ParentPool.Free(this);
         }
+    }
+
+    public override void Tick(float deltaTime)
+    {
+
+    }
+
+    public override void TickPhysics(float deltaTime)
+    {
+
     }
 }
