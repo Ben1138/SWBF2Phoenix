@@ -9,7 +9,7 @@ public class PhxBeamClass : PhxOrdnanceClass
 {
     public PhxProp<float> LaserWidth = new PhxProp<float>(5f);
     public PhxProp<Texture2D> LaserTexture = new PhxProp<Texture2D>(null);
-    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.white);
+    public PhxProp<Color> LightColor = new PhxProp<Color>(Color.red);
 
     public PhxProp<float> Range = new PhxProp<float>(100f);
 
@@ -22,7 +22,7 @@ public class PhxBeamClass : PhxOrdnanceClass
 
 
 [RequireComponent(typeof(LineRenderer), typeof(Light))]
-public class PhxBeam : PhxOrdnance
+public class PhxBeam : PhxOrdnance, IPhxTickable
 {
     static int BeamMask;
 
@@ -104,7 +104,7 @@ public class PhxBeam : PhxOrdnance
         IgnoredColliderLayers = null;
     }
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         // Probably need something more efficient
         if (IgnoredColliders != null)
@@ -136,10 +136,5 @@ public class PhxBeam : PhxOrdnance
                 IgnoredColliders[i].gameObject.layer = IgnoredColliderLayers[i];
             }
         }
-    }
-
-    public override void TickPhysics(float deltaTime)
-    {
-    
     }
 }

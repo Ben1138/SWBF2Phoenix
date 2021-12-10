@@ -9,7 +9,7 @@ using System.Runtime.ExceptionServices;
 
 using LibSWBF2.Enums;
 
-public class PhxHover : PhxVehicle
+public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
 {
     /*
     Pretty sure all the default values are correct.
@@ -475,7 +475,7 @@ public class PhxHover : PhxVehicle
 
         foreach (var section in Sections)
         {
-            section.Update();
+            section.Tick(deltaTime);
         }
 
 
@@ -775,14 +775,14 @@ public class PhxHover : PhxVehicle
     }
 
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick Hover");
         UpdateState(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }
 
-    public override void TickPhysics(float deltaTime)
+    public void TickPhysics(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick Hover Physics");
         UpdatePhysics(deltaTime);

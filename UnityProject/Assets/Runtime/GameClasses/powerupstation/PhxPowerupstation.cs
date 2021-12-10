@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
+public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>, IPhxTickable
 {
     public class ClassProperties : PhxClass
     {
@@ -183,7 +183,7 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
         return null;
     }
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         if (!IsInit) return;
 
@@ -277,11 +277,6 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
             }
             PowerupTimer = 0f;
         }
-    }
-
-    public override void TickPhysics(float deltaTime)
-    {
-
     }
 
     Transform FindChildRecursive(string name)

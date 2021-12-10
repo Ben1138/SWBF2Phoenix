@@ -31,7 +31,7 @@ reflection system and but will be limited to the parent vehicle.
 Each frame the parent vehicle will call Update() on each section. 
 */
 
-public abstract class PhxVehicleSection : IPhxTrackable
+public abstract class PhxVehicleSection : IPhxTrackable, IPhxTickable
 {    
     static PhxCamera CAM => PhxGameRuntime.GetCamera();
 
@@ -92,7 +92,7 @@ public abstract class PhxVehicleSection : IPhxTrackable
     }
 
 
-    public virtual void Update()
+    public virtual void Tick(float deltaTime)
     {
         PhxPawnController Controller;
         if (Occupant == null || ((Controller = Occupant.GetController()) == null)) 

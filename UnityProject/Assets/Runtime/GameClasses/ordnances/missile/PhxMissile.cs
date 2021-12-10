@@ -30,7 +30,7 @@ public class PhxMissileClass : PhxOrdnanceClass
 
 
 [RequireComponent(typeof(Rigidbody), typeof(Light))]
-public class PhxMissile : PhxOrdnance
+public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
 {
 
     // for heatseeking
@@ -137,12 +137,7 @@ public class PhxMissile : PhxOrdnance
         TrailEffect?.Stop();
     }
 
-    public override void Tick(float deltaTime)
-    {
-
-    }
-
-    public override void TickPhysics(float deltaTime)
+    public void TickPhysics(float deltaTime)
     {
         // Manual gravity, since it varies
         Body.AddForce(9.8f * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);

@@ -7,7 +7,7 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated
+public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated, IPhxTickable, IPhxTickablePhysics
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
@@ -463,14 +463,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         return null;
     }
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         Profiler.BeginSample("Tick Soldier");
         UpdateState(deltaTime);
         Profiler.EndSample();
     }
 
-    public override void TickPhysics(float deltaTime)
+    public void TickPhysics(float deltaTime)
     {
         Profiler.BeginSample("Tick Soldier Physics");
         UpdatePhysics(deltaTime);

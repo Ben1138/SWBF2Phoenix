@@ -36,14 +36,4 @@ public class PhxTEMPLATE : PhxInstance<PhxTEMPLATE.ClassProperties>
     {
         // this object's Team has been changed, e.g. through Lua
     }
-
-    public override void Tick(float deltaTime)
-    {
-
-    }
-
-    public override void TickPhysics(float deltaTime)
-    {
-
-    }
 }

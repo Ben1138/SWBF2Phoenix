@@ -64,9 +64,9 @@ public class PhxVehicleTurret : PhxVehicleSection
     }
 
 
-    public override void Update()
+    public override void Tick(float deltaTime)
     {
-        base.Update();
+        base.Tick(deltaTime);
 
         if (Occupant == null) return;
 

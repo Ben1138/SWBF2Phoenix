@@ -7,7 +7,7 @@ using System.Reflection;
 using LibSWBF2.Wrappers;
 
 // Has only instance properties, so no generic needed
-public class PhxVehicleSpawn : PhxInstance
+public class PhxVehicleSpawn : PhxInstance, IPhxTickable
 {
     PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
     PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
@@ -137,7 +137,7 @@ public class PhxVehicleSpawn : PhxInstance
     }
 
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         // ALL STATE CHANGE HANDLED HERE   
         if (SpawnState == PhxVehicleSpawnST.VehicleAwaitingSpawn)
@@ -165,12 +165,5 @@ public class PhxVehicleSpawn : PhxInstance
         {
             // 
         }
-    }
-
-    public override void TickPhysics(float deltaTime)
-    {
-        //Profiler.BeginSample("Tick Hover Physics");
-        //UpdatePhysics(deltaTime);
-        //Profiler.EndSample();
     }
 }
