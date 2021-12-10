@@ -108,14 +108,4 @@ public class PhxBolt : PhxOrdnance
             ParentPool.Free(this);
         }
     }
-
-    public override void Tick(float deltaTime)
-    {
-
-    }
-
-    public override void TickPhysics(float deltaTime)
-    {
-
-    }
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 using LibSWBF2.Wrappers;
 
-public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
+public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxTickable
 {
     PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
     PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
@@ -155,7 +155,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         }
     }
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         if (!bInitInstance) return;
 
@@ -230,11 +230,6 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
             }
             LastHoloPresence = HoloPresence;
         }
-    }
-
-    public override void TickPhysics(float deltaTime)
-    {
-
     }
 
     void AddToCapture(IPhxControlableInstance other)

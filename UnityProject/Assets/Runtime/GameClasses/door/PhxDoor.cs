@@ -115,7 +115,4 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
             }  
         }
     }
-
-    public override void Tick(float deltaTime){}
-    public override void TickPhysics(float deltaTime){}
 }

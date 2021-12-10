@@ -6,7 +6,7 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxArmedBuilding : PhxVehicle
+public class PhxArmedBuilding : PhxVehicle, IPhxTrackable, IPhxTickable
 {
     public class ClassProperties : PhxVehicleProperties{}
 
@@ -48,12 +48,9 @@ public class PhxArmedBuilding : PhxVehicle
     {
         if (TurretSection != null)
         {
-            TurretSection.Update();        
+            TurretSection.Tick(deltaTime);        
         }
     }
-
-    void UpdatePhysics(float deltaTime){}
-
 
     public override Vector3 GetCameraPosition()
     {
@@ -66,17 +63,10 @@ public class PhxArmedBuilding : PhxVehicle
     }
 
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick ArmedBuilding");
         UpdateState(deltaTime);
-        UnityEngine.Profiling.Profiler.EndSample();
-    }
-
-    public override void TickPhysics(float deltaTime)
-    {
-        UnityEngine.Profiling.Profiler.BeginSample("Tick ArmedBuilding Physics");
-        UpdatePhysics(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }
 }

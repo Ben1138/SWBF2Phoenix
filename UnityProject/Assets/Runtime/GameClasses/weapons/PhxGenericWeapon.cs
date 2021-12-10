@@ -17,7 +17,7 @@ public enum PhxWeaponState : int
 }
 
 
-public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, IPhxWeapon
+public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, IPhxWeapon, IPhxTickable
 {
 	protected PhxGameRuntime Game => PhxGameRuntime.Instance;
     protected PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
@@ -341,7 +341,7 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
         return 1f - ReloadDelay / C.ReloadTime;
     }
 
-    public override void Tick(float deltaTime)
+    public void Tick(float deltaTime)
     {
         if (WeaponState == PhxWeaponState.Reloading)
         {
@@ -379,6 +379,4 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
             }
         }
     }
-
-    public override void TickPhysics(float deltaTime){}
 }

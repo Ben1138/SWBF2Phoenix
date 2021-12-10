@@ -3,32 +3,41 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class PhxPool : IPhxInstantiable
+public class PhxPool : IPhxInstantiable, IPhxTickable, IPhxTickablePhysics
 {
     public bool IsInit => Objects != null;
+    public int ActiveCount => ActiveIndices.Count;
+    public int TotalCount => Objects.Length;
 
+    protected string Name;
     protected bool CallObjectInit = true;
     protected float GeneralLifeTime;
 
     protected IPhxInstantiable[] Objects;
-    bool[] InUse;
     float[] LifeTimes;
     
     Dictionary<IPhxInstantiable, int> ObjToIdx;
 
-    HashSet<int> TickablesIndices;
+    HashSet<int> ActiveIndices;
+    Queue<int> InactiveIndices;
+
+    HashSet<int> TickableIndices;
+    HashSet<int> TickablePhysicsIndices;
 
 
-    public PhxPool(int size, float generalLifeTime = float.PositiveInfinity)
+    public PhxPool(string name, int size, float generalLifeTime = float.PositiveInfinity)
     {
+        Name = name;
         Objects = new IPhxInstantiable[size];
-        InUse = new bool[size];
         LifeTimes = new float[size];
         ObjToIdx = new Dictionary<IPhxInstantiable, int>();
 
         GeneralLifeTime = generalLifeTime;
 
-        TickablesIndices = new HashSet<int>();
+        ActiveIndices = new HashSet<int>();
+        InactiveIndices = new Queue<int>();
+        TickableIndices = new HashSet<int>();
+        TickablePhysicsIndices = new HashSet<int>();
     }
 
     public virtual void Init()
@@ -36,8 +45,8 @@ public class PhxPool : IPhxInstantiable
         for (int i = 0; i < Objects.Length; ++i)
         {
             Objects[i] = ConstructObject();
-            InUse[i] = false;
             ObjToIdx.Add(Objects[i], i);
+            InactiveIndices.Enqueue(i);
         }
     }
 
@@ -62,24 +71,30 @@ public class PhxPool : IPhxInstantiable
     {
         Debug.Assert(IsInit);
 
-        // TODO: linear search is bad
-        for (int i = 0; i < Objects.Length; ++i)
+        if (InactiveIndices.Count == 0)
         {
-            if (!InUse[i])
-            {
-                InUse[i] = true;
-                LifeTimes[i] = GeneralLifeTime;
-                ObjectStateChanged(ref Objects[i], InUse[i]);
-
-                TickablesIndices.Add(i);
-
-                obj = Objects[i];
-                return true;
-            }
+            obj = default(IPhxInstantiable);
+            return false;
         }
 
-        obj = default(IPhxInstantiable);
-        return false;
+        int idx = InactiveIndices.Dequeue();
+
+        LifeTimes[idx] = GeneralLifeTime;
+        ObjectStateChanged(ref Objects[idx], true);
+
+        if (Objects[idx] is IPhxTickable)
+        {
+            TickableIndices.Add(idx);
+        }
+        if (Objects[idx] is IPhxTickablePhysics)
+        {
+            TickablePhysicsIndices.Add(idx);
+        }
+
+        ActiveIndices.Add(idx);
+        obj = Objects[idx];
+        return true;
+
     }
 
     public void Free(IPhxInstantiable obj)
@@ -88,39 +103,72 @@ public class PhxPool : IPhxInstantiable
 
         if (ObjToIdx.TryGetValue(obj, out int idx))
         {
-            InUse[idx] = false;
-            ObjectStateChanged(ref Objects[idx], InUse[idx]);
-            TickablesIndices.Remove(idx);
+            Free(idx);
             return;
         }
         Debug.LogWarning($"Tried to free unknown object '{obj}'!");
     }
 
-    public void Tick(float deltaTime)
+    protected void Free(int idx)
+    {
+        Debug.Assert(IsInit && idx >=0 && idx < Objects.Length);
+
+        ObjectStateChanged(ref Objects[idx], false);
+        ActiveIndices.Remove(idx);
+        TickableIndices.Remove(idx);
+        TickablePhysicsIndices.Remove(idx);
+        InactiveIndices.Enqueue(idx);
+        return;
+    }
+
+    public unsafe void Tick(float deltaTime)
     {
         if (Objects == null)
         {
             return;
         }
 
-        foreach (int idx in TickablesIndices)
+        const int MAX = 128;
+        int* toFree = stackalloc int[MAX];
+        int count = 0;
+
+        foreach (int idx in ActiveIndices)
         {
-            Objects[idx].Tick(deltaTime);
+            if (count >= MAX)
+            {
+                // Remaining will be freed next frame
+                Debug.LogWarning($"More than {MAX} instances to free in Pool in one Frame!");
+                break;
+            }
 
             LifeTimes[idx] -= deltaTime;
             if (LifeTimes[idx] <= 0f)
             {
-                InUse[idx] = false;
-                ObjectStateChanged(ref Objects[idx], InUse[idx]);
+                if (count < MAX)
+                {
+                    // Can't free here, since we want to continue
+                    // iterating the remaining active indices.
+                    // So let's remember all indices to free.
+                    toFree[count++] = idx;
+                }
             }
+            else if (TickableIndices.Contains(idx))
+            {
+                ((IPhxTickable)Objects[idx]).Tick(deltaTime);
+            }
+        }
+
+        for (int i = 0; i < count; ++i)
+        {
+            Free(toFree[i]);
         }
     }
 
     public void TickPhysics(float deltaTime)
     {
-        foreach (int idx in TickablesIndices)
+        foreach (int idx in TickablePhysicsIndices)
         {
-            Objects[idx].TickPhysics(deltaTime);
+            ((IPhxTickablePhysics)Objects[idx]).TickPhysics(deltaTime);
         }
     }
 
@@ -151,13 +199,13 @@ public class PhxComponentPool<T> : PhxPool where T : PhxComponent
     public GameObject Root { get; private set; }
     T Prefab;
 
-    public PhxComponentPool(T prefab, string rootName, int size, float maxLifeTime = float.PositiveInfinity)
-        : base(size, maxLifeTime)
+    public PhxComponentPool(T prefab, string name, int size, float maxLifeTime = float.PositiveInfinity)
+        : base(name, size, maxLifeTime)
     {
         Debug.Assert(prefab != null);
 
         Prefab = prefab;
-        Root = new GameObject(rootName);
+        Root = new GameObject(name);
     }
 
     public override void Init()
