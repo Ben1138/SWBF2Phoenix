@@ -128,12 +128,6 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
         
     }
 
-    public override void BindEvents()
-    {
-        
-    }
-
-
     public void SetFirePoint(Transform FP)
     {
         FirePoint = FP;
