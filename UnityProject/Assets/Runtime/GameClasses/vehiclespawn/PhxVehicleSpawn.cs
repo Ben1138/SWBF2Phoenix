@@ -32,27 +32,19 @@ public class PhxVehicleSpawn : PhxInstance
     public PhxProp<string> ClassHisDEF = new PhxProp<string>("");
     public PhxProp<string> ClassLocals = new PhxProp<string>("");
 
-
     public PhxProp<string> ControlZone = new PhxProp<string>("");
 
-    PhxCommandpost CommandPost;
+
+    public static int VehicleCount = 0;
+    public GameObject CurrentVehicle = null;
+
+    PhxCommandpost ControlCP;
+    float RespawnTimer = 0.0f;
 
 
     public override void Init()
     {
-        if (ControlZone.Get() == null) return;
-
-        var CommandPosts = Scene.GetCommandPosts();
-        foreach (var Post in CommandPosts)
-        {
-            if (Post.gameObject.name.Equals(ControlZone.Get(), StringComparison.OrdinalIgnoreCase))
-            {
-                CommandPost = Post;
-                Team = Post.Team;
-                break;
-            }
-        }
-
+        ControlZone.OnValueChanged += OnControlZoneChanged;
         RespawnTimer = 1.0f;
     }
 
@@ -61,45 +53,26 @@ public class PhxVehicleSpawn : PhxInstance
 
     }
 
-    public override void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties)
+    void OnControlZoneChanged(string oldVal)
     {
-        Type type = GetType();
-        MemberInfo[] members = type.GetMembers();
-
-        foreach (MemberInfo member in members)
+        if (string.IsNullOrEmpty(ControlZone.Get()))
         {
-            if (member.MemberType == MemberTypes.Field && typeof(IPhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
+            ControlCP = null;
+            return;
+        }
+
+        var CommandPosts = Scene.GetCommandPosts();
+        foreach (var Post in CommandPosts)
+        {
+            if (Post.gameObject.name.Equals(ControlZone.Get(), StringComparison.OrdinalIgnoreCase))
             {
-                IPhxPropRef refValue = (IPhxPropRef)type.GetField(member.Name).GetValue(this);
-                P.Register(member.Name, refValue);
+                ControlCP = Post;
+                break;
             }
         }
 
-        // make sure the instance is listening on property change events
-        // before assigning the actual instance property value
-        // BindEvents();
-
-        foreach (MemberInfo member in members)
-        {
-            if (member.MemberType == MemberTypes.Field && typeof(IPhxPropRef).IsAssignableFrom(type.GetField(member.Name).FieldType))
-            {
-                IPhxPropRef refValue = (IPhxPropRef)type.GetField(member.Name).GetValue(this);
-                PhxPropertyDB.AssignProp(instOrClass, member.Name, refValue);
-            }
-        }
+        RespawnTimer = 1.0f;
     }
-
-
-
-    public static int VehicleCount = 0;
-
-
-    public GameObject CurrentVehicle = null;
-
-
-    private float DecayTimer;
-    private float RespawnTimer = 0.0f;
-
 
     public enum PhxVehicleSpawnST
     {
@@ -111,37 +84,38 @@ public class PhxVehicleSpawn : PhxInstance
         NoVehicle
     }
 
-    private PhxVehicleSpawnST SpawnState = PhxVehicleSpawnST.VehicleAwaitingSpawn;
+    PhxVehicleSpawnST SpawnState = PhxVehicleSpawnST.VehicleAwaitingSpawn;
 
     
 
     PhxClass GetAppropriateVehicle()
     {
-        int index = Team.Get() - 1;
-        if (index < 0 || index > 1)
+        int teamIdx = ControlCP != null ? ControlCP.Team : Team;
+        teamIdx--;
+
+        if (teamIdx < 0 || teamIdx > 1)
         {
             return null;
         }
 
-        PhxRuntimeMatch.PhxTeam CPTeam = Match.Teams[index];
+        PhxRuntimeMatch.PhxTeam CPTeam = Match.Teams[teamIdx];
         string ClassName;
         switch (CPTeam.Name)
         {
             case "cis":
-                ClassName = Team == 1 ? ClassCISATK : ClassCISDEF;
+                ClassName = teamIdx == 0 ? ClassCISATK : ClassCISDEF;
                 break;
             case "rep":
-                ClassName = Team == 1 ? ClassRepATK : ClassRepDEF;
+                ClassName = teamIdx == 0 ? ClassRepATK : ClassRepDEF;
                 break;
             case "imp":
-                ClassName = Team == 1 ? ClassImpATK : ClassImpDEF;
+                ClassName = teamIdx == 0 ? ClassImpATK : ClassImpDEF;
                 break;
             case "all":
-                ClassName = Team == 1 ? ClassAllATK : ClassAllDEF;
+                ClassName = teamIdx == 0 ? ClassAllATK : ClassAllDEF;
                 break;
             default:
                 return null;
-                break;
         }
 
         return Scene.GetClass(ClassName);
@@ -163,18 +137,7 @@ public class PhxVehicleSpawn : PhxInstance
     }
 
 
-
-    void ApplyTeam(int oldTeam)
-    {
-        //if (Team == oldTeam)
-        //{
-        //    // nothing to do
-        //    return;
-        //}
-    }
-
-
-    void Update()
+    public override void Tick(float deltaTime)
     {
         // ALL STATE CHANGE HANDLED HERE   
         if (SpawnState == PhxVehicleSpawnST.VehicleAwaitingSpawn)
@@ -186,7 +149,7 @@ public class PhxVehicleSpawn : PhxInstance
 
                 SpawnState = PhxVehicleSpawnST.VehicleAwaitingUse;
             }
-            else 
+            else
             {
                 RespawnTimer -= Time.deltaTime;
             }
@@ -198,18 +161,10 @@ public class PhxVehicleSpawn : PhxInstance
                 //decay health
             }
         }
-        else 
+        else
         {
             // 
         }
-    }
-
-    public override void BindEvents(){}
-    public override void Tick(float deltaTime)
-    {
-        //Profiler.BeginSample("Tick Vehiclespawn");
-        //UpdateState(deltaTime);
-        //Profiler.EndSample();
     }
 
     public override void TickPhysics(float deltaTime)

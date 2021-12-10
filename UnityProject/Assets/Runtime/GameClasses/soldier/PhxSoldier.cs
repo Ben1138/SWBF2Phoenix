@@ -287,11 +287,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         
     }
 
-    public override void BindEvents()
-    {
-        
-    }
-
     public override void Fixate()
     {
         Destroy(Body);

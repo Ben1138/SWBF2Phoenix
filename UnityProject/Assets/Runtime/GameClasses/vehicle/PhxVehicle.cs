@@ -230,7 +230,6 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
 
 
     // Not sure if/how some of these should be implemented
-    public override void BindEvents(){}
     public override void Fixate(){}
     public override IPhxWeapon GetPrimaryWeapon(){ return null; }
     public void AddAmmo(float amount){}

@@ -8,8 +8,12 @@ using LibSWBF2.Wrappers;
 // Bare minimum requirements
 public interface IPhxInstantiable
 {
-    // Use this as constructor (MonoBehaviour constructors don't get called, and
-    // Awake() won't be called until next frame)
+    // Use this as constructor
+    // (MonoBehaviour constructors don't get called, and Awake() won't be called until next frame)
+    //
+    // Use this to add Components like Rigidbody, etc.
+    // and bind property change events.
+    // Will be called BEFORE instance properties assignments!
     public void Init();
 
     // Use this as destructor
@@ -39,16 +43,8 @@ public abstract class PhxInstance : PhxComponent
     public PhxProp<int> Team = new PhxProp<int>(0);
 
 
-    // Override this method in inheriting instance classes.
-    // In this method, bind your custom property events and implement
-    // the intended behaviour (e.g. Team.OnValueChanged)
-    public abstract void BindEvents();
-
-
     public virtual void InitInstance(ISWBFProperties instOrClass, PhxClass classProperties)
     {
-        Init();
-
         Type type = GetType();
         MemberInfo[] members = type.GetMembers();
 
@@ -61,9 +57,8 @@ public abstract class PhxInstance : PhxComponent
             }
         }
 
-        // make sure the instance is listening on property change events
-        // before assigning the actual instance property value
-        BindEvents();
+        // Call before property assignments, such that we can react to their initialization
+        Init();
 
         foreach (MemberInfo member in members)
         {

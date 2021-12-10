@@ -111,21 +111,18 @@ public class PhxPowerupstation : PhxInstance<PhxPowerupstation.ClassProperties>
             string nodeName = C.ActiveRotateNode.Values[i][0] as string;
             ActiveRotateNodes[i] = CreateRotationNode(nodeName, new Vector3(140f, 0f, 0f), new Vector3(220f, 0f, 0f), 100f);
         }
+
+        C.IdleRotateSpeed.OnValueChanged += (float _) => RootRotation.AnglesPerSec = C.IdleRotateSpeed;
+
+        EffectRegion.OnValueChanged += (PhxRegion _) => UpdateEffectRegion();
+        Radius.OnValueChanged += (float _) => UpdateEffectRegion();
+
+        // TODO: implement behaviour of remaining value changes
     }
 
     public override void Destroy()
     {
         
-    }
-
-    public override void BindEvents()
-    {
-        C.IdleRotateSpeed.OnValueChanged += (float _) => RootRotation.AnglesPerSec = C.IdleRotateSpeed;
-
-        EffectRegion.OnValueChanged += (PhxRegion _) => UpdateEffectRegion();
-        Radius.OnValueChanged       += (float _)  => UpdateEffectRegion();
-
-        // TODO: implement behaviour of remaining value changes
     }
 
     void UpdateEffectRegion()
