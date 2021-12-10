@@ -20,8 +20,12 @@ public class PhxRuntimeScene
 {
     public Texture2D MapTexture { get; private set; }
 
-    List<PhxInstance>    Instances    = new List<PhxInstance>();
-    List<PhxCommandpost> CommandPosts = new List<PhxCommandpost>();
+    List<PhxInstance>         Instances                = new List<PhxInstance>();
+
+    // Subsets of 'Instances'
+    List<IPhxTickable>        TickableInstances        = new List<IPhxTickable>();
+    List<IPhxTickablePhysics> TickablePhysicsInstances = new List<IPhxTickablePhysics>();
+    List<PhxCommandpost>      CommandPosts             = new List<PhxCommandpost>();
 
     Dictionary<string, PhxClass> Classes     = new Dictionary<string, PhxClass>();
     Dictionary<string, int>      InstanceMap = new Dictionary<string, int>();
@@ -314,6 +318,15 @@ public class PhxRuntimeScene
 
         UnityEngine.Object.Destroy(instance.gameObject);
         Instances.RemoveAt(idx);
+
+        if (instance is IPhxTickable)
+        {
+            TickableInstances.Remove((IPhxTickable)instance);
+        }
+        if (instance is IPhxTickablePhysics)
+        {
+            TickablePhysicsInstances.Remove((IPhxTickablePhysics)instance);
+        }
     }
 
     public PhxClass GetClass(string odfClassName)
@@ -342,17 +355,18 @@ public class PhxRuntimeScene
 
         // Update instances AFTER animation update!
         // Instances might adapt some bone transformations (e.g. PhxSoldier)
-        for (int i = 0; i < Instances.Count; ++i)
+        for (int i = 0; i < TickableInstances.Count; ++i)
         {
-            Instances[i].Tick(deltaTime);
+            TickableInstances[i].Tick(deltaTime);
         }
     }
 
     public void TickPhysics(float deltaTime)
     {
-        for (int i = 0; i < Instances.Count; ++i)
+        Projectiles.TickPhysics(deltaTime);
+        for (int i = 0; i < TickablePhysicsInstances.Count; ++i)
         {
-            Instances[i].TickPhysics(deltaTime);
+            TickablePhysicsInstances[i].TickPhysics(deltaTime);
         }
     }
 
@@ -434,6 +448,14 @@ public class PhxRuntimeScene
                 Debug.LogWarning($"Encountered instance of type '{odf.Name}' with no Name!");
             }
 
+            if (script is IPhxTickable)
+            {
+                TickableInstances.Add((IPhxTickable)script);
+            }
+            if (script is IPhxTickablePhysics)
+            {
+                TickablePhysicsInstances.Add((IPhxTickablePhysics)script);
+            }
             if (script is PhxCommandpost)
             {
                 CommandPosts.Add((PhxCommandpost)script);
@@ -481,6 +503,27 @@ public class PhxRuntimeScene
             array[i] = EditorGUIUtility.IconContent(baseName + (startIndex + i) + postFix);
         }
         return array;
+    }
+
+    public int GetInstanceCount()
+    {
+        return Instances.Count;
+    }
+    public int GetActiveProjectileCount()
+    {
+        return Projectiles.GetActiveCount();
+    }
+    public int GetTotalProjectileCount()
+    {
+        return Projectiles.GetTotalCount();
+    }
+    public int GetTickableCount()
+    {
+        return TickableInstances.Count;
+    }
+    public int GetTickablePhysicsCount()
+    {
+        return TickablePhysicsInstances.Count;
     }
 #endif
 }

@@ -28,7 +28,7 @@ public class PhxOrdnancePool : PhxComponentPool<PhxOrdnance>
     }
 }
 
-public class PhxProjectiles
+public class PhxProjectiles : IPhxTickable, IPhxTickablePhysics
 {
     PhxGameRuntime Game => PhxGameRuntime.Instance;
 
@@ -49,12 +49,6 @@ public class PhxProjectiles
 
     Dictionary<PhxOrdnanceClass, PhxOrdnancePool> PoolDB;
 
-    /*
-    To avoid calling Update() in more trivial types like bolts,
-    we can check lifetimes from here. 
-    */ 
-    List<PhxComponentPool<PhxOrdnance>> TickablePools;
-
     // This won't be needed when effects are integrated
     // PhxPool<ParticleSystem> Sparks;
 
@@ -63,7 +57,6 @@ public class PhxProjectiles
         ProjectileRoot = new GameObject("Projectiles");
     
         PoolDB = new Dictionary<PhxOrdnanceClass, PhxOrdnancePool>();
-        TickablePools = new List<PhxComponentPool<PhxOrdnance>>(); 
     }
 
     /*
@@ -112,7 +105,6 @@ public class PhxProjectiles
                 Pool = new PhxOrdnancePool(Game.BoltPrefab, OrdnanceClass, 20);
                 Pool.Init();
                 // To avoid Update() call in MonoBehavior
-                TickablePools.Add(Pool);
             }
             else 
             {
@@ -132,7 +124,6 @@ public class PhxProjectiles
 
     public void Destroy()
     {
-        TickablePools.Clear();
         PoolDB.Clear();
         GameObject.Destroy(ProjectileRoot);
     }
@@ -140,9 +131,38 @@ public class PhxProjectiles
 
     public void Tick(float deltaTime)
     {
-        foreach (PhxComponentPool<PhxOrdnance> TickablePool in TickablePools)
+        foreach (var entry in PoolDB)
         {
-            TickablePool.Tick(deltaTime);
+            entry.Value.Tick(deltaTime);
         }
     }
+
+    public void TickPhysics(float deltaTime)
+    {
+        foreach (var entry in PoolDB)
+        {
+            entry.Value.TickPhysics(deltaTime);
+        }
+    }
+
+#if UNITY_EDITOR
+    public int GetActiveCount()
+    {
+        int count = 0;
+        foreach (var entry in PoolDB)
+        {
+            count += entry.Value.ActiveCount;
+        }
+        return count;
+    }
+    public int GetTotalCount()
+    {
+        int count = 0;
+        foreach (var entry in PoolDB)
+        {
+            count += entry.Value.TotalCount;
+        }
+        return count;
+    }
+#endif
 }

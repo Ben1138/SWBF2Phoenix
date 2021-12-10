@@ -18,23 +18,29 @@ public interface IPhxInstantiable
 
     // Use this as destructor
     public void Destroy();
+}
 
+public interface IPhxTickable
+{
     public void Tick(float deltaTime);
+}
+
+public interface IPhxTickablePhysics
+{
     public void TickPhysics(float deltaTime);
 }
 
-// Use this whenever we're dealing with a Unity Component attached to a GameObject in general
+// Use this whenever we're dealing with a Unity Component attached to a GameObject in general.
+// From here on, instances of all inheriting classes are poolable.
 public abstract class PhxComponent : MonoBehaviour, IPhxInstantiable
 {
     public PhxPool ParentPool;
 
     public abstract void Init();
     public abstract void Destroy();
-    public abstract void Tick(float deltaTime);
-    public abstract void TickPhysics(float deltaTime);
 }
 
-// Use this when we're dealing with instances, that contain properties that are exposed to Lua
+// Use this when we're dealing with instances that contain reflected properties that are exposed to Lua
 public abstract class PhxInstance : PhxComponent
 {
     public PhxPropertyDB P { get; private set; } = new PhxPropertyDB();
