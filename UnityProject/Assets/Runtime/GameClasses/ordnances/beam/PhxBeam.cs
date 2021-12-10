@@ -35,8 +35,6 @@ public class PhxBeam : PhxOrdnance, IPhxTickable
     Light Light;
     HDAdditionalLightData HDLightData;
 
-    float EmissionIntensity = 25f;
-
     List<Collider> IgnoredColliders;
     List<int> IgnoredColliderLayers;
 
@@ -45,8 +43,6 @@ public class PhxBeam : PhxOrdnance, IPhxTickable
     {
         Light = GetComponent<Light>();
         HDLightData = GetComponent<HDAdditionalLightData>();
-
-        EmissionIntensity = Mathf.Pow(2f, 20f);
 
         Renderer = GetComponent<LineRenderer>();
 
@@ -62,12 +58,10 @@ public class PhxBeam : PhxOrdnance, IPhxTickable
         
         HDLightData.color = BeamClass.LightColor;
         
-        Renderer.startWidth = BeamClass.LaserWidth;
-        Renderer.endWidth = BeamClass.LaserWidth;
+        Renderer.startWidth = BeamClass.LaserWidth / 4f;
+        Renderer.endWidth = BeamClass.LaserWidth / 4f;
 
-        Renderer.material.SetTexture("_UnlitColorMap", BeamClass.LaserTexture);
-        Renderer.material.SetTexture("_EmissiveColorMap", BeamClass.LaserTexture);
-        Renderer.material.SetColor("_EmissiveColor", BeamClass.LightColor.Get() * EmissionIntensity);
+        Renderer.material.SetTexture("Texture2D_4b993fc71878406c81c86faac6196312", BeamClass.LaserTexture);
     }
 
 

@@ -30,7 +30,7 @@ public class PhxBolt : PhxOrdnance
     public BoxCollider Coll { get; private set; }
     public Action<PhxBolt, Collision> OnHit;
 
-    float EmissionIntensity = 25f;
+    float EmissionIntensity = Mathf.Pow(2f, 25f);
 
     Rigidbody Body;
 
@@ -62,8 +62,6 @@ public class PhxBolt : PhxOrdnance
 
     public override void Init()
     {
-        EmissionIntensity = Mathf.Pow(2f, 20f);
-
         Coll = GetComponent<BoxCollider>();
         Body = GetComponent<Rigidbody>();
         Light = GetComponent<Light>();
