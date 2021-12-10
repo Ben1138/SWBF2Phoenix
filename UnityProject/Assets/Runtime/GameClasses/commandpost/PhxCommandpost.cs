@@ -61,27 +61,6 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
     float HoloPresenceVel;
     float LastHoloPresence;
 
-
-    public override void BindEvents()
-    {
-        Team.OnValueChanged += ApplyTeam;
-        CaptureRegion.OnValueChanged += (PhxRegion oldRegion) =>
-        {
-            if (oldRegion != null)
-            {
-                oldRegion.OnEnter -= AddToCapture;
-                oldRegion.OnLeave -= RemoveFromCapture;
-            }
-
-            PhxRegion newRegion = CaptureRegion.Get();
-            if (newRegion != null)
-            {
-                newRegion.OnEnter += AddToCapture;
-                newRegion.OnLeave += RemoveFromCapture;
-            }
-        };
-    }
-
     public override void Init()
     {
         Transform hpHolo = transform.Find(string.Format("{0}/hp_hologram", C.Name));
@@ -125,6 +104,24 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>
         AudioAction.rolloffMode = AudioRolloffMode.Linear;
         AudioAction.minDistance = 2.0f;
         AudioAction.maxDistance = 30.0f;
+
+
+        Team.OnValueChanged += ApplyTeam;
+        CaptureRegion.OnValueChanged += (PhxRegion oldRegion) =>
+        {
+            if (oldRegion != null)
+            {
+                oldRegion.OnEnter -= AddToCapture;
+                oldRegion.OnLeave -= RemoveFromCapture;
+            }
+
+            PhxRegion newRegion = CaptureRegion.Get();
+            if (newRegion != null)
+            {
+                newRegion.OnEnter += AddToCapture;
+                newRegion.OnLeave += RemoveFromCapture;
+            }
+        };
     }
 
     public override void Destroy()
