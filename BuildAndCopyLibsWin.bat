@@ -22,21 +22,9 @@ rem By default, MSBuild.exe is not in PATH, so we need to find it ourselfs using
 for /F "tokens=*" %%a in ('%vswhere% -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe') do (set MsBuild=%%a)
 
 
-rem Check if submodules are initialized
+rem Check if submodule is initialized
 if not exist LibSWBF2\LibSWBF2 (
     echo Could not find LibSWBF2 submodule!
-    echo Did you initialized submodules?
-    pause
-    exit
-)
-if not exist LibSWBF2\ThirdParty\fmt (
-    echo Could not find fmt submodule!
-    echo Did you initialized submodules?
-    pause
-    exit
-)
-if not exist LibSWBF2\ThirdParty\glm (
-    echo Could not find glm submodule!
     echo Did you initialized submodules?
     pause
     exit
