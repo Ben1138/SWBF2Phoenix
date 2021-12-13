@@ -46,7 +46,7 @@ cmake --build "${build_dir}" --target all --parallel -- -j $numThreads
 
 
 # Build LibSWBF2 .NET wrapper
-msbuild "${repopath}/LibSWBF2/LibSWBF2.NET/LibSWBF2.NET.csproj" -verbosity:minimal /t:Rebuild /p:Platform="x64" /p:configuration=${mode}
+msbuild "${repopath}/LibSWBF2/LibSWBF2.NET/LibSWBF2.NET.csproj" -verbosity:minimal /t:Rebuild /p:Platform="x64" /p:DefineConstants=UNIX /p:configuration=${mode}
 
 
 # OS specific lua build and lib copy

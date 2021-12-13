@@ -12,7 +12,12 @@ using luaL_Buffer_ptr = System.IntPtr;
 
 public static class LuaWrapper
 {
-    const string LIB_NAME = "lua50-swbf2-x64.dll";
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+    const string LIB_NAME = "lua50-swbf2-x64";
+#endif
+#if UNITY_EDITOR_LINUX || UNITY_EDITOR_OSX || UNITY_STANDALONE_LINUX || UNITY_STANDALONE_OSX
+    const string LIB_NAME = "liblua50";
+#endif
 
     /* 
 	** ===============================================================
