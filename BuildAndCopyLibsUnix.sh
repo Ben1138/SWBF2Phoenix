@@ -56,7 +56,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 
 	echo "Copy Linux libs"
 	cp "${build_dir}/libSWBF2.so" "${unity_lib_dir}"
-    cp "${repopath}/lua5.0-swbf2-x64/bin/liblua50.so" "${unity_lib_dir}"
+    cp "${repopath}/lua5.0-swbf2-x64/bin/liblua50-swbf2-x64.so" "${unity_lib_dir}"
 
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	echo "Building lua for Mac"
@@ -64,7 +64,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 
 	echo "Copying Mac libs"
 	cp "${build_dir}/libSWBF2.dylib" "${unity_lib_dir}"
-	cp "${repopath}/lua5.0-swbf2-x64/bin/liblua50.dylib" "${unity_lib_dir}"
+	cp "${repopath}/lua5.0-swbf2-x64/bin/liblua50-swbf2-x64.dylib" "${unity_lib_dir}"
 else
 	echo "ERROR: Unknown platform: $OSTYPE"
 	exit
