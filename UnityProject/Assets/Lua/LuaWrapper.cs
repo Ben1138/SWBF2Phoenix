@@ -16,7 +16,7 @@ public static class LuaWrapper
     const string LIB_NAME = "lua50-swbf2-x64";
 #endif
 #if UNITY_EDITOR_LINUX || UNITY_EDITOR_OSX || UNITY_STANDALONE_LINUX || UNITY_STANDALONE_OSX
-    const string LIB_NAME = "liblua50";
+    const string LIB_NAME = "liblua50-swbf2-x64";
 #endif
 
     /* 

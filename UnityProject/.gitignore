@@ -74,6 +74,8 @@ crashlytics-build.properties
 # Ignore compiled libs
 *.dll
 *.pdb
+*.so
+*.dylib
 
 # Ignore build folder
 .Build
