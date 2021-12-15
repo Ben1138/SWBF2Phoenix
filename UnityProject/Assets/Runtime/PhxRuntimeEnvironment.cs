@@ -8,7 +8,7 @@ using LibSWBF2.Wrappers;
 
 /*
  * Phases of PhxRuntimeEnvironment:
- * 
+ *     
  * 1. Init                          Environment is created, with base LVLs scheduled and ready to load. Base LVLs are:
  *                                      - core.lvl
  *                                      - shell.lvl
@@ -262,6 +262,10 @@ public class PhxRuntimeEnvironment
 
     public SWBF2Handle ScheduleRel(PhxPath relPath, string[] subLVLs = null, bool bNoFallback = false)
     {
+        // Relative paths are always lower case in consideration of Unix file systems.
+        // Also see PhxGameRuntime::Awake()
+        relPath = relPath.ToString().ToLower();
+
         SWBF2Handle handle;
         if (Schedule(Path / relPath, out handle, subLVLs) || bNoFallback)
         {
