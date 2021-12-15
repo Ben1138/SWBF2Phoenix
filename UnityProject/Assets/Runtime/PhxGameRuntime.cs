@@ -1,3 +1,7 @@
+#if UNITY_EDITOR_OSX || UNITY_EDITOR_LINUX || UNITY_STANDALONE_OSX || UNITY_STANDALONE_LINUX
+    #define UNIX
+#endif
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +13,9 @@ using LibLog = LibSWBF2.Logging.Logger;
 using LibLogEntry = LibSWBF2.Logging.LoggerEntry;
 using ELibLogType = LibSWBF2.Logging.ELogType;
 
+#if UNIX
+using System.IO;
+#endif
 
 
 public class PhxGameRuntime : MonoBehaviour
@@ -82,6 +89,8 @@ public class PhxGameRuntime : MonoBehaviour
     // contains mapluafile strings, e.g. cor1c_con
     List<string> MapRotation = new List<string>();
     int MapRotationIdx = -1;
+
+
 
     // Do not call Destroy on destruction in Editor!
     // For some reason, when switching between Edit and Play mode,
@@ -472,6 +481,42 @@ public class PhxGameRuntime : MonoBehaviour
             UIAudio[i] = audioObj.AddComponent<AudioSource>();
             UIAudio[i].outputAudioMixerGroup = UIAudioMixer;
         }
+
+#if UNIX
+        if (PlayerPrefs.GetInt("PhoenixUnixRename") == 0)
+        {
+            // For Unix, ensure all folder- and file names are all lower case, starting from 'GameData'
+            void LowerCaseRecursive(PhxPath p)
+            {
+                string[] files = Directory.GetFiles(p);
+                for (int i = 0; i < files.Length; ++i)
+                {
+                    string fileName = new PhxPath(files[i]).GetLeaf();
+                    if (fileName.ToLower() != fileName)
+                    {
+                        File.Move(p / fileName, p / fileName.ToLower());
+                        Debug.Log($"Renamed '{p / fileName}' to '{p / fileName.ToLower()}'");
+                    }
+                }
+
+                string[] subDirs = Directory.GetDirectories(p);
+                for (int i = 0; i < subDirs.Length; ++i)
+                {
+                    string dirName = new PhxPath(subDirs[i]).GetLeaf();
+                    if (dirName.ToLower() != dirName)
+                    {
+                        Directory.Move(p / dirName, p / dirName.ToLower());
+                        Debug.Log($"Renamed '{p / dirName}' to '{p / dirName.ToLower()}'");
+                    }
+
+                    LowerCaseRecursive(p / dirName.ToLower());
+                }
+            }
+            LowerCaseRecursive(GamePath / "GameData");
+            PlayerPrefs.SetInt("PhoenixUnixRename", 1);
+        }
+
+#endif
 
         Init();
     }
