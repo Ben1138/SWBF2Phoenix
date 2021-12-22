@@ -187,12 +187,25 @@ public class PhxRuntimeEnvironment
     public bool Execute(string scriptName)
     {
         Debug.Assert(CanExecute);
+        
         Script script = EnvCon.Get<Script>(scriptName);
-        if (script == null || !script.IsValid())
+        if (script == null)
+        {
+            script = EnvCon.Get<Script>(scriptName.ToLower());
+        }
+
+        if (script == null)
         {
             Debug.LogErrorFormat("Couldn't find script '{0}'!", scriptName);
             return false;
         }
+
+        if (!script.IsValid())
+        {
+            Debug.LogErrorFormat("Script '{0}' found but invalid!", scriptName);
+            return false;
+        }
+
         return Execute(script);
     }
 
