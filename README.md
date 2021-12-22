@@ -25,7 +25,7 @@ This project aims for full compatibility with the vanilla game files, and as bes
 * Unity 2020.3.x
 
 ### Build steps
-1. Clone the repository to a directory of your choice using `git clone https://github.com/Ben1138/SWBF2Phoenix --recurse-submodules`. If your forgot to clone without submodules, do `git submodule update --init`
+1. Clone the repository to a directory of your choice using `git clone https://github.com/Ben1138/SWBF2Phoenix --recurse-submodules`. If your forgot to clone with submodules, do `git submodule update --init`
 2. Execute `BuildAndCopyLibsWin.bat` (double click)
 3. Choose your build type. For now, Debug is recommended
 4. Choose the number of threads used for compilation. Recommended is the number of your CPU cores.
@@ -49,7 +49,7 @@ This project aims for full compatibility with the vanilla game files, and as bes
 * Unity 2020.3.x
 
 ### Build steps
-1. Clone the repository to a directory of your choice using `git clone https://github.com/Ben1138/SWBF2Phoenix --recurse-submodules`. If your forgot to clone without submodules, do `git submodule update --init`
+1. Clone the repository to a directory of your choice using `git clone https://github.com/Ben1138/SWBF2Phoenix --recurse-submodules`. If your forgot to clone with submodules, do `git submodule update --init`
 2. [ARCH USERS ONLY] If you're on an Arch based system, the current mono package is not correctly installed, which will cause to `LibSWBF2.NET.dll` to not build. Run `arch_mono_4.5_fix.sh` to fix that issue
 3. Execute `BuildAndCopyLibsUnix.sh` in your terminal
 3. Choose your build type. For now, Debug is recommended
