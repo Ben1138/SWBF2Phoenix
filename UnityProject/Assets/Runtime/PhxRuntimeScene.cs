@@ -94,7 +94,7 @@ public class PhxRuntimeScene
 
     public PhxRegion GetRegion(string name)
     {
-        if (Regions.TryGetValue(name, out PhxRegion region))
+        if (Regions.TryGetValue(name.ToLower(), out PhxRegion region))
         {
             return region;
         }
@@ -202,16 +202,20 @@ public class PhxRuntimeScene
             regionsRoot.transform.parent = worldRoot.transform;
             foreach (var region in WorldLoader.Instance.LoadedRegions)
             {
-                if (!Regions.ContainsKey(region.Key))
+                string regName = region.Key.ToLower();
+                if (Regions.ContainsKey(regName))
                 {
-                    PhxRegion reg = region.Value.gameObject.AddComponent<PhxRegion>();
-
-                    // invoke Lua events
-                    reg.OnEnter += (IPhxControlableInstance obj) => PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnEnterRegion, region.Key, region.Key, obj.GetInstance().name);
-                    reg.OnLeave += (IPhxControlableInstance obj) => PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnLeaveRegion, region.Key, region.Key, obj.GetInstance().name);
-
-                    Regions.Add(region.Key, reg);
+                    Debug.LogWarning($"Region '{regName}' already registered!");
+                    continue;
                 }
+
+                PhxRegion reg = region.Value.gameObject.AddComponent<PhxRegion>();
+
+                // invoke Lua events
+                reg.OnEnter += (IPhxControlableInstance obj) => PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnEnterRegion, regName, regName, obj.GetInstance().name);
+                reg.OnLeave += (IPhxControlableInstance obj) => PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnLeaveRegion, regName, regName, obj.GetInstance().name);
+
+                Regions.Add(regName, reg);
             }
 
             //Instances
