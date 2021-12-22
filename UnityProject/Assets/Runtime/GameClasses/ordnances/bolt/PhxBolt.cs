@@ -74,8 +74,8 @@ public class PhxBolt : PhxOrdnance
 
         HDLightData.color = BoltClass.LightColor;
 
-        Renderer.startWidth = BoltClass.LaserWidth;
-        Renderer.endWidth = BoltClass.LaserWidth;
+        Renderer.startWidth = BoltClass.LaserWidth / 2f;
+        Renderer.endWidth = BoltClass.LaserWidth / 2f;
         Renderer.SetPosition(1, new Vector3(0f, 0f, BoltClass.LaserLength * 2f));
 
         Renderer.material.SetTexture("_UnlitColorMap", BoltClass.LaserTexture);
