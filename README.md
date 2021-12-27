@@ -78,6 +78,6 @@ The Terrain has no shader and just appears in purple.
 
 # Legal Notice
 
-Please note that this game is neither developed by, nor endorsed by LucasArts, Lucasfilm Games or its parent company Disney.
+Please note that this re-implementation is neither developed by, nor endorsed by LucasArts, Lucasfilm Games or its parent company Disney.
 
 This project does not distribute any original game files, neither full nor partial, and does not include any other Assets that might belong to the trade mark "Star Wars" in any way.
