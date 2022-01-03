@@ -34,19 +34,21 @@ public class PhxLeafPatchClass : PhxClass
 
 
 // TODO: Custom leafpatch shader
-[RequireComponent(typeof(ParticleSystem))]
 public class PhxLeafPatch : PhxInstance<PhxLeafPatchClass>
 {
     ParticleSystem Leaves;
-
-    bool UseHDRP = false;
 
     // Will also need trigger coll and timer for emitting birds/falling leaves.
 
 
     public override void Init()
     {   
-        Leaves = GetComponent<ParticleSystem>();
+        if (C.Texture.Get() == null)
+        {
+            return;
+        }
+    
+        Leaves = gameObject.AddComponent<ParticleSystem>();
         Leaves.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
         ParticleSystemRenderer LeavesRenderer = GetComponent<ParticleSystemRenderer>();
@@ -76,29 +78,14 @@ public class PhxLeafPatch : PhxInstance<PhxLeafPatchClass>
         //colModule.enabled = true;
         //colModule.color = new ParticleSystem.MinMaxGradient(MinColor, MaxColor);
 
-        LeavesRenderer.alignment = ParticleSystemRenderSpace.View;
+        LeavesRenderer.alignment = ParticleSystemRenderSpace.Facing;
+        LeavesRenderer.minParticleSize = .000001f;
+        LeavesRenderer.maxParticleSize = 999999f;
 
-        if (C.Texture.Get() == null)
-        {
-            LeavesRenderer.enabled = false;
-        }
-        else 
-        {
-            Material mat = null;
-            if (!UseHDRP)
-            {
-                mat = new Material(Resources.Load<Material>("effects/ParticleNormal"));
-                mat.mainTexture = C.Texture.Get();               
-            }
-            else 
-            {
-                mat = new Material(Resources.Load<Material>("effects/HDRPParticleNormal"));
-                var mainTexID = Shader.PropertyToID("Texture2D_23DD87FD");
-                mat.SetTexture(mainTexID, C.Texture.Get());                    
-            }
-
-            LeavesRenderer.sharedMaterial = mat;
-        }
+        Material mat = new Material(Resources.Load<Material>("effects/HDRPParticleNormal"));
+        var mainTexID = Shader.PropertyToID("Texture2D_23DD87FD");
+        mat.SetTexture(mainTexID, C.Texture.Get());  
+        LeavesRenderer.sharedMaterial = mat;
 
         byte ByteAlpha = (byte) (255f * C.Alpha);
 
