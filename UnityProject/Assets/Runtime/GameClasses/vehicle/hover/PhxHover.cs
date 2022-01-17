@@ -69,32 +69,6 @@ public class PhxHover : PhxVehicle
         Vector2 TexOffset = Vector2.zero;
 
 
-        public PhxHoverWheel(Material WheelMat)
-        {
-            WheelMaterial = WheelMat;
-
-            int BaseColorMapID = Shader.PropertyToID("_BaseColorMap");
-            int UnlitColorMapID = Shader.PropertyToID("_UnlitColorMap");
-            int MainTextureID = Shader.PropertyToID("_MainTexture");
-
-            if (WheelMaterial.HasProperty(BaseColorMapID))
-            {
-                PropertyID = BaseColorMapID;
-            }
-            else if (WheelMaterial.HasProperty(UnlitColorMapID))
-            {
-                PropertyID = UnlitColorMapID;
-            }
-            else if (WheelMaterial.HasProperty(MainTextureID))
-            {
-                PropertyID = MainTextureID;
-            }
-            else 
-            {
-                PropertyID = -1;
-            }
-        }
-
         public override string ToString()
         {
             return String.Format("WheelMaterial: {0} Vel Factors: {1} Turn Factors: {2}", WheelMaterial.name, VelocityFactor.ToString("F2"), TurnFactor.ToString("F2"));

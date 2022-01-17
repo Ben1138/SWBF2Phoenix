@@ -418,9 +418,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78d15e63002497340882c6c017ee0810, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GamePathString: /Volumes/boot/Game
+  GamePathString: 
   Language: english
-  StartupBehaviour: 1
+  StartupBehaviour: 0
   StartupSWBF2Map: kas2c_con
   StartupUnityScene: PhxVehicleTesting
   InfiniteAmmo: 0
@@ -438,7 +438,6 @@ MonoBehaviour:
   BoltPrefab: {fileID: 6623684661408825687, guid: 8cbe153bab125594c866af47d533539f, type: 3}
   BeamPrefab: {fileID: -7815452322436354814, guid: a96069e94b7e39541a586f7d9be2b127, type: 3}
   MissionListPath: 
-  MissionListPath: /Volumes/boot/bf2modding/assets/Shell/scripts/missionlist.lua
 --- !u!4 &1641162174
 Transform:
   m_ObjectHideFlags: 0
