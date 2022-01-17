@@ -26,7 +26,6 @@ public sealed class PhxPropertyDB
 
     public void Register<T>(string propName, T variable) where T : IPhxPropRef
     {
-        //Properties.Add(propName.ToLowerInvariant(), variable);
         Properties[propName.ToLowerInvariant()] = variable;
     }
 
@@ -96,6 +95,10 @@ public sealed class PhxPropertyDB
         {
             outVal = Convert.ChangeType(RTS.GetPath(value), destType, CultureInfo.InvariantCulture);
         }
+        else if (destType == typeof(Vector4))
+        {
+            outVal = PhxUtils.Vec4FromString(value); 
+        }
         else if (destType == typeof(Vector3))
         {
             outVal = PhxUtils.Vec3FromString(value); 
@@ -126,22 +129,38 @@ public sealed class PhxPropertyDB
             else
             {
                 Color outCol = new Color();
-                outCol.r = float.Parse(vals[0], System.Globalization.CultureInfo.InvariantCulture) / 255f;
-                outCol.g = float.Parse(vals[1], System.Globalization.CultureInfo.InvariantCulture) / 255f;
-                outCol.b = float.Parse(vals[2], System.Globalization.CultureInfo.InvariantCulture) / 255f;
+                outCol.r = PhxUtils.FloatFromString(vals[0]) / 255f;
+                outCol.g = PhxUtils.FloatFromString(vals[1]) / 255f;
+                outCol.b = PhxUtils.FloatFromString(vals[2]) / 255f;
                 outCol.a = 1f;
 
                 if (vals.Length == 4)
                 {
-                    outCol.a = float.Parse(vals[0]) / 255f;
+                    outCol.a = PhxUtils.FloatFromString(vals[0]) / 255f;
                 }
 
                 outVal = outCol;
             }
         }
+        else if (destType == typeof(int))
+        {
+            float floatVal = PhxUtils.FloatFromString(value);
+            outVal = (int) floatVal;
+        }
+        else if (destType == typeof(float))
+        {
+            outVal = PhxUtils.FloatFromString(value);                       
+        }
         else
         {
-            outVal = Convert.ChangeType(value, destType, CultureInfo.InvariantCulture);
+            try {
+                outVal = Convert.ChangeType(value, destType, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Debug.LogErrorFormat("Failed to convert string {0} to type {1}...", value, destType.ToString());
+                outVal = 0;
+            }
         }
         return outVal;
     }

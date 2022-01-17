@@ -611,6 +611,13 @@ public static class PhxLuaAPI
 		
 	}
 
+	public static void FillAsteroidRegion(string regionName, string asteroidClass, int numAsteroids, 
+										float u0, float u1, float u2, 
+										float v0, float v1, float v2)
+	{
+
+	}
+
 	public static void EnableSPHeroRules()
 	{
 		
@@ -629,6 +636,7 @@ public static class PhxLuaAPI
 	public static void SetProperty(string instName, string propName, object propValue)
 	{
 		PhxRuntimeScene scene = PhxGameRuntime.GetScene();
+		// Debug.LogFormat("Setting property: {0} of instance: {1} to value: {2}", propName, instName, propValue);
 		scene?.SetProperty(instName, propName, propValue);
 	}
 
@@ -1071,7 +1079,15 @@ public static class PhxLuaAPI
 			path = path.Remove(0, 3);
 		}
 
-		//Debug.LogFormat("Called ReadDataFile with {0} arguments, path '{1}'", subLVLs.Count, path);
+		/*
+		string subLVLsStr = "";
+		foreach (string subLVL in subLVLs)
+		{
+			subLVLsStr += (subLVL + ", ");
+		}
+		Debug.LogFormat("Called ReadDataFile from path: '{0}' with subLVLs: {1}", path, subLVLsStr);
+		*/
+
 		ENV.ScheduleRel(path, subLVLs.ToArray(), bForceAddon);
 	}
 

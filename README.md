@@ -22,7 +22,7 @@ This project aims for full compatibility with the vanilla game files, and as bes
         * .NET SDK (should be selected by default)
         * MSBuild (should be selected by default)
 * CMake 3.16 or above. Must be included in PATH!
-* Unity 2020.3.x
+* Unity 2020.3.x with *Windows Build Support (IL2CPP)*
 
 ### Build steps
 1. Clone the repository to a directory of your choice using `git clone https://github.com/Ben1138/SWBF2Phoenix --recurse-submodules`. If your forgot to clone with submodules, do `git submodule update --init`
@@ -46,7 +46,7 @@ This project aims for full compatibility with the vanilla game files, and as bes
 ### Installation Requirements
 * Install via your respective package manager (e.g. `pacman` or `apt`):
     `git gcc make cmake mono msbuild`
-* Unity 2020.3.x
+* Unity 2020.3.x with *Linux Build Support (IL2CPP)*
 
 ### Build steps
 1. Clone the repository to a directory of your choice using `git clone https://github.com/Ben1138/SWBF2Phoenix --recurse-submodules`. If your forgot to clone with submodules, do `git submodule update --init`
@@ -78,6 +78,6 @@ The Terrain has no shader and just appears in purple.
 
 # Legal Notice
 
-Please note that this game is neither developed by, nor endorsed by LucasArts, Lucasfilm Games or its parent company Disney.
+Please note that this re-implementation is neither developed by, nor endorsed by LucasArts, Lucasfilm Games or its parent company Disney.
 
 This project does not distribute any original game files, neither full nor partial, and does not include any other Assets that might belong to the trade mark "Star Wars" in any way.

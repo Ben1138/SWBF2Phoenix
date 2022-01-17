@@ -94,7 +94,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
 
     // Vehicle related fields
-    PhxVehicleSection CurrentSection;
+    PhxSeat CurrentSection;
     PhxPoser Poser;
 
 
@@ -401,7 +401,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     }
 
 
-    public void SetPilot(PhxVehicleSection section)
+    public void SetPilot(PhxSeat section)
     {
         Context = PhxSoldierContext.Pilot;
         CurrentSection = section;
