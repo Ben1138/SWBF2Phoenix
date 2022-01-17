@@ -9,7 +9,7 @@ using System.Runtime.ExceptionServices;
 
 using LibSWBF2.Enums;
 
-public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
+public class PhxHover : PhxVehicle
 {
     /*
     Pretty sure all the default values are correct.
@@ -52,7 +52,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         	Length = Scale;
         }
 
-        public string ToString()
+        public override string ToString()
         {
             return String.Format("Position: {0}, Scale: {1}, Length: {2}", Position.ToString("F2"), Scale, Length);
         }
@@ -67,37 +67,8 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         public Material WheelMaterial;
 
         Vector2 TexOffset = Vector2.zero;
-        int PropertyID;
 
-
-        public PhxHoverWheel(Material WheelMat)
-        {
-            WheelMaterial = WheelMat;
-
-            int BaseColorMapID = Shader.PropertyToID("_BaseColorMap");
-            int UnlitColorMapID = Shader.PropertyToID("_UnlitColorMap");
-            int MainTextureID = Shader.PropertyToID("_MainTexture");
-
-            if (WheelMaterial.HasProperty(BaseColorMapID))
-            {
-                PropertyID = BaseColorMapID;
-            }
-            else if (WheelMaterial.HasProperty(UnlitColorMapID))
-            {
-                PropertyID = UnlitColorMapID;
-            }
-            else if (WheelMaterial.HasProperty(MainTextureID))
-            {
-                PropertyID = MainTextureID;
-            }
-            else 
-            {
-                PropertyID = -1;
-            }
-        }
-
-
-        public string ToString()
+        public override string ToString()
         {
             return String.Format("WheelMaterial: {0} Vel Factors: {1} Turn Factors: {2}", WheelMaterial.name, VelocityFactor.ToString("F2"), TurnFactor.ToString("F2"));
         }
@@ -105,11 +76,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         public void Update(float deltaTime, float vel, float turn)
         {
             TexOffset += deltaTime * (vel * VelocityFactor + turn * TurnFactor);
-            
-            if (PropertyID != -1)
-            {
-                WheelMaterial.SetTextureOffset(PropertyID, TexOffset);
-            }
+            WheelMaterial.SetTextureOffset("_MainTex", TexOffset);
         }
     }
 
@@ -162,7 +129,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
 
     Rigidbody Body;
 
-    PhxHoverMainSection DriverSection = null;
+    PhxHoverMainSection DriverSeat = null;
     PhxHover.ClassProperties H;
 
 
@@ -178,13 +145,6 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
     AudioSource AudioAmbient;
 
 
-
-
-    // Paired object with kinematic rigidbody and SO collision
-    // Used to isolate concave collision so non-kinematic physics
-    // can be used on vehicle.
-    GameObject SOColliderObject;
-
     // Just for quick editor debugging
     [Serializable]
     public class SpringForce 
@@ -199,25 +159,22 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
     	public float ZDamp;
 
     	public float Penetration;
+
+        public void Clear()
+        {
+            XRot = 0f;
+            XDamp = 0f;                   
+            ZRot = 0f;
+            ZDamp = 0f;
+            VelForce = 0f;
+            VelDamp = 0f;
+
+            Penetration = 0f;
+        }
     }
 
     public List<SpringForce> SpringForces;
 
-
-
-    List<PhxDamageEffect> DamageEffects;
-
-
-
-
-    HashSet<Collider> ObjectColliders;
-
-
-
-    // for debugging
-    bool DBG = false;
-
-    Vector3 startPos;
 
     public override void Init()
     {
@@ -266,7 +223,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         SECTIONS
         */
 
-        Sections = new List<PhxVehicleSection>();
+        Seats = new List<PhxSeat>();
 
         var EC = H.EntityClass;
         EC.GetAllProperties(out uint[] properties, out string[] values);
@@ -279,20 +236,22 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
             {
                 if (values[i].Equals("BODY", StringComparison.OrdinalIgnoreCase))
                 {
-                    DriverSection = new PhxHoverMainSection(this);
-                    DriverSection.InitManual(EC, i, "FLYERSECTION", "BODY");
-                    Sections.Add(DriverSection);                
+                    DriverSeat = new PhxHoverMainSection(this);
+                    DriverSeat.InitManual(EC, i, "FLYERSECTION", "BODY");
+                    Seats.Add(DriverSeat);                
                 }
                 else 
                 {
                     PhxVehicleTurret Turret = new PhxVehicleTurret(this, TurretIndex++);
                     Turret.InitManual(EC, i, "FLYERSECTION", values[i]);
-                    Sections.Add(Turret);
+                    Seats.Add(Turret);
                 }
             }
 
             i++;
         }
+
+        SetIgnoredCollidersOnAllWeapons();
 
 
         /*
@@ -321,28 +280,27 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
                 sc.enabled = false;
                 */
                 
-                
                 SpringForces.Add(new SpringForce());
             }
             else if (properties[i] == HashUtils.GetFNV("BodySpringLength"))
             {
                 if (CurrSpring != null)
                 {   
-                    CurrSpring.Length = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
+                    CurrSpring.Length = PhxUtils.FloatFromString(values[i]);
                 }
             }
             else if (properties[i] == HashUtils.GetFNV("BodyOmegaXSpringFactor"))
             {
                 if (CurrSpring != null)
                 {
-                    CurrSpring.OmegaXFactor = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
+                    CurrSpring.OmegaXFactor = PhxUtils.FloatFromString(values[i]);
                 }
             }
             else if (properties[i] == HashUtils.GetFNV("BodyOmegaZSpringFactor"))
             {
                 if (CurrSpring != null)
                 {
-                    CurrSpring.OmegaZFactor = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture);
+                    CurrSpring.OmegaZFactor = PhxUtils.FloatFromString(values[i]);
                 }
             }
 
@@ -389,7 +347,8 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
                         Wheels = new List<PhxHoverWheel>();
                     }
 
-                    PhxHoverWheel Wheel = new PhxHoverWheel(NodeRenderer.materials[Segment.Index]);
+                    PhxHoverWheel Wheel = new PhxHoverWheel();
+                    Wheel.WheelMaterial = NodeRenderer.materials[Segment.Index];
 
                     if (section.TryGetValue("WheelVelocToV", out IPhxPropRef V2VRef))
                     {
@@ -415,44 +374,9 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
                 }
             }
         }
-
-
-        DamageEffects = new List<PhxDamageEffect>();
-        PhxDamageEffect CurrDamageEffect = null;
-
-        /*
-        i = 0;
-        while (i < properties.Length)
-        {
-            if (properties[i] == HashUtils.GetFNV("DamageStartPercent"))
-            {
-            	CurrDamageEffect = new PhxDamageEffect();
-            	DamageEffects.Add(CurrDamageEffect);
-
-            	CurrDamageEffect.DamageStartPercent = float.Parse(values[i]) / 100f;
-            }
-            else if (properties[i] == HashUtils.GetFNV("DamageStopPercent"))
-            {
-            	CurrDamageEffect.DamageStopPercent = float.Parse(values[i]) / 100f;
-            }
-            else if (properties[i] == HashUtils.GetFNV("DamageEffect"))
-            {
-            	CurrDamageEffect.Effect = SCENE.EffectsManager.LendEffect(values[i]);
-            }
-            else if (properties[i] == HashUtils.GetFNV("DamageAttachPoint"))
-            {
-            	CurrDamageEffect.DamageAttachPoint = UnityUtils.FindChildTransform(transform, values[i]);
-            }
-
-        	i++;
-        }
-        */
     }
 
-    public override void Destroy()
-    {
-        
-    }
+
 
     /*
     Update each section, pose if the poser is set, and wheel texture offset if applicable.
@@ -462,18 +386,11 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
 
     void UpdateState(float deltaTime)
     {
-        if (SOColliderObject != null)
-        {
-            SOColliderObject.transform.position = transform.position;
-            SOColliderObject.transform.rotation = transform.rotation;
-        }
-
-
         /* 
-        Sections
+        Seats
         */
 
-        foreach (var section in Sections)
+        foreach (var section in Seats)
         {
             section.Tick(deltaTime);
         }
@@ -484,7 +401,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         */
 
         Vector3 Input = Vector3.zero;
-        DriverController = DriverSection.GetController();
+        DriverController = DriverSeat.GetController();
         if (DriverController != null) 
         {
             Input.x = DriverController.MoveDirection.x;
@@ -562,38 +479,6 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
                 Wheel.Update(deltaTime, LocalVel.z, LocalAngVel.z);
             }
         }
-
-
-        // Update damage effects
-        //CurHealth.Set(Mathf.Clamp(CurHealth.Get() - ((deltaTime / 15f) * C.MaxHealth.Get()), 1f, C.MaxHealth.Get()));
-
-        float HealthPercent = CurHealth.Get() / C.MaxHealth.Get();
-        
-
-        foreach (PhxDamageEffect DamageEffect in DamageEffects)
-        {
-        	if (HealthPercent < DamageEffect.DamageStartPercent && HealthPercent > DamageEffect.DamageStopPercent)
-        	{
-        		if (!DamageEffect.IsOn && DamageEffect.Effect != null)
-        		{
-        			Debug.LogFormat("Playing effect: {0} at node: {1}...", DamageEffect.Effect.EffectName, DamageEffect.DamageAttachPoint.name);
-        			DamageEffect.IsOn = true;
-        			DamageEffect.Effect.SetParent(DamageEffect.DamageAttachPoint);
-        			DamageEffect.Effect.SetLocalTransform(Vector3.zero, Quaternion.identity);
-        			DamageEffect.Effect.Play();
-        		}
-        	}
-        	else 
-        	{
-        		if (DamageEffect.IsOn && DamageEffect.Effect != null)
-        		{
-        			Debug.LogFormat("Stopping effect: {0}...", DamageEffect.Effect.EffectName);
-
-        			DamageEffect.IsOn = false;
-        			DamageEffect.Effect.Stop();
-        		}
-        	}
-        }
     }
 
     
@@ -626,17 +511,14 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
             combined with the local ones? 
     */ 
 
-    int SpringUpdatesPerFrame = 2; 
+    // int SpringUpdatesPerFrame = 2; 
 
     void UpdateSprings(float deltaTime)
     {
         Vector3 netForce = Vector3.zero;
         Vector3 netPos = Vector3.zero;
 
-        LayerMask Mask = (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
-
-        // Set all colliders to RaycastIgnore
-        ModelMapping.SetColliderLayerAll(2);
+        LayerMask Mask = (1 << 11) | (1 << 12) | (1 << 13);
 
 
         for (int CurrSpringIndex = 0; CurrSpringIndex < Springs.Count; CurrSpringIndex++)
@@ -655,7 +537,6 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
                 	// Check for imminent hard collision
                 	// ...
 
-                    // This is all pretty hand wavy, parameters are too sensitive
                     float XRotCoeff = 2f * H.OmegaXSpring * CurrSpring.OmegaXFactor;
                     float XDampRotCoeff = .3f * H.OmegaXDamp * -Vector3.Dot(Body.angularVelocity, transform.right);
                     Body.AddRelativeTorque(60f * Penetration * deltaTime * Vector3.right * (XRotCoeff + XDampRotCoeff), ForceMode.Acceleration);
@@ -679,20 +560,11 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
                 }
                 else 
                 {
-                    SpringForces[CurrSpringIndex].XRot = 0f;
-                    SpringForces[CurrSpringIndex].XDamp = 0f;                	
-                    SpringForces[CurrSpringIndex].ZRot = 0f;
-                    SpringForces[CurrSpringIndex].ZDamp = 0f;
-                    SpringForces[CurrSpringIndex].VelForce = 0f;
-                    SpringForces[CurrSpringIndex].VelDamp = 0f;
+                    SpringForces[CurrSpringIndex].Clear();
                 }  
             }
         }
-
-        // Reset all colliders to their mask's layers
-        ModelMapping.SetColliderLayerFromMaskAll();
     }
-
 
 
 
@@ -708,7 +580,7 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
         UpdateSprings(deltaTime);
 
 
-        DriverController = DriverSection.GetController();
+        DriverController = DriverSeat.GetController();
         if (DriverController == null) 
         {
             return;
@@ -759,12 +631,12 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
 
     public override Vector3 GetCameraPosition()
     {
-        return Sections[0].GetCameraPosition();
+        return Seats[0].GetCameraPosition();
     }
 
     public override Quaternion GetCameraRotation()
     {
-        return Sections[0].GetCameraRotation();
+        return Seats[0].GetCameraRotation();
     }
 
 
@@ -775,14 +647,15 @@ public class PhxHover : PhxVehicle, IPhxTickable, IPhxTickablePhysics
     }
 
 
-    public void Tick(float deltaTime)
+    public override void Tick(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick Hover");
+        base.Tick(deltaTime);
         UpdateState(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }
 
-    public void TickPhysics(float deltaTime)
+    public override void TickPhysics(float deltaTime)
     {
         UnityEngine.Profiling.Profiler.BeginSample("Tick Hover Physics");
         UpdatePhysics(deltaTime);

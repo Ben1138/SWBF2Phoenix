@@ -7,8 +7,9 @@ using LibSWBF2.Utils;
 
 
 
-public class PhxVehicleTurret : PhxVehicleSection
-{    
+public class PhxVehicleTurret : PhxSeat
+{   
+    /*
 	string TurretYawSound = "";
     float TurretYawSoundPitch = 0.7f;
     string TurretPitchSound = "";
@@ -18,6 +19,9 @@ public class PhxVehicleTurret : PhxVehicleSection
     string TurretDeactivateSound = "vehicle_equip";
     string TurretStartSound = "";
     string TurretStopSound = "";
+    */
+
+    bool CanRotate = true;
 
 
     public PhxVehicleTurret(PhxVehicle V, int index) : base(V,index){}
@@ -35,7 +39,7 @@ public class PhxVehicleTurret : PhxVehicleSection
         {
             if (properties[i] == HashUtils.GetFNV("TurretNodeName"))
             {
-                BaseTransform = UnityUtils.FindChildTransform(OwnerVehicle.transform, values[i]);
+                BaseTransform = UnityUtils.FindChildTransform(Owner.GetRootTransform(), values[i]);
             }      
             else if (properties[i] == HashUtils.GetFNV("BUILDINGSECTION") ||
                     properties[i] == HashUtils.GetFNV("FLYERSECTION") ||
@@ -61,6 +65,8 @@ public class PhxVehicleTurret : PhxVehicleSection
         {
             PilotAnimationType = PilotAnimationType.FivePose;
         }
+
+        CanRotate = (Owner as MonoBehaviour).gameObject.transform != BaseTransform;
     }
 
 
@@ -68,7 +74,7 @@ public class PhxVehicleTurret : PhxVehicleSection
     {
         base.Tick(deltaTime);
 
-        if (Occupant == null) return;
+        if (Occupant == null || !CanRotate) return;
 
         BaseTransform.rotation *= Quaternion.Euler(new Vector3(0f,Occupant.GetController().mouseX,0f));
     }
