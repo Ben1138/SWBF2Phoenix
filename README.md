@@ -35,12 +35,13 @@ This project aims for full compatibility with the vanilla game files, and as bes
     * `LibSWBF2.NET.dll`
     * `lua50-swbf2-x64.dll`
 7. Add the `UnityProject` directory to UnityHub and open it. This might take a while.
-8. Navigate to `Runtime/Scenes` and open PhxMainScene
-9. In the hierarchy, select the GameRuntime GameObject and set:
+8. Open the package manager in *Windows -> Package Manager* and select the "High Definition RP" package. On the right side, expand "Samples" and import "Particle System Shader Samples"
+9. Navigate to `Runtime/Scenes` and open PhxMainScene
+10. In the hierarchy, select the GameRuntime GameObject and set:
     * `Game Path String` to your Star Wars Battlefront II installation directory. E.g.: `C:\Program Files (x86)\Steam\steamapps\common\Star Wars Battlefront II`
     * `Mission List Path` to empty!
-10. Go to *File -> Build Settings*, select *PC, Max & Linux Standalone* and choose `Windows` as Target Platform and `x86_64` as Architecture.
-11. Click *Build and Run* and choose the `BUILD` directory, residing in the root of this repository
+11. Go to *File -> Build Settings*, select *PC, Max & Linux Standalone* and choose `Windows` as Target Platform and `x86_64` as Architecture.
+12. Click *Build and Run* and choose the `BUILD` directory, residing in the root of this repository
 
 ## Linux
 ### Installation Requirements
@@ -60,12 +61,13 @@ This project aims for full compatibility with the vanilla game files, and as bes
     * `LibSWBF2.NET.dll`
     * `liblua50-swbf2-x64.so`
 7. Add the `UnityProject` directory to UnityHub and open it. This might take a while.
-8. Navigate to `Runtime/Scenes` and open PhxMainScene
-9. In the hierarchy, select the GameRuntime GameObject and set:
+8. Open the package manager in *Windows -> Package Manager* and select the "High Definition RP" package. On the right side, expand "Samples" and import "Particle System Shader Samples"
+9. Navigate to `Runtime/Scenes` and open PhxMainScene
+10. In the hierarchy, select the GameRuntime GameObject and set:
     * `Game Path String` to your Star Wars Battlefront II installation directory.
     * `Mission List Path` to empty!
-10. Go to *File -> Build Settings*, select *PC, Max & Linux Standalone* and choose `Linux` as Target Platform and `x86_64` as Architecture.
-11. Click *Build and Run* and choose the `BUILD` directory, residing in the root of this repository
+11. Go to *File -> Build Settings*, select *PC, Max & Linux Standalone* and choose `Linux` as Target Platform and `x86_64` as Architecture.
+12. Click *Build and Run* and choose the `BUILD` directory, residing in the root of this repository
 
 
 ## Known problems
