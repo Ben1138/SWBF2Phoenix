@@ -135,7 +135,7 @@ public class PhxMainMenu : PhxMenuInterface
                 item.SetIcon(modeSub.Icon);
                 item.SetIcon2(eraSub.Icon);
 
-                string mapScript = PhxSWBFHelpers.Format(mapluafile, eraSub.Sub, modeSub.Sub);
+                string mapScript = PhxHelpers.Format(mapluafile, eraSub.Sub, modeSub.Sub);
                 RotationLuaFiles.Add(mapScript);
             }
         }
