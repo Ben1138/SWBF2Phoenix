@@ -71,6 +71,10 @@ public class PhxGameRuntime : MonoBehaviour
 
     public PhxPath AddonPath { get; private set; }
     public PhxPath StdLVLPC { get; private set; }
+    public string VersionString { get; private set; }
+    public int VersionMajor { get; private set; }
+    public int VersionMinor { get; private set; }
+    public int VersionPatch { get; private set; }
 
     // Used only when registering addons
     PhxPath CurrentAddonFolder;
@@ -473,6 +477,13 @@ public class PhxGameRuntime : MonoBehaviour
 
     void Awake()
     {
+        VersionString = Application.version;
+        string[] subStr = VersionString.Split('.');
+        Debug.Assert(subStr.Length == 3);
+        VersionMajor = int.Parse(subStr[0]);
+        VersionMinor = int.Parse(subStr[1]);
+        VersionPatch = int.Parse(subStr[2]);
+
         LibLog.SetLogLevel(ELibLogType.Warning);
 
         Debug.Assert(InitScreenPrefab     != null);
