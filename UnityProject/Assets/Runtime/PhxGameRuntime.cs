@@ -403,6 +403,8 @@ public class PhxGameRuntime : MonoBehaviour
 
     void ExploreAddons()
     {
+        if (!AddonPath.Exists()) return;
+
         string[] addons = System.IO.Directory.GetDirectories(AddonPath);
         
         foreach (PhxPath addon in addons)
