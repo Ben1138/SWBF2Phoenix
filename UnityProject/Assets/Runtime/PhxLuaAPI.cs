@@ -130,7 +130,7 @@ public static class PhxLuaAPI
 		Array.Copy(args, 1, placements, 0, placements.Length);
 
 		string localized = ENV.GetLocalized(localizePath);
-		string res = PhxSWBFHelpers.Format(localized, placements);
+		string res = PhxHelpers.Format(localized, placements);
 		return res;
 	}
 
@@ -1323,48 +1323,5 @@ public static class PhxLuaEvents
 	public static void InvokeParameterized(Event ev, object key, params object[] eventArgs)
     {
 		Get(ev).Invoke(key, eventArgs);
-	}
-}
-
-public static class PhxSWBFHelpers
-{
-	// format string using SWBFs C-style printf format (%s, ...)
-	public static string Format(string fmt, params object[] args)
-    {
-		fmt = ConvertFormat(fmt);
-		return string.Format(fmt, args);
-	}
-
-	// convert C-style printf format to C# format
-	static string ConvertFormat(string swbfFormat)
-	{
-		int GetNextIndex(string format)
-		{
-			int idx = format.IndexOf("%s");
-			if (idx >= 0) return idx;
-
-			idx = format.IndexOf("%i");
-			if (idx >= 0) return idx;
-
-			idx = format.IndexOf("%d");
-			if (idx >= 0) return idx;
-
-			idx = format.IndexOf("%f");
-			if (idx >= 0) return idx;
-
-			return -1;
-		}
-
-		// convert C-style printf format to C# format
-		string format = swbfFormat;
-		int idx = GetNextIndex(format);
-		for (int i = 0; idx >= 0; idx = GetNextIndex(format), ++i)
-		{
-			string sub = format.Substring(0, idx);
-			sub += "{" + i + "}";
-			sub += format.Substring(idx + 2, format.Length - idx - 2);
-			format = sub;
-		}
-		return format;
 	}
 }

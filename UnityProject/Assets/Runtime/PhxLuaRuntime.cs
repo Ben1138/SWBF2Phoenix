@@ -168,8 +168,19 @@ public class PhxLuaRuntime
         L.OpenMath();
         L.OpenString();
         L.OpenTable();
+        Register<Action<object[]>>(printf);
         RegisterLuaFunctions(typeof(PhxLuaAPI));
-        Register<Action<object[]>>(Print);
+
+        PhxGameRuntime inst = PhxGameRuntime.Instance;
+        Debug.Assert(inst != null);
+        L.PushString(inst.VersionString);
+        L.SetGlobal("PHX_VER");
+        L.PushNumber(inst.VersionMajor);
+        L.SetGlobal("PHX_VER_MAJOR");
+        L.PushNumber(inst.VersionMinor);
+        L.SetGlobal("PHX_VER_MINOR");
+        L.PushNumber(inst.VersionPatch);
+        L.SetGlobal("PHX_VER_PATCH");
     }
 
     ~PhxLuaRuntime()
@@ -683,8 +694,17 @@ public class PhxLuaRuntime
         return error == Lua.ErrorCode.NONE;
     }
 
-    static void Print(object[] msg)
+    static void printf(object[] msg)
     {
-        Debug.LogWarning(string.Join("", msg));
+        if (msg[0] is string)
+        {
+            object[] fmt = new object[msg.Length - 1];
+            Array.Copy(msg, 1, fmt, 0, fmt.Length);
+            Debug.Log(PhxHelpers.Format(msg[0] as string, fmt));
+        }
+        else
+        {
+            Debug.Log(string.Join(" ", msg));
+        }
     }
 }
