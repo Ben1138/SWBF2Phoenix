@@ -110,7 +110,7 @@ public class PhxProp : PhxInstance<PhxProp.ClassProperties>, IPhxTickable
 
                 float RespawnTime = 0f;
                 try {
-                    RespawnTime = Parts.Length > 1 ? float.Parse(Parts[1], System.Globalization.CultureInfo.InvariantCulture) : 0f;
+                    RespawnTime = Parts.Length > 1 ? PhxUtils.FloatFromString(Parts[1]) : 0f;
                 }
                 catch 
                 {
