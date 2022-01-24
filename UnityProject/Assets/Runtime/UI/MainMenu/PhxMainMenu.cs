@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 public class PhxMainMenu : PhxMenuInterface
 {
-    static PhxRuntimeEnvironment ENV { get { return PhxGameRuntime.GetEnvironment(); } }
-    static PhxLuaRuntime RT { get { return PhxGameRuntime.GetLuaRuntime(); } }
+    static PhxEnvironment ENV { get { return PhxGame.GetEnvironment(); } }
+    static PhxLuaRuntime RT { get { return PhxGame.GetLuaRuntime(); } }
 
     struct SubIcon
     {
@@ -154,8 +154,8 @@ public class PhxMainMenu : PhxMenuInterface
 
     void StartRotation()
     {
-        PhxGameRuntime.Instance.AddToMapRotation(RotationLuaFiles);
-        PhxGameRuntime.Instance.NextMap();
+        PhxGame.Instance.AddToMapRotation(RotationLuaFiles);
+        PhxGame.Instance.NextMap();
     }
 
     void Quit()

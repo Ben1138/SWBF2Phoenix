@@ -7,7 +7,7 @@ using LibSWBF2.Wrappers;
 
 
 /*
- * Phases of PhxRuntimeEnvironment:
+ * Phases of PhxEnvironment:
  *     
  * 1. Init                          Environment is created, with base LVLs scheduled and ready to load. Base LVLs are:
  *                                      - core.lvl
@@ -25,7 +25,7 @@ using LibSWBF2.Wrappers;
  */
 
 
-public class PhxRuntimeEnvironment
+public class PhxEnvironment
 {
     public struct LVL
     {
@@ -75,8 +75,8 @@ public class PhxRuntimeEnvironment
     string InitFunctionName;
     string PostLoadFunctionName;
 
-    PhxRuntimeScene RTScene;
-    PhxRuntimeMatch Match;
+    PhxScene RTScene;
+    PhxMatch Match;
     PhxTimerDB Timers;
 
     List<Localization> Localizations = new List<Localization>();
@@ -87,7 +87,7 @@ public class PhxRuntimeEnvironment
     Dictionary<PhxPath, SWBF2Handle> PathToHandle = new Dictionary<PhxPath, SWBF2Handle>();
 
 
-    PhxRuntimeEnvironment(PhxPath path, PhxPath fallbackPath)
+    PhxEnvironment(PhxPath path, PhxPath fallbackPath)
     {
         Path = path;
         FallbackPath = fallbackPath;
@@ -100,7 +100,7 @@ public class PhxRuntimeEnvironment
         Loader.SetGlobalContainer(EnvCon);
     }
 
-    ~PhxRuntimeEnvironment()
+    ~PhxEnvironment()
     {
         Destroy();
     }
@@ -120,15 +120,15 @@ public class PhxRuntimeEnvironment
         EnvCon?.Delete();
         EnvCon = null;
         PathToHandle.Clear();
-        Debug.Log("PhxRuntimeEnvironment destroyed");
+        Debug.Log("PhxEnvironment destroyed");
     }
 
-    public PhxRuntimeScene GetScene()
+    public PhxScene GetScene()
     {
         return RTScene;
     }
 
-    public PhxRuntimeMatch GetMatch()
+    public PhxMatch GetMatch()
     {
         return Match;
     }
@@ -138,7 +138,7 @@ public class PhxRuntimeEnvironment
         return Timers;
     }
 
-    public static PhxRuntimeEnvironment Create(PhxPath envPath, PhxPath fallbackPath = null, bool initMatch=true)
+    public static PhxEnvironment Create(PhxPath envPath, PhxPath fallbackPath = null, bool initMatch=true)
     {
         if (!envPath.Exists())
         {
@@ -155,7 +155,7 @@ public class PhxRuntimeEnvironment
         PhxAnimationLoader.ClearDB();
         PhxLuaEvents.Clear();
 
-        PhxRuntimeEnvironment rt = new PhxRuntimeEnvironment(envPath, fallbackPath);
+        PhxEnvironment rt = new PhxEnvironment(envPath, fallbackPath);
         rt.ScheduleRel("core.lvl");
         rt.ScheduleRel("shell.lvl");
         rt.ScheduleRel("common.lvl");
@@ -165,8 +165,8 @@ public class PhxRuntimeEnvironment
         // TODO: Remove
         rt.ScheduleAbs(rt.FallbackPath / "ingame.lvl");
 
-        rt.RTScene = new PhxRuntimeScene(rt, rt.EnvCon);
-        rt.Match = initMatch ? new PhxRuntimeMatch() : null;
+        rt.RTScene = new PhxScene(rt, rt.EnvCon);
+        rt.Match = initMatch ? new PhxMatch() : null;
         rt.Timers = new PhxTimerDB();
 
         PhxAnimationLoader.Con = rt.EnvCon;
@@ -226,9 +226,9 @@ public class PhxRuntimeEnvironment
 
         // Still have no idea why missionlist fails on Linux/Mac.  I'll have to dig into the compilation
         // warnings produced when compiling the Lua lib.
-        if (script.Name == "missionlist" && PhxGameRuntime.Instance.MissionListPath != "")
+        if (script.Name == "missionlist" && PhxGame.Instance.MissionListPath != "")
         {
-            return LuaRT.ExecuteFile(PhxGameRuntime.Instance.MissionListPath);
+            return LuaRT.ExecuteFile(PhxGame.Instance.MissionListPath);
         }
         else 
         {
@@ -276,7 +276,7 @@ public class PhxRuntimeEnvironment
     public SWBF2Handle ScheduleRel(PhxPath relPath, string[] subLVLs = null, bool bNoFallback = false)
     {
         // Relative paths are always lower case in consideration of Unix file systems.
-        // Also see PhxGameRuntime::Awake()
+        // Also see PhxGame::Awake()
         relPath = relPath.ToString().ToLower();
 
         SWBF2Handle handle;
@@ -397,7 +397,7 @@ public class PhxRuntimeEnvironment
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)
     {
-        if (GetLocalized(PhxGameRuntime.Instance.Settings.Language, localizedPath, out string localizedUnicode))
+        if (GetLocalized(PhxGame.Instance.Settings.Language, localizedPath, out string localizedUnicode))
         {
             return localizedUnicode;
         }

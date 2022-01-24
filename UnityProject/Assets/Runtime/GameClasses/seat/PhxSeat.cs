@@ -37,7 +37,7 @@ public interface IPhxSeatable
 
 public abstract class PhxSeat : IPhxTrackable, IPhxTickable
 {    
-    protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    protected static PhxCamera CAM => PhxGame.GetCamera();
 
     // Max 2, min 1
     public List<PhxWeaponSystem> WeaponSystems;

@@ -10,7 +10,7 @@ using System.Runtime.ExceptionServices;
 
 public class PhxProp : PhxInstance<PhxProp.ClassProperties>, IPhxTickable
 {
-    protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    protected static PhxScene SCENE => PhxGame.GetScene();
 
     public class ClassProperties : PhxClass 
     {

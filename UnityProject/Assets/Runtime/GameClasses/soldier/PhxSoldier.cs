@@ -9,10 +9,10 @@ using System.Runtime.ExceptionServices;
 
 public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated, IPhxTickable, IPhxTickablePhysics
 {
-    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
-    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
-    static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    static PhxGame GAME => PhxGame.Instance;
+    static PhxMatch MTC => PhxGame.GetMatch();
+    static PhxScene SCENE => PhxGame.GetScene();
+    static PhxCamera CAM => PhxGame.GetCamera();
 
 
     public class ClassProperties : PhxClass

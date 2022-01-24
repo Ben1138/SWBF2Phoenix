@@ -9,8 +9,8 @@ using LibSWBF2.Wrappers;
 // Has only instance properties, so no generic needed
 public class PhxVehicleSpawn : PhxInstance, IPhxTickable
 {
-    PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
-    PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
+    PhxMatch Match => PhxGame.GetMatch();
+    PhxScene Scene => PhxGame.GetScene();
 
 
     public PhxProp<float> ExpireTimeEnemy = new PhxProp<float>(1.0f);
@@ -98,7 +98,7 @@ public class PhxVehicleSpawn : PhxInstance, IPhxTickable
             return null;
         }
 
-        PhxRuntimeMatch.PhxTeam CPTeam = Match.Teams[teamIdx];
+        PhxMatch.PhxTeam CPTeam = Match.Teams[teamIdx];
         string ClassName;
         switch (CPTeam.Name)
         {

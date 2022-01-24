@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PhxAnimTest : PhxUnityScript
 {
-    static PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
+    static PhxMatch MATCH => PhxGame.GetMatch();
 
     public Transform AITarget;
     public int Width;
@@ -45,7 +45,7 @@ public class PhxAnimTest : PhxUnityScript
             //"rep_inf_ep3_jettrooper",
         };
 
-        PhxRuntimeScene scene = PhxGameRuntime.GetScene();
+        PhxScene scene = PhxGame.GetScene();
         PhxClass[] classes = new PhxClass[classNames.Length];
 
         for (int i = 0; i < classes.Length; ++i)

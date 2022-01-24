@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 public class PhxButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    static PhxRuntimeEnvironment ENV { get { return PhxGameRuntime.GetEnvironment(); } }
+    static PhxEnvironment ENV { get { return PhxGame.GetEnvironment(); } }
 
     public string LocalizePath;
 
@@ -61,7 +61,7 @@ public class PhxButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandl
     public void OnPointerEnter(PointerEventData eventData)
     {
         bIsHovering = true;
-        PhxGameRuntime.Instance.PlayUISound(HoverSound, 1.4f);
+        PhxGame.Instance.PlayUISound(HoverSound, 1.4f);
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -71,6 +71,6 @@ public class PhxButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandl
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        PhxGameRuntime.Instance.PlayUISound(ClickSound, 1.1f);
+        PhxGame.Instance.PlayUISound(ClickSound, 1.1f);
     }
 }

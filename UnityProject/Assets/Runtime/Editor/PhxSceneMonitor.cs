@@ -19,8 +19,8 @@ public class PhxSceneMonitor : EditorWindow
 
     void OnGUI()
     {
-        PhxRuntimeScene scene = PhxGameRuntime.GetScene();
-        if (!Application.isPlaying || PhxGameRuntime.Instance == null || scene == null)
+        PhxScene scene = PhxGame.GetScene();
+        if (!Application.isPlaying || PhxGame.Instance == null || scene == null)
         {
             EditorGUILayout.LabelField("Game is not running");
             return;

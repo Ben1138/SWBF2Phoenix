@@ -27,10 +27,10 @@ public abstract class PhxOrdnance : PhxComponent
 {
     public PhxOrdnanceClass OrdnanceClass;
 
-    protected static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    protected static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
-    protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
-    protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    protected static PhxGame GAME => PhxGame.Instance;
+    protected static PhxMatch MTC => PhxGame.GetMatch();
+    protected static PhxScene SCENE => PhxGame.GetScene();
+    protected static PhxCamera CAM => PhxGame.GetCamera();
 
 
     /* 
