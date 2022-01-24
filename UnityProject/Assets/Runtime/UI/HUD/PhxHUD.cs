@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class PhxHUD : PhxMenuInterface
 {
+    PhxGameRuntime GAME => PhxGameRuntime.Instance;
     PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
     PhxTimerDB TimerDB => PhxGameRuntime.GetTimerDB();
 
@@ -142,21 +143,21 @@ public class PhxHUD : PhxMenuInterface
 
             TimeSpan t = TimeSpan.FromSeconds(timer.Time);
             TimerDisplay.text = string.Format("{0:D2}:{1:D2}", t.Minutes, t.Seconds);
-            TimerDisplay.color = PhxRuntimeMatch.ColorNeutral;
+            TimerDisplay.color = GAME.Settings.ColorNeutral;
         }
 
         (int? timerIdx, PhxRuntimeMatch.PhxTeam.TimerDisplay display) = Match.GetTeamTimer(Match.Player.Team);
         VicDefTimerDisplay.gameObject.SetActive(timerIdx.HasValue);
         if (timerIdx.HasValue)
         {
-            Color color = PhxRuntimeMatch.ColorNeutral;
+            Color color = GAME.Settings.ColorNeutral;
             if (display == PhxRuntimeMatch.PhxTeam.TimerDisplay.Defeat)
             {
-                color = PhxRuntimeMatch.ColorEnemy;
+                color = GAME.Settings.ColorEnemy;
             }
             else if (display == PhxRuntimeMatch.PhxTeam.TimerDisplay.Victory)
             {
-                color = PhxRuntimeMatch.ColorFriendly;
+                color = GAME.Settings.ColorFriendly;
             }
 
             TimerDB.GetTimer(timerIdx.Value, out var timer);

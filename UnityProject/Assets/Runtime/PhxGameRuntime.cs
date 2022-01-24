@@ -23,29 +23,11 @@ public class PhxGameRuntime : MonoBehaviour
     public static PhxGameRuntime Instance { get; private set; } = null;
 
 
-    public PhxPath GamePath 
-    { 
-        get { return new PhxPath(GamePathString); } 
-        private set { GamePathString = value.ToString(); }
-    }
-
-
-    public enum PhxStartupBehaviour
-    {
-        MainMenu,
-        SWBF2Map,
-        UnityScene
-    }
+    public PhxPath GamePath => new PhxPath(Settings.GamePathString);
 
 
     [Header("Settings")]
-    public string GamePathString = "";
-
-    public string Language = "english";
-    public PhxStartupBehaviour StartupBehaviour;
-    public string StartupSWBF2Map;
-    public string StartupUnityScene;
-    public bool   InfiniteAmmo;
+    public PhxSettings Settings;
 
     [Header("References")]
     public PhxLoadscreen      InitScreenPrefab;
@@ -389,19 +371,19 @@ public class PhxGameRuntime : MonoBehaviour
             return;
         }
 
-        if (StartupBehaviour == PhxStartupBehaviour.MainMenu)
+        if (Settings.BootMode == PhxBootMode.MainMenu)
         {
             EnterMainMenu(true);
         }
-        else if (StartupBehaviour == PhxStartupBehaviour.SWBF2Map)
+        else if (Settings.BootMode == PhxBootMode.SWBF2Map)
         {
-            Debug.Assert(!string.IsNullOrEmpty(StartupSWBF2Map));
-            EnterSWBF2Map(StartupSWBF2Map);
+            Debug.Assert(!string.IsNullOrEmpty(Settings.BootSWBF2Map));
+            EnterSWBF2Map(Settings.BootSWBF2Map);
         }
-        else if (StartupBehaviour == PhxStartupBehaviour.UnityScene)
+        else if (Settings.BootMode == PhxBootMode.UnityScene)
         {
-            Debug.Assert(!string.IsNullOrEmpty(StartupUnityScene));
-            EnterUnityScene(StartupUnityScene);
+            Debug.Assert(!string.IsNullOrEmpty(Settings.BootUnityScene));
+            EnterUnityScene(Settings.BootUnityScene);
         }
     }
 
