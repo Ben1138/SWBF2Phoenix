@@ -418,12 +418,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78d15e63002497340882c6c017ee0810, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GamePathString: 
-  Language: english
-  StartupBehaviour: 0
-  StartupSWBF2Map: kas2c_con
-  StartupUnityScene: PhxVehicleTesting
-  InfiniteAmmo: 0
+  Settings:
+    GamePathString: 
+    Language: english
+    BootMode: 0
+    BootSWBF2Map: kas2c_con
+    BootUnityScene: PhxAnimTest
+    InfiniteAmmo: 0
+    ColorNeutral: {r: 1, g: 1, b: 1, a: 1}
+    ColorEnemy: {r: 1, g: 0, b: 0, a: 1}
+    ColorFriendly: {r: 0, g: 1, b: 0, a: 1}
+    ColorLocals: {r: 1, g: 1, b: 0, a: 1}
   InitScreenPrefab: {fileID: 8116435525958827643, guid: b41f2353f3f33804b919c04b2fd29246, type: 3}
   LoadScreenPrefab: {fileID: 4217219954888887521, guid: 753242c13dd40b24f96abc9c00940f1d, type: 3}
   MainMenuPrefab: {fileID: 3146369164186090527, guid: d10b36dfe08ba6e429b94996d4ee3cea, type: 3}

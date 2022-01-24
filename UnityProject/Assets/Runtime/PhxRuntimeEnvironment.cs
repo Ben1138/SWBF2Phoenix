@@ -397,7 +397,7 @@ public class PhxRuntimeEnvironment
 
     public string GetLocalized(string localizedPath, bool bReturnNullIfNotFound=false)
     {
-        if (GetLocalized(PhxGameRuntime.Instance.Language, localizedPath, out string localizedUnicode))
+        if (GetLocalized(PhxGameRuntime.Instance.Settings.Language, localizedPath, out string localizedUnicode))
         {
             return localizedUnicode;
         }
