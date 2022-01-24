@@ -27,7 +27,7 @@ public class PhxTimerMonitor : EditorWindow
 
     void OnGUI()
     {
-        PhxLuaRuntime rt = PhxGameRuntime.GetLuaRuntime();
+        PhxLuaRuntime rt = PhxGame.GetLuaRuntime();
         if (!Application.isPlaying || rt == null)
         {
             EditorGUILayout.LabelField("LUA is not running");
@@ -35,7 +35,7 @@ public class PhxTimerMonitor : EditorWindow
         }
 
         ScrollPos = EditorGUILayout.BeginScrollView(ScrollPos);
-        PhxTimerDB tdb = PhxGameRuntime.GetTimerDB();
+        PhxTimerDB tdb = PhxGame.GetTimerDB();
         for (int i = 0; i < tdb.InUseIndices.Count; ++i)
         {
             int idx = tdb.InUseIndices[i];

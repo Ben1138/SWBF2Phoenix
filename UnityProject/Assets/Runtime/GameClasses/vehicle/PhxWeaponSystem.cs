@@ -20,7 +20,7 @@ should assign and maintain aimers?
 
 public class PhxWeaponSystem
 {
-    static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    static PhxScene SCENE => PhxGame.GetScene();
 
     public IPhxWeapon Weapon;
     Transform WeaponTransform;

@@ -30,7 +30,7 @@ public class PhxOrdnancePool : PhxComponentPool<PhxOrdnance>
 
 public class PhxProjectiles : IPhxTickable, IPhxTickablePhysics
 {
-    PhxGameRuntime Game => PhxGameRuntime.Instance;
+    PhxGame Game => PhxGame.Instance;
 
     GameObject ProjectileRoot;
 

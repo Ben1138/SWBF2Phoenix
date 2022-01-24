@@ -47,7 +47,7 @@ public class PhxLuaEditor : EditorWindow
 
     void OnGUI()
     {
-        PhxLuaRuntime runtime = PhxGameRuntime.GetLuaRuntime();
+        PhxLuaRuntime runtime = PhxGame.GetLuaRuntime();
         if (!Application.isPlaying || runtime == null)
         {
             EditorGUILayout.LabelField("LUA is not running");
@@ -124,7 +124,7 @@ class TableTreeView : TreeView
     {
         var root = new TreeViewItem { id = 0, depth = -1, displayName = "TABLE" };
 
-        PhxLuaRuntime runtime = PhxGameRuntime.GetLuaRuntime();
+        PhxLuaRuntime runtime = PhxGame.GetLuaRuntime();
         if (!Application.isPlaying || runtime == null)
         {
             return root;

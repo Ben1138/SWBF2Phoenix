@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 public class PhxCharacterItem : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
+    static PhxGame GAME => PhxGame.Instance;
 
     [Header("References")]
     public RawImage TopBarLeft;

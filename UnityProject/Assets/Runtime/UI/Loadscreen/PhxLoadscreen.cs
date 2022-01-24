@@ -59,7 +59,7 @@ public class PhxLoadscreen : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        PhxRuntimeEnvironment rt = PhxGameRuntime.GetEnvironment();
+        PhxEnvironment rt = PhxGame.GetEnvironment();
         if (rt != null)
         {
             Percentage = Mathf.Lerp(Percentage, rt.GetLoadingProgress(), Time.deltaTime * PercentageSpeed);

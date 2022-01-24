@@ -16,7 +16,7 @@ public struct PhxTransform
     public Quaternion Rotation;
 }
 
-public class PhxRuntimeScene
+public class PhxScene
 {
     public Texture2D MapTexture { get; private set; }
 
@@ -30,7 +30,7 @@ public class PhxRuntimeScene
     Dictionary<string, PhxClass> Classes     = new Dictionary<string, PhxClass>();
     Dictionary<string, int>      InstanceMap = new Dictionary<string, int>();
 
-    PhxRuntimeEnvironment ENV;
+    PhxEnvironment ENV;
     Container EnvCon;
     bool bTerrainImported = false;
 
@@ -48,13 +48,13 @@ public class PhxRuntimeScene
 
     int InstanceCounter;
 
-    public PhxRuntimeScene(PhxRuntimeEnvironment env, Container c)
+    public PhxScene(PhxEnvironment env, Container c)
     {
         ENV = env;
         EnvCon = c;
         Cra = new CraMain();
 
-        ModelLoader.Instance.PhyMat = PhxGameRuntime.Instance.GroundPhyMat;
+        ModelLoader.Instance.PhyMat = PhxGame.Instance.GroundPhyMat;
     }
 
     public void SetProperty(string instName, string propName, object propValue)

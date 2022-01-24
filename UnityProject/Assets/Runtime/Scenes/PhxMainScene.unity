@@ -400,7 +400,7 @@ GameObject:
   - component: {fileID: 1641162174}
   - component: {fileID: 1641162173}
   m_Layer: 0
-  m_Name: GameRuntime
+  m_Name: Game
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

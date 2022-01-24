@@ -19,8 +19,8 @@ public enum PhxWeaponState : int
 
 public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, IPhxWeapon, IPhxTickable
 {
-	protected PhxGameRuntime Game => PhxGameRuntime.Instance;
-    protected PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
+	protected PhxGame Game => PhxGame.Instance;
+    protected PhxScene Scene => PhxGame.GetScene();
 
     protected Action ShotCallback;
     protected Action ReloadCallback;

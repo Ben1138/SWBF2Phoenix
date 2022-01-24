@@ -37,7 +37,7 @@ public class PhxListBoxItem : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         {
             Txt.color = bSelected ? SelectedColor : (IsSpecialItem ? SpecialItemColor : ItemColor);
         }
-        PhxGameRuntime.Instance.PlayUISound(HoverSound, 1.4f);
+        PhxGame.Instance.PlayUISound(HoverSound, 1.4f);
     }
 
     public void SetText(string txt)
@@ -88,7 +88,7 @@ public class PhxListBoxItem : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         {
             Sprite.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
         }
-        PhxGameRuntime.Instance.PlayUISound(HoverSound, 1.4f);
+        PhxGame.Instance.PlayUISound(HoverSound, 1.4f);
         IsHovering = true;
     }
 
@@ -117,7 +117,7 @@ public class PhxListBoxItem : MonoBehaviour, IPointerEnterHandler, IPointerExitH
             SetChecked(!IsChecked);
             OnCheckChanged?.Invoke(IsChecked);
         }
-        PhxGameRuntime.Instance.PlayUISound(HoverSound, 1.4f);
+        PhxGame.Instance.PlayUISound(HoverSound, 1.4f);
         OnClick?.Invoke(eventData);
     }
 
