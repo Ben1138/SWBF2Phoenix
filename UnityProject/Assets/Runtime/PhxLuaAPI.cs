@@ -1072,8 +1072,8 @@ public static class PhxLuaAPI
 			}
 		}
 
-		bool bForceAddon = path.StartsWith("dc:", StringComparison.InvariantCultureIgnoreCase);
-		if (bForceAddon)
+		bool bLoadFromAddon = path.StartsWith("dc:", StringComparison.InvariantCultureIgnoreCase);
+		if (bLoadFromAddon)
         {
 			path = path.Remove(0, 3);
 		}
@@ -1087,7 +1087,7 @@ public static class PhxLuaAPI
 		Debug.LogFormat("Called ReadDataFile from path: '{0}' with subLVLs: {1}", path, subLVLsStr);
 		*/
 
-		ENV.ScheduleRel(path, subLVLs.ToArray(), bForceAddon);
+		ENV.ScheduleRel(path, subLVLs.ToArray(), bLoadFromAddon);
 	}
 
 	public static void AddDownloadableContent(string threeLetterName, string scriptName, int levelMemoryModifier)
