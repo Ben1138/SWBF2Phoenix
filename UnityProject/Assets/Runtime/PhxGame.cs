@@ -216,13 +216,13 @@ public class PhxGame : MonoBehaviour
         ShowLoadscreen();
         RemoveMenu(false);
 
-        PhxPath envPath = StdLVLPC;
+        PhxPath addonPath = null;
         if (RegisteredAddons.TryGetValue(mapScript.ToLower(), out string addonName))
         {
-            envPath = AddonPath / AddonRoots[addonName] / "data/_lvl_pc";
+            addonPath = AddonPath / AddonRoots[addonName] / "data/_lvl_pc";
         }
-        
 
+        // Unload previous Unity Scene (if any)
         if (UnitySceneName != null)
         {
             SceneManager.UnloadSceneAsync(UnitySceneName);
@@ -230,7 +230,7 @@ public class PhxGame : MonoBehaviour
         }
 
         Env?.Destroy();
-        Env = PhxEnvironment.Create(envPath, StdLVLPC);
+        Env = PhxEnvironment.Create(StdLVLPC, addonPath);
         Env.ScheduleRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
         Env.OnLoaded += OnEnvLoaded;
@@ -360,12 +360,12 @@ public class PhxGame : MonoBehaviour
 
         if (GamePath.IsFile()              || 
             !GamePath.Exists()             || 
-            !CheckExistence("common.lvl")  ||
-            !CheckExistence("core.lvl")    ||
-            !CheckExistence("ingame.lvl")  ||
-            !CheckExistence("inshell.lvl") ||
-            !CheckExistence("mission.lvl") ||
-            !CheckExistence("shell.lvl"))
+            !CheckStdLVLExistence("common.lvl")  ||
+            !CheckStdLVLExistence("core.lvl")    ||
+            !CheckStdLVLExistence("ingame.lvl")  ||
+            !CheckStdLVLExistence("inshell.lvl") ||
+            !CheckStdLVLExistence("mission.lvl") ||
+            !CheckStdLVLExistence("shell.lvl"))
         {
             Debug.LogErrorFormat("Invalid game path '{0}!'", GamePath);
             return;
@@ -446,13 +446,13 @@ public class PhxGame : MonoBehaviour
         OnMapLoaded?.Invoke();
     }
 
-    bool CheckExistence(string lvlName)
+    bool CheckStdLVLExistence(string lvlName)
     {
         PhxPath p = StdLVLPC / lvlName;
         bool bExists = p.Exists();
         if (!bExists)
         {
-            Debug.LogErrorFormat("Could not find '{0}'!", p);
+            Debug.LogError($"Could not find '{p}'!");
         }
         return bExists;
     }
