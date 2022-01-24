@@ -7,7 +7,7 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated, IPhxTickable, IPhxTickablePhysics
+public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated, IPhxTickable
 {
     static PhxGameRuntime GAME => PhxGameRuntime.Instance;
     static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
@@ -90,17 +90,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Pilot,
     }
 
-    PhxSoldierContext Context = PhxSoldierContext.Free;
+    public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
+
+    PhxSoldierContext Context = PhxSoldierContext.Free;
 
     // Vehicle related fields
     PhxSeat CurrentSection;
     PhxPoser Poser;
-
-
-
-
-    public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
     PhxHumanAnimator Animator;
     Rigidbody Body;
@@ -111,15 +108,17 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     Transform Neck;
 
     PhxControlState State;
-    PhxControlState PrevState;
 
     // Physical raycast downwards
     bool Grounded;
-    bool PrevGrounded;
+    int GroundedLayerMask;
 
     // How long to still be alerted after the last fire / hit
     const float AlertTime = 3f;
     float AlertTimer;
+
+    // Minimum time not grounded, after which we're considered falling
+    const float FallTime = 0.2f;
 
     // Count time while jumping/falling
     float FallTimer;
@@ -137,7 +136,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     Quaternion TurnStart;
 
     Vector3 CurrSpeed;
-    Quaternion LookRot;
+
+    // Settings for stairs/steps/slopes
+    const float MaxStepHeight = 0.31f;
+    static readonly Vector3 StepCheckOffset = new Vector3(0f, MaxStepHeight + 0.1f,  0.4f);
+    const float StepUpForceMulti = 20.0f;
 
     bool IsFixated => Body == null;
 
@@ -188,15 +191,21 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Body.mass = 0.1f;
         Body.drag = 0.2f;
         Body.angularDrag = 10f;
-        Body.interpolation = RigidbodyInterpolation.Interpolate;
-        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         CapsuleCollider coll = gameObject.AddComponent<CapsuleCollider>();
-        coll.height = 1.9f;
-        coll.radius = 0.4f;
+        coll.height = 1.8f;
+        coll.radius = 0.3f;
         coll.center = new Vector3(0f, 0.9f, 0f);
 
+        // Idk whether there's a better method for this, but haven't found any
+        GroundedLayerMask = 0;
+        for (int i = 0; i < 32; ++i)
+        {
+            GroundedLayerMask |= Physics.GetIgnoreLayerCollision(i, gameObject.layer) ? 0 : 1 << i;
+        }
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Weapons
@@ -470,13 +479,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Profiler.EndSample();
     }
 
-    public void TickPhysics(float deltaTime)
-    {
-        Profiler.BeginSample("Tick Soldier Physics");
-        UpdatePhysics(deltaTime);
-        Profiler.EndSample();
-    }
-
 
     void UpdatePose(float deltaTime)
     {
@@ -572,9 +574,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
     }
 
-
-
-
     void UpdateState(float deltaTime)
     {
         if (Context == PhxSoldierContext.Pilot && Controller != null)
@@ -635,24 +634,25 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         Vector3 lookWalkForward = Controller.ViewDirection;
         lookWalkForward.y = 0f;
-        LookRot = Quaternion.LookRotation(lookWalkForward);
+        Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
+        Quaternion moveRot = Quaternion.identity;
 
         LandTimer = Mathf.Max(LandTimer - deltaTime, 0f);
         TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
 
         if (LandTimer == 0f)
         {
+            float accStep = C.Acceleration * deltaTime;
+            float thrustFactor = ControlValues[(int)State][0];
+            float strafeFactor = ControlValues[(int)State][1];
+            float turnFactor = ControlValues[(int)State][2];
+
+            Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
+            Vector3 moveDirWorld = lookRot * moveDirLocal;
+
             // Stand - Crouch - Sprint
             if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
             {
-                float accStep = C.Acceleration * deltaTime;
-                float thrustFactor = ControlValues[(int)State][0];
-                float strafeFactor = ControlValues[(int)State][1];
-                float turnFactor = ControlValues[(int)State][2];
-
-                Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
-                Vector3 moveDirWorld = LookRot * moveDirLocal;
-
                 // TODO: base turn speed in degreees/sec really 45?
                 MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
 
@@ -662,12 +662,12 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
                     if (TurnTimer > 0f)
                     {
-                        LookRot = Quaternion.Slerp(LookRot, TurnStart, TurnTimer / TurnTime);
+                        lookRot = Quaternion.Slerp(lookRot, TurnStart, TurnTimer / TurnTime);
                     }
                     else
                     {
                         //float rotDiff = Quaternion.Angle(transform.rotation, lookRot);
-                        float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, LookRot.eulerAngles.y);
+                        float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, lookRot.eulerAngles.y);
                         if (rotDiff < -40f || rotDiff > 60f)
                         {
                             TurnTimer = TurnTime;
@@ -677,7 +677,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                             Animator.Anim.RestartState(0);
                         }
 
-                        LookRot = transform.rotation;
+                        lookRot = transform.rotation;
+                        moveRot = lookRot;
                     }
                 }
                 else
@@ -688,13 +689,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
                     CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
 
+                    moveRot = Quaternion.LookRotation(moveDirWorld);
                     if (moveDirLocal.z <= 0f)
                     {
                         // invert look direction when strafing left/right
                         moveDirWorld = -moveDirWorld;
                     }
-
-                    LookRot = Quaternion.LookRotation(moveDirWorld);
+                    lookRot = Quaternion.LookRotation(moveDirWorld);
                 }
 
                 if (TurnTimer == 0f)
@@ -815,6 +816,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
                     Animator.Anim.SetState(0, Animator.Jump);
                     Animator.Anim.SetState(1, CraSettings.STATE_NONE);
+
+                    Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
                 }
                 // ---------------------------------------------------------------------------------------------
             }
@@ -853,19 +856,28 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             }
         }
 
-
-        // Handle falling / jumping
-        if (State != PhxControlState.Jump && !Grounded)
+        if (IsFixated)
         {
-            State = PhxControlState.Jump;
-            Animator.Anim.SetState(0, Animator.Fall);
-            Animator.Anim.SetState(1, CraSettings.STATE_NONE);
+            transform.rotation = lookRot;
+            return;
         }
 
 
-        //Grounded = Physics.CheckSphere(transform.position, 0.4f, PhxGameRuntime.PlayerMask, QueryTriggerInteraction.Ignore);
+        Grounded = Physics.OverlapSphere(Body.position, 0.2f, GroundedLayerMask).Length > 1;
 
-        // Jump
+        // Not jumping -> Falling
+        if (State != PhxControlState.Jump && !Grounded)
+        {
+            FallTimer += deltaTime;
+            if (FallTimer > FallTime)
+            {
+                State = PhxControlState.Jump;
+                Animator.Anim.SetState(0, Animator.Fall);
+                Animator.Anim.SetState(1, CraSettings.STATE_NONE);
+            }
+        }
+
+        // Jump/Fall -> Land
         if (State == PhxControlState.Jump)
         {
             FallTimer += deltaTime;
@@ -901,46 +913,41 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             }
         }
 
+        if (Grounded && LandTimer == 0f && (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint))
+        {
+            //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
+            Body.AddForce(CurrSpeed - Body.velocity, ForceMode.VelocityChange);
+            Body.MoveRotation(lookRot);
+
+            if (CurrSpeed != Vector3.zero)
+            {
+                Vector3 upper = moveRot * StepCheckOffset;
+
+                // Handling stairs/steps/slopes
+                if (Physics.Raycast(Body.position + upper, Vector3.down, out RaycastHit hit, upper.y * 2f))
+                {
+                    float height = hit.point.y - Body.position.y;
+                    if (Mathf.Abs(height) > 0.05f && Mathf.Abs(height) <= MaxStepHeight)
+                    {
+                        //Debug.Log($"Height: {height}");
+                        Body.AddForce(Vector3.up * height * StepUpForceMulti, ForceMode.VelocityChange);
+                    }
+                }
+
+                //Debug.DrawRay(Body.position + upper, Vector3.down * upper.y, Color.red);
+            }
+        }
+
         //Anim.SetBool("Alert", AlertTimer > 0f);
         LastIdle = Controller.IsIdle;
     }
 
-    void UpdatePhysics(float deltaTime)
+    void OnDrawGizmosSelected()
     {
-        if (Context == PhxSoldierContext.Pilot) return;
-
-        if (IsFixated)
+        if (Body != null)
         {
-            transform.rotation = LookRot;
-            return;
+            Gizmos.DrawSphere(Body.position, 0.2f);
         }
-
-        // This doesn't seem to cause reordering within the native renderer...
-        // No way to check this besides performance comparison.
-        gameObject.layer = 2; // ignore raycast
-        Grounded = Physics.CheckSphere(transform.position, 0.4f);
-        gameObject.layer = 10; // soldier
-
-        if ((PrevState == PhxControlState.Stand || PrevState == PhxControlState.Sprint) && State == PhxControlState.Jump)
-        {
-            if (JumpTimer > 0f)
-            {
-                // Intentional jump
-                Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y) + CurrSpeed, ForceMode.VelocityChange);
-            }
-            else
-            {
-                // Falling, (from a cliff or whatnot) / no intentional jump
-                Body.AddForce(CurrSpeed, ForceMode.VelocityChange);
-            }
-        }
-        else if ((State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint) && LandTimer == 0f)
-        {
-            Body.MovePosition(Body.position + CurrSpeed * deltaTime);
-            Body.MoveRotation(LookRot);
-        }
-
-        PrevState = State;
     }
 
     public Vector3 RotAlt1 = new Vector3(7f, -78f, -130f);
