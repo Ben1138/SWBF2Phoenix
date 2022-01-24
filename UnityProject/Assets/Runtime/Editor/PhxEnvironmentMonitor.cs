@@ -37,8 +37,8 @@ public class PhxEnvironmentMonitor : EditorWindow
         }
 
         PhxPath gamePath = PhxGame.Instance.GamePath;
-        EditorGUILayout.LabelField("Environment Path", env.Path - gamePath);
-        EditorGUILayout.LabelField("Fallback Path", env.FallbackPath - gamePath);
+        EditorGUILayout.LabelField("Game Path", env.GameDataPath - gamePath);
+        EditorGUILayout.LabelField("Addon Path", env.AddonDataPath != null ? (env.AddonDataPath - gamePath).ToString() : "NONE");
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Environment Stage", env.Stage.ToString());
         EditorGUILayout.Space();

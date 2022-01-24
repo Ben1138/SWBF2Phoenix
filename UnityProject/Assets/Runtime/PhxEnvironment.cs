@@ -57,9 +57,9 @@ public class PhxEnvironment
     public Action            OnExecuteMain;
     public Action            OnLoaded;
 
-    public PhxPath    Path          { get; private set; }
-    public PhxPath    FallbackPath  { get; private set; }
-    public EnvStage Stage         { get; private set; }
+    public PhxPath GameDataPath { get; private set; }
+    public PhxPath AddonDataPath { get; private set; }
+    public EnvStage Stage { get; private set; }
 
     bool CanSchedule => Stage == EnvStage.Init || Stage == EnvStage.ExecuteMain;
     bool CanExecute  => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
@@ -87,10 +87,10 @@ public class PhxEnvironment
     Dictionary<PhxPath, SWBF2Handle> PathToHandle = new Dictionary<PhxPath, SWBF2Handle>();
 
 
-    PhxEnvironment(PhxPath path, PhxPath fallbackPath)
+    PhxEnvironment(PhxPath dataPath, PhxPath addonPath)
     {
-        Path = path;
-        FallbackPath = fallbackPath;
+        GameDataPath = dataPath;
+        AddonDataPath = addonPath;
         Stage = EnvStage.Init;
         WorldLevel = null;
 
@@ -138,32 +138,33 @@ public class PhxEnvironment
         return Timers;
     }
 
-    public static PhxEnvironment Create(PhxPath envPath, PhxPath fallbackPath = null, bool initMatch=true)
+    public static PhxEnvironment Create(PhxPath lvlGameDataPath, PhxPath lvlAddonDataPath = null, bool initMatch=true)
     {
-        if (!envPath.Exists())
+        if (!lvlGameDataPath.Exists())
         {
-            Debug.LogErrorFormat("Given environment path '{0}' doesn't exist!", envPath);
+            Debug.LogError($"Given environment path '{lvlGameDataPath}' doesn't exist!");
             return null;
         }
 
-        if (fallbackPath == null)
+        bool bIsAddon = lvlAddonDataPath != null;
+        if (bIsAddon && !lvlAddonDataPath.Exists())
         {
-            fallbackPath = envPath;
+            Debug.LogError($"Given environment path '{lvlGameDataPath}' doesn't exist!");
+            return null;
         }
-        Debug.Assert(fallbackPath.Exists());
 
         PhxAnimationLoader.ClearDB();
         PhxLuaEvents.Clear();
 
-        PhxEnvironment rt = new PhxEnvironment(envPath, fallbackPath);
-        rt.ScheduleRel("core.lvl");
-        rt.ScheduleRel("shell.lvl");
-        rt.ScheduleRel("common.lvl");
-        rt.ScheduleRel("mission.lvl");
+        PhxEnvironment rt = new PhxEnvironment(lvlGameDataPath, lvlAddonDataPath);
+        rt.ScheduleRelFallback("core.lvl");
+        rt.ScheduleRelFallback("shell.lvl");
+        rt.ScheduleRelFallback("common.lvl");
+        rt.ScheduleRelFallback("mission.lvl");
         rt.ScheduleRel("sound/common.bnk");
 
         // TODO: Remove
-        rt.ScheduleAbs(rt.FallbackPath / "ingame.lvl");
+        //rt.ScheduleAbs(rt.AddonDataPath / "ingame.lvl");
 
         rt.RTScene = new PhxScene(rt, rt.EnvCon);
         rt.Match = initMatch ? new PhxMatch() : null;
@@ -196,13 +197,13 @@ public class PhxEnvironment
 
         if (script == null)
         {
-            Debug.LogErrorFormat("Couldn't find script '{0}'!", scriptName);
+            Debug.LogError($"Couldn't find script '{scriptName}'!");
             return false;
         }
 
         if (!script.IsValid())
         {
-            Debug.LogErrorFormat("Script '{0}' found but invalid!", scriptName);
+            Debug.LogError($"Script '{scriptName}' found but invalid!");
             return false;
         }
 
@@ -214,13 +215,13 @@ public class PhxEnvironment
         Debug.Assert(CanExecute);
         if (script == null || !script.IsValid())
         {
-            Debug.LogErrorFormat("Given script '{0}' is NULl or invalid!", script.Name);
+            Debug.LogError($"Given script '{script.Name}' is NULl or invalid!");
             return false;
         }
 
         if (!script.GetData(out IntPtr luaBin, out uint size))
         {
-            Debug.LogErrorFormat("Couldn't grab lua binary code from script '{0}'!", script.Name);
+            Debug.LogError($"Couldn't grab lua binary code from script '{script.Name}'!");
             return false;
         }
 
@@ -273,26 +274,39 @@ public class PhxEnvironment
         return handle;
     }
 
-    public SWBF2Handle ScheduleRel(PhxPath relPath, string[] subLVLs = null, bool bNoFallback = false)
+    public SWBF2Handle ScheduleRel(PhxPath relPath, string[] subLVLs = null, bool bAddon = false)
     {
+        if (bAddon && !AddonDataPath.Exists())
+        {
+            Debug.LogError($"ScheduleRel '{relPath}' from Addon, but AddonDataPath is NULL!");
+            return new SWBF2Handle(ushort.MaxValue);
+        }
+
         // Relative paths are always lower case in consideration of Unix file systems.
         // Also see PhxGame::Awake()
         relPath = relPath.ToString().ToLower();
+        PhxPath dataPath = bAddon ? AddonDataPath : GameDataPath;
 
         SWBF2Handle handle;
-        if (Schedule(Path / relPath, out handle, subLVLs) || bNoFallback)
+        if (!Schedule(dataPath / relPath, out handle, subLVLs))
         {
-            if (!handle.IsValid())
-            {
-                Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relPath);
-            }
-            return handle;
-        }
-        else if (!Schedule(FallbackPath / relPath, out handle, subLVLs))
-        {
-            Debug.LogErrorFormat("Couldn't schedule '{0}'! File not found!", relPath);
+            Debug.LogError($"Couldn't schedule '{relPath}'! File not found!");
         }
         return handle;
+    }
+
+    public SWBF2Handle ScheduleRelFallback(PhxPath relPath, string[] subLVLs = null)
+    {
+        relPath = relPath.ToString().ToLower();
+        if (AddonDataPath != null)
+        {
+            PhxPath path = (AddonDataPath / relPath);
+            if (path.Exists() && path.IsFile())
+            {
+                return ScheduleRel(relPath, subLVLs, true);
+            }
+        }
+        return ScheduleRel(relPath, subLVLs, false);
     }
 
     public float GetProgress(SWBF2Handle handle)
@@ -478,7 +492,7 @@ public class PhxEnvironment
         if (!string.IsNullOrEmpty(InitScriptName))
         {
             PhxPath loadscreenLVL = new PhxPath("load") / (InitScriptName.Substring(0, 4) + ".lvl");
-            if ((Path / loadscreenLVL).Exists() || (FallbackPath / loadscreenLVL).Exists())
+            if ((GameDataPath / loadscreenLVL).Exists() || (AddonDataPath != null && (AddonDataPath / loadscreenLVL).Exists()))
             {
                 return loadscreenLVL;
             } 
