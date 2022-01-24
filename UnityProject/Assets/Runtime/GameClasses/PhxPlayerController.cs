@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class PhxPlayerController : PhxPawnController
 {
-    PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
-    PhxCamera Camera => PhxGameRuntime.GetCamera();
+    PhxMatch Match => PhxGame.GetMatch();
+    PhxCamera Camera => PhxGame.GetCamera();
 
     public bool CancelPressed { get; private set; }
     Vector3? TargetPos;

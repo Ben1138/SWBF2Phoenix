@@ -11,7 +11,7 @@ using UnityEngine;
 /// </summary>
 public abstract class PhxClass
 {
-    static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
+    static PhxEnvironment ENV => PhxGame.GetEnvironment();
 
     public PhxPropertyDB P { get; private set; } = new PhxPropertyDB();
     public string Name { get; private set; }

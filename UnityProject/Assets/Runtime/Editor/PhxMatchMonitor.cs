@@ -27,18 +27,18 @@ public class PhxMatchMonitor : EditorWindow
 
     void OnGUI()
     {
-        PhxLuaRuntime rt = PhxGameRuntime.GetLuaRuntime();
+        PhxLuaRuntime rt = PhxGame.GetLuaRuntime();
         if (!Application.isPlaying || rt == null)
         {
             EditorGUILayout.LabelField("LUA is not running");
             return;
         }
 
-        PhxRuntimeMatch gm = PhxGameRuntime.GetMatch();
+        PhxMatch gm = PhxGame.GetMatch();
         ScrollPos = EditorGUILayout.BeginScrollView(ScrollPos);
-        for (int i = 0; i < PhxRuntimeMatch.MAX_TEAMS; ++i)
+        for (int i = 0; i < PhxMatch.MAX_TEAMS; ++i)
         {
-            PhxRuntimeMatch.PhxTeam t = gm.Teams[i];
+            PhxMatch.PhxTeam t = gm.Teams[i];
 
             EditorGUILayout.LabelField("Team ID", (i+1).ToString());
             EditorGUILayout.LabelField("Name", t.Name);
@@ -49,9 +49,9 @@ public class PhxMatchMonitor : EditorWindow
             EditorGUILayout.LabelField("Spawn Delay", t.SpawnDelay.ToString());
             EditorGUILayout.LabelField("Hero Class", t.HeroClass?.Name);
             GUILayout.Label("Unit Classes:");
-            foreach (PhxRuntimeMatch.PhxUnitClass unitClass in t.UnitClasses)
+            foreach (PhxMatch.PhxUnitClass unitClass in t.UnitClasses)
             {
-                EditorGUILayout.LabelField("    " + unitClass.Unit.Name, unitClass.Count.ToString());
+                EditorGUILayout.LabelField($"    {unitClass.Unit.Name}, {unitClass.CountMin}, {unitClass.CountMax}");
             }
             GUILayout.Space(20);
         }

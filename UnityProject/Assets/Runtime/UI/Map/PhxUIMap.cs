@@ -6,9 +6,9 @@ using UnityEngine.UI;
 
 public class PhxUIMap : MonoBehaviour
 {
-    PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
-    PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
+    PhxGame GAME => PhxGame.Instance;
+    PhxScene SCENE => PhxGame.GetScene();
+    PhxMatch MATCH => PhxGame.GetMatch();
 
 
     public enum PhxUIMapMode

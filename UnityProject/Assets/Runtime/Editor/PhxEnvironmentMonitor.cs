@@ -29,14 +29,14 @@ public class PhxEnvironmentMonitor : EditorWindow
 
     void OnGUI()
     {
-        PhxRuntimeEnvironment env = PhxGameRuntime.GetEnvironment();
-        if (!Application.isPlaying || PhxGameRuntime.Instance == null || env == null)
+        PhxEnvironment env = PhxGame.GetEnvironment();
+        if (!Application.isPlaying || PhxGame.Instance == null || env == null)
         {
             EditorGUILayout.LabelField("Game is not running");
             return;
         }
 
-        PhxPath gamePath = PhxGameRuntime.Instance.GamePath;
+        PhxPath gamePath = PhxGame.Instance.GamePath;
         EditorGUILayout.LabelField("Environment Path", env.Path - gamePath);
         EditorGUILayout.LabelField("Fallback Path", env.FallbackPath - gamePath);
         EditorGUILayout.Space();

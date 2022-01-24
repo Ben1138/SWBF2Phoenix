@@ -5,10 +5,10 @@ using LibSWBF2.Enums;
 
 public class PhxCharacterSelect : PhxMenuInterface
 {
-    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
-    static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
-    static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    static PhxGame GAME => PhxGame.Instance;
+    static PhxScene RTS => PhxGame.GetScene();
+    static PhxMatch MTC => PhxGame.GetMatch();
+    static PhxCamera CAM => PhxGame.GetCamera();
 
     [Header("References")]
     public PhxUIMap Map;

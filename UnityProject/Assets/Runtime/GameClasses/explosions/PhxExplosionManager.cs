@@ -40,8 +40,8 @@ public class PhxExplosionClass : PhxClass
 
 public static class PhxExplosionManager
 {
-    static PhxGameRuntime Game => PhxGameRuntime.Instance;
-    static PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
+    static PhxGame Game => PhxGame.Instance;
+    static PhxScene Scene => PhxGame.GetScene();
 
 
     public static void AddExplosion(PhxPawnController Originator, PhxExplosionClass Exp, Vector3 Position, Quaternion Rotation)

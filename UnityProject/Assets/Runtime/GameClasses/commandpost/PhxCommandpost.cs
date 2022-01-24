@@ -6,8 +6,8 @@ using LibSWBF2.Wrappers;
 
 public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxTickable
 {
-    PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
-    PhxRuntimeScene Scene => PhxGameRuntime.GetScene();
+    PhxMatch Match => PhxGame.GetMatch();
+    PhxScene Scene => PhxGame.GetScene();
 
     public class ClassProperties : PhxClass
     {
@@ -147,7 +147,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
 
     public void UpdateColor()
     {
-        HoloColor = PhxGameRuntime.GetMatch().GetTeamColor(Team);
+        HoloColor = PhxGame.GetMatch().GetTeamColor(Team);
         HoloRay?.material.SetColor("_EmissiveColor", HoloColor);
         if (Light != null)
         {

@@ -5,9 +5,9 @@ using UnityEngine.UI;
 
 public class PhxHUD : PhxMenuInterface
 {
-    PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    PhxRuntimeMatch Match => PhxGameRuntime.GetMatch();
-    PhxTimerDB TimerDB => PhxGameRuntime.GetTimerDB();
+    PhxGame GAME => PhxGame.Instance;
+    PhxMatch Match => PhxGame.GetMatch();
+    PhxTimerDB TimerDB => PhxGame.GetTimerDB();
 
     [Header("References")]
     public Text ReinforcementTeam1;
@@ -146,16 +146,16 @@ public class PhxHUD : PhxMenuInterface
             TimerDisplay.color = GAME.Settings.ColorNeutral;
         }
 
-        (int? timerIdx, PhxRuntimeMatch.PhxTeam.TimerDisplay display) = Match.GetTeamTimer(Match.Player.Team);
+        (int? timerIdx, PhxMatch.PhxTeam.TimerDisplay display) = Match.GetTeamTimer(Match.Player.Team);
         VicDefTimerDisplay.gameObject.SetActive(timerIdx.HasValue);
         if (timerIdx.HasValue)
         {
             Color color = GAME.Settings.ColorNeutral;
-            if (display == PhxRuntimeMatch.PhxTeam.TimerDisplay.Defeat)
+            if (display == PhxMatch.PhxTeam.TimerDisplay.Defeat)
             {
                 color = GAME.Settings.ColorEnemy;
             }
-            else if (display == PhxRuntimeMatch.PhxTeam.TimerDisplay.Victory)
+            else if (display == PhxMatch.PhxTeam.TimerDisplay.Victory)
             {
                 color = GAME.Settings.ColorFriendly;
             }

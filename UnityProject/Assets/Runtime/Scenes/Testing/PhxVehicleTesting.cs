@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PhxVehicleTesting : PhxUnityScript
 {
-    static PhxRuntimeMatch MATCH => PhxGameRuntime.GetMatch();
+    static PhxMatch MATCH => PhxGame.GetMatch();
 
 
     private string VehicleClass = "cis_tread_hailfire";
@@ -22,7 +22,7 @@ public class PhxVehicleTesting : PhxUnityScript
 
     public override void ScriptPostLoad()
     {
-        PhxRuntimeScene scene = PhxGameRuntime.GetScene();
+        PhxScene scene = PhxGame.GetScene();
 
 		scene.CreateInstance(
             scene.GetClass(VehicleClass),
