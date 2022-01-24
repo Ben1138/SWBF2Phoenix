@@ -7,7 +7,7 @@ using LibSWBF2.Utils;
 
 public class PhxEffectsManager
 {
-    PhxGameRuntime Game => PhxGameRuntime.Instance;
+    PhxGame Game => PhxGame.Instance;
 
     Dictionary<uint, List<PhxEffect>> Effects;
     Dictionary<uint, float> EffectFrequencies;

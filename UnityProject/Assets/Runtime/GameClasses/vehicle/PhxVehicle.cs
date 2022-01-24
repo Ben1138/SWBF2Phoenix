@@ -83,10 +83,10 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
                                     IPhxTickablePhysics,
                                     IPhxTickable 
 {
-    protected static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    protected static PhxRuntimeMatch MTC => PhxGameRuntime.GetMatch();
-    protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
-    protected static PhxCamera CAM => PhxGameRuntime.GetCamera();
+    protected static PhxGame GAME => PhxGame.Instance;
+    protected static PhxMatch MTC => PhxGame.GetMatch();
+    protected static PhxScene SCENE => PhxGame.GetScene();
+    protected static PhxCamera CAM => PhxGame.GetCamera();
 
     public PhxProp<float> CurHealth = new PhxProp<float>(100.0f);
 
@@ -267,7 +267,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         else 
         {
             Seats[seat].SetOccupant(soldier);
-            PhxGameRuntime.GetCamera().Track(Seats[seat]);
+            PhxGame.GetCamera().Track(Seats[seat]);
             
             return Seats[seat];
         }

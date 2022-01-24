@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PhxRuntimeMatch
+public class PhxMatch
 {
-    static PhxGameRuntime GAME => PhxGameRuntime.Instance;
-    static PhxRuntimeEnvironment ENV => PhxGameRuntime.GetEnvironment();
-    static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
-    static PhxCamera CAM => PhxGameRuntime.GetCamera();
-    static PhxTimerDB TDB => PhxGameRuntime.GetTimerDB();
+    static PhxGame GAME => PhxGame.Instance;
+    static PhxEnvironment ENV => PhxGame.GetEnvironment();
+    static PhxScene RTS => PhxGame.GetScene();
+    static PhxCamera CAM => PhxGame.GetCamera();
+    static PhxTimerDB TDB => PhxGame.GetTimerDB();
 
 
     public int? ShowTimer = null;
@@ -35,7 +35,8 @@ public class PhxRuntimeMatch
     public class PhxUnitClass
     {
         public PhxClass Unit = null;
-        public int Count = 0;
+        public int CountMin = 0;
+        public int CountMax = int.MaxValue;
 
         public override int GetHashCode()
         {
@@ -69,14 +70,14 @@ public class PhxRuntimeMatch
 
     public PhxTeam[] Teams { get; private set; } = new PhxTeam[MAX_TEAMS];
 
-    Queue<(int, string, int)> TeamUnits = new Queue<(int, string, int)>();
+    Queue<(int, string, int, int)> TeamUnits = new Queue<(int, string, int, int)>();
     Queue<(int, string)> TeamHeroClass = new Queue<(int, string)>();
     Queue<(int, string)> TeamIcon = new Queue<(int, string)>();
 
     AudioClip UIBack;
 
 
-    public PhxRuntimeMatch()
+    public PhxMatch()
     {
         for (int i = 0; i < MAX_TEAMS; ++i)
         {
@@ -143,28 +144,36 @@ public class PhxRuntimeMatch
     {
         while (TeamUnits.Count > 0)
         {
-            (int, string, int) addTeamUnit = TeamUnits.Dequeue();
-            PhxClass odf = RTS.GetClass(addTeamUnit.Item2);
+            (int teamIdx, string className, int countMin, int countMax) = TeamUnits.Dequeue();
+            PhxClass odf = RTS.GetClass(className);
             if (odf != null)
             {
-                Teams[addTeamUnit.Item1].UnitClasses.Add(new PhxUnitClass { Unit = odf, Count = addTeamUnit.Item3 });
+                Teams[teamIdx].UnitClasses.Add(new PhxUnitClass { Unit = odf, CountMin = countMin, CountMax = countMax });
+            }
+            else
+            {
+                Debug.LogWarning($"AddUnitClass: Could not find PhxClass '{className}'!");
             }
         }
 
         while (TeamHeroClass.Count > 0)
         {
-            (int, string) setHeroClass = TeamHeroClass.Dequeue();
-            PhxClass odf = RTS.GetClass(setHeroClass.Item2);
+            (int teamIdx, string className) = TeamHeroClass.Dequeue();
+            PhxClass odf = RTS.GetClass(className);
             if (odf != null)
             {
-                Teams[setHeroClass.Item1].HeroClass = odf;
+                Teams[teamIdx].HeroClass = odf;
+            }
+            else
+            {
+                Debug.LogWarning($"SetHeroClass: Could not find PhxClass '{className}'!");
             }
         }
 
         while (TeamIcon.Count > 0)
         {
-            (int, string) setTeamIcon = TeamIcon.Dequeue();
-            Teams[setTeamIcon.Item1].Icon = TextureLoader.Instance.ImportUITexture(setTeamIcon.Item2);
+            (int teamIdx, string texName) = TeamIcon.Dequeue();
+            Teams[teamIdx].Icon = TextureLoader.Instance.ImportUITexture(texName);
         }
 
         LVLsLoaded = true;
@@ -365,20 +374,24 @@ public class PhxRuntimeMatch
         Teams[teamIdx].ReinforcementCount += reinfCount;
     }
 
-    public void AddUnitClass(int teamIdx, string className, int unitCount)
+    public void AddUnitClass(int teamIdx, string className, int unitCountMin, int unitCountMax = int.MaxValue)
     {
         if (!CheckTeamIdx(--teamIdx)) return;
 
         if (!LVLsLoaded)
         {
-            TeamUnits.Enqueue((teamIdx, className, unitCount));
+            TeamUnits.Enqueue((teamIdx, className, unitCountMin, unitCountMax));
         }
         else
         {
             PhxClass odf = RTS.GetClass(className);
             if (odf != null)
             {
-                Teams[teamIdx].UnitClasses.Add(new PhxUnitClass { Unit = odf, Count = unitCount });
+                Teams[teamIdx].UnitClasses.Add(new PhxUnitClass { Unit = odf, CountMin = unitCountMin, CountMax = unitCountMax });
+            }
+            else
+            {
+                Debug.LogWarning($"AddUnitClass: Could not find PhxClass '{className}'!");
             }
 
             if (PlayerST == PhxPlayerState.CharacterSelection)
@@ -403,6 +416,10 @@ public class PhxRuntimeMatch
             if (odf != null)
             {
                 Teams[teamIdx].HeroClass = odf;
+            }
+            else
+            {
+                Debug.LogWarning($"SetHeroClass: Could not find PhxClass '{className}'!");
             }
 
             if (PlayerST == PhxPlayerState.CharacterSelection)

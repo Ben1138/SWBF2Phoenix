@@ -89,7 +89,7 @@ public class PhxCamera : MonoBehaviour
             rotPoint.y += PositionOffset.y;
 
             //Vector3 viewDir = (FollowInstance.GetTargetPosition() - rotPoint).normalized;
-            Vector3 viewDir = PhxGameRuntime.GetMatch().Player.ViewDirection;
+            Vector3 viewDir = PhxGame.GetMatch().Player.ViewDirection;
             Vector3 camTargetPos = rotPoint + viewDir * PositionOffset.z;
             Quaternion camTargetRot = Quaternion.LookRotation(viewDir);
             camTargetPos += camTargetRot * new Vector3(PositionOffset.x, 0f, 0f);

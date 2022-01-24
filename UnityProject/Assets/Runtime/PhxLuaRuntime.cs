@@ -11,7 +11,7 @@ public class PhxLuaRuntime
     // References a function defined in Lua (not a CFunction!)
     public class LFunction
     {
-        static Lua L => PhxGameRuntime.GetLuaRuntime()?.GetLua();
+        static Lua L => PhxGame.GetLuaRuntime()?.GetLua();
 
         int RefIdx;
 
@@ -47,7 +47,7 @@ public class PhxLuaRuntime
 
         public void Invoke(params object[] args)
         {
-            PhxLuaRuntime rt = PhxGameRuntime.GetLuaRuntime();
+            PhxLuaRuntime rt = PhxGame.GetLuaRuntime();
             if (rt != null)
             {
                 rt.CallLuaFunction(RefIdx, 0, false, false, args);
@@ -64,7 +64,7 @@ public class PhxLuaRuntime
     {
         public int Count => Contents.Count;
 
-        static Lua L => PhxGameRuntime.GetLuaRuntime()?.GetLua();
+        static Lua L => PhxGame.GetLuaRuntime()?.GetLua();
         Dictionary<object, object> Contents = new Dictionary<object, object>();
 
         Table() { }
@@ -171,7 +171,7 @@ public class PhxLuaRuntime
         Register<Action<object[]>>(printf);
         RegisterLuaFunctions(typeof(PhxLuaAPI));
 
-        PhxGameRuntime inst = PhxGameRuntime.Instance;
+        PhxGame inst = PhxGame.Instance;
         Debug.Assert(inst != null);
         L.PushString(inst.VersionString);
         L.SetGlobal("PHX_VER");

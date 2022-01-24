@@ -17,10 +17,10 @@ using ELibLogType = LibSWBF2.Logging.ELogType;
 using System.IO;
 #endif
 
-
-public class PhxGameRuntime : MonoBehaviour
+// This is the Entry point for everything. In other words, this is ROOT.
+public class PhxGame : MonoBehaviour
 {
-    public static PhxGameRuntime Instance { get; private set; } = null;
+    public static PhxGame Instance { get; private set; } = null;
 
 
     public PhxPath GamePath => new PhxPath(Settings.GamePathString);
@@ -68,7 +68,7 @@ public class PhxGameRuntime : MonoBehaviour
     AudioSource[] UIAudio = new AudioSource[5];
     byte UIAudioHead = 0;
 
-    PhxRuntimeEnvironment Env;
+    PhxEnvironment Env;
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
     
     // Maps addons to their root folders
@@ -88,20 +88,20 @@ public class PhxGameRuntime : MonoBehaviour
     // Unity will create multiple instances of this, without calling
     // 'Awake' and then destroy those instances again immediately...
 #if !UNITY_EDITOR
-    ~PhxGameRuntime()
+    ~PhxGame()
     {
-        Debug.Log("PhxGameRuntime destructor called");
+        Debug.Log("PhxGame destructor called");
         Destroy();
     }
 #endif
 
     public static PhxLuaRuntime GetLuaRuntime()
     {
-        PhxRuntimeEnvironment env = GetEnvironment();
+        PhxEnvironment env = GetEnvironment();
         return env == null ? null : env.GetLuaRuntime();
     }
 
-    public static PhxRuntimeEnvironment GetEnvironment()
+    public static PhxEnvironment GetEnvironment()
     {
         return Instance == null ? null : Instance.Env;
     }
@@ -111,21 +111,21 @@ public class PhxGameRuntime : MonoBehaviour
         return Instance == null ? null : Instance.Camera;
     }
 
-    public static PhxRuntimeScene GetScene()
+    public static PhxScene GetScene()
     {
-        PhxRuntimeEnvironment env = GetEnvironment();
+        PhxEnvironment env = GetEnvironment();
         return env == null ? null : env.GetScene();
     }
 
-    public static PhxRuntimeMatch GetMatch()
+    public static PhxMatch GetMatch()
     {
-        PhxRuntimeEnvironment env = GetEnvironment();
+        PhxEnvironment env = GetEnvironment();
         return env == null ? null : env.GetMatch();
     }
 
     public static PhxTimerDB GetTimerDB()
     {
-        PhxRuntimeEnvironment env = GetEnvironment();
+        PhxEnvironment env = GetEnvironment();
         return env == null ? null : env.GetTimerDB();
     }
 
@@ -134,7 +134,7 @@ public class PhxGameRuntime : MonoBehaviour
         Env?.Destroy();
         Env = null;
         Instance = null;
-        Debug.Log("PhxGameRuntime destroyed");
+        Debug.Log("PhxGame destroyed");
     }
 
     public void AddToMapRotation(List<string> mapScripts)
@@ -194,7 +194,7 @@ public class PhxGameRuntime : MonoBehaviour
         }
 
         Env?.Destroy();
-        Env = PhxRuntimeEnvironment.Create(StdLVLPC);
+        Env = PhxEnvironment.Create(StdLVLPC);
 
         if (!bInit)
         {
@@ -230,7 +230,7 @@ public class PhxGameRuntime : MonoBehaviour
         }
 
         Env?.Destroy();
-        Env = PhxRuntimeEnvironment.Create(envPath, StdLVLPC);
+        Env = PhxEnvironment.Create(envPath, StdLVLPC);
         Env.ScheduleRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
         Env.OnLoaded += OnEnvLoaded;
@@ -265,7 +265,7 @@ public class PhxGameRuntime : MonoBehaviour
             }
 
             Env?.Destroy();
-            Env = PhxRuntimeEnvironment.Create(StdLVLPC);
+            Env = PhxEnvironment.Create(StdLVLPC);
             Env.ScheduleRel("load/common.lvl");
 
             Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
@@ -347,7 +347,7 @@ public class PhxGameRuntime : MonoBehaviour
 
     void Init()
     {
-        Debug.Log("PhxGameRuntime Init");
+        Debug.Log("PhxGame Init");
         Debug.Assert(Instance == null);
 
         Instance = this;

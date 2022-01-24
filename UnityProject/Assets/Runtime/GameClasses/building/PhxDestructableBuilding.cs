@@ -11,7 +11,7 @@ using System.Runtime.ExceptionServices;
 
 public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.ClassProperties>, IPhxTickable
 {
-    protected static PhxRuntimeScene SCENE => PhxGameRuntime.GetScene();
+    protected static PhxScene SCENE => PhxGame.GetScene();
 
     public class ClassProperties : PhxClass 
     {

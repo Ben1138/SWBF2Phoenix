@@ -10,7 +10,7 @@ using LibSWBF2.Wrappers;
 /// </summary>
 public sealed class PhxPropertyDB
 {
-    static PhxRuntimeScene RTS => PhxGameRuntime.GetScene();
+    static PhxScene RTS => PhxGame.GetScene();
 
     Dictionary<string, IPhxPropRef> Properties = new Dictionary<string, IPhxPropRef>();
 
