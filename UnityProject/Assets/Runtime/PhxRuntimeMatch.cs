@@ -11,11 +11,6 @@ public class PhxRuntimeMatch
     static PhxTimerDB TDB => PhxGameRuntime.GetTimerDB();
 
 
-    public static readonly Color ColorNeutral   = Color.white;
-    public static readonly Color ColorEnemy     = Color.red;
-    public static readonly Color ColorFriendly  = Color.green;
-    public static readonly Color ColorLocals    = Color.yellow;
-
     public int? ShowTimer = null;
 
     public PhxPlayerController Player { get; private set; }
@@ -100,17 +95,17 @@ public class PhxRuntimeMatch
     {
         if (teamId == 0)
         {
-            return ColorNeutral;
+            return GAME.Settings.ColorNeutral;
         }
         else if (teamId == Player.Team || IsFriend(Player.Team, teamId))
         {
-            return ColorFriendly;
+            return GAME.Settings.ColorFriendly;
         }
         else if (teamId >= 3)
         {
-            return ColorLocals;
+            return GAME.Settings.ColorLocals;
         }
-        return ColorEnemy;
+        return GAME.Settings.ColorEnemy;
     }
 
     public void SetPlayerState(PhxPlayerState st)

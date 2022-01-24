@@ -261,7 +261,7 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
             ShotCallback?.Invoke();
 
-            if (!Game.InfiniteAmmo)
+            if (!Game.Settings.InfiniteAmmo)
             {
                 MagazineAmmo -= C.ShotsPerSalvo;
             }

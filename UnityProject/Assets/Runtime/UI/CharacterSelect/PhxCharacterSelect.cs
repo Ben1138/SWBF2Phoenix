@@ -167,7 +167,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         Debug.Assert(BtnNextCamera != null);
         Debug.Assert(Map           != null);
 
-        // For soem reason, we have to trigger the volume in order
+        // For some reason, we have to trigger the volume in order
         // for it to be actually active...
         GAME.CharSelectPPVolume.gameObject.SetActive(false);
         GAME.CharSelectPPVolume.gameObject.SetActive(true);
@@ -188,12 +188,6 @@ public class PhxCharacterSelect : PhxMenuInterface
         }
 
         UpdateCharacterList();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     void OnCPSelected(PhxCommandpost cp)
