@@ -298,18 +298,12 @@ public class PhxScene
         Projectiles.Destroy();
         Instances.Clear();
         Classes.Clear();
-        DestroyAllVehicles();
+        UnityEngine.Object.Destroy(Vehicles);
         for (int i = 0; i < WorldRoots.Count; ++i)
         {
             UnityEngine.Object.Destroy(WorldRoots[i]);
         }
         WorldRoots.Clear();
-    }
-
-    public void DestroyAllVehicles()
-    {
-        UnityEngine.Object.Destroy(Vehicles);
-        Debug.Log("Destroyed vehicles");
     }
 
     // TODO: implement object pooling
