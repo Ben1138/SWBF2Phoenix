@@ -35,7 +35,7 @@ public static class PhxAnimationLoader
         return Import(bankName, HashUtils.GetCRC(animName), animName);
     }
 
-    public static CraClip Import(string bankName, uint animNameCRC, string clipNaming=null)
+    public static CraClip Import(string bankName, uint animNameCRC, string clipNameOverride=null)
     {
         CraClip clip;
 
@@ -59,7 +59,7 @@ public static class PhxAnimationLoader
         }
 
         clip = new CraClip();
-        clip.Name = string.IsNullOrEmpty(clipNaming) ? animNameCRC.ToString() : clipNaming;
+        clip.Name = string.IsNullOrEmpty(clipNameOverride) ? animNameCRC.ToString() : clipNameOverride;
 
         uint dummyroot = HashUtils.GetCRC("dummyroot");
 
