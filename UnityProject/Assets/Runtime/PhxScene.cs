@@ -475,7 +475,7 @@ public class PhxScene
             }
             if(script is PhxVehicle)
             {
-                //instanceObject.transform.parent = Vehicles.transform;
+                instanceObject.transform.parent = Vehicles.transform;
             }
         }
 
