@@ -26,6 +26,7 @@ public class PhxScene
     List<IPhxTickable>        TickableInstances        = new List<IPhxTickable>();
     List<IPhxTickablePhysics> TickablePhysicsInstances = new List<IPhxTickablePhysics>();
     List<PhxCommandpost>      CommandPosts             = new List<PhxCommandpost>();
+    GameObject                Vehicles                 = new GameObject("Vehicles");
 
     Dictionary<string, PhxClass> Classes     = new Dictionary<string, PhxClass>();
     Dictionary<string, int>      InstanceMap = new Dictionary<string, int>();
@@ -297,6 +298,7 @@ public class PhxScene
         Projectiles.Destroy();
         Instances.Clear();
         Classes.Clear();
+        UnityEngine.Object.Destroy(Vehicles);
         for (int i = 0; i < WorldRoots.Count; ++i)
         {
             UnityEngine.Object.Destroy(WorldRoots[i]);
@@ -428,6 +430,7 @@ public class PhxScene
         instanceObject.transform.localScale = new Vector3(1.0f, 1.0f, 1.0f);
 
         Type instType = PhxClassRegister.GetPhxInstanceType(rootClass.BaseClassName);
+
         if (instType != null)
         {
             PhxClass odf = GetClass(ec);
@@ -463,6 +466,10 @@ public class PhxScene
             if (script is PhxCommandpost)
             {
                 CommandPosts.Add((PhxCommandpost)script);
+            }
+            if(script is PhxVehicle)
+            {
+                instanceObject.transform.parent = Vehicles.transform;
             }
         }
 
