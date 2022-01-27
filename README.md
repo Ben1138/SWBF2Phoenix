@@ -37,7 +37,7 @@ This project aims for full compatibility with the vanilla game files, and as bes
 7. Add the `UnityProject` directory to UnityHub and open it. This might take a while.
 8. Open the package manager in *Windows -> Package Manager* and select the "High Definition RP" package. On the right side, expand "Samples" and import "Particle System Shader Samples"
 9. Navigate to `Runtime/Scenes` and open PhxMainScene
-10. In the hierarchy, select the GameRuntime GameObject and set:
+10. In the hierarchy, select *Game* and set in the inspector:
     * `Game Path String` to your Star Wars Battlefront II installation directory. E.g.: `C:\Program Files (x86)\Steam\steamapps\common\Star Wars Battlefront II`
     * `Mission List Path` to empty!
 11. Go to *File -> Build Settings*, select *PC, Max & Linux Standalone* and choose `Windows` as Target Platform and `x86_64` as Architecture.
@@ -63,7 +63,7 @@ This project aims for full compatibility with the vanilla game files, and as bes
 7. Add the `UnityProject` directory to UnityHub and open it. This might take a while.
 8. Open the package manager in *Windows -> Package Manager* and select the "High Definition RP" package. On the right side, expand "Samples" and import "Particle System Shader Samples"
 9. Navigate to `Runtime/Scenes` and open PhxMainScene
-10. In the hierarchy, select the GameRuntime GameObject and set:
+10. In the hierarchy, select *Game* and set in the inspector:
     * `Game Path String` to your Star Wars Battlefront II installation directory.
     * `Mission List Path` to empty!
 11. Go to *File -> Build Settings*, select *PC, Max & Linux Standalone* and choose `Linux` as Target Platform and `x86_64` as Architecture.
