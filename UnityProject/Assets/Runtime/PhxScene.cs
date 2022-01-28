@@ -36,7 +36,8 @@ public class PhxScene
     bool bTerrainImported = false;
 
     Dictionary<string, GameObject> LoadedSkydomes = new Dictionary<string, GameObject>();
-    Dictionary<string, PhxRegion>  Regions  = new Dictionary<string, PhxRegion>();
+    Dictionary<string, PhxRegion>  Regions = new Dictionary<string, PhxRegion>();
+    Dictionary<string, SWBFPath>   Paths = new Dictionary<string, SWBFPath>();
 
     List<GameObject>  WorldRoots = new List<GameObject>();
     List<PhxTransform> CameraShots = new List<PhxTransform>();
@@ -46,14 +47,22 @@ public class PhxScene
     public readonly PhxEffectsManager EffectsManager = new PhxEffectsManager();
 
     CraMain Cra;
-
     int InstanceCounter;
+    int AdjustPathsCountdown = 0;
+
+#if UNITY_EDITOR
+    GameObject PathsRoot;
+#endif
 
     public PhxScene(PhxEnvironment env, Container c)
     {
         ENV = env;
         EnvCon = c;
         Cra = new CraMain();
+
+#if UNITY_EDITOR
+        PathsRoot = new GameObject("PathsRoot");
+#endif
 
         ModelLoader.Instance.PhyMat = PhxGame.Instance.GroundPhyMat;
     }
@@ -219,6 +228,8 @@ public class PhxScene
                 Regions.Add(regName, reg);
             }
 
+
+
             //Instances
             GameObject instancesRoot = new GameObject("Instances");
             instancesRoot.transform.parent = worldRoot.transform;
@@ -263,29 +274,27 @@ public class PhxScene
             }
 
             WorldRoots.Add(worldRoot);
+
+            // Adjust path nodes after 3 frames from now
+            // (arbitrarily chosen, should be greater than 1)
+            // We need to do this deferred in order for the 
+            // physics engine to recognize our just created objects.
+            AdjustPathsCountdown = 3;
         }
     }
 
     public SWBFPath GetPath(string pathName)
     {
+        if (Paths.TryGetValue(pathName, out SWBFPath path))
+        {
+            return path;
+        }
+
         Level level = ENV.GetWorldLevel();
         if (level != null)
         {
-            SWBFPath path = WorldLoader.Instance.ImportPath(level, pathName);
-#if UNITY_EDITOR
-            if (path != null)
-            {
-                GameObject pathGO = new GameObject(pathName);
-                for (int i = 0; i < path.Nodes.Length; ++i)
-                {
-                    GameObject node = new GameObject($"Node{i}");
-                    node.transform.position = path.Nodes[i].Position;
-                    node.transform.rotation = path.Nodes[i].Rotation;
-                    node.transform.SetParent(pathGO.transform);
-                    DrawIcon(node, 0);
-                }
-            }
-#endif
+            path = WorldLoader.Instance.ImportPath(level, pathName);
+            Paths.Add(pathName, path);
             return path;
         }
         return null;
@@ -304,6 +313,9 @@ public class PhxScene
             UnityEngine.Object.Destroy(WorldRoots[i]);
         }
         WorldRoots.Clear();
+#if UNITY_EDITOR
+        UnityEngine.Object.Destroy(PathsRoot);
+#endif
     }
 
     // TODO: implement object pooling
@@ -373,6 +385,43 @@ public class PhxScene
         for (int i = 0; i < TickablePhysicsInstances.Count; ++i)
         {
             TickablePhysicsInstances[i].TickPhysics(deltaTime);
+        }
+    }
+
+    void AdjustPaths()
+    {
+        // We want to circumvent the fact that some nodes hover over the ground,
+        // which causes the Units to spawn in the air sometimes.
+        //
+        // So let's do one pass of raycasting from every node downwards and
+        // adjust their location respectively, if the ray hits anything.
+
+        foreach(KeyValuePair<string, SWBFPath> keyvalue in Paths)
+        {
+            SWBFPath path = keyvalue.Value;
+            for (int i = 0; i < path.Nodes.Length; ++i)
+            {
+                ref SWBFPath.Node node = ref path.Nodes[i];
+                if (Physics.Raycast(node.Position, Vector3.down, out RaycastHit hit, 50.0f))
+                {
+                    node.Position = hit.point;
+                }
+            }
+#if UNITY_EDITOR
+            if (path != null)
+            {
+                GameObject pathGO = new GameObject(keyvalue.Key);
+                for (int i = 0; i < path.Nodes.Length; ++i)
+                {
+                    GameObject node = new GameObject($"Node{i}");
+                    node.transform.position = path.Nodes[i].Position;
+                    node.transform.rotation = path.Nodes[i].Rotation;
+                    node.transform.SetParent(pathGO.transform);
+                    DrawIcon(node, 0);
+                }
+                pathGO.transform.SetParent(PathsRoot.transform);
+            }
+#endif
         }
     }
 
@@ -467,9 +516,9 @@ public class PhxScene
             {
                 CommandPosts.Add((PhxCommandpost)script);
             }
-            if(script is PhxVehicle)
+            if (script is PhxVehicle)
             {
-                instanceObject.transform.parent = Vehicles.transform;
+                instanceObject.transform.SetParent(Vehicles.transform);
             }
         }
 
