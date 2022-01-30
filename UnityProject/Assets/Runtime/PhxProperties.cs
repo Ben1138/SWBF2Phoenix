@@ -181,3 +181,81 @@ public class PhxPropertySection : IEnumerable
         }
     }
 }
+
+
+
+public class PhxImpliedSection : IEnumerable
+{
+    public (string, IPhxPropRef)[] Properties { get; private set; }
+    public uint NameHash { get; private set; }
+
+    Dictionary<string, IPhxPropRef>[] Sections;
+
+
+    List<uint> PropertyHashes;
+
+
+    public PhxImpliedSection(params (string, IPhxPropRef)[] properties)
+    {
+        NameHash = LibSWBF2.Utils.HashUtils.GetFNV(properties[0].Item1);
+        Properties = properties;
+
+        PropertyHashes = new List<uint>();
+        foreach (var prop in Properties)
+        {
+            PropertyHashes.Add(LibSWBF2.Utils.HashUtils.GetFNV(prop.Item1));
+        }
+    }
+
+
+    public bool HasProperty(uint Hash, out string PropName)
+    {
+        PropName = null;
+
+        if (PropertyHashes.Contains(Hash))
+        {
+            foreach (var propPair in Properties)
+            {
+                if (LibSWBF2.Utils.HashUtils.GetFNV(propPair.Item1) == Hash)
+                {
+                    PropName = propPair.Item1;
+                    break;
+                }
+            }
+
+            return true;
+        }
+        else 
+        {
+            return false;
+        }
+    }
+
+
+    public void SetSections(Dictionary<string, IPhxPropRef>[] sections)
+    {
+        Sections = sections;
+    }
+
+
+    public Dictionary<string, IPhxPropRef> GetDefault()
+    {
+        Dictionary<string, IPhxPropRef> DefaultSectionCopy = new Dictionary<string, IPhxPropRef>();
+        foreach ((string, IPhxPropRef) Pair in Properties)
+        {
+            DefaultSectionCopy[Pair.Item1] = Pair.Item2.ShallowCopy();
+        }
+        return DefaultSectionCopy;
+    }
+
+
+    public IEnumerator GetEnumerator()
+    {
+        for (int i = 0; i < Sections.Length; ++i)
+        {
+            yield return Sections[i];
+        }
+    }
+}
+
+
