@@ -49,8 +49,29 @@ public class PhxVehicleProperties : PhxClass
         ("ChunkSmokeNodeName", new PhxProp<string>("")) 
     );
 
+
+    public PhxPropertySection Weapons = new PhxPropertySection(
+        "WEAPONSECTION",        
+        ("WeaponName",    new PhxProp<string>(null)),
+        ("WeaponAmmo",    new PhxProp<int>(0)),
+        ("WeaponChannel", new PhxProp<int>(0))  
+    );
+
+
+    public PhxImpliedSection DamageEffects = new PhxImpliedSection(
+        ("DamageStartPercent", new PhxProp<float>(0f)),
+        ("DamageStopPercent", new PhxProp<float>(0f)),
+        ("DamageEffect", new PhxProp<string>("")),
+        ("DamageEffectScale", new PhxProp<float>(1f)),
+        ("DamageInheritVelocity", new PhxProp<float>(1f)),
+        ("DamageAttachPoint", new PhxProp<string>(""))
+    );
+
+
     public PhxProp<string> HealthType = new PhxProp<string>("vehicle");
     public PhxProp<float>  MaxHealth = new PhxProp<float>(100.0f);
+
+    public PhxProp<float> CollisionScale = new PhxProp<float>(1f);
 
     // In the "human" bank with name: "human_{Pilot9Pose}" ?
     public PhxProp<string> Pilot9Pose = new PhxProp<string>("");
@@ -103,6 +124,10 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
     protected List<PhxSeat> Seats;
 
 
+
+    protected List<PhxDamageEffect> DamageEffects;
+
+
     protected SWBFModel ModelMapping = null;
 
 
@@ -139,11 +164,44 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
         ModelMapping.ConvexifyMeshColliders();
 
         C.EntityClass.GetAllProperties(out uint[] properties, out string[] values);
+
+
+        /*
+        DAMAGE EFFECTS
+        */
+
+        DamageEffects = new List<PhxDamageEffect>();
+
+        foreach (Dictionary<string, IPhxPropRef> DamageEffectSection in C.DamageEffects)
+        {
+            PhxEffect DamageEffectEffect = SCENE.EffectsManager.LendEffect((DamageEffectSection["DamageEffect"] as PhxProp<string>).Get());
+            Transform DamageEffectAttachPoint = UnityUtils.FindChildTransform(transform, (DamageEffectSection["DamageAttachPoint"] as PhxProp<string>).Get());
+
+            if (DamageEffectEffect == null || DamageEffectAttachPoint == null) continue;
+
+            PhxDamageEffect NewDamageEffect = new PhxDamageEffect();
+
+            NewDamageEffect.DamageStartPercent = DamageEffectSection["DamageStartPercent"] as PhxProp<float> / 100f;
+            NewDamageEffect.DamageStopPercent = DamageEffectSection["DamageStopPercent"] as PhxProp<float> / 100f;
+            NewDamageEffect.Effect = DamageEffectEffect;
+            NewDamageEffect.DamageAttachPoint = DamageEffectAttachPoint;
+
+            DamageEffects.Add(NewDamageEffect);
+        }
     }
 
 
-    public virtual void Tick(float deltaTime){}
     public virtual void TickPhysics(float deltaTime){}
+    public virtual void Tick(float deltaTime)
+    {
+        // Update damage effects
+        float HealthPercent = CurHealth.Get() / C.MaxHealth.Get();
+        
+        foreach (PhxDamageEffect DamageEffect in DamageEffects)
+        {
+            DamageEffect.Update(HealthPercent);
+        }
+    }
 
 
     protected void SetIgnoredCollidersOnAllWeapons()
@@ -248,6 +306,7 @@ public abstract class PhxVehicle : PhxControlableInstance<PhxVehicleProperties>,
             Seats[seat].SetOccupant(Seats[index].Occupant);
             Seats[seat].Occupant.SetPilot(Seats[seat]);
             Seats[index].Occupant = null;
+
             CAM.Track(Seats[seat]);
 
             return true;
