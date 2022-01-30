@@ -49,8 +49,6 @@ public class PhxProjectiles : IPhxTickable, IPhxTickablePhysics
 
     Dictionary<PhxOrdnanceClass, PhxOrdnancePool> PoolDB;
 
-    // This won't be needed when effects are integrated
-    // PhxPool<ParticleSystem> Sparks;
 
     public PhxProjectiles()
     {
@@ -73,7 +71,7 @@ public class PhxProjectiles : IPhxTickable, IPhxTickablePhysics
         {   
             System.Type OClassType = OrdnanceClass.GetType();
             
-            if (OClassType == typeof(PhxMissileClass))
+            if (typeof(PhxMissileClass).IsAssignableFrom(OClassType))
             {
                 PhxMissileClass MissileClass = OrdnanceClass as PhxMissileClass;
                 
@@ -90,9 +88,19 @@ public class PhxProjectiles : IPhxTickable, IPhxTickablePhysics
                     coll.radius = .4f;
                 } 
 
-                PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
-                Pool = new PhxOrdnancePool(Missile, MissileClass, 25);
+                if (OClassType == typeof(PhxMissileClass))
+                {
+                    PhxMissile Missile = MissileObj.AddComponent<PhxMissile>();
+                    Pool = new PhxOrdnancePool(Missile, MissileClass, 25);                     
+                }
+                else if (OClassType == typeof(PhxShellClass))
+                {
+                    PhxShell Shell = MissileObj.AddComponent<PhxShell>();
+                    Pool = new PhxOrdnancePool(Shell, MissileClass, 25);                      
+                }
+
                 Pool.Init();
+
                 GameObject.Destroy(MissileObj);
             }
             else if (OClassType == typeof(PhxBeamClass))

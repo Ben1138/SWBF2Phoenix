@@ -68,7 +68,6 @@ public class PhxPoser
             float mult = (ComponentIndex == 0 || ComponentIndex == 3 || ComponentIndex == 4) ? -1f : 1f;
             float curValue;
             int frameIndex = 0;
-            int valueIndex = 0;
 
             for (int i = 0; i < numFrames; i++)
             {

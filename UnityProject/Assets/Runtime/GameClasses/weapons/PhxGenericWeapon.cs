@@ -13,6 +13,7 @@ public enum PhxWeaponState : int
     Overheated,
     ShotDelayed,
     SalvoDelayed,
+    Charging,
     Free
 }
 
@@ -48,18 +49,20 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
     protected Transform FirePoint;
 
 
+
+
 	public class ClassProperties : PhxClass
 	{
-        public PhxProp<string> AnimationBank = new PhxProp<string>("rifle");
+        public PhxProp<string> AnimationBank = new PhxProp<string>("");
+        public PhxProp<string> GeometryName = new PhxProp<string>("");
 
+        // Various state time values
         public PhxProp<float> ShotDelay = new PhxProp<float>(0.5f);
         public PhxProp<float> InitialSalvoDelay = new PhxProp<float>(0f);
-        public PhxProp<float> ReloadTime    = new PhxProp<float>(1.0f);
-	    public PhxProp<float> SalvoDelay    = new PhxProp<float>(1.0f);
-	    public PhxProp<int>   SalvoCount    = new PhxProp<int>(1);
+        public PhxProp<float> ReloadTime = new PhxProp<float>(1.0f);
+	    public PhxProp<string> SalvoDelay = new PhxProp<string>("1.0");
+	    public PhxProp<int>   SalvoCount = new PhxProp<int>(1);
 	    public PhxProp<int>   ShotsPerSalvo = new PhxProp<int>(1);
-
-        public PhxProp<float> ShotElevate = new PhxProp<float>(0f);        
 
         public PhxProp<bool> TriggerSingle = new PhxProp<bool>(false);
 
@@ -69,38 +72,54 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
 	    public PhxProp<PhxClass> OrdnanceName = new PhxProp<PhxClass>(null);
 
-        // Spread
-        public PhxProp<float> PitchSpread = new PhxProp<float>(0f);
-        public PhxProp<float> YawSpread   = new PhxProp<float>(0f);
-
-
 	    // Sound
 	    public PhxProp<string> FireSound = new PhxProp<string>(null);
 
 	    public PhxProp<float> HeatRecoverRate = new PhxProp<float>(0.25f);
 	    public PhxProp<float> HeatThreshold = new PhxProp<float>(0.2f); 
 	    public PhxProp<float> HeatPerShot = new PhxProp<float>(0.12f);
+
+        // Old spread system
+        public PhxProp<float> PitchSpread = new PhxProp<float>(0f);
+        public PhxProp<float> YawSpread   = new PhxProp<float>(0f);
+
+        // New spread system see: https://sites.google.com/site/swbf2modtoolsdocumentation/weapon_notes
+        public PhxProp<float> SpreadPerShot = new PhxProp<float>(0f);
+        public PhxProp<float> SpreadRecoverRate = new PhxProp<float>(0f); 
+        public PhxProp<float> SpreadThreshold = new PhxProp<float>(0f); 
+        public PhxProp<float> SpreadLimit = new PhxProp<float>(0f);
+
+        // Applied before or after spread?
+        public PhxProp<float> ShotElevate = new PhxProp<float>(0f);        
 	}
+
+
+    // Need a better name for this, but will replace IPhxWeapon.IsFiring()
+    public bool IsTriggerPressed;
+
+    protected bool CanFire = true;
+
+    float SalvoDelay;
 
 
     public override void Init()
     {   
-        /*
         if (C.FireSound.Get() != null)
         {
-            Audio = gameObject.AddComponent<AudioSource>();
-            Audio.playOnAwake = false;
-            Audio.spatialBlend = 1.0f;
-            Audio.rolloffMode = AudioRolloffMode.Linear;
-            Audio.minDistance = 2.0f;
-            Audio.maxDistance = 30.0f;
-            Audio.loop = false;
+            AudioClip FireSound = SoundLoader.LoadSound(C.FireSound.Get());
 
-            // TODO: replace with class sound, once we can load sound LVLs
-            Audio.clip = SoundLoader.LoadSound("wpn_rep_blaster_fire");
+            if (FireSound != null)
+            {
+                Audio = gameObject.AddComponent<AudioSource>();
+                Audio.playOnAwake = false;
+                Audio.spatialBlend = 1.0f;
+                Audio.rolloffMode = AudioRolloffMode.Linear;
+                Audio.minDistance = 2.0f;
+                Audio.maxDistance = 30.0f;
+                Audio.loop = false;
+                Audio.clip = FireSound;
+            }
         }
-        */
-
 
         if (C.OrdnanceName.Get() == null)
         {
@@ -121,6 +140,16 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
         // Total amount of 4 magazines
         Ammunition = C.RoundsPerClip * 3;
         MagazineAmmo = C.RoundsPerClip;
+
+
+        // Implied, but need to confirm 
+        if (C.SpreadPerShot > 0.001f)
+        {
+            bUsesNewSpreadSystem = true;
+        }
+
+        SalvoDelay = float.Parse(C.SalvoDelay.Get().Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries)[0],
+                                System.Globalization.CultureInfo.InvariantCulture);
     }
 
     public override void Destroy()
@@ -198,10 +227,14 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
     int SalvoIndex = 0;
     Vector3 SalvoTargetPosition;
 
+    Vector3 SpreadAxis = Vector3.zero;
+    float CurrSpread, EffectiveSpread;
+    Quaternion SpreadQuat, ShotElevationQuat;
+
+    protected bool bUsesNewSpreadSystem = false;
+
 	public virtual bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
-        //Debug.LogFormat("Attempting to fire weapon {0}", C.EntityClass.Name);
-
         if (WeaponState == PhxWeaponState.Free)
         {
             SalvoTargetPosition = targetPos;
@@ -215,8 +248,8 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
         {
             if (Audio != null)
             {
-                float half = C.PitchSpread / 2f;
-                Audio.pitch = UnityEngine.Random.Range(1f - half, 1f + half);
+                // PitchSpread was previously used here to vary the sound pitch, that was a misunderstanding
+                // as PitchSpread is part of the weapon's aim spread, not sound
                 Audio.Play();
             }
 
@@ -225,24 +258,54 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
                 PhxOrdnanceClass Ordnance = C.OrdnanceName.Get() as PhxOrdnanceClass;
                 if (Ordnance != null) 
                 {
+                    /*
+                    New SPREAD, per salvo
+
+                    Most of this function could use some optimization, maybe keeping everything local until needed in global space
+                    for Scene.FireProjectile?
+                    */
+                    if (bUsesNewSpreadSystem)
+                    {
+                        CurrSpread = Mathf.Min(CurrSpread + C.SpreadPerShot, C.SpreadLimit + C.SpreadThreshold);
+                        EffectiveSpread = Mathf.Max(CurrSpread - C.SpreadThreshold, 0f);
+
+                        if (EffectiveSpread < .0001f)
+                        {
+                            SpreadQuat = Quaternion.identity;
+                        }
+                        else 
+                        {
+                            // Maybe we replace this with a fixed sequence of axes
+                            SpreadAxis.x = UnityEngine.Random.Range(-1f, 1f);
+                            SpreadAxis.y = UnityEngine.Random.Range(-1f, 1f);
+                            SpreadQuat = Quaternion.AngleAxis(EffectiveSpread, FirePoint.TransformDirection(SpreadAxis)); 
+                        }
+                    }
+
+                    // Debug.LogFormat("SpreadAxis: {0}, CurrSpread: {1}, EffectiveSpread: {2} ", SpreadAxis.ToString("F4"), CurrSpread, EffectiveSpread);
+
+
+                    /*
+                    SHOT ELEVATION
+                    */
+
+                    ShotElevationQuat = Quaternion.AngleAxis(C.ShotElevate, -FirePoint.right);
+
                     for (int i = 0; i < C.ShotsPerSalvo; i++)
                     {
-                        Vector3 TargetPosition = SalvoTargetPosition;
-                        
                         /*
-                        if (FirePoint == null)
-                        {
-                            FirePoint = transform;
-                        }
-                        float ShotLength = Vector3.Magnitude(SalvoTargetPosition - FirePoint.position);
-
-                        // We'll say 1 spread = 0.436332 rad of fp rotation
-                        TargetPosition += Mathf.Tan(C.PitchSpread * .436332f) * ShotLength * FirePoint.up;
-                        TargetPosition += Mathf.Tan(C.YawSpread * .436332f) * ShotLength * FirePoint.right;
+                        Old SPREAD, per shot (just from PitchSpread and YawSpread)
                         */
+                        if (!bUsesNewSpreadSystem)
+                        {
+                            SpreadQuat = Quaternion.AngleAxis(UnityEngine.Random.Range(-C.PitchSpread, C.PitchSpread), -FirePoint.right) * 
+                                         Quaternion.AngleAxis(UnityEngine.Random.Range(-C.YawSpread, C.YawSpread), FirePoint.up);
+                        }
                         
-                        Scene.FireProjectile(this, Ordnance, FirePoint.position + C.ShotElevate * Vector3.up,
-                                            Quaternion.LookRotation(TargetPosition - FirePoint.position, Vector3.up));   
+                        Scene.FireProjectile(this, Ordnance, FirePoint.position,
+                            SpreadQuat * ShotElevationQuat * Quaternion.LookRotation(SalvoTargetPosition - FirePoint.position, Vector3.up)); 
+
+                        ShotCallback?.Invoke();
                     }
                 }
             }
@@ -256,10 +319,9 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
             else 
             {
                 WeaponState = PhxWeaponState.SalvoDelayed;
-                SalvoDelayTimer = C.SalvoDelay;
+                SalvoDelayTimer = SalvoDelay;
             }
 
-            ShotCallback?.Invoke();
 
             if (!Game.Settings.InfiniteAmmo)
             {
@@ -343,6 +405,8 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
     public void Tick(float deltaTime)
     {
+        CurrSpread = Mathf.Max(CurrSpread - deltaTime * C.SpreadRecoverRate, 0f);
+
         if (WeaponState == PhxWeaponState.Reloading)
         {
             ReloadDelay -= deltaTime;
@@ -376,6 +440,27 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
             if (FireDelay < 0f)
             {
                 WeaponState = PhxWeaponState.Free;
+            }
+        }
+        else if (WeaponState == PhxWeaponState.Free)
+        {
+            if (IsTriggerPressed)
+            {
+                if (CanFire)
+                {
+                    Fire(null, SalvoTargetPosition);
+                    if (C.TriggerSingle == true)
+                    {
+                        CanFire = false;
+                    }
+                }
+            }
+            else 
+            {
+                if (C.TriggerSingle == true)
+                {
+                    CanFire = true;
+                }
             }
         }
     }
