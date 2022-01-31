@@ -700,7 +700,7 @@ public class PhxLuaRuntime
         {
             object[] fmt = new object[msg.Length - 1];
             Array.Copy(msg, 1, fmt, 0, fmt.Length);
-            Debug.Log(PhxHelpers.Format(msg[0] as string, fmt));
+            Debug.Log(PhxUtils.Format(msg[0] as string, fmt));
         }
         else
         {

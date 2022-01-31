@@ -377,6 +377,15 @@ public class PhxScene
         {
             TickableInstances[i].Tick(deltaTime);
         }
+
+        if (AdjustPathsCountdown > 0)
+        {
+            AdjustPathsCountdown--;
+            if (AdjustPathsCountdown == 0)
+            {
+                AdjustPaths();
+            }
+        }
     }
 
     public void TickPhysics(float deltaTime)
@@ -402,7 +411,7 @@ public class PhxScene
             for (int i = 0; i < path.Nodes.Length; ++i)
             {
                 ref SWBFPath.Node node = ref path.Nodes[i];
-                if (Physics.Raycast(node.Position, Vector3.down, out RaycastHit hit, 50.0f))
+                if (Physics.Raycast(node.Position, Vector3.down, out RaycastHit hit, 5.0f))
                 {
                     node.Position = hit.point;
                 }

@@ -130,7 +130,7 @@ public static class PhxLuaAPI
 		Array.Copy(args, 1, placements, 0, placements.Length);
 
 		string localized = ENV.GetLocalized(localizePath);
-		string res = PhxHelpers.Format(localized, placements);
+		string res = PhxUtils.Format(localized, placements);
 		return res;
 	}
 
@@ -474,6 +474,11 @@ public static class PhxLuaAPI
 	public static void SetDenseEnvironment(string isDense)
 	{
 		// seems to be always called with string "false"
+	}
+
+	public static void SetStayInTurrets(bool stayInTurret)
+	{
+
 	}
 
 	public static void SetMinFlyHeight(float height)
