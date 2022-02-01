@@ -170,8 +170,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         // TODO: base turn speed in degreees/sec really 45?
         MaxTurnSpeed.y = 45f * C.MaxTurnSpeed;
 
-        //CurrDir = transform.rotation;
-        //TargetDir = CurrDir;
+        // Assume we're grounded on spawn
+        Grounded = true;
 
         PhxControlState[] states = (PhxControlState[])Enum.GetValues(typeof(PhxControlState));
         ControlValues = new float[states.Length][];
@@ -180,11 +180,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             ControlValues[i] = GetControlSpeed(states[i]);
         }
 
-        HpWeapons = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_r_clavicle/bone_r_upperarm/bone_r_forearm/bone_r_hand/hp_weapons");
-        Neck = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_neck");
-        Spine = transform.Find("dummyroot/bone_root/bone_a_spine");
+        HpWeapons = PhxUtils.FindTransformRecursive(transform, "hp_weapons");
+        Neck = PhxUtils.FindTransformRecursive(transform, "bone_neck");
+        Spine = PhxUtils.FindTransformRecursive(transform, "bone_b_spine");
         Debug.Assert(HpWeapons != null);
-        Debug.Assert(Neck != null);
         Debug.Assert(Spine != null);
 
         Body = gameObject.AddComponent<Rigidbody>();
@@ -362,20 +361,20 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     void FireAnimation(bool primary)
     {
-        Animator.Anim.SetState(1, Animator.StandShootPrimary);
-        Animator.Anim.RestartState(1);
+        //Animator.Anim.SetState(1, Animator.StandShootPrimary);
+        //Animator.Anim.RestartState(1);
     }
 
     void Reload()
     {
-        IPhxWeapon weap = Weapons[0][WeaponIdx[0]];
-        if (weap != null)
-        {
-            Animator.Anim.SetState(1, Animator.StandReload);
-            Animator.Anim.RestartState(1);
-            float animTime = Animator.Anim.GetCurrentState(1).GetDuration();
-            Animator.Anim.SetPlaybackSpeed(1, Animator.StandReload, 1f / (weap.GetReloadTime() / animTime));
-        }
+        //IPhxWeapon weap = Weapons[0][WeaponIdx[0]];
+        //if (weap != null)
+        //{
+        //    Animator.Anim.SetState(1, Animator.StandReload);
+        //    Animator.Anim.RestartState(1);
+        //    float animTime = Animator.Anim.GetCurrentState(1).GetDuration();
+        //    Animator.Anim.SetPlaybackSpeed(1, Animator.StandReload, 1f / (weap.GetReloadTime() / animTime));
+        //}
     }
 
     // Undoes SetPilot; called by vehicles/turrets when ejecting soldiers
@@ -583,7 +582,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             return;
         }
 
-        AnimationCorrection();
+        //AnimationCorrection();
 
         AlertTimer = Mathf.Max(AlertTimer - deltaTime, 0f);
 
@@ -632,233 +631,236 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             
         }
 
-        Vector3 lookWalkForward = Controller.ViewDirection;
-        lookWalkForward.y = 0f;
-        Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
-        Quaternion moveRot = Quaternion.identity;
+        Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
+        Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
 
-        LandTimer = Mathf.Max(LandTimer - deltaTime, 0f);
-        TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
+        //Vector3 lookWalkForward = Controller.ViewDirection;
+        //lookWalkForward.y = 0f;
+        //Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
+        //Quaternion moveRot = Quaternion.identity;
 
-        if (LandTimer == 0f)
-        {
-            float accStep = C.Acceleration * deltaTime;
-            float thrustFactor = ControlValues[(int)State][0];
-            float strafeFactor = ControlValues[(int)State][1];
-            float turnFactor = ControlValues[(int)State][2];
+        //LandTimer = Mathf.Max(LandTimer - deltaTime, 0f);
+        //TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
 
-            Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
-            Vector3 moveDirWorld = lookRot * moveDirLocal;
+        //if (LandTimer == 0f)
+        //{
+        //    float accStep = C.Acceleration * deltaTime;
+        //    float thrustFactor = ControlValues[(int)State][0];
+        //    float strafeFactor = ControlValues[(int)State][1];
+        //    float turnFactor = ControlValues[(int)State][2];
 
-            // Stand - Crouch - Sprint
-            if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
-            {
-                // TODO: base turn speed in degreees/sec really 45?
-                MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
+        //    Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
+        //    Vector3 moveDirWorld = lookRot * moveDirLocal;
 
-                if (moveDirLocal.magnitude == 0f)
-                {
-                    CurrSpeed *= 0.1f * deltaTime;
+        //    // Stand - Crouch - Sprint
+        //    if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
+        //    {
+        //        // TODO: base turn speed in degreees/sec really 45?
+        //        MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
 
-                    if (TurnTimer > 0f)
-                    {
-                        lookRot = Quaternion.Slerp(lookRot, TurnStart, TurnTimer / TurnTime);
-                    }
-                    else
-                    {
-                        //float rotDiff = Quaternion.Angle(transform.rotation, lookRot);
-                        float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, lookRot.eulerAngles.y);
-                        if (rotDiff < -40f || rotDiff > 60f)
-                        {
-                            TurnTimer = TurnTime;
-                            TurnStart = transform.rotation;
-                            Animator.Anim.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
-                            Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-                            Animator.Anim.RestartState(0);
-                        }
+        //        if (moveDirLocal.magnitude == 0f)
+        //        {
+        //            CurrSpeed *= 0.1f * deltaTime;
 
-                        lookRot = transform.rotation;
-                        moveRot = lookRot;
-                    }
-                }
-                else
-                {
-                    CurrSpeed += moveDirWorld * accStep;
+        //            if (TurnTimer > 0f)
+        //            {
+        //                lookRot = Quaternion.Slerp(lookRot, TurnStart, TurnTimer / TurnTime);
+        //            }
+        //            else
+        //            {
+        //                //float rotDiff = Quaternion.Angle(transform.rotation, lookRot);
+        //                float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, lookRot.eulerAngles.y);
+        //                if (rotDiff < -40f || rotDiff > 60f)
+        //                {
+        //                    TurnTimer = TurnTime;
+        //                    TurnStart = transform.rotation;
+        //                    Animator.Anim.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
+        //                    Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
+        //                    Animator.Anim.RestartState(0);
+        //                }
 
-                    float maxSpeed = moveDirLocal.z < 0.2f ? C.MaxStrafeSpeed : C.MaxSpeed;
-                    float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
-                    CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
+        //                lookRot = transform.rotation;
+        //                moveRot = lookRot;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            CurrSpeed += moveDirWorld * accStep;
 
-                    moveRot = Quaternion.LookRotation(moveDirWorld);
-                    if (moveDirLocal.z <= 0f)
-                    {
-                        // invert look direction when strafing left/right
-                        moveDirWorld = -moveDirWorld;
-                    }
-                    lookRot = Quaternion.LookRotation(moveDirWorld);
-                }
+        //            float maxSpeed = moveDirLocal.z < 0.2f ? C.MaxStrafeSpeed : C.MaxSpeed;
+        //            float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
+        //            CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
 
-                if (TurnTimer == 0f)
-                {
-                    // ---------------------------------------------------------------------------------------------
-                    // Forward
-                    // ---------------------------------------------------------------------------------------------
-                    float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
-                    if (Controller.MoveDirection.y <= 0f)
-                    {
-                        // invert animation direction for strafing (left/right)
-                        walk = -walk;
-                    }
+        //            moveRot = Quaternion.LookRotation(moveDirWorld);
+        //            if (moveDirLocal.z <= 0f)
+        //            {
+        //                // invert look direction when strafing left/right
+        //                moveDirWorld = -moveDirWorld;
+        //            }
+        //            lookRot = Quaternion.LookRotation(moveDirWorld);
+        //        }
 
-                    if (State == PhxControlState.Sprint)
-                    {
-                        Animator.Anim.SetState(0, Animator.StandSprint);
-                    }
-                    else if (walk > 0.2f && walk <= 0.75f)
-                    {
-                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertWalk : Animator.StandWalk);
-                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandWalk, walk / 0.75f);
-                    }
-                    else if (walk > 0.75f)
-                    {
-                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
-                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandRun, walk);
-                    }
-                    else if (walk < -0.2f)
-                    {
-                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
-                        Animator.Anim.SetPlaybackSpeed(0, Animator.StandBackward, -walk);
-                    }
-                    else
-                    {
-                        Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertIdle : Animator.StandIdle);
-                    }
-                    // ---------------------------------------------------------------------------------------------
-                }
-            }
+        //        if (TurnTimer == 0f)
+        //        {
+        //            // ---------------------------------------------------------------------------------------------
+        //            // Forward
+        //            // ---------------------------------------------------------------------------------------------
+        //            float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
+        //            if (Controller.MoveDirection.y <= 0f)
+        //            {
+        //                // invert animation direction for strafing (left/right)
+        //                walk = -walk;
+        //            }
 
-            // Stand - Crouch
-            if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
-            {
-                State = Controller.Crouch ? PhxControlState.Crouch : PhxControlState.Stand;
+        //            if (State == PhxControlState.Sprint)
+        //            {
+        //                Animator.Anim.SetState(0, Animator.StandSprint);
+        //            }
+        //            else if (walk > 0.2f && walk <= 0.75f)
+        //            {
+        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertWalk : Animator.StandWalk);
+        //                Animator.Anim.SetPlaybackSpeed(0, Animator.StandWalk, walk / 0.75f);
+        //            }
+        //            else if (walk > 0.75f)
+        //            {
+        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
+        //                Animator.Anim.SetPlaybackSpeed(0, Animator.StandRun, walk);
+        //            }
+        //            else if (walk < -0.2f)
+        //            {
+        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
+        //                Animator.Anim.SetPlaybackSpeed(0, Animator.StandBackward, -walk);
+        //            }
+        //            else
+        //            {
+        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertIdle : Animator.StandIdle);
+        //            }
+        //            // ---------------------------------------------------------------------------------------------
+        //        }
+        //    }
 
-                // ---------------------------------------------------------------------------------------------
-                // Idle
-                // ---------------------------------------------------------------------------------------------
-                if (Controller.IdleTime >= IdleTime)
-                {
-                    if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
-                    {
-                        //Anim.SetTrigger(IdleNames[0]);
-                    }
-                    else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-                    {
-                        //Anim.SetTrigger(IdleNames[1]);
-                    }
-                    else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-                    {
-                        //Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
-                    }
-                    Controller.ResetIdleTime();
-                }
-                if (!Controller.IsIdle && LastIdle)
-                {
-                    //Anim.SetTrigger("UnIdle");
-                }
-                // ---------------------------------------------------------------------------------------------
+        //    // Stand - Crouch
+        //    if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
+        //    {
+        //        State = Controller.Crouch ? PhxControlState.Crouch : PhxControlState.Stand;
+
+        //        // ---------------------------------------------------------------------------------------------
+        //        // Idle
+        //        // ---------------------------------------------------------------------------------------------
+        //        if (Controller.IdleTime >= IdleTime)
+        //        {
+        //            if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
+        //            {
+        //                //Anim.SetTrigger(IdleNames[0]);
+        //            }
+        //            else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+        //            {
+        //                //Anim.SetTrigger(IdleNames[1]);
+        //            }
+        //            else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
+        //            {
+        //                //Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
+        //            }
+        //            Controller.ResetIdleTime();
+        //        }
+        //        if (!Controller.IsIdle && LastIdle)
+        //        {
+        //            //Anim.SetTrigger("UnIdle");
+        //        }
+        //        // ---------------------------------------------------------------------------------------------
 
 
-                // ---------------------------------------------------------------------------------------------
-                // Shooting
-                // ---------------------------------------------------------------------------------------------
-                if (Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
-                {
-                    if (Controller.ShootPrimary)
-                    {
-                        // only fire when not currently turning
-                        //Weap.Fire = TurnTimer <= 0f;
+        //        // ---------------------------------------------------------------------------------------------
+        //        // Shooting
+        //        // ---------------------------------------------------------------------------------------------
+        //        if (Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
+        //        {
+        //            if (Controller.ShootPrimary)
+        //            {
+        //                // only fire when not currently turning
+        //                //Weap.Fire = TurnTimer <= 0f;
 
-                        Weapons[0][WeaponIdx[0]].Fire(Controller, Controller.GetAimPosition());
-                        AlertTimer = AlertTime;
-                    }
-                    else if (Controller.ShootSecondary)
-                    {
-                        Weapons[1][WeaponIdx[1]].Fire(Controller, Controller.GetAimPosition());
-                        AlertTimer = AlertTime;
-                    }
-                    else if (Controller.Reload)
-                    {
-                        Weapons[0][WeaponIdx[0]].Reload();
-                        //Anim.SetTrigger("Reload");
-                    }
-                }
-                // ---------------------------------------------------------------------------------------------
-                if (Controller.NextPrimaryWeapon)
-                {
-                    NextWeapon(0);
-                }
-                if (Controller.NextSecondaryWeapon)
-                {
-                    NextWeapon(1);
-                }
-            }
+        //                Weapons[0][WeaponIdx[0]].Fire(Controller, Controller.GetAimPosition());
+        //                AlertTimer = AlertTime;
+        //            }
+        //            else if (Controller.ShootSecondary)
+        //            {
+        //                Weapons[1][WeaponIdx[1]].Fire(Controller, Controller.GetAimPosition());
+        //                AlertTimer = AlertTime;
+        //            }
+        //            else if (Controller.Reload)
+        //            {
+        //                Weapons[0][WeaponIdx[0]].Reload();
+        //                //Anim.SetTrigger("Reload");
+        //            }
+        //        }
+        //        // ---------------------------------------------------------------------------------------------
+        //        if (Controller.NextPrimaryWeapon)
+        //        {
+        //            NextWeapon(0);
+        //        }
+        //        if (Controller.NextSecondaryWeapon)
+        //        {
+        //            NextWeapon(1);
+        //        }
+        //    }
 
-            // Stand - Sprint
-            if (State == PhxControlState.Stand || State == PhxControlState.Sprint)
-            {
-                // ---------------------------------------------------------------------------------------------
-                // Jumping
-                // ---------------------------------------------------------------------------------------------
-                if (Controller.Jump)
-                {
-                    State = PhxControlState.Jump;
-                    JumpTimer = JumpTime;
+        //    // Stand - Sprint
+        //    if (State == PhxControlState.Stand || State == PhxControlState.Sprint)
+        //    {
+        //        // ---------------------------------------------------------------------------------------------
+        //        // Jumping
+        //        // ---------------------------------------------------------------------------------------------
+        //        if (Controller.Jump)
+        //        {
+        //            State = PhxControlState.Jump;
+        //            JumpTimer = JumpTime;
 
-                    Animator.Anim.SetState(0, Animator.Jump);
-                    Animator.Anim.SetState(1, CraSettings.STATE_NONE);
+        //            Animator.Anim.SetState(0, Animator.Jump);
+        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
 
-                    Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
-                }
-                // ---------------------------------------------------------------------------------------------
-            }
+        //            Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
+        //        }
+        //        // ---------------------------------------------------------------------------------------------
+        //    }
 
-            // Stand
-            if (State == PhxControlState.Stand)
-            {
-                if (Controller.MoveDirection.y > 0.2f && Controller.Sprint && Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
-                {
-                    State = PhxControlState.Sprint;
-                }
-            }
+        //    // Stand
+        //    if (State == PhxControlState.Stand)
+        //    {
+        //        if (Controller.MoveDirection.y > 0.2f && Controller.Sprint && Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
+        //        {
+        //            State = PhxControlState.Sprint;
+        //        }
+        //    }
 
-            // Crouch
-            if (State == PhxControlState.Crouch)
-            {
-                if (Controller.Jump)
-                {
-                    State = PhxControlState.Stand;
-                }
+        //    // Crouch
+        //    if (State == PhxControlState.Crouch)
+        //    {
+        //        if (Controller.Jump)
+        //        {
+        //            State = PhxControlState.Stand;
+        //        }
 
-                // TODO: verify
-                else if (Controller.MoveDirection.y > 0.8f && Controller.Sprint)
-                {
-                    State = PhxControlState.Sprint;
-                }
-            }
+        //        // TODO: verify
+        //        else if (Controller.MoveDirection.y > 0.8f && Controller.Sprint)
+        //        {
+        //            State = PhxControlState.Sprint;
+        //        }
+        //    }
 
-            // Sprint
-            if (State == PhxControlState.Sprint)
-            {
-                if (Controller.MoveDirection.y < 0.8f || !Controller.Sprint)
-                {
-                    State = PhxControlState.Stand;
-                }
-            }
-        }
+        //    // Sprint
+        //    if (State == PhxControlState.Sprint)
+        //    {
+        //        if (Controller.MoveDirection.y < 0.8f || !Controller.Sprint)
+        //        {
+        //            State = PhxControlState.Stand;
+        //        }
+        //    }
+        //}
 
         if (IsFixated)
         {
-            transform.rotation = lookRot;
+            //transform.rotation = lookRot;
             return;
         }
 
@@ -866,77 +868,77 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Grounded = Physics.OverlapSphere(Body.position, 0.2f, GroundedLayerMask).Length > 1;
 
         // Not jumping -> Falling
-        if (State != PhxControlState.Jump && !Grounded)
-        {
-            FallTimer += deltaTime;
-            if (FallTimer > FallTime)
-            {
-                State = PhxControlState.Jump;
-                Animator.Anim.SetState(0, Animator.Fall);
-                Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-            }
-        }
+        //if (State != PhxControlState.Jump && !Grounded)
+        //{
+        //    FallTimer += deltaTime;
+        //    if (FallTimer > FallTime)
+        //    {
+        //        State = PhxControlState.Jump;
+        //        Animator.Anim.SetState(0, Animator.Fall);
+        //        Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
+        //    }
+        //}
 
-        // Jump/Fall -> Land
-        if (State == PhxControlState.Jump)
-        {
-            FallTimer += deltaTime;
-            JumpTimer -= deltaTime;
+        //// Jump/Fall -> Land
+        //if (State == PhxControlState.Jump)
+        //{
+        //    FallTimer += deltaTime;
+        //    JumpTimer -= deltaTime;
 
-            if (Grounded && JumpTimer < 0f)
-            {
-                State = PhxControlState.Stand;
+        //    if (Grounded && JumpTimer < 0f)
+        //    {
+        //        State = PhxControlState.Stand;
 
-                if (FallTimer > 1.5f)
-                {
-                    LandTimer = 0.9f;
-                    Animator.Anim.SetState(0, Animator.LandHard);
-                    Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-                    //Debug.Log($"Land HARD {FallTimer}");
-                }
-                else if (FallTimer > 1.2f || Controller.MoveDirection.magnitude < 0.1f)
-                {
-                    LandTimer = 0.6f;
-                    Animator.Anim.SetState(0, Animator.LandSoft);
-                    Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-                    //Debug.Log($"Land Soft {FallTimer}");
-                }
-                else
-                {
-                    LandTimer = 0.05f;
-                    Animator.Anim.SetState(0, Animator.LandSoft);
-                    Animator.Anim.SetState(1, CraSettings.STATE_NONE);
-                    //Debug.Log($"Land very Soft {FallTimer}");
-                }
+        //        if (FallTimer > 1.5f)
+        //        {
+        //            LandTimer = 0.9f;
+        //            Animator.Anim.SetState(0, Animator.LandHard);
+        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
+        //            //Debug.Log($"Land HARD {FallTimer}");
+        //        }
+        //        else if (FallTimer > 1.2f || Controller.MoveDirection.magnitude < 0.1f)
+        //        {
+        //            LandTimer = 0.6f;
+        //            Animator.Anim.SetState(0, Animator.LandSoft);
+        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
+        //            //Debug.Log($"Land Soft {FallTimer}");
+        //        }
+        //        else
+        //        {
+        //            LandTimer = 0.05f;
+        //            Animator.Anim.SetState(0, Animator.LandSoft);
+        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
+        //            //Debug.Log($"Land very Soft {FallTimer}");
+        //        }
 
-                FallTimer = 0f;
-            }
-        }
+        //        FallTimer = 0f;
+        //    }
+        //}
 
-        if (Grounded && LandTimer == 0f && (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint))
-        {
-            //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
-            Body.AddForce(CurrSpeed - Body.velocity, ForceMode.VelocityChange);
-            Body.MoveRotation(lookRot);
+        //if (Grounded && LandTimer == 0f && (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint))
+        //{
+        //    //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
+        //    Body.AddForce(CurrSpeed - Body.velocity, ForceMode.VelocityChange);
+        //    Body.MoveRotation(lookRot);
 
-            if (CurrSpeed != Vector3.zero)
-            {
-                Vector3 upper = moveRot * StepCheckOffset;
+        //    if (CurrSpeed != Vector3.zero)
+        //    {
+        //        Vector3 upper = moveRot * StepCheckOffset;
 
-                // Handling stairs/steps/slopes
-                if (Physics.Raycast(Body.position + upper, Vector3.down, out RaycastHit hit, upper.y * 2f))
-                {
-                    float height = hit.point.y - Body.position.y;
-                    if (Mathf.Abs(height) > 0.05f && Mathf.Abs(height) <= MaxStepHeight)
-                    {
-                        //Debug.Log($"Height: {height}");
-                        Body.AddForce(Vector3.up * height * StepUpForceMulti, ForceMode.VelocityChange);
-                    }
-                }
+        //        // Handling stairs/steps/slopes
+        //        if (Physics.Raycast(Body.position + upper, Vector3.down, out RaycastHit hit, upper.y * 2f))
+        //        {
+        //            float height = hit.point.y - Body.position.y;
+        //            if (Mathf.Abs(height) > 0.05f && Mathf.Abs(height) <= MaxStepHeight)
+        //            {
+        //                //Debug.Log($"Height: {height}");
+        //                Body.AddForce(Vector3.up * height * StepUpForceMulti, ForceMode.VelocityChange);
+        //            }
+        //        }
 
-                //Debug.DrawRay(Body.position + upper, Vector3.down * upper.y, Color.red);
-            }
-        }
+        //        //Debug.DrawRay(Body.position + upper, Vector3.down * upper.y, Color.red);
+        //    }
+        //}
 
         //Anim.SetBool("Alert", AlertTimer > 0f);
         LastIdle = Controller.IsIdle;
@@ -966,29 +968,29 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
         {
-            if (Animator.Anim.GetCurrentStateIdx(1) == Animator.StandShootPrimary)
-            {
-                Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt4);
-            }
-            else if (AlertTimer > 0f)
-            {
-                if (Controller.MoveDirection.magnitude > 0.1f)
-                {
-                    Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt3);
-                }
-                else
-                {
-                    Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt2);
-                }
-            }
-            else
-            {
-                Neck.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt1);
-            }
+            //if (Animator.Anim.GetCurrentStateIdx(1) == Animator.StandShootPrimary)
+            //{
+            //    Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt4);
+            //}
+            //else if (AlertTimer > 0f)
+            //{
+            //    if (Controller.MoveDirection.magnitude > 0.1f)
+            //    {
+            //        Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt3);
+            //    }
+            //    else
+            //    {
+            //        Spine.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt2);
+            //    }
+            //}
+            //else if (Neck != null)
+            //{
+            //    Neck.rotation = Quaternion.LookRotation(Controller.ViewDirection) * Quaternion.Euler(RotAlt1);
+            //}
         }
     }
 
-    public CraAnimator GetAnimator()
+    public CraStateMachine GetStateMachine()
     {
         return Animator.Anim;
     }

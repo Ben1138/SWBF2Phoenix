@@ -20,11 +20,6 @@ public static class PhxAnimationLoader
          1.0f  
     };
 
-    static PhxAnimationLoader()
-    {
-        CraSettings.BoneHashFunction = (string str) => (int)HashUtils.GetCRC(str);
-    }
-
     public static void ClearDB()
     {
         ClipDB.Clear();

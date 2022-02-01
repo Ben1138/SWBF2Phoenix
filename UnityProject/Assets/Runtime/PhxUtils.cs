@@ -84,6 +84,25 @@ public static class PhxUtils
         while (euler.y < -180f) euler.y += 360f;
     }
 
+
+    public static Transform FindTransformRecursive(Transform root, string transformName)
+    {
+        Debug.Assert(root != null);
+        if (root.name == transformName)
+        {
+            return root;
+        }
+        for (int i = 0; i < root.childCount; ++i)
+        {
+            Transform child = FindTransformRecursive(root.GetChild(i), transformName);
+            if (child != null)
+            {
+                return child;
+            }
+        }
+        return null;
+    }
+
     // format string using SWBFs C-style printf format (%s, ...)
     public static string Format(string fmt, params object[] args)
     {

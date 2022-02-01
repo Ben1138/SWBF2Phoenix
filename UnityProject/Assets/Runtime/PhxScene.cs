@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Enums;
+using LibSWBF2.Utils;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -58,7 +59,22 @@ public class PhxScene
     {
         ENV = env;
         EnvCon = c;
-        Cra = new CraMain();
+        Cra = Cra = new CraMain(new CraSettings
+        {
+            Players        = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+            Clips          = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+            ClipTransforms = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+            Bones          = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+
+            StateMachines = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+            Inputs        = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+            States        = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+            Transitions   = new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f },
+
+            MaxBones = 65535 * 4,
+
+            BoneHashFunction = (string input) => { return (int)HashUtils.GetCRC(input); }
+        });
 
 #if UNITY_EDITOR
         PathsRoot = new GameObject("PathsRoot");

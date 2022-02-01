@@ -110,62 +110,28 @@ public static class PhxAnimationBanks
     };
 }
 
-//public enum PhxAnimState
-//{
-//    Walk,
-//    Sprint,
-//    Jump,
-//    Fall,
-//    Land,
-//    TurnLeft,
-//    TurnRight
-//}
-
 public struct PhxHumanAnimator
 {
-    //[Range(-1f, 1f)]
-    //public float Forward;
-    //public PhxAnimState State;
-
-    public int StandSprint => Banks[CurrentBankIdx].StandSprint;
-    public int StandRun => Banks[CurrentBankIdx].StandRun;
-    public int StandWalk => Banks[CurrentBankIdx].StandWalk;
-    public int StandIdle => Banks[CurrentBankIdx].StandIdle;
-    public int StandBackward => Banks[CurrentBankIdx].StandBackward;
-    public int StandReload => Banks[CurrentBankIdx].StandReload;
-    public int StandShootPrimary => Banks[CurrentBankIdx].StandShootPrimary;
-    public int StandShootSecondary => Banks[CurrentBankIdx].StandShootSecondary;
-    public int StandAlertIdle => Banks[CurrentBankIdx].StandAlertIdle;
-    public int StandAlertWalk => Banks[CurrentBankIdx].StandAlertWalk;
-    public int StandAlertRun => Banks[CurrentBankIdx].StandAlertRun;
-    public int StandAlertBackward => Banks[CurrentBankIdx].StandAlertBackward;
-    public int Jump => Banks[CurrentBankIdx].Jump;
-    public int Fall => Banks[CurrentBankIdx].Fall;
-    public int LandSoft => Banks[CurrentBankIdx].LandSoft;
-    public int LandHard => Banks[CurrentBankIdx].LandHard;
-    public int TurnLeft => Banks[CurrentBankIdx].TurnLeft;
-    public int TurnRight => Banks[CurrentBankIdx].TurnRight;
-
-    struct PhxAnimBank
+    struct PhxBank
     {
-        public int StandSprint;
-        public int StandRun;
-        public int StandWalk;
-        public int StandIdle;
-        public int StandBackward;
-        public int StandReload;
-        public int StandShootPrimary;
-        public int StandShootSecondary;
-        public int StandAlertIdle;
-        public int StandAlertWalk;
-        public int StandAlertRun;
-        public int StandAlertBackward;
-        public int Jump;
-        public int Fall;
-        public int LandSoft;
-        public int LandHard;
-        public int TurnLeft;
-        public int TurnRight;
+        public CraState StandIdle;
+        public CraState StandWalk;
+        public CraState StandRun;
+        public CraState StandSprint;
+        public CraState StandBackward;
+        public CraState StandReload;
+        public CraState StandShootPrimary;
+        public CraState StandShootSecondary;
+        public CraState StandAlertIdle;
+        public CraState StandAlertWalk;
+        public CraState StandAlertRun;
+        public CraState StandAlertBackward;
+        public CraState Jump;
+        public CraState Fall;
+        public CraState LandSoft;
+        public CraState LandHard;
+        public CraState TurnLeft;
+        public CraState TurnRight;
     }
 
     static readonly string[] HUMANM_BANKS = 
@@ -178,68 +144,112 @@ public struct PhxHumanAnimator
         "human_sabre"
     };
 
-    public CraAnimator Anim { get; private set; }
-    Dictionary<string, CraPlayer> ClipPlayers;
+    public CraStateMachine Anim { get; private set; }
+    public CraInput InputMovementX { get; private set; }
+    public CraInput InputMovementY { get; private set; }
+    CraLayer LayerLower;
+    CraLayer LayerUpper;
 
-    PhxAnimBank[] Banks;
-    int CurrentBankIdx;
+    PhxBank Bank;
+
+
+    Dictionary<string, CraPlayer> ClipPlayers;
     Dictionary<string, int> NameToBankIdx;
 
 
     public PhxHumanAnimator(Transform root, string[] weaponAnimBanks)
     {
-        Anim = CraAnimator.CreateNew(2, 128);
+        Anim = CraStateMachine.CreateNew();
         ClipPlayers = new Dictionary<string, CraPlayer>();
         NameToBankIdx = new Dictionary<string, int>();
-        CurrentBankIdx = 0;
 
-        if (weaponAnimBanks == null || weaponAnimBanks.Length == 0)
+
+        LayerLower = CraLayer.None;
+        LayerUpper = CraLayer.None;
+
+        var bank = PhxAnimationBanks.Banks["human"]["rifle"];
+
+        InputMovementX = Anim.NewInput();
+        InputMovementY = Anim.NewInput();
+
+        Bank = new PhxBank();
+        Bank = new PhxBank
         {
-            // fallback
-            weaponAnimBanks = new string[] { "rifle" };
-        }
+            StandIdle = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandIdle, true)),
+            StandWalk = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandWalk, true)),
+            StandRun = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandRun, true)),
+            StandSprint = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandSprint, true)),
+            StandBackward = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandBackward, true)),
+            StandReload = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine")),
+            StandShootPrimary = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine")),
+            StandShootSecondary = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine")),
+            StandAlertIdle = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertIdle, true)),
+            StandAlertWalk = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertWalk, true)),
+            StandAlertRun = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertRun, true)),
+            StandAlertBackward = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertBackward, true)),
+            Jump = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.Jump, false)),
+            Fall = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.Fall, true)),
+            LandSoft = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.LandSoft, true)),
+            LandHard = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.LandHard, true)),
+            TurnLeft = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.TurnLeft, true)),
+            TurnRight = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.TurnRight, true))
+        };
 
-        Banks = new PhxAnimBank[weaponAnimBanks.Length];
-        for (int i = 0; i < Banks.Length; ++i)
+        Bank.StandIdle.NewTransition(Bank.StandWalk, new CraTransitionCondition
         {
-            if (PhxAnimationBanks.Banks["human"].TryGetValue(weaponAnimBanks[i], out PhxAnimationBanks.PhxAnimBank bank))
-            {
-                Banks[i].StandIdle = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandIdle, true));
-                Banks[i].StandWalk = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandWalk, true));
-                Banks[i].StandRun = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandRun, true));
-                Banks[i].StandSprint = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandSprint, true));
-                Banks[i].StandBackward = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandBackward, true));
-                Banks[i].StandReload = Anim.AddState(1, GetPlayer(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine"));
-                Banks[i].StandShootPrimary = Anim.AddState(1, GetPlayer(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine"));
-                Banks[i].StandShootSecondary = Anim.AddState(1, GetPlayer(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine"));
-                Banks[i].StandAlertIdle = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertIdle, true));
-                Banks[i].StandAlertWalk = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertWalk, true));
-                Banks[i].StandAlertRun = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertRun, true));
-                Banks[i].StandAlertBackward = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.StandAlertBackward, true));
-                Banks[i].Jump = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.Jump, false));
-                Banks[i].Fall = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.Fall, true));
-                Banks[i].LandSoft = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.LandSoft, false));
-                Banks[i].LandHard = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.LandHard, false));
-                Banks[i].TurnLeft = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.TurnLeft, false));
-                Banks[i].TurnRight = Anim.AddState(0, GetPlayer(root, HUMANM_BANKS, bank.TurnRight, false));
+            Condition = CraCondition.Greater,
+            Input = InputMovementX,
+            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+            ValueAsAbsolute = true
+        });
+        Bank.StandIdle.NewTransition(Bank.StandWalk, new CraTransitionCondition
+        {
+            Condition = CraCondition.Greater,
+            Input = InputMovementY,
+            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+            ValueAsAbsolute = true
+        });
 
-                NameToBankIdx.Add(weaponAnimBanks[i], i);
-            }
-            else
-            {
-                Debug.LogWarning($"Unknown weapon animation bank '{weaponAnimBanks[i]}'!");
-            }
-        }
 
-        Anim.SetState(0, StandIdle);
-        Anim.SetState(1, CraSettings.STATE_NONE);
+        Bank.StandWalk.NewTransition(Bank.StandRun, new CraTransitionCondition
+        {
+            Condition = CraCondition.Greater,
+            Input = InputMovementX,
+            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+            ValueAsAbsolute = true
+        });
+        Bank.StandWalk.NewTransition(Bank.StandWalk, new CraTransitionCondition
+        {
+            Condition = CraCondition.Greater,
+            Input = InputMovementY,
+            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+            ValueAsAbsolute = true
+        });
 
-        Anim.AddOnStateFinishedListener(StateFinished);
+
+        Bank.StandRun.NewTransition(Bank.StandWalk, new CraTransitionCondition
+        {
+            Condition = CraCondition.LessOrEqual,
+            Input = InputMovementX,
+            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+            ValueAsAbsolute = true
+        });
+        Bank.StandRun.NewTransition(Bank.StandWalk, new CraTransitionCondition
+        {
+            Condition = CraCondition.LessOrEqual,
+            Input = InputMovementY,
+            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+            ValueAsAbsolute = true
+        });
+
+
+        LayerLower = Anim.NewLayer(Bank.StandIdle);
+        LayerUpper = Anim.NewLayer(CraState.None);
     }
 
     public void PlayIntroAnim()
     {
-        Anim.SetState(1, StandReload);
+        LayerUpper.SetActiveState(Bank.StandReload);
     }
 
     public void SetAnimBank(string bankName)
@@ -248,11 +258,7 @@ public struct PhxHumanAnimator
         {
             return;
         }
-
-        if (NameToBankIdx.TryGetValue(bankName, out int idx))
-        {
-            CurrentBankIdx = idx;
-        }
+        // TODO
     }
 
     CraPlayer GetPlayer(Transform root, string[] animBanks, string animName, bool loop, string maskBone = null)
@@ -266,23 +272,9 @@ public struct PhxHumanAnimator
         return player;
     }
 
-    void StateFinished(int layerIdx)
-    {
-        if (layerIdx == 1)
-        {
-            Anim.SetState(1, CraSettings.STATE_NONE);
-        }
-    }
-
 
     public void SetActive(bool status = true)
     {
-        CraPlayer state0 = Anim.GetCurrentState(0);
-        state0.Reset();
-
-        // Not sure why, but this causes an array OoB exception, despite 
-        // the fact that Anim clearly has 2 layers...
-        //CraPlayer state1 = Anim.GetCurrentState(1);
-        //state1.Reset();
+        Anim.SetActive(status);
     }
 }
