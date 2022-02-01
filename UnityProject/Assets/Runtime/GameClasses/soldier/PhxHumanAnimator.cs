@@ -150,6 +150,7 @@ public struct PhxHumanAnimator
     CraLayer LayerLower;
     CraLayer LayerUpper;
 
+    CraState StateNone;
     PhxBank Bank;
 
 
@@ -164,87 +165,138 @@ public struct PhxHumanAnimator
         NameToBankIdx = new Dictionary<string, int>();
 
 
-        LayerLower = CraLayer.None;
-        LayerUpper = CraLayer.None;
+        LayerLower = Anim.NewLayer();
+        LayerUpper = Anim.NewLayer();
 
         var bank = PhxAnimationBanks.Banks["human"]["rifle"];
 
-        InputMovementX = Anim.NewInput();
-        InputMovementY = Anim.NewInput();
+        InputMovementX = Anim.NewInput(CraValueType.Float, "Input X");
+        InputMovementY = Anim.NewInput(CraValueType.Float, "Input Y");
+
+        StateNone = LayerUpper.NewState(CraPlayer.None, "None");
 
         Bank = new PhxBank();
         Bank = new PhxBank
         {
-            StandIdle = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandIdle, true)),
-            StandWalk = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandWalk, true)),
-            StandRun = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandRun, true)),
-            StandSprint = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandSprint, true)),
-            StandBackward = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandBackward, true)),
-            StandReload = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine")),
-            StandShootPrimary = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine")),
-            StandShootSecondary = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine")),
-            StandAlertIdle = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertIdle, true)),
-            StandAlertWalk = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertWalk, true)),
-            StandAlertRun = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertRun, true)),
-            StandAlertBackward = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.StandAlertBackward, true)),
-            Jump = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.Jump, false)),
-            Fall = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.Fall, true)),
-            LandSoft = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.LandSoft, true)),
-            LandHard = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.LandHard, true)),
-            TurnLeft = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.TurnLeft, true)),
-            TurnRight = CraState.CreateNew(GetPlayer(root, HUMANM_BANKS, bank.TurnRight, true))
+            StandIdle = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandIdle, true), "StandIdle"),
+            StandWalk = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandWalk, true), "StandWalk"),
+            StandRun = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandRun, true), "StandRun"),
+            StandSprint = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandSprint, true), "StandSprint"),
+            StandBackward = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandBackward, true), "StandBackward"),
+            StandReload = LayerUpper.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine"), "StandReload"),
+            StandShootPrimary = LayerUpper.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine"), "StandShootPrimary"),
+            StandShootSecondary = LayerUpper.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine"), "StandShootSecondary"),
+            StandAlertIdle = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertIdle, true), "StandAlertIdle"),
+            StandAlertWalk = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertWalk, true), "StandAlertWalk"),
+            StandAlertRun = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertRun, true), "StandAlertRun"),
+            StandAlertBackward = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertBackward, true), "StandAlertBackward"),
+            Jump = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.Jump, false), "Jump"),
+            Fall = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.Fall, true), "Fall"),
+            LandSoft = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.LandSoft, true), "LandSoft"),
+            LandHard = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.LandHard, true), "LandHard"),
+            TurnLeft = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.TurnLeft, true), "TurnLeft"),
+            TurnRight = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.TurnRight, true), "TurnRight")
         };
 
-        Bank.StandIdle.NewTransition(Bank.StandWalk, new CraTransitionCondition
+        Bank.StandIdle.NewTransition(new CraTransitionData
         {
-            Condition = CraCondition.Greater,
-            Input = InputMovementX,
-            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-            ValueAsAbsolute = true
-        });
-        Bank.StandIdle.NewTransition(Bank.StandWalk, new CraTransitionCondition
-        {
-            Condition = CraCondition.Greater,
-            Input = InputMovementY,
-            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-            ValueAsAbsolute = true
-        });
-
-
-        Bank.StandWalk.NewTransition(Bank.StandRun, new CraTransitionCondition
-        {
-            Condition = CraCondition.Greater,
-            Input = InputMovementX,
-            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-            ValueAsAbsolute = true
-        });
-        Bank.StandWalk.NewTransition(Bank.StandWalk, new CraTransitionCondition
-        {
-            Condition = CraCondition.Greater,
-            Input = InputMovementY,
-            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-            ValueAsAbsolute = true
+            Target = Bank.StandWalk,
+            TransitionTime = 0.15f,
+            Or1 = new CraConditionOr
+            {
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                    ValueAsAbsolute = true
+                }
+            },
+            Or2 = new CraConditionOr
+            {
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                    ValueAsAbsolute = true
+                }
+            },
         });
 
 
-        Bank.StandRun.NewTransition(Bank.StandWalk, new CraTransitionCondition
+        Bank.StandWalk.NewTransition(new CraTransitionData
         {
-            Condition = CraCondition.LessOrEqual,
-            Input = InputMovementX,
-            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-            ValueAsAbsolute = true
+            Target = Bank.StandIdle,
+            TransitionTime = 0.15f,
+            Or1 = new CraConditionOr
+            {
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                    ValueAsAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                    ValueAsAbsolute = true
+                }
+            }
         });
-        Bank.StandRun.NewTransition(Bank.StandWalk, new CraTransitionCondition
+        Bank.StandWalk.NewTransition(new CraTransitionData
         {
-            Condition = CraCondition.LessOrEqual,
-            Input = InputMovementY,
-            Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-            ValueAsAbsolute = true
+            Target = Bank.StandRun,
+            TransitionTime = 0.15f,
+            Or1 = new CraConditionOr
+            {
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    ValueAsAbsolute = true
+                },
+            },
+            Or2 = new CraConditionOr
+            {
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    ValueAsAbsolute = true
+                }
+            }
         });
 
+        Bank.StandRun.NewTransition(new CraTransitionData
+        {
+            Target = Bank.StandWalk,
+            TransitionTime = 0.15f,
+            Or1 = new CraConditionOr
+            {
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    ValueAsAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    ValueAsAbsolute = true
+                }
+            },
+        });
 
-        LayerLower = Anim.NewLayer(Bank.StandIdle);
-        LayerUpper = Anim.NewLayer(CraState.None);
+        LayerLower.SetActiveState(Bank.StandIdle);
     }
 
     public void PlayIntroAnim()
