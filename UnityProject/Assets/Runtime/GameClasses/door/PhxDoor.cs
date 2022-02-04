@@ -66,7 +66,8 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
             TriggerCollider.isTrigger = true;
         } 
 
-        Player = PhxAnimationLoader.CreatePlayer(transform, C.AnimationName.Get(), C.Animation.Get(), false);
+        Player = PhxAnimationLoader.CreatePlayer(transform, false);
+        Player.SetClip(PhxAnimationLoader.Import(C.AnimationName.Get(), C.Animation.Get()));
         Player.SetPlaybackSpeed(1f);
         Player.SetLooping(false);
     }

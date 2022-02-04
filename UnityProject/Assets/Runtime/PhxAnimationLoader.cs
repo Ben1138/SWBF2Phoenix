@@ -30,12 +30,24 @@ public static class PhxAnimationLoader
         return Import(bankName, HashUtils.GetCRC(animName), animName);
     }
 
+    public static CraClip Import(string[] animBanks, string animName)
+    {
+        CraClip clip = CraClip.None;
+        for (int i = 0; i < animBanks.Length; ++i)
+        {
+            clip = Import(animBanks[i], animName);
+            if (clip.IsValid())
+            {
+                break;
+            }
+        }
+        return clip;
+    }
+
     public static CraClip Import(string bankName, uint animNameCRC, string clipNameOverride=null)
     {
-        CraClip clip;
-
         uint animID = HashUtils.GetCRC(bankName) * animNameCRC;
-        if (ClipDB.TryGetValue(animID, out clip))
+        if (ClipDB.TryGetValue(animID, out CraClip clip))
         {
             return clip;
         }
@@ -44,17 +56,17 @@ public static class PhxAnimationLoader
         if (bank == null)
         {
             Debug.LogError($"Cannot find AnimationBank '{bankName}'!");
-            return null;
+            return CraClip.None;
         }
 
         if (!bank.GetAnimationMetadata(animNameCRC, out int numFrames, out int numBones))
         {
             //Debug.LogError($"Cannot find Animation '{animNameCRC}' in AnimationBank '{bankName}'!");
-            return null;
+            return CraClip.None;
         }
 
-        clip = new CraClip();
-        clip.Name = string.IsNullOrEmpty(clipNameOverride) ? animNameCRC.ToString() : clipNameOverride;
+        CraSourceClip srcClip = new CraSourceClip();
+        srcClip.Name = string.IsNullOrEmpty(clipNameOverride) ? animNameCRC.ToString() : clipNameOverride;
 
         uint dummyroot = HashUtils.GetCRC("dummyroot");
 
@@ -67,7 +79,7 @@ public static class PhxAnimationLoader
 
             CraBone bone = new CraBone();
             bone.BoneHash = (int)boneCRCs[i];
-            bone.Curve = new CraTransformCurve();
+            bone.Curve = new CraSourceTransformCurve();
 
             for (uint j = 0; j < 7; ++j)
             {
@@ -91,24 +103,16 @@ public static class PhxAnimationLoader
 
             bones.Add(bone);
         }
-        clip.SetBones(bones.ToArray());
-        clip.Bake(120f);
+        srcClip.SetBones(bones.ToArray());
+        srcClip.Bake(120f);
+        clip = CraClip.CreateNew(srcClip);
         ClipDB.Add(animID, clip);
         return clip;
     }
 
-    public static CraPlayer CreatePlayer(Transform root, string animBank, string animName, bool loop, string maskBone = null)
+    public static CraPlayer CreatePlayer(Transform root, bool loop, string maskBone = null)
     {
-        CraClip clip = Import(animBank, animName);
-        if (clip == null)
-        {
-            Debug.LogWarning($"Cannot find animation clip '{animName}' in bank '{animBank}'!");
-            return CraPlayer.CreateEmpty();
-        }
-
         CraPlayer player = CraPlayer.CreateNew();
-        player.SetClip(clip);
-
         if (string.IsNullOrEmpty(maskBone))
         {
             player.Assign(root);
@@ -117,40 +121,6 @@ public static class PhxAnimationLoader
         {
             player.Assign(root, new CraMask(true, maskBone));
         }
-
-        player.SetLooping(loop);
-        return player;
-    }
-
-    public static CraPlayer CreatePlayer(Transform root, string[] animBanks, string animName, bool loop, string maskBone = null)
-    {
-        CraClip clip = null;
-        for (int i = 0; i < animBanks.Length; ++i)
-        {
-            clip = Import(animBanks[i], animName);
-            if (clip != null)
-            {
-                break;
-            }
-        }
-        if (clip == null)
-        {
-            Debug.LogWarning($"Cannot find animation clip '{animName}' in any of the specified banks '{animBanks}'!");
-            return CraPlayer.CreateEmpty();
-        }
-
-        CraPlayer player = CraPlayer.CreateNew();
-        player.SetClip(clip);
-
-        if (string.IsNullOrEmpty(maskBone))
-        {
-            player.Assign(root);
-        }
-        else
-        {
-            player.Assign(root, new CraMask(true, maskBone));
-        }
-
         player.SetLooping(loop);
         return player;
     }

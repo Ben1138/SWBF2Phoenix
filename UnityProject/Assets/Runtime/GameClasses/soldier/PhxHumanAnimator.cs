@@ -153,15 +153,12 @@ public struct PhxHumanAnimator
     CraState StateNone;
     PhxBank Bank;
 
-
-    Dictionary<string, CraPlayer> ClipPlayers;
     Dictionary<string, int> NameToBankIdx;
 
 
     public PhxHumanAnimator(Transform root, string[] weaponAnimBanks)
     {
         Anim = CraStateMachine.CreateNew();
-        ClipPlayers = new Dictionary<string, CraPlayer>();
         NameToBankIdx = new Dictionary<string, int>();
 
 
@@ -176,26 +173,29 @@ public struct PhxHumanAnimator
         StateNone = LayerUpper.NewState(CraPlayer.None, "None");
 
         Bank = new PhxBank();
+        Bank.StandIdle = LayerLower.NewState(PhxAnimationLoader.CreatePlayer(root, false), "StandIdle");
+        Bank.StandIdle.GetPlayer().SetClip(PhxAnimationLoader.Import(HUMANM_BANKS, bank.StandIdle));
+
         Bank = new PhxBank
         {
-            StandIdle = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandIdle, true), "StandIdle"),
-            StandWalk = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandWalk, true), "StandWalk"),
-            StandRun = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandRun, true), "StandRun"),
-            StandSprint = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandSprint, true), "StandSprint"),
-            StandBackward = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandBackward, true), "StandBackward"),
-            StandReload = LayerUpper.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine"), "StandReload"),
-            StandShootPrimary = LayerUpper.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine"), "StandShootPrimary"),
-            StandShootSecondary = LayerUpper.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine"), "StandShootSecondary"),
-            StandAlertIdle = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertIdle, true), "StandAlertIdle"),
-            StandAlertWalk = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertWalk, true), "StandAlertWalk"),
-            StandAlertRun = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertRun, true), "StandAlertRun"),
-            StandAlertBackward = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.StandAlertBackward, true), "StandAlertBackward"),
-            Jump = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.Jump, false), "Jump"),
-            Fall = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.Fall, true), "Fall"),
-            LandSoft = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.LandSoft, true), "LandSoft"),
-            LandHard = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.LandHard, true), "LandHard"),
-            TurnLeft = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.TurnLeft, true), "TurnLeft"),
-            TurnRight = LayerLower.NewState(GetPlayer(root, HUMANM_BANKS, bank.TurnRight, true), "TurnRight")
+            StandIdle = CreateState(root, HUMANM_BANKS, bank.StandIdle, true, null, "StandIdle"),
+            StandWalk = CreateState(root, HUMANM_BANKS, bank.StandWalk, true, null, "StandWalk"),
+            StandRun = CreateState(root, HUMANM_BANKS, bank.StandRun, true, null, "StandRun"),
+            StandSprint = CreateState(root, HUMANM_BANKS, bank.StandSprint, true, null, "StandSprint"),
+            StandBackward = CreateState(root, HUMANM_BANKS, bank.StandBackward, true, null, "StandBackward"),
+            StandReload = CreateState(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine", "StandReload"),
+            StandShootPrimary = CreateState(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine", "StandShootPrimary"),
+            StandShootSecondary = CreateState(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine", "StandShootSecondary"),
+            StandAlertIdle = CreateState(root, HUMANM_BANKS, bank.StandAlertIdle, true, null, "StandAlertIdle"),
+            StandAlertWalk = CreateState(root, HUMANM_BANKS, bank.StandAlertWalk, true, null, "StandAlertWalk"),
+            StandAlertRun = CreateState(root, HUMANM_BANKS, bank.StandAlertRun, true, null, "StandAlertRun"),
+            StandAlertBackward = CreateState(root, HUMANM_BANKS, bank.StandAlertBackward, true, null, "StandAlertBackward"),
+            Jump = CreateState(root, HUMANM_BANKS, bank.Jump, false, null, "Jump"),
+            Fall = CreateState(root, HUMANM_BANKS, bank.Fall, true, null, "Fall"),
+            LandSoft = CreateState(root, HUMANM_BANKS, bank.LandSoft, true, null, "LandSoft"),
+            LandHard = CreateState(root, HUMANM_BANKS, bank.LandHard, true, null, "LandHard"),
+            TurnLeft = CreateState(root, HUMANM_BANKS, bank.TurnLeft, true, null, "TurnLeft"),
+            TurnRight = CreateState(root, HUMANM_BANKS, bank.TurnRight, true, null, "TurnRight")
         };
 
         Bank.StandIdle.NewTransition(new CraTransitionData
@@ -299,6 +299,13 @@ public struct PhxHumanAnimator
         LayerLower.SetActiveState(Bank.StandIdle);
     }
 
+    CraState CreateState(Transform root, string[] animBankNames, string animName, bool looping, string boneMaskName=null, string stateName =null)
+    {
+        CraState state = LayerLower.NewState(PhxAnimationLoader.CreatePlayer(root, looping, boneMaskName), stateName);
+        state.GetPlayer().SetClip(PhxAnimationLoader.Import(animBankNames, animName));
+        return state;
+    }
+
     public void PlayIntroAnim()
     {
         LayerUpper.SetActiveState(Bank.StandReload);
@@ -312,18 +319,6 @@ public struct PhxHumanAnimator
         }
         // TODO
     }
-
-    CraPlayer GetPlayer(Transform root, string[] animBanks, string animName, bool loop, string maskBone = null)
-    {
-        if (ClipPlayers.TryGetValue(animName, out CraPlayer player))
-        {
-            return player;
-        }
-        player = PhxAnimationLoader.CreatePlayer(root, animBanks, animName, loop, maskBone);
-        ClipPlayers.Add(animName, player);
-        return player;
-    }
-
 
     public void SetActive(bool status = true)
     {
