@@ -20,6 +20,16 @@ public static class PhxAnimationLoader
          1.0f  
     };
 
+    static readonly string[] HUMANM_BANKS =
+    {
+        "human_0",
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_sabre"
+    };
+
     public static void ClearDB()
     {
         ClipDB.Clear();
@@ -27,6 +37,10 @@ public static class PhxAnimationLoader
 
     public static CraClip Import(string bankName, string animName)
     {
+        if (bankName == "human")
+        {
+            return Import(HUMANM_BANKS, animName);
+        }
         return Import(bankName, HashUtils.GetCRC(animName), animName);
     }
 

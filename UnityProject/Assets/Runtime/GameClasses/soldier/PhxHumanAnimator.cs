@@ -110,40 +110,192 @@ public static class PhxAnimationBanks
     };
 }
 
-public struct PhxHumanAnimator
+// For each weapon, will shall generate one animation set
+// Also, a Set should include a basepose (skeleton setup)
+public struct PhxAnimSet
 {
-    struct PhxBank
-    {
-        public CraState StandIdle;
-        public CraState StandWalk;
-        public CraState StandRun;
-        public CraState StandSprint;
-        public CraState StandBackward;
-        public CraState StandReload;
-        public CraState StandShootPrimary;
-        public CraState StandShootSecondary;
-        public CraState StandAlertIdle;
-        public CraState StandAlertWalk;
-        public CraState StandAlertRun;
-        public CraState StandAlertBackward;
-        public CraState Jump;
-        public CraState Fall;
-        public CraState LandSoft;
-        public CraState LandHard;
-        public CraState TurnLeft;
-        public CraState TurnRight;
-    }
+    public CraState CrouchIdle;
+    public CraState CrouchHitFront;
+    public CraState CrouchHitLeft;
+    public CraState CrouchHitRight;
+    public CraState CrouchReload;
+    public CraState CrouchShoot;
+    public CraState CrouchTurnLeft;
+    public CraState CrouchTurnRight;
+    public CraState CrouchWalkForward;
+    public CraState CrouchWalkBackward;
+    public CraState CrouchAlertIdle;
+    public CraState CrouchAlertWalkForward;
+    public CraState CrouchAlertWalkBackward;
 
-    static readonly string[] HUMANM_BANKS = 
+    public CraState StandIdle;
+    public CraState StandIdleCheckweapon;
+    public CraState StandIdleLookaround;
+    public CraState StandWalk;
+    public CraState StandRun;
+    public CraState StandBackward;
+    public CraState StandReload;
+    public CraState StandShootPrimary;
+    public CraState StandShootSecondary;
+    public CraState StandAlertIdle;
+    public CraState StandAlertWalk;
+    public CraState StandAlertRun;
+    public CraState StandAlertBackward;
+    public CraState StandTurnLeft;
+    public CraState StandTurnRight;
+    public CraState StandHitFront;
+    public CraState StandHitBack;
+    public CraState StandHitLeft;
+    public CraState StandHitRight;
+    public CraState StandGetupFront;
+    public CraState StandGetupBack;
+    public CraState StandDeathForward;
+    public CraState StandDeathBackward;
+    public CraState StandDeathLeft;
+    public CraState StandDeathRight;
+
+    // Melee
+    public CraState StandAttack;
+    public CraState StandBlockForward;
+    public CraState StandBlockLeft;
+    public CraState StandBlockRight;
+    public CraState StandDeadhero;
+
+    public CraState ThrownBounceFrontSoft;
+    public CraState ThrownBounceBackSoft;
+    public CraState ThrownBounceFlail;
+    public CraState ThrownFlyingFront;
+    public CraState ThrownFlyingBack;
+    public CraState ThrownFlyingLeft;
+    public CraState ThrownFlyingRight;
+    public CraState ThrownLandFrontSoft;
+    public CraState ThrownLandBackSoft;
+    public CraState ThrownTumbleFront;
+    public CraState ThrownTumbleBack;
+
+    public CraState Sprint;
+    public CraState JetpackHover;
+    public CraState Jump;
+    public CraState Fall;
+    public CraState LandSoft;
+    public CraState LandHard;
+    public CraState Choking;
+}
+
+public struct PhxAnimDesc
+{                       // E.g.:
+    public string Character;   //  human
+    public string Weapon;      //  rifle
+    public string Posture;     //  stand
+    public string Animation;   //  shoot
+    public string Scope;       //  full
+
+    public string ParentCharacter;
+    public string ParentWeapon;
+
+    public override string ToString()
     {
-        "human_0",
-        "human_1",
-        "human_2",
-        "human_3",
-        "human_4",
-        "human_sabre"
+        return $"{Character}_{Weapon}_{Posture}_{Animation}{(!string.IsNullOrEmpty(Scope) ? $"_{Scope}" : "")}";
+    }
+}
+
+public struct PhxAnimator
+{
+    LibSWBF2.Wrappers.Container Con;
+
+    static readonly Dictionary<string, string> WeaponInheritance = new Dictionary<string, string>()
+    {
+        { "melee",   /* --> */ "tool" },
+        { "grenade", /* --> */ "tool" },
+        { "tool",    /* --> */ "pistol" },
+        { "pistol",  /* --> */ "rifle" },
+        { "bazooka", /* --> */ "rifle" },
     };
 
+    public void AddAnimPath(PhxAnimDesc animDesc)
+    {
+
+
+        // TODO: insert into tree
+    }
+
+    public PhxAnimSet BakeAnimSet(PhxAnimDesc animDesc)
+    {
+        
+    }
+
+    // Idk what's the better approach here. Either build up a tree
+    // (which requires to know about all animations beforehand), to
+    // resolve animation inheritance, or just apply the rules recursively
+    // until a matching animation is found. I'm going with the latter for now.
+    CraClip ResolveAnim(in PhxAnimDesc animDesc)
+    {
+        CraClip clip = CraClip.None;
+        while (!clip.IsValid())
+        {
+            PhxAnimDesc next = animDesc;
+
+            if (string.IsNullOrEmpty(animDesc.ParentCharacter))
+            {
+                next.ParentCharacter = "human";
+            }
+            if (string.IsNullOrEmpty(animDesc.ParentWeapon))
+            {
+                if (!WeaponInheritance.TryGetValue(animDesc.Weapon, out next.ParentWeapon))
+                {
+                    next.ParentWeapon = "rifle";
+                }
+            }
+
+            clip = PhxAnimationLoader.Import(animDesc.Character, animDesc.ToString());
+            if (!clip.IsValid())
+            {
+                if (animDesc.Character == "human" && animDesc.Weapon == "rifle")
+                {
+                    // Reached root
+                    break;
+                }
+
+                // Apply weapon inheritance rules
+
+                // 1. From character parent              
+                next.Character = animDesc.ParentCharacter;
+                next.ParentCharacter = null;
+                clip = ResolveAnim(next);
+                if (clip.IsValid())
+                {
+                    return clip;
+                }
+
+                // 2. From neighbouring animations
+                int idx = -1;
+                int.TryParse(animDesc.Animation.ToCharArray()[animDesc.Animation.Length - 1].ToString(), out idx);
+                for (int i = 1; i < 10; ++i)
+                {
+                    
+                }
+            }
+        }
+        return clip;
+    }
+
+    string GetParent(string charSet)
+    {
+        return "human";
+    }
+
+    string GetWeaponParent(string weapon)
+    {
+        if (WeaponInheritance.TryGetValue(weapon, out string parent))
+        {
+            return parent;
+        }
+        return "rifle";
+    }
+}
+
+public struct PhxHumanAnimator
+{
     public CraStateMachine Anim { get; private set; }
     public CraInput InputMovementX { get; private set; }
     public CraInput InputMovementY { get; private set; }
@@ -151,7 +303,7 @@ public struct PhxHumanAnimator
     CraLayer LayerUpper;
 
     CraState StateNone;
-    PhxBank Bank;
+    PhxAnimSet Bank;
 
     Dictionary<string, int> NameToBankIdx;
 
@@ -172,11 +324,8 @@ public struct PhxHumanAnimator
 
         StateNone = LayerUpper.NewState(CraPlayer.None, "None");
 
-        Bank = new PhxBank();
-        Bank.StandIdle = LayerLower.NewState(PhxAnimationLoader.CreatePlayer(root, false), "StandIdle");
-        Bank.StandIdle.GetPlayer().SetClip(PhxAnimationLoader.Import(HUMANM_BANKS, bank.StandIdle));
-
-        Bank = new PhxBank
+        Bank = new PhxAnimSet();
+        Bank = new PhxAnimSet
         {
             StandIdle = CreateState(root, HUMANM_BANKS, bank.StandIdle, true, null, "StandIdle"),
             StandWalk = CreateState(root, HUMANM_BANKS, bank.StandWalk, true, null, "StandWalk"),
