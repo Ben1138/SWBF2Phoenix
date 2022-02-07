@@ -281,7 +281,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         string[] weapAnimBanks = new string[weaponAnimBanks.Count];
         weaponAnimBanks.CopyTo(weapAnimBanks);
-        Animator = new PhxHumanAnimator(transform, weapAnimBanks);
+
+        string characterAnim = C.AnimationName;
+        if (characterAnim.ToLower() == "human" && C.SkeletonName.Get().ToLower() != "human")
+        {
+            characterAnim = C.SkeletonName;
+        }
+        Animator = new PhxHumanAnimator(transform, characterAnim, weapAnimBanks);
 
 
         // this needs to happen after the Animator is initialized, since swicthing

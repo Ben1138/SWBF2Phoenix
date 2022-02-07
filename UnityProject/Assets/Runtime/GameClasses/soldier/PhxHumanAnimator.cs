@@ -115,6 +115,7 @@ public static class PhxAnimationBanks
 public struct PhxAnimSet
 {
     public CraState CrouchIdle;
+    public CraState CrouchIdleTakeknee;
     public CraState CrouchHitFront;
     public CraState CrouchHitLeft;
     public CraState CrouchHitRight;
@@ -131,16 +132,18 @@ public struct PhxAnimSet
     public CraState StandIdle;
     public CraState StandIdleCheckweapon;
     public CraState StandIdleLookaround;
-    public CraState StandWalk;
-    public CraState StandRun;
-    public CraState StandBackward;
+    public CraState StandWalkForward;
+    public CraState StandWalkBackward;
+    public CraState StandRunForward;
+    public CraState StandRunBackward;
     public CraState StandReload;
     public CraState StandShootPrimary;
     public CraState StandShootSecondary;
     public CraState StandAlertIdle;
-    public CraState StandAlertWalk;
-    public CraState StandAlertRun;
-    public CraState StandAlertBackward;
+    public CraState StandAlertWalkForward;
+    public CraState StandAlertWalkBackward;
+    public CraState StandAlertRunForward;
+    public CraState StandAlertRunBackward;
     public CraState StandTurnLeft;
     public CraState StandTurnRight;
     public CraState StandHitFront;
@@ -163,7 +166,7 @@ public struct PhxAnimSet
 
     public CraState ThrownBounceFrontSoft;
     public CraState ThrownBounceBackSoft;
-    public CraState ThrownBounceFlail;
+    public CraState ThrownFlail;
     public CraState ThrownFlyingFront;
     public CraState ThrownFlyingBack;
     public CraState ThrownFlyingLeft;
@@ -193,104 +196,341 @@ public struct PhxAnimDesc
     public string ParentCharacter;
     public string ParentWeapon;
 
+    // Otherwise, it's a movement animation
+    public bool IsWeaponAnimation()
+    {
+        PhxUtils.IntFromStringEnd(Animation, out string anim);
+        return
+            anim.ToLower() == "shoot" ||
+            anim.ToLower() == "shoot_secondary" ||
+            anim.ToLower() == "charge" ||
+            anim.ToLower() == "reload";
+    }
+
     public override string ToString()
     {
         return $"{Character}_{Weapon}_{Posture}_{Animation}{(!string.IsNullOrEmpty(Scope) ? $"_{Scope}" : "")}";
     }
+
+    public static bool operator==(in PhxAnimDesc lhs, in PhxAnimDesc rhs)
+    {
+        return
+            lhs.Character == rhs.Character &&
+            lhs.Weapon == rhs.Weapon &&
+            lhs.Posture == rhs.Posture &&
+            lhs.Animation == rhs.Animation &&
+            lhs.Scope == rhs.Scope;
+    }
+
+    public static bool operator !=(in PhxAnimDesc lhs, in PhxAnimDesc rhs)
+    {
+        return !(lhs == rhs);
+    }
 }
 
-public struct PhxAnimator
+public enum PhxAnimScope
 {
-    LibSWBF2.Wrappers.Container Con;
+    Lower, Upper, Full
+}
 
-    static readonly Dictionary<string, string> WeaponInheritance = new Dictionary<string, string>()
+public class PhxAnimationResolver
+{
+    readonly Dictionary<string, string> WeaponInheritance = new Dictionary<string, string>()
     {
-        { "melee",   /* --> */ "tool" },
-        { "grenade", /* --> */ "tool" },
+        { "melee",   /* --> */ "tool"   },
+        { "grenade", /* --> */ "tool"   },
         { "tool",    /* --> */ "pistol" },
-        { "pistol",  /* --> */ "rifle" },
-        { "bazooka", /* --> */ "rifle" },
+        { "pistol",  /* --> */ "rifle"  },
+        { "bazooka", /* --> */ "rifle"  },
     };
 
-    public void AddAnimPath(PhxAnimDesc animDesc)
+    // Add weapons with no alert states here.
+    // See CustomAnimationBank odf property
+    HashSet<string> NoAlertSupport = new HashSet<string>()
     {
+        "bazooka", "melee"
+    };
 
 
-        // TODO: insert into tree
+    public void AddNoAlertSupportWeapon(string weapon)
+    {
+        NoAlertSupport.Add(weapon);
     }
 
-    public PhxAnimSet BakeAnimSet(PhxAnimDesc animDesc)
+    public bool ResolveAnim(PhxAnimDesc animDesc, out CraClip clip, out PhxAnimScope scope, out bool loop)
     {
-        
+        bool found = ResolveAnim(animDesc, out PhxAnimDesc resolved, out clip, out scope);
+        if (found && resolved != animDesc)
+        {
+            Debug.Log($"{animDesc} --> {resolved}");
+        }
+        // Don't loop weapon and turn animations, but everything else
+        loop = !resolved.IsWeaponAnimation() && !resolved.Animation.ToLower().StartsWith("turn");
+        return found;
     }
 
-    // Idk what's the better approach here. Either build up a tree
-    // (which requires to know about all animations beforehand), to
-    // resolve animation inheritance, or just apply the rules recursively
-    // until a matching animation is found. I'm going with the latter for now.
-    CraClip ResolveAnim(in PhxAnimDesc animDesc)
+    // Idk what's the better approach here. Either build up a tree to
+    // resolve animation inheritance (which requires to know about all
+    // animations beforehand), or just apply the rules recursively until
+    // a matching animation is found. I'm going with the latter for now.
+    public bool ResolveAnim(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope scope)
     {
-        CraClip clip = CraClip.None;
+        clip = CraClip.None;
         while (!clip.IsValid())
         {
-            PhxAnimDesc next = animDesc;
+            if (FindScope(animDesc, out found, out clip, out scope))
+            {
+                return true;
+            }
 
+            // Ensure parents
             if (string.IsNullOrEmpty(animDesc.ParentCharacter))
             {
-                next.ParentCharacter = "human";
+                animDesc.ParentCharacter = "human";
             }
             if (string.IsNullOrEmpty(animDesc.ParentWeapon))
             {
-                if (!WeaponInheritance.TryGetValue(animDesc.Weapon, out next.ParentWeapon))
+                if (!WeaponInheritance.TryGetValue(animDesc.Weapon, out animDesc.ParentWeapon))
                 {
-                    next.ParentWeapon = "rifle";
+                    animDesc.ParentWeapon = "rifle";
                 }
             }
 
-            clip = PhxAnimationLoader.Import(animDesc.Character, animDesc.ToString());
-            if (!clip.IsValid())
+            PhxAnimDesc next;
+            if (animDesc.IsWeaponAnimation())
             {
-                if (animDesc.Character == "human" && animDesc.Weapon == "rifle")
+                // Apply weapon inheritance rules in strict
+                // order until a matching animation is found.
+
+                // 1. From character parent
+                next = animDesc;
+                if (next.Character.ToLower() != animDesc.ParentCharacter.ToLower())
                 {
-                    // Reached root
-                    break;
+                    next.Character = animDesc.ParentCharacter;
+                    next.ParentCharacter = null;
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
                 }
 
-                // Apply weapon inheritance rules
-
-                // 1. From character parent              
-                next.Character = animDesc.ParentCharacter;
-                next.ParentCharacter = null;
-                clip = ResolveAnim(next);
-                if (clip.IsValid())
-                {
-                    return clip;
-                }
-
-                // 2. From neighbouring animations
-                int idx = -1;
-                int.TryParse(animDesc.Animation.ToCharArray()[animDesc.Animation.Length - 1].ToString(), out idx);
+                // 2. From neighbouring animations (e.g. shoot1, shoot2, shoot3)
+                next = animDesc;
+                int idx = PhxUtils.IntFromStringEnd(animDesc.Animation, out string anim);
                 for (int i = 1; i < 10; ++i)
                 {
-                    
+                    if (i != idx)
+                    {
+                        next.Animation = $"{anim}{i}";
+                        if (ResolveAnim(next, out found, out clip, out scope))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                if (idx >= 0)
+                {
+                    next.Animation = anim;
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+
+                // 3. Posture fallback to Stand
+                next = animDesc;
+                if (next.Posture.ToLower() != "stand")
+                {
+                    next.Posture = "stand";
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+
+                // 4. From weapon parent
+                next = animDesc;
+                if (next.Weapon.ToLower() != animDesc.ParentWeapon.ToLower())
+                {
+                    next.Weapon = animDesc.ParentWeapon;
+                    next.ParentWeapon = null;
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                // Apply movement inheritance rules in strict
+                // order until a matching animation is found.
+
+                // 1. When weapon doesn't support alert state, try fall back to non-alert postures first!
+                next = animDesc;
+                if (NoAlertSupport.Contains(next.Weapon))
+                {
+                    if (next.Posture.ToLower() == "standalert")
+                    {
+                        next.Posture = "stand";
+                        if (ResolveAnim(next, out found, out clip, out scope))
+                        {
+                            return true;
+                        }
+                    }
+                    else if (next.Posture.ToLower() == "crouchalert")
+                    {
+                        next.Posture = "crouch";
+                        if (ResolveAnim(next, out found, out clip, out scope))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                // 2. From weapon parent
+                next = animDesc;
+                if (next.Weapon.ToLower() != animDesc.ParentWeapon.ToLower())
+                {
+                    next.Weapon = animDesc.ParentWeapon;
+                    next.ParentWeapon = null;
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+
+                // 3. From character parent
+                next = animDesc;
+                if (next.Character.ToLower() != animDesc.ParentCharacter.ToLower())
+                {
+                    next.Character = animDesc.ParentCharacter;
+                    next.ParentCharacter = null;
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+
+                // 4. Now also fall back to non-alert postures
+                //    for weapons that do support alert states
+                next = animDesc;
+                if (next.Posture.ToLower() == "standalert")
+                {
+                    next.Posture = "stand";
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+                else if (next.Posture.ToLower() == "crouchalert")
+                {
+                    next.Posture = "crouch";
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+
+                // 5. Idle fallback
+                next = animDesc;
+                if (next.Animation.ToLower().StartsWith("idle") || next.Animation.ToLower().StartsWith("turn"))
+                {
+                    next.Animation = "idle_emote";
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
+                }
+
+                // 6. Stand Idle posture fallback
+                if (next.Posture.ToLower() != "stand")
+                {
+                    next.Posture = "stand";
+                    if (ResolveAnim(next, out found, out clip, out scope))
+                    {
+                        return true;
+                    }
                 }
             }
         }
-        return clip;
+
+        found = animDesc;
+        scope = PhxAnimScope.Full;
+        return false;
     }
 
-    string GetParent(string charSet)
+    bool FindScope(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope scope)
     {
-        return "human";
-    }
-
-    string GetWeaponParent(string weapon)
-    {
-        if (WeaponInheritance.TryGetValue(weapon, out string parent))
+        clip = PhxAnimationLoader.Import(animDesc.Character, animDesc.ToString());
+        if (clip.IsValid())
         {
-            return parent;
+            found = animDesc;
+            if (string.IsNullOrEmpty(found.Scope))
+            {
+                if (found.IsWeaponAnimation())
+                {
+                    scope = PhxAnimScope.Upper;
+                }
+                else if (found.Animation.ToLower().StartsWith("turn"))
+                {
+                    scope = PhxAnimScope.Lower;
+                }
+                else
+                {
+                    scope = PhxAnimScope.Full;
+                }
+            }
+            else
+            {
+                switch (found.Scope.ToLower())
+                {
+                    case "lower":
+                        scope = PhxAnimScope.Lower;
+                        break;
+                    case "upper":
+                        scope = PhxAnimScope.Upper;
+                        break;
+                    case "full":
+                        scope = PhxAnimScope.Full;
+                        break;
+                    default:
+                        Debug.LogError($"Unknown animation scope '{found.Scope}'!");
+                        scope = PhxAnimScope.Full;
+                        break;
+                }
+            }
+            return true;
         }
-        return "rifle";
+
+        if (!string.IsNullOrEmpty(animDesc.Scope))
+        {
+            found = animDesc;
+            scope = PhxAnimScope.Full;
+            return false;
+        }
+
+        animDesc.Scope = "lower";
+        if (FindScope(animDesc, out found, out clip, out scope))
+        {
+            Debug.Assert(scope == PhxAnimScope.Lower);
+            return true;
+        }
+
+        animDesc.Scope = "upper";
+        if (FindScope(animDesc, out found, out clip, out scope))
+        {
+            Debug.Assert(scope == PhxAnimScope.Upper);
+            return true;
+        }
+
+        animDesc.Scope = "full";
+        if (FindScope(animDesc, out found, out clip, out scope))
+        {
+            Debug.Assert(scope == PhxAnimScope.Full);
+            return true;
+        }
+
+        return false;
     }
 }
 
@@ -303,16 +543,18 @@ public struct PhxHumanAnimator
     CraLayer LayerUpper;
 
     CraState StateNone;
-    PhxAnimSet Bank;
+    PhxAnimSet[] Sets;
 
-    Dictionary<string, int> NameToBankIdx;
+    PhxAnimationResolver Resolver;
+    Dictionary<string, int> WeaponNameToSetIdx;
 
 
-    public PhxHumanAnimator(Transform root, string[] weaponAnimBanks)
+    public PhxHumanAnimator(Transform root, string characterAnimBank, string[] weaponAnimBanks)
     {
         Anim = CraStateMachine.CreateNew();
-        NameToBankIdx = new Dictionary<string, int>();
+        WeaponNameToSetIdx = new Dictionary<string, int>();
 
+        Resolver = new PhxAnimationResolver();
 
         LayerLower = Anim.NewLayer();
         LayerUpper = Anim.NewLayer();
@@ -324,140 +566,226 @@ public struct PhxHumanAnimator
 
         StateNone = LayerUpper.NewState(CraPlayer.None, "None");
 
-        Bank = new PhxAnimSet();
-        Bank = new PhxAnimSet
+        Sets = new PhxAnimSet[weaponAnimBanks.Length];
+        for (int i = 0; i < Sets.Length; ++i)
         {
-            StandIdle = CreateState(root, HUMANM_BANKS, bank.StandIdle, true, null, "StandIdle"),
-            StandWalk = CreateState(root, HUMANM_BANKS, bank.StandWalk, true, null, "StandWalk"),
-            StandRun = CreateState(root, HUMANM_BANKS, bank.StandRun, true, null, "StandRun"),
-            StandSprint = CreateState(root, HUMANM_BANKS, bank.StandSprint, true, null, "StandSprint"),
-            StandBackward = CreateState(root, HUMANM_BANKS, bank.StandBackward, true, null, "StandBackward"),
-            StandReload = CreateState(root, HUMANM_BANKS, bank.StandReload, false, "bone_a_spine", "StandReload"),
-            StandShootPrimary = CreateState(root, HUMANM_BANKS, bank.StandShootPrimary, false, "bone_a_spine", "StandShootPrimary"),
-            StandShootSecondary = CreateState(root, HUMANM_BANKS, bank.StandShootSecondary, false, "bone_a_spine", "StandShootSecondary"),
-            StandAlertIdle = CreateState(root, HUMANM_BANKS, bank.StandAlertIdle, true, null, "StandAlertIdle"),
-            StandAlertWalk = CreateState(root, HUMANM_BANKS, bank.StandAlertWalk, true, null, "StandAlertWalk"),
-            StandAlertRun = CreateState(root, HUMANM_BANKS, bank.StandAlertRun, true, null, "StandAlertRun"),
-            StandAlertBackward = CreateState(root, HUMANM_BANKS, bank.StandAlertBackward, true, null, "StandAlertBackward"),
-            Jump = CreateState(root, HUMANM_BANKS, bank.Jump, false, null, "Jump"),
-            Fall = CreateState(root, HUMANM_BANKS, bank.Fall, true, null, "Fall"),
-            LandSoft = CreateState(root, HUMANM_BANKS, bank.LandSoft, true, null, "LandSoft"),
-            LandHard = CreateState(root, HUMANM_BANKS, bank.LandHard, true, null, "LandHard"),
-            TurnLeft = CreateState(root, HUMANM_BANKS, bank.TurnLeft, true, null, "TurnLeft"),
-            TurnRight = CreateState(root, HUMANM_BANKS, bank.TurnRight, true, null, "TurnRight")
-        };
+            WeaponNameToSetIdx.Add(weaponAnimBanks[i], i);
+            Sets[i] = GenerateSet(root, characterAnimBank, weaponAnimBanks[i]);
 
-        Bank.StandIdle.NewTransition(new CraTransitionData
-        {
-            Target = Bank.StandWalk,
-            TransitionTime = 0.15f,
-            Or1 = new CraConditionOr
+            Sets[i].StandIdle.NewTransition(new CraTransitionData
             {
-                And1 = new CraCondition
+                Target = Sets[i].StandWalkForward,
+                TransitionTime = 0.15f,
+                Or1 = new CraConditionOr
                 {
-                    Type = CraConditionType.Greater,
-                    Input = InputMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-                    ValueAsAbsolute = true
-                }
-            },
-            Or2 = new CraConditionOr
-            {
-                And1 = new CraCondition
-                {
-                    Type = CraConditionType.Greater,
-                    Input = InputMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-                    ValueAsAbsolute = true
-                }
-            },
-        });
-
-
-        Bank.StandWalk.NewTransition(new CraTransitionData
-        {
-            Target = Bank.StandIdle,
-            TransitionTime = 0.15f,
-            Or1 = new CraConditionOr
-            {
-                And1 = new CraCondition
-                {
-                    Type = CraConditionType.LessOrEqual,
-                    Input = InputMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-                    ValueAsAbsolute = true
+                    And1 = new CraCondition
+                    {
+                        Type = CraConditionType.Greater,
+                        Input = InputMovementX,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                        ValueAsAbsolute = true
+                    }
                 },
-                And2 = new CraCondition
+                Or2 = new CraConditionOr
                 {
-                    Type = CraConditionType.LessOrEqual,
-                    Input = InputMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-                    ValueAsAbsolute = true
-                }
-            }
-        });
-        Bank.StandWalk.NewTransition(new CraTransitionData
-        {
-            Target = Bank.StandRun,
-            TransitionTime = 0.15f,
-            Or1 = new CraConditionOr
-            {
-                And1 = new CraCondition
-                {
-                    Type = CraConditionType.Greater,
-                    Input = InputMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-                    ValueAsAbsolute = true
+                    And1 = new CraCondition
+                    {
+                        Type = CraConditionType.Greater,
+                        Input = InputMovementY,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                        ValueAsAbsolute = true
+                    }
                 },
-            },
-            Or2 = new CraConditionOr
-            {
-                And1 = new CraCondition
-                {
-                    Type = CraConditionType.Greater,
-                    Input = InputMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-                    ValueAsAbsolute = true
-                }
-            }
-        });
+            });
 
-        Bank.StandRun.NewTransition(new CraTransitionData
-        {
-            Target = Bank.StandWalk,
-            TransitionTime = 0.15f,
-            Or1 = new CraConditionOr
+
+            Sets[i].StandWalkForward.NewTransition(new CraTransitionData
             {
-                And1 = new CraCondition
+                Target = Sets[i].StandIdle,
+                TransitionTime = 0.15f,
+                Or1 = new CraConditionOr
                 {
-                    Type = CraConditionType.LessOrEqual,
-                    Input = InputMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-                    ValueAsAbsolute = true
+                    And1 = new CraCondition
+                    {
+                        Type = CraConditionType.LessOrEqual,
+                        Input = InputMovementX,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                        ValueAsAbsolute = true
+                    },
+                    And2 = new CraCondition
+                    {
+                        Type = CraConditionType.LessOrEqual,
+                        Input = InputMovementY,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
+                        ValueAsAbsolute = true
+                    }
+                }
+            });
+            Sets[i].StandWalkForward.NewTransition(new CraTransitionData
+            {
+                Target = Sets[i].StandRunForward,
+                TransitionTime = 0.15f,
+                Or1 = new CraConditionOr
+                {
+                    And1 = new CraCondition
+                    {
+                        Type = CraConditionType.Greater,
+                        Input = InputMovementX,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                        ValueAsAbsolute = true
+                    },
                 },
-                And2 = new CraCondition
+                Or2 = new CraConditionOr
                 {
-                    Type = CraConditionType.LessOrEqual,
-                    Input = InputMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-                    ValueAsAbsolute = true
+                    And1 = new CraCondition
+                    {
+                        Type = CraConditionType.Greater,
+                        Input = InputMovementY,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                        ValueAsAbsolute = true
+                    }
                 }
-            },
-        });
+            });
 
-        LayerLower.SetActiveState(Bank.StandIdle);
+            Sets[i].StandRunForward.NewTransition(new CraTransitionData
+            {
+                Target = Sets[i].StandWalkForward,
+                TransitionTime = 0.15f,
+                Or1 = new CraConditionOr
+                {
+                    And1 = new CraCondition
+                    {
+                        Type = CraConditionType.LessOrEqual,
+                        Input = InputMovementX,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                        ValueAsAbsolute = true
+                    },
+                    And2 = new CraCondition
+                    {
+                        Type = CraConditionType.LessOrEqual,
+                        Input = InputMovementY,
+                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                        ValueAsAbsolute = true
+                    }
+                },
+            });
+        }
     }
 
-    CraState CreateState(Transform root, string[] animBankNames, string animName, bool looping, string boneMaskName=null, string stateName =null)
+    public void SetActiveWeaponBank(string weaponAnimBank)
     {
-        CraState state = LayerLower.NewState(PhxAnimationLoader.CreatePlayer(root, looping, boneMaskName), stateName);
-        state.GetPlayer().SetClip(PhxAnimationLoader.Import(animBankNames, animName));
+        if (!WeaponNameToSetIdx.TryGetValue(weaponAnimBank, out int idx))
+        {
+            Debug.LogError($"Unknown weapon animation bank '{weaponAnimBank}'!");
+            return;
+        }
+
+        // TODO: How to keep current states?
+        LayerLower.SetActiveState(Sets[idx].StandIdle);
+    }
+
+    CraState CreateState(Transform root, string character, string weapon, string posture, string anim, string stateName =null)
+    {
+        PhxAnimDesc animDesc = new PhxAnimDesc { Character = character, Weapon = weapon, Posture = posture, Animation = anim };
+        if (!Resolver.ResolveAnim(animDesc, out CraClip clip, out PhxAnimScope scope, out bool loop))
+        {
+            return CraState.None;
+        }
+        Debug.Assert(clip.IsValid());
+        CraState state = CraState.None;
+        switch(scope)
+        {
+            case PhxAnimScope.Lower:
+                state = LayerLower.NewState(PhxAnimationLoader.CreatePlayer(root, loop, "bone_pelvis"), stateName);
+                break;
+            case PhxAnimScope.Upper:
+                state = LayerUpper.NewState(PhxAnimationLoader.CreatePlayer(root, loop, "root_a_spine"), stateName);
+                break;
+            case PhxAnimScope.Full:
+                state = LayerUpper.NewState(PhxAnimationLoader.CreatePlayer(root, loop), stateName);
+                break;
+        }
+        Debug.Assert(state.IsValid());
+        state.GetPlayer().SetClip(clip);
         return state;
+    }
+
+    PhxAnimSet GenerateSet(Transform root, string character, string weapon)
+    {
+        return new PhxAnimSet
+        {
+            CrouchIdle = CreateState(root, character, weapon, "crouch", "idle_emote", "CrouchIdle"),
+            CrouchIdleTakeknee = CreateState(root, character, weapon, "crouch", "idle_takeknee", "CrouchIdle"),
+            CrouchHitFront = CreateState(root, character, weapon, "crouch", "hitfront", "CrouchHitFront"),
+            CrouchHitLeft = CreateState(root, character, weapon, "crouch", "hitleft", "CrouchHitLeft"),
+            CrouchHitRight = CreateState(root, character, weapon, "crouch", "hitright", "CrouchHitRight"),
+            CrouchReload = CreateState(root, character, weapon, "crouch", "reload", "CrouchReload"),
+            CrouchShoot = CreateState(root, character, weapon, "crouch", "shoot", "CrouchShoot"),
+            CrouchTurnLeft = CreateState(root, character, weapon, "crouch", "turnleft", "CrouchTurnLeft"),
+            CrouchTurnRight = CreateState(root, character, weapon, "crouch", "turnright", "CrouchTurnRight"),
+            CrouchWalkForward = CreateState(root, character, weapon, "crouch", "walkforward", "CrouchWalkForward"),
+            CrouchWalkBackward = CreateState(root, character, weapon, "crouch", "walkbackward", "CrouchWalkBackward"),
+            CrouchAlertIdle = CreateState(root, character, weapon, "crouchalert", "idle_emote", "CrouchAlertIdle"),
+            CrouchAlertWalkForward = CreateState(root, character, weapon, "crouchalert", "walkforward", "CrouchAlertWalkForward"),
+            CrouchAlertWalkBackward = CreateState(root, character, weapon, "crouchalert", "walkbackward", "CrouchAlertWalkBackward"),
+
+            StandIdle = CreateState(root, character, weapon, "stand", "idle_emote", "StandIdle"),
+            StandIdleCheckweapon = CreateState(root, character, weapon, "stand", "idle_checkweapon", "StandIdleCheckweapon"),
+            StandIdleLookaround = CreateState(root, character, weapon, "stand", "idle_lookaround", "StandIdleLookaround"),
+            StandWalkForward = CreateState(root, character, weapon, "stand", "walkforward", "StandWalkForward"),
+            StandRunForward = CreateState(root, character, weapon, "stand", "runforward", "StandRunForward"),
+            StandRunBackward = CreateState(root, character, weapon, "stand", "runbackward", "StandRunBackward"),
+            StandReload = CreateState(root, character, weapon, "stand", "reload", "StandReload"),
+            StandShootPrimary = CreateState(root, character, weapon, "stand", "shoot", "StandShootPrimary"),
+            StandShootSecondary = CreateState(root, character, weapon, "stand", "shoot_secondary", "StandShootSecondary"),
+            StandAlertIdle = CreateState(root, character, weapon, "standalert", "idle_emote", "StandAlertIdle"),
+            StandAlertWalkForward = CreateState(root, character, weapon, "standalert", "walkforward", "StandAlertWalkForward"),
+            StandAlertRunForward = CreateState(root, character, weapon, "standalert", "runforward", "StandAlertRunForward"),
+            StandAlertRunBackward = CreateState(root, character, weapon, "standalert", "runbackward", "StandAlertRunBackward"),
+            StandTurnLeft = CreateState(root, character, weapon, "stand", "turnleft", "StandTurnLeft"),
+            StandTurnRight = CreateState(root, character, weapon, "stand", "turnright", "StandTurnRight"),
+            StandHitFront = CreateState(root, character, weapon, "stand", "gitfront", "StandHitFront"),
+            StandHitBack = CreateState(root, character, weapon, "stand", "hitback", "StandHitBack"),
+            StandHitLeft = CreateState(root, character, weapon, "stand", "hitleft", "StandHitLeft"),
+            StandHitRight = CreateState(root, character, weapon, "stand", "hitright", "StandHitRight"),
+            StandGetupFront = CreateState(root, character, weapon, "stand", "getupfront", "StandGetupFront"),
+            StandGetupBack = CreateState(root, character, weapon, "stand", "getupback", "StandGetupBack"),
+            StandDeathForward = CreateState(root, character, weapon, "stand", "death_forward", "StandDeathForward"),
+            StandDeathBackward = CreateState(root, character, weapon, "stand", "death_backward", "StandDeathBackward"),
+            StandDeathLeft = CreateState(root, character, weapon, "stand", "death_left", "StandDeathLeft"),
+            StandDeathRight = CreateState(root, character, weapon, "stand", "death_right", "StandDeathRight"),
+
+            //StandAttack = CreateState(root, character, weapon, "stand", "idle_emote", "StandAttack"),
+            //StandBlockForward = CreateState(root, character, weapon, "stand", "idle_emote", "StandBlockForward"),
+            //StandBlockLeft = CreateState(root, character, weapon, "stand", "idle_emote", "StandBlockLeft"),
+            //StandBlockRight = CreateState(root, character, weapon, "stand", "idle_emote", "StandBlockRight"),
+            //StandDeadhero = CreateState(root, character, weapon, "stand", "idle_emote", "StandDeadhero"),
+
+            ThrownBounceFrontSoft = CreateState(root, character, weapon, "thrown", "bouncefrontsoft", "ThrownBounceFrontSoft"),
+            ThrownBounceBackSoft = CreateState(root, character, weapon, "thrown", "bouncebacksoft", "ThrownBounceBackSoft"),
+            ThrownFlail = CreateState(root, character, weapon, "thrown", "flail", "ThrownFlail"),
+            ThrownFlyingFront = CreateState(root, character, weapon, "thrown", "flyingfront", "ThrownFlyingFront"),
+            ThrownFlyingBack = CreateState(root, character, weapon, "thrown", "flyingback", "ThrownFlyingBack"),
+            ThrownFlyingLeft = CreateState(root, character, weapon, "thrown", "flyingleft", "ThrownFlyingLeft"),
+            ThrownFlyingRight = CreateState(root, character, weapon, "thrown", "flyingright", "ThrownFlyingRight"),
+            ThrownLandFrontSoft = CreateState(root, character, weapon, "thrown", "landfrontsoft", "ThrownLandFrontSoft"),
+            ThrownLandBackSoft = CreateState(root, character, weapon, "thrown", "landbacksoft", "ThrownLandBackSoft"),
+            ThrownTumbleFront = CreateState(root, character, weapon, "thrown", "tumblefront", "ThrownTumbleFront"),
+            ThrownTumbleBack = CreateState(root, character, weapon, "thrown", "tumbleback", "ThrownTumbleBack"),
+
+            Sprint = CreateState(root, character, weapon, "crouch", "sprint", "Sprint"),
+            JetpackHover = CreateState(root, character, weapon, "crouch", "jetpack_hover", "JetpackHover"),
+            Jump = CreateState(root, character, weapon, "crouch", "jump", "Jump"),
+            Fall = CreateState(root, character, weapon, "crouch", "fall", "Fall"),
+            LandSoft = CreateState(root, character, weapon, "crouch", "landsoft", "LandSoft"),
+            LandHard = CreateState(root, character, weapon, "crouch", "landhard", "LandHard"),
+        };
     }
 
     public void PlayIntroAnim()
     {
-        LayerUpper.SetActiveState(Bank.StandReload);
+        LayerLower.SetActiveState(Sets[0].StandReload);
+        LayerUpper.SetActiveState(Sets[0].StandReload);
     }
 
     public void SetAnimBank(string bankName)

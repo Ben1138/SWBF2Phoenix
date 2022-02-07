@@ -49,10 +49,14 @@ public static class PhxUtils
         {
             for (int si = 0, bi = 0, nd = 0; si < FloatString.Length; ++si)
             {
-                if (str[si] == '_') continue;     // ignore underscores
+                // Ignore underscores. TODO: is this right?
+                if (str[si] == '_') continue;
+
                 bool decPoint = str[si] == '.';
                 if (decPoint) ++nd;
-                if (decPoint && nd > 1) continue; // ignore more than one decimal points
+
+                // Ignore more than one decimal points
+                if (decPoint && nd > 1) continue;
 
                 buffer[bi++] = str[si];
             }
@@ -64,7 +68,28 @@ public static class PhxUtils
             Debug.LogErrorFormat("Failed to parse a float from: {0}", FloatString);
         }
         return result;
-    }    
+    }
+
+    // Only work for positive integers.
+    // Input examples: shoot1, shoot2, shoot3, ...
+    public static unsafe int IntFromStringEnd(string input, out string remaining)
+    {
+        fixed (char* str = input)
+        {
+            int i;
+            for (i = input.Length - 1; i >= 0; --i)
+            {
+                if (str[i] < '0' || str[i] > '9') break;
+            }
+            if (i == (input.Length - 1))
+            {
+                remaining = input;
+                return -1;
+            }
+            remaining = input.Substring(0, i);
+            return int.Parse(new string(&str[i]));
+        }
+    }
 
     public static void SanitizeEuler(ref Vector3 euler)
     {
