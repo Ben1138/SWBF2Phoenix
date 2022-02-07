@@ -39,10 +39,12 @@ public enum PhxAnimPosture : ushort
     Prone = 1 << 2,
     Sprint = 1 << 3,
     Jump = 1 << 4,
-    RollRight = 1 << 5,
-    RollLeft = 1 << 6,
+    RollLeft = 1 << 5,
+    RollRight = 1 << 6,
     Jet = 1 << 7,
     Thrown = 1 << 8,
+
+    Roll = RollLeft | RollRight,
 
     All = 0xffff
 }
@@ -76,9 +78,19 @@ public enum PhxAnimDirection : byte
 
 public struct PhxAnimHandle
 {
-    public int Internal { get; private set; }
+    public int Index { get; private set; }
 
-    public static PhxAnimHandle None => new PhxAnimHandle { Internal = -1, };
+    public static PhxAnimHandle None => new PhxAnimHandle { Index = -1, };
+
+    public PhxAnimHandle(int index)
+    {
+        Index = index;
+    }
+
+    public bool IsValid()
+    {
+        return Index >= 0;
+    }
 }
 
 public struct PhxAnimValue
@@ -159,8 +171,8 @@ public struct PhxAnimCondition
     public PhxInputButtonAction ButtonAction;
 
     // Flags. These do not consume button events
-    public PhxInputButtons ButtonsPressed;
-    public PhxInputButtons ButtonsReleased;
+    public PhxInputControl ButtonsPressed;
+    public PhxInputControl ButtonsReleased;
 
     public PhxAnimPosture Postures;
     public PhxAnimConditionValue TimeInPosture;
@@ -186,8 +198,8 @@ public struct PhxAnimCondition
             TimeEnd = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.Seconds },
             TimeEndFromEnd = false,
             ButtonAction = PhxInputButtonAction.None,
-            ButtonsPressed = PhxInputButtons.None,
-            ButtonsReleased = PhxInputButtons.None,
+            ButtonsPressed = PhxInputControl.None,
+            ButtonsReleased = PhxInputControl.None,
             Postures = PhxAnimPosture.All,
             TimeInPosture = new PhxAnimConditionValue { Condition = PhxAnimConditionType.None, CompareValue = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.None } },
             Energy = new PhxAnimConditionValue { Condition = PhxAnimConditionType.None, CompareValue = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.None } },
@@ -327,7 +339,10 @@ public struct PhxAnimAnimatedMove
 
 public unsafe struct PhxAnimState
 {
-    public PhxAnim Animation;
+    // Store all posture related animations here.
+    // For custom states, only one Animation will be used
+    //public NativeArray<PhxAnim> Animations;
+    public byte NumAnimations;
 
     public bool RestartAnimation;
     public bool PlayExplosion;
@@ -362,28 +377,10 @@ public unsafe struct PhxAnimState
 
     public PhxAnimValue EnergyRestoreRate;
 
-    public PhxAnimAttack Attack0;
-    public PhxAnimAttack Attack1;
-    public PhxAnimAttack Attack2;
-    public PhxAnimAttack Attack3;
-    public PhxAnimAttack Attack4;
-    public PhxAnimAttack Attack5;
-    public PhxAnimAttack Attack6;
-    public PhxAnimAttack Attack7;
-    public PhxAnimAttack Attack8;
-    public PhxAnimAttack Attack9;
+    //public NativeArray<PhxAnimAttack> Attacks;
     public byte NumAttacks;
 
-    public PhxAnimTransition Transition0;
-    public PhxAnimTransition Transition1;
-    public PhxAnimTransition Transition2;
-    public PhxAnimTransition Transition3;
-    public PhxAnimTransition Transition4;
-    public PhxAnimTransition Transition5;
-    public PhxAnimTransition Transition6;
-    public PhxAnimTransition Transition7;
-    public PhxAnimTransition Transition8;
-    public PhxAnimTransition Transition9;
+    //public NativeArray<PhxAnimTransition> Transition;
     public int NumTransitions;
 
     public bool UseDeflect;
@@ -391,9 +388,11 @@ public unsafe struct PhxAnimState
 
     public static PhxAnimState CreateDefault()
     {
+        // Note: Doesn't initialize Arrays!
         return new PhxAnimState
         {
-            Animation = PhxAnim.CreateDefault(),
+            NumAnimations = 0,
+
             RestartAnimation = false,
             PlayExplosion = false,
             MustShowOneFrame = false,
@@ -416,28 +415,7 @@ public unsafe struct PhxAnimState
             NumTurnOffLightsabers = 0,
             EnergyRestoreRate = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.FromSoldier },
 
-            Attack0 = PhxAnimAttack.CreateDefault(),
-            Attack1 = PhxAnimAttack.CreateDefault(),
-            Attack2 = PhxAnimAttack.CreateDefault(),
-            Attack3 = PhxAnimAttack.CreateDefault(),
-            Attack4 = PhxAnimAttack.CreateDefault(),
-            Attack5 = PhxAnimAttack.CreateDefault(),
-            Attack6 = PhxAnimAttack.CreateDefault(),
-            Attack7 = PhxAnimAttack.CreateDefault(),
-            Attack8 = PhxAnimAttack.CreateDefault(),
-            Attack9 = PhxAnimAttack.CreateDefault(),
             NumAttacks = 0,
-
-            Transition0 = PhxAnimTransition.CreateDefault(),
-            Transition1 = PhxAnimTransition.CreateDefault(),
-            Transition2 = PhxAnimTransition.CreateDefault(),
-            Transition3 = PhxAnimTransition.CreateDefault(),
-            Transition4 = PhxAnimTransition.CreateDefault(),
-            Transition5 = PhxAnimTransition.CreateDefault(),
-            Transition6 = PhxAnimTransition.CreateDefault(),
-            Transition7 = PhxAnimTransition.CreateDefault(),
-            Transition8 = PhxAnimTransition.CreateDefault(),
-            Transition9 = PhxAnimTransition.CreateDefault(),
             NumTransitions = 0,
 
             UseDeflect = false,
@@ -451,18 +429,147 @@ public class PhxAnimStateMachineManager
     const int BlendTimeMatrixSize = 256;
     NativeArray<PhxAnimValue> BlendTimeMatrix;
 
+    PhxAnimationResolver Resolver;
+    CraBuffer<HumanData> StateMachines;
+
     public PhxAnimStateMachineManager()
     {
+        Resolver = new PhxAnimationResolver();
         BlendTimeMatrix = new NativeArray<PhxAnimValue>(BlendTimeMatrixSize * BlendTimeMatrixSize, Allocator.Persistent);
+        StateMachines = new CraBuffer<HumanData>(new CraBufferSettings { Capacity = 1024, GrowFactor = 1.5f });
     }
 
 
+    public PhxAnimHandle StateMachine_NewHuman(Transform root, string character, string[] weapons, string combo)
+    {
+        string weapon = weapons[0];
+
+        PhxAnimHandle h = new PhxAnimHandle(StateMachines.Alloc());
+        HumanData data = StateMachines.Get(h.Index);
+
+        data.CraMachine = CraStateMachine.CreateNew();
+        data.LayerLower = data.CraMachine.NewLayer();
+        data.LayerUpper = data.CraMachine.NewLayer();
+
+        // Stand
+        {
+            data.Stand = PhxAnimState.CreateDefault();
+            data.Stand.Animations = new NativeArray<PhxAnim>(25, Allocator.Persistent);
+
+            // TODO: Add states defined in Combo
+            PhxAnim[] standAnims = new PhxAnim[25];
+            standAnims[0].Cra  = CreateState(data.LayerLower, root, character, weapon, "stand", "idle_emote", "StandIdle");
+            standAnims[1].Cra  = CreateState(data.LayerLower, root, character, weapon, "stand", "idle_checkweapon", "StandIdleCheckweapon");
+            standAnims[2].Cra  = CreateState(data.LayerLower, root, character, weapon, "stand", "idle_lookaround", "StandIdleLookaround");
+            standAnims[3].Cra  = CreateState(data.LayerLower, root, character, weapon, "stand", "walkforward", "StandWalkForward");
+            standAnims[4].Cra  = CreateState(data.LayerLower, root, character, weapon, "stand", "runforward", "StandRunForward");
+            standAnims[5].Cra  = CreateState(data.LayerLower, root, character, weapon, "stand", "runbackward", "StandRunBackward");
+            standAnims[6].Cra  = CreateState(data.LayerUpper, root, character, weapon, "stand", "reload", "StandReload");
+            standAnims[7].Cra  = CreateState(data.LayerUpper, root, character, weapon, "stand", "shoot", "StandShootPrimary");
+            standAnims[8].Cra  = CreateState(data.LayerUpper, root, character, weapon, "stand", "shoot_secondary", "StandShootSecondary");
+            standAnims[9].Cra  = CreateState(data.LayerLower, root, character, weapon, "standalert", "idle_emote", "StandAlertIdle");
+            standAnims[10].Cra = CreateState(data.LayerLower, root, character, weapon, "standalert", "walkforward", "StandAlertWalkForward");
+            standAnims[11].Cra = CreateState(data.LayerLower, root, character, weapon, "standalert", "runforward", "StandAlertRunForward");
+            standAnims[12].Cra = CreateState(data.LayerLower, root, character, weapon, "standalert", "runbackward", "StandAlertRunBackward");
+            standAnims[13].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "turnleft", "StandTurnLeft");
+            standAnims[14].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "turnright", "StandTurnRight");
+            standAnims[15].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "hitfront", "StandHitFront");
+            standAnims[16].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "hitback", "StandHitBack");
+            standAnims[17].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "hitleft", "StandHitLeft");
+            standAnims[18].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "hitright", "StandHitRight");
+            standAnims[19].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "getupfront", "StandGetupFront");
+            standAnims[20].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "getupback", "StandGetupBack");
+            standAnims[21].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "death_forward", "StandDeathForward");
+            standAnims[22].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "death_backward", "StandDeathBackward");
+            standAnims[23].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "death_left", "StandDeathLeft");
+            standAnims[24].Cra = CreateState(data.LayerLower, root, character, weapon, "stand", "death_right", "StandDeathRight");
+
+            data.Stand.Animations.CopyFrom(standAnims);
+            data.Stand.NumAnimations = (byte)standAnims.Length;
+        }
+
+        // Crouch
+        {
+            data.Crouch = PhxAnimState.CreateDefault();
+            data.Crouch.Animations = new NativeArray<PhxAnim>(14, Allocator.Persistent);
+
+            PhxAnim[] crouchAnims = new PhxAnim[14];
+            crouchAnims[0].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "idle_emote", "CrouchIdle");
+            crouchAnims[1].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "idle_takeknee", "CrouchIdle");
+            crouchAnims[2].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "hitfront", "CrouchHitFront");
+            crouchAnims[3].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "hitleft", "CrouchHitLeft");
+            crouchAnims[4].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "hitright", "CrouchHitRight");
+            crouchAnims[5].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "reload", "CrouchReload");
+            crouchAnims[6].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "shoot", "CrouchShoot");
+            crouchAnims[7].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "turnleft", "CrouchTurnLeft");
+            crouchAnims[8].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "turnright", "CrouchTurnRight");
+            crouchAnims[9].Cra  = CreateState(data.LayerLower, root, character, weapon, "crouch", "walkforward", "CrouchWalkForward");
+            crouchAnims[10].Cra = CreateState(data.LayerLower, root, character, weapon, "crouch", "walkbackward", "CrouchWalkBackward");
+            crouchAnims[11].Cra = CreateState(data.LayerLower, root, character, weapon, "crouchalert", "idle_emote", "CrouchAlertIdle");
+            crouchAnims[12].Cra = CreateState(data.LayerLower, root, character, weapon, "crouchalert", "walkforward", "CrouchAlertWalkForward");
+            crouchAnims[13].Cra = CreateState(data.LayerLower, root, character, weapon, "crouchalert", "walkbackward", "CrouchAlertWalkBackward");
+
+            data.Crouch.Animations.CopyFrom(crouchAnims);
+            data.Crouch.NumAnimations = 14;
+        }
+
+        // TODO: continue here
+        data.Sprint = PhxAnimState.CreateDefault();
+        data.Jump = PhxAnimState.CreateDefault();
+        data.RollRight = PhxAnimState.CreateDefault();
+        data.RollLeft = PhxAnimState.CreateDefault();
+        data.Jet = PhxAnimState.CreateDefault();
+        data.Thrown = PhxAnimState.CreateDefault();
+
+        StateMachines.Set(h.Index, data);
+        return h;
+    }
+
+    CraState CreateState(CraLayer layer, Transform root, string character, string weapon, string posture, string anim, string stateName =null)
+    {
+        PhxAnimDesc animDesc = new PhxAnimDesc { Character = character, Weapon = weapon, Posture = posture, Animation = anim };
+        if (!Resolver.ResolveAnim(animDesc, out CraClip clip, out PhxAnimScope scope, out bool loop))
+        {
+            return CraState.None;
+        }
+        Debug.Assert(clip.IsValid());
+        CraPlayer player = CraPlayer.CreateNew();
+        player.SetLooping(loop);
+        player.SetClip(clip);
+        switch(scope)
+        {
+            case PhxAnimScope.Lower:
+                player.Assign(root, new CraMask(true, "bone_pelvis"));
+                break;
+            case PhxAnimScope.Upper:
+                player.Assign(root, new CraMask(true, "root_a_spine"));
+                break;
+            case PhxAnimScope.Full:
+                player.Assign(root);
+                break;
+        }
+        Debug.Assert(player.IsValid());
+        return layer.NewState(player, stateName);
+    }
 
 
+    struct HumanData
+    {
+        public CraStateMachine CraMachine;
+        public CraLayer LayerLower;
+        public CraLayer LayerUpper;
 
+        // Postures
+        public PhxAnimState Stand;
+        public PhxAnimState Crouch;
+        public PhxAnimState Prone;
+        public PhxAnimState Sprint;
+        public PhxAnimState Jump;
+        public PhxAnimState RollRight;
+        public PhxAnimState RollLeft;
+        public PhxAnimState Jet;
+        public PhxAnimState Thrown;
 
-
-
-
-
+        public PhxAnimPosture Current;
+    }
 }

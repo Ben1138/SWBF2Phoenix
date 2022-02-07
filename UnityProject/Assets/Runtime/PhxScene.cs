@@ -48,6 +48,8 @@ public class PhxScene
     public readonly PhxEffectsManager EffectsManager = new PhxEffectsManager();
 
     CraMain Cra;
+    public PhxAnimStateMachineManager StateMachines { get; private set; }
+
     int InstanceCounter;
     int AdjustPathsCountdown = 0;
 
@@ -75,6 +77,7 @@ public class PhxScene
 
             BoneHashFunction = (string input) => { return (int)HashUtils.GetCRC(input); }
         });
+        StateMachines = new PhxAnimStateMachineManager();
 
 #if UNITY_EDITOR
         PathsRoot = new GameObject("PathsRoot");

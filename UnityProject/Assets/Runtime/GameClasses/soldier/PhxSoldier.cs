@@ -7,7 +7,7 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated, IPhxTickable
+public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*ICraAnimated,*/ IPhxTickable
 {
     static PhxGame GAME => PhxGame.Instance;
     static PhxMatch MTC => PhxGame.GetMatch();
@@ -99,7 +99,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     PhxSeat CurrentSection;
     PhxPoser Poser;
 
-    PhxAnimHuman Animator;
+    PhxAnimHandle StateMachine;
     Rigidbody Body;
 
     // Important skeleton bones
@@ -287,8 +287,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         {
             characterAnim = C.SkeletonName;
         }
-        Animator = new PhxAnimHuman(transform, characterAnim, weapAnimBanks);
-
+        StateMachine = SCENE.StateMachines.StateMachine_NewHuman(transform, characterAnim, weapAnimBanks, null);
 
         // this needs to happen after the Animator is initialized, since swicthing
         // will weapons will most likely cause an animation bank change aswell
@@ -352,7 +351,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         if (Weapons[channel][WeaponIdx[channel]] != null)
         {
             Weapons[channel][WeaponIdx[channel]].GetInstance().gameObject.SetActive(true);
-            Animator.SetAnimBank(Weapons[channel][WeaponIdx[channel]].GetAnimBankName());
+            //Animator.SetAnimBank(Weapons[channel][WeaponIdx[channel]].GetAnimBankName());
         }
         else
         {
@@ -362,7 +361,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     public override void PlayIntroAnim()
     {
-        Animator.PlayIntroAnim();
+        //Animator.PlayIntroAnim();
     }
 
     void FireAnimation(bool primary)
@@ -583,7 +582,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     {
         if (Context == PhxSoldierContext.Pilot && Controller != null)
         {
-            Animator.SetActive(false);
+            //Animator.SetActive(false);
             UpdatePose(deltaTime);
             return;
         }
@@ -637,8 +636,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             
         }
 
-        Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
-        Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
+        //Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
+        //Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
 
         //Vector3 lookWalkForward = Controller.ViewDirection;
         //lookWalkForward.y = 0f;
@@ -996,8 +995,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
     }
 
-    public CraStateMachine GetStateMachine()
-    {
-        return Animator.Anim;
-    }
+    //public CraStateMachine GetStateMachine()
+    //{
+    //    return Animator.Anim;
+    //}
 }

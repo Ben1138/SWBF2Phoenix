@@ -7,40 +7,50 @@ public enum PhxInputControl : ushort
 {
     None = 0,
 
+    // Axes
     Thrust = 1 << 0,
-    Fire = 1 << 1,
-    FireSecondary = 1 << 2,
-    Jump = 1 << 3,
-    Sprint = 1 << 4,
-    Crouch = 1 << 5,
-    Reload = 1 << 6,
+    View = 1 << 1,
+
+    // Buttons
+    Fire = 1 << 2,
+    FireSecondary = 1 << 3,
+    Jump = 1 << 4,
+    Sprint = 1 << 5,
+    Crouch = 1 << 6,
+    Reload = 1 << 7,
+
+    FireBoth = Fire | FireSecondary,
 
     All = 0xffff
 }
 
-[Flags]
-// Subset of PhxInputControl
-public enum PhxInputButtons : ushort
-{
-    None = 0,
-
-    Fire = 1 << 1,
-    FireSecondary = 1 << 2,
-    Jump = 1 << 3,
-    Sprint = 1 << 4,
-    Crouch = 1 << 5,
-    Reload = 1 << 6,
-
-    FireBoth = Fire | FireSecondary,
-}
-
 public enum PhxInputButtonAction
 {
-    None, Tab, DoubleTab, Hold, Down
+    None, 
+    Changed, 
+    Tab, 
+    DoubleTab, 
+    Hold, 
+    Down
 }
 
-public struct PhxInput
+public struct PhxInputEvent
 {
-    public PhxInputButtonAction 
+    public PhxInputControl Input;
+    public PhxInputButtonAction Action;
 }
 
+public class PhxInput
+{
+    public static bool IsAxis(PhxInputControl input)
+    {
+        return
+            input == PhxInputControl.Thrust ||
+            input == PhxInputControl.View;
+    }
+
+    public static bool IsButton(PhxInputControl input)
+    {
+        return !IsAxis(input) || input == PhxInputControl.FireBoth;
+    }
+}
