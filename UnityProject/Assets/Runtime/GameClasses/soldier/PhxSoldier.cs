@@ -99,7 +99,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     PhxSeat CurrentSection;
     PhxPoser Poser;
 
-    PhxHumanAnimator Animator;
+    PhxAnimHuman Animator;
     Rigidbody Body;
 
     // Important skeleton bones
@@ -287,7 +287,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         {
             characterAnim = C.SkeletonName;
         }
-        Animator = new PhxHumanAnimator(transform, characterAnim, weapAnimBanks);
+        Animator = new PhxAnimHuman(transform, characterAnim, weapAnimBanks);
 
 
         // this needs to happen after the Animator is initialized, since swicthing

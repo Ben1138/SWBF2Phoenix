@@ -153,7 +153,7 @@ public class PhxEnvironment
             return null;
         }
 
-        PhxAnimationLoader.ClearDB();
+        PhxAnimLoader.ClearDB();
         PhxLuaEvents.Clear();
 
         PhxEnvironment rt = new PhxEnvironment(lvlGameDataPath, lvlAddonDataPath);
@@ -170,7 +170,7 @@ public class PhxEnvironment
         rt.Match = initMatch ? new PhxMatch() : null;
         rt.Timers = new PhxTimerDB();
 
-        PhxAnimationLoader.Con = rt.EnvCon;
+        PhxAnimLoader.Con = rt.EnvCon;
 
         return rt;
     }

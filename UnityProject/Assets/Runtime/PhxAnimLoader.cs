@@ -3,7 +3,7 @@ using UnityEngine;
 using LibSWBF2.Wrappers;
 using LibSWBF2.Utils;
 
-public static class PhxAnimationLoader
+public static class PhxAnimLoader
 {
     public static Container Con;
 
@@ -122,20 +122,5 @@ public static class PhxAnimationLoader
         clip = CraClip.CreateNew(srcClip);
         ClipDB.Add(animID, clip);
         return clip;
-    }
-
-    public static CraPlayer CreatePlayer(Transform root, bool loop, string maskBone = null)
-    {
-        CraPlayer player = CraPlayer.CreateNew();
-        if (string.IsNullOrEmpty(maskBone))
-        {
-            player.Assign(root);
-        }
-        else
-        {
-            player.Assign(root, new CraMask(true, maskBone));
-        }
-        player.SetLooping(loop);
-        return player;
     }
 }

@@ -86,8 +86,8 @@ public static class PhxUtils
                 remaining = input;
                 return -1;
             }
-            remaining = input.Substring(0, i);
-            return int.Parse(new string(&str[i]));
+            remaining = input.Substring(0, i+1);
+            return int.Parse(new string(&str[i+1]));
         }
     }
 

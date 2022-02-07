@@ -64,10 +64,11 @@ public class PhxDoor : PhxInstance<PhxDoor.ClassProperties>
             SphereCollider TriggerCollider = TriggerNode.gameObject.AddComponent<SphereCollider>();
             TriggerCollider.radius = TriggerRadius;
             TriggerCollider.isTrigger = true;
-        } 
+        }
 
-        Player = PhxAnimationLoader.CreatePlayer(transform, false);
-        Player.SetClip(PhxAnimationLoader.Import(C.AnimationName.Get(), C.Animation.Get()));
+        Player = CraPlayer.CreateNew();
+        Player.SetClip(PhxAnimLoader.Import(C.AnimationName.Get(), C.Animation.Get()));
+        Player.Assign(transform);
         Player.SetPlaybackSpeed(1f);
         Player.SetLooping(false);
     }
