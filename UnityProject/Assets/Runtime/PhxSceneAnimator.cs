@@ -45,6 +45,9 @@ public class PhxAnimationGroup
         {
             Animators[i].enabled = true;
             Animators[i].Play(AnimationNames[i]);
+
+            AnimationState aState = Animators[i][AnimationNames[i]];
+            aState.speed = 3f;
         }
     }
 
@@ -56,10 +59,6 @@ public class PhxAnimationGroup
         }   
     }
 }
-
-
-
-
 
 
 
@@ -77,114 +76,90 @@ public class PhxSceneAnimator
     }
 
 
-    public void InitializeAnimations(World[] worlds)
+    public void InitializeWorldAnimations(World[] worlds)
     {
-        foreach (World wld in worlds)
+        Dictionary<string, WorldAnimation> WorldAnims = new Dictionary<string, WorldAnimation>();
+        foreach (World world in worlds)
         {
-            InitializeAnimations(wld);
-        }
-    }
-
-    public void InitializeAnimations(World world)
-    {
-        WorldAnimation[] worldAnims = world.GetAnimations();
-
-        foreach (WorldAnimation anim in worldAnims)
-        {
-            if (AnimDB.ContainsKey(anim.Name))
+            foreach (WorldAnimation worldAnim in world.GetAnimations())
             {
-                continue;
+                WorldAnims[worldAnim.Name] = worldAnim;
             }
-
-            AnimationCurve[] rKeys = AnimationLoader.Instance.GetWorldAnimationRotationCurves(anim);
-            AnimationCurve[] pKeys = AnimationLoader.Instance.GetWorldAnimationPositionCurves(anim);
-
-            AnimationClip clip = new AnimationClip();
-            clip.legacy = true;
-            clip.name = anim.Name;
-
-            if (rKeys != null)
-            {
-                clip.SetCurve("", typeof(Transform), "localEulerAngles.x", rKeys[0]);
-                clip.SetCurve("", typeof(Transform), "localEulerAngles.y", rKeys[1]);
-                clip.SetCurve("", typeof(Transform), "localEulerAngles.z", rKeys[2]);
-            }
-
-            if (pKeys != null)
-            {
-                clip.SetCurve("", typeof(Transform), "localPosition.x", pKeys[0]);
-                clip.SetCurve("", typeof(Transform), "localPosition.y", pKeys[1]);
-                clip.SetCurve("", typeof(Transform), "localPosition.z", pKeys[2]);  
-            } 
-
-            clip.wrapMode = anim.IsLooping ? WrapMode.Loop : WrapMode.ClampForever;
-
-            AnimDB[anim.Name] = clip;
         }
-    }
-        
 
-
-    public void InitializeAnimationGroups(World[] wlds)
-    {
-        foreach (World wld in wlds)
+        foreach (World world in worlds)
         {
-            InitializeAnimationGroups(wld);
-        }
-    }
-
-    public void InitializeAnimationGroups(World world)
-    {
-        foreach (WorldAnimationGroup animGroup in world.GetAnimationGroups())
-        {
-            if (AnimGroupDB.ContainsKey(animGroup.Name)) continue;
-
-            PhxAnimationGroup newAnimGroup = new PhxAnimationGroup();
-            AnimGroupDB[animGroup.Name.ToLower()] = newAnimGroup;
-
-            List<Tuple<string,string>> AnimInstPairs = animGroup.GetAnimationInstancePairs();
-            foreach (var pair in AnimInstPairs)
+            foreach (WorldAnimationGroup animGroup in world.GetAnimationGroups())
             {
-                GameObject instance = GameObject.Find(pair.Item2);
-                AnimationClip clip = AnimDB.ContainsKey(pair.Item1) ? AnimDB[pair.Item1] : null;
+                if (AnimGroupDB.ContainsKey(animGroup.Name)) continue;
 
-                if (instance == null || clip == null)
+                PhxAnimationGroup newAnimGroup = new PhxAnimationGroup();
+                AnimGroupDB[animGroup.Name.ToLower()] = newAnimGroup;
+
+                List<Tuple<string,string>> AnimInstPairs = animGroup.GetAnimationInstancePairs();
+                foreach (var pair in AnimInstPairs)
                 {
-                    continue;
+                    GameObject instance = GameObject.Find(pair.Item2);
+
+                    if (instance == null || !WorldAnims.TryGetValue(pair.Item1, out WorldAnimation wldAnim))
+                    {
+                        continue;
+                    }
+
+                    instance.isStatic = false;
+
+                    Animation anim = instance.GetComponent<Animation>();
+                    if (anim == null)
+                    {
+                        anim = instance.AddComponent<Animation>();
+                    }
+
+                    if (instance.transform.parent.gameObject.name != instance.name + "_animroot")
+                    {
+                        GameObject dummmyPrnt = new GameObject(instance.name + "_animroot");
+                        dummmyPrnt.transform.position = instance.transform.position;
+                        dummmyPrnt.transform.rotation = instance.transform.rotation;
+                        dummmyPrnt.transform.SetParent(instance.transform.parent, true);
+
+                        instance.transform.SetParent(dummmyPrnt.transform, true);                         
+                    }
+
+
+                    AnimationCurve[] rKeys = AnimationLoader.Instance.GetWorldAnimationRotationCurves(wldAnim, instance.transform);
+                    AnimationCurve[] pKeys = AnimationLoader.Instance.GetWorldAnimationPositionCurves(wldAnim, instance.transform);
+
+                    AnimationClip clip = new AnimationClip();
+                    clip.legacy = true;
+                    clip.name = wldAnim.Name;
+
+                    if (rKeys != null)
+                    {
+                        clip.SetCurve("", typeof(Transform), "localEulerAngles.x", rKeys[0]);
+                        clip.SetCurve("", typeof(Transform), "localEulerAngles.y", rKeys[1]);
+                        clip.SetCurve("", typeof(Transform), "localEulerAngles.z", rKeys[2]);
+                    }
+
+                    if (pKeys != null)
+                    {
+                        clip.SetCurve("", typeof(Transform), "localPosition.x", pKeys[0]);
+                        clip.SetCurve("", typeof(Transform), "localPosition.y", pKeys[1]);
+                        clip.SetCurve("", typeof(Transform), "localPosition.z", pKeys[2]);  
+                    } 
+
+                    clip.wrapMode = wldAnim.IsLooping ? WrapMode.Loop : WrapMode.ClampForever;
+
+
+                    anim.AddClip(clip, clip.name);
+
+                    if (animGroup.PlaysAtStart)
+                    {
+                        anim.clip = clip;
+                        anim.playAutomatically = true;
+                        anim.Play();
+                    }
+
+                    newAnimGroup.AddInstanceAnimationPair(anim, clip.name);
                 }
-
-                instance.isStatic = false;
-
-
-                // string path = AnimationUtility.CalculateTransformPath(instance, WorldRoot.transform);
-                // Debug.LogFormat("  Instance: {0} will be animated by {1}", instanceObj.name, pair.Item1);
-
-                Animation anim = instance.GetComponent<Animation>();
-                if (anim == null)
-                {
-                    anim = instance.AddComponent<Animation>();
-                }
-
-                if (instance.transform.parent.gameObject.name != instance.name + "_animroot")
-                {
-                    GameObject dummmyPrnt = new GameObject(instance.name + "_animroot");
-                    dummmyPrnt.transform.position = instance.transform.position;
-                    dummmyPrnt.transform.rotation = instance.transform.rotation;
-                    dummmyPrnt.transform.SetParent(instance.transform.parent, true);
-
-                    instance.transform.SetParent(dummmyPrnt.transform, true);                         
-                }
-
-                anim.AddClip(clip, clip.name);
-
-                if (animGroup.PlaysAtStart)
-                {
-                    anim.clip = clip;
-                    anim.playAutomatically = true;
-                    anim.Play();
-                }
-
-                newAnimGroup.AddInstanceAnimationPair(anim, clip.name);
             }
         }
     }
