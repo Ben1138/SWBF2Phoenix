@@ -9,7 +9,7 @@ using LibSWBF2.Wrappers;
 using System.Runtime.ExceptionServices;
 
 
-public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.ClassProperties>, IPhxTickable
+public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.ClassProperties>, IPhxTickable, IPhxDamageableInstance
 {
     protected static PhxScene SCENE => PhxGame.GetScene();
 
@@ -33,7 +33,11 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
     public GameObject BuiltGeometry;
     public GameObject DestroyedGeometry;
 
+
+    public float Health;
+
     protected bool IsBuilt = true;
+
 
 
 
@@ -123,6 +127,8 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
     {
         float HealthPercent = CurHealth.Get() / C.MaxHealth.Get();
 
+        Health = CurHealth.Get();
+
         if (HealthPercent > 0.0001f)
         {
             if (!IsBuilt)
@@ -131,6 +137,9 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
                 DestroyedGeometry.SetActive(false);
                 
                 IsBuilt = true;
+
+                // Call respawn events
+                PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnObjectRespawnName, gameObject.name.ToLower());
             }
 
             foreach (PhxDamageEffect DamageEffect in DamageEffects)
@@ -148,9 +157,26 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
                 DestroyedGeometry.SetActive(true);
 
                 IsBuilt = false;
+
+                // Call death events
+                PhxLuaEvents.InvokeParameterized(PhxLuaEvents.Event.OnObjectKillName, gameObject.name.ToLower());
             }
         }
     }
 
     public override void Destroy(){}
+
+
+    public void AddDamage(float damage)
+    {
+        if (CurHealth.Get() > 0f)
+        {
+            CurHealth.Set(-1f);
+        }
+        else 
+        {
+            CurHealth.Set(1f);
+        }
+    }
+
 }

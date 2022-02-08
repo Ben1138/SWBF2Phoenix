@@ -275,8 +275,7 @@ public class PhxScene
             WorldRoots.Add(worldRoot);
         }
 
-        Animator.InitializeAnimations(worldLayers);
-        Animator.InitializeAnimationGroups(worldLayers);        
+        Animator.InitializeWorldAnimations(worldLayers);        
     }
 
     public SWBFPath GetPath(string pathName)
