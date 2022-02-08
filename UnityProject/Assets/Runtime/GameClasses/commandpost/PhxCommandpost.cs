@@ -300,4 +300,20 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
         RefreshCapture();
         UpdateColor();
     }
+
+    void OnDrawGizmos()
+    {
+        SWBFPath path = SpawnPath.Get();
+        if(path != null)
+        {
+            Gizmos.color = Color.green;
+            for(int i = 1; i < path.Nodes.Length; i++)
+            {
+                SWBFPath.Node nodePrevious = path.Nodes[i - 1];
+                SWBFPath.Node nodeCurrent = path.Nodes[i];
+                Gizmos.DrawLine(nodePrevious.Position, nodeCurrent.Position);
+            }
+        }
+    }
+
 }
