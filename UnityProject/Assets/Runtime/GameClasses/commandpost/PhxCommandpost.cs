@@ -60,6 +60,14 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
     float HoloPresenceDest = 1.0f;
     float HoloPresenceVel;
     float LastHoloPresence;
+    
+    //Camera positioning
+    private bool CameraPositionSet = false;
+
+    private const float MaxDistance = 25.0f;
+
+    private Vector3 CameraPosition = Vector3.zero;
+    private Quaternion CameraRotation = Quaternion.identity;
 
     public override void Init()
     {
@@ -124,6 +132,28 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
         };
     }
 
+    public void GetCameraLocation(out Vector3 position, out Quaternion rotation)
+    {
+        if(!CameraPositionSet)
+        {
+            Vector3 direction = (2.0f * -transform.forward + transform.up).normalized;
+            Vector3 right = -transform.right;
+
+            float closestDistance = MaxDistance;
+
+            if (Physics.Raycast(transform.position, direction, out RaycastHit info, MaxDistance))
+            {
+                closestDistance = info.distance;
+            }
+
+            CameraPosition = transform.position + direction * closestDistance;
+            CameraRotation = Quaternion.LookRotation(-direction, Vector3.Cross(right, -direction));
+        }
+
+        position = CameraPosition;
+        rotation = CameraRotation;
+    }
+    
     public override void Destroy()
     {
         
