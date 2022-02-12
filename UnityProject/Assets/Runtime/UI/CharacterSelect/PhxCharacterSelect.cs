@@ -192,11 +192,9 @@ public class PhxCharacterSelect : PhxMenuInterface
 
     void OnCPSelected(PhxCommandpost cp)
     {
-        //Set camera to look at the command post when selected
-        Vector3 offsetDir = (-cp.transform.forward * 2.0f + cp.transform.up).normalized;
-
-        GAME.Camera.transform.position = cp.transform.position + offsetDir * 5.0f;
-        GAME.Camera.transform.rotation = Quaternion.LookRotation(-offsetDir.normalized, Vector3.Cross(cp.transform.right, offsetDir));
+        cp.GetCameraLocation(out Vector3 cameraPosition, out Quaternion cameraRotation);
+        GAME.Camera.transform.position = cameraPosition;
+        GAME.Camera.transform.rotation = cameraRotation;
 
         SpawnCP = cp;
     }
