@@ -272,20 +272,6 @@ public class PhxScene
         if (level != null)
         {
             SWBFPath path = WorldLoader.Instance.ImportPath(level, pathName);
-#if UNITY_EDITOR
-            if (path != null)
-            {
-                GameObject pathGO = new GameObject(pathName);
-                for (int i = 0; i < path.Nodes.Length; ++i)
-                {
-                    GameObject node = new GameObject($"Node{i}");
-                    node.transform.position = path.Nodes[i].Position;
-                    node.transform.rotation = path.Nodes[i].Rotation;
-                    node.transform.SetParent(pathGO.transform);
-                    DrawIcon(node, 0);
-                }
-            }
-#endif
             return path;
         }
         return null;
