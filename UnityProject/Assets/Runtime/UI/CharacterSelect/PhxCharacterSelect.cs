@@ -192,7 +192,10 @@ public class PhxCharacterSelect : PhxMenuInterface
 
     void OnCPSelected(PhxCommandpost cp)
     {
-        //Debug.Log($"Selected CP '{cp.name}'");
+        cp.GetCameraLocation(out Vector3 cameraPosition, out Quaternion cameraRotation);
+        GAME.Camera.transform.position = cameraPosition;
+        GAME.Camera.transform.rotation = cameraRotation;
+
         SpawnCP = cp;
     }
     
