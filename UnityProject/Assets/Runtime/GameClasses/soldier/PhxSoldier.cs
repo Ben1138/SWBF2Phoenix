@@ -96,7 +96,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
     PhxSoldierContext Context = PhxSoldierContext.Free;
 
     // Vehicle related fields
-    PhxSeat CurrentSection;
+    PhxSeat CurrentSeat;
+
     PhxPoser Poser;
 
     PhxAnimHandle StateMachine;
@@ -162,7 +163,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
 
     public override void Init()
     {
-        // soldier
         gameObject.layer = LayerMask.NameToLayer("SoldierAll");
 
         ViewConstraint.x = 45f;
@@ -386,7 +386,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
     public void SetFree(Vector3 position)
     {
         Context = PhxSoldierContext.Free;
-        CurrentSection = null;
+        CurrentSeat = null;
 
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 80f;
@@ -417,7 +417,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
     public void SetPilot(PhxSeat section)
     {
         Context = PhxSoldierContext.Pilot;
-        CurrentSection = section;
+        CurrentSeat = section;
 
         if (Body != null)
         {
@@ -440,10 +440,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
 
-            if (CurrentSection.PilotAnimationType != PilotAnimationType.None)
+            if (CurrentSeat.PilotAnimationType != PilotAnimationType.None)
             {
-                bool isStatic = CurrentSection.PilotAnimationType == PilotAnimationType.StaticPose;
-                string animName = isStatic ? CurrentSection.PilotAnimation : CurrentSection.Pilot9Pose;
+                bool isStatic = CurrentSeat.PilotAnimationType == PilotAnimationType.StaticPose;
+                string animName = isStatic ? CurrentSeat.PilotAnimation : CurrentSeat.Pilot9Pose;
                 
                 Poser = new PhxPoser("human_4", "human_" + animName, transform, isStatic);   
             }    
@@ -488,11 +488,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
     {
         Vector4 Input = new Vector4(Controller.MoveDirection.x, Controller.MoveDirection.y, Controller.mouseX, Controller.mouseY);
 
-        if (Poser != null && CurrentSection != null)
+        if (Poser != null && CurrentSeat != null)
         {
             float blend = 2f * deltaTime;
 
-            if (CurrentSection.PilotAnimationType == PilotAnimationType.NinePose)
+            if (CurrentSeat.PilotAnimationType == PilotAnimationType.NinePose)
             {
                 if (Vector4.Magnitude(Input) < .001f)
                 {
@@ -541,7 +541,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
                     }
                 }
             }
-            else if (CurrentSection.PilotAnimationType == PilotAnimationType.FivePose)
+            else if (CurrentSeat.PilotAnimationType == PilotAnimationType.FivePose)
             {
                 if (Mathf.Abs(Input.z) + Mathf.Abs(Input.w) < .001f)
                 {
@@ -567,7 +567,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
                     Poser.SetState(PhxFivePoseState.TurnUp, blend);            
                 }
             }
-            else if (CurrentSection.PilotAnimationType == PilotAnimationType.StaticPose)
+            else if (CurrentSeat.PilotAnimationType == PilotAnimationType.StaticPose)
             {
                 Poser.SetState();
             }
@@ -625,10 +625,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
 
             if (ClosestVehicle != null)
             {
-                CurrentSection = ClosestVehicle.TryEnterVehicle(this);
-                if (CurrentSection != null)
+                CurrentSeat = ClosestVehicle.TryEnterVehicle(this);
+                if (CurrentSeat != null)
                 {
-                    SetPilot(CurrentSection);
+                    SetPilot(CurrentSeat);
                     Controller.Enter = false;
                     return;
                 }

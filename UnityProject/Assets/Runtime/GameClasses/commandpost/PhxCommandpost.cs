@@ -61,6 +61,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
     float HoloPresenceVel;
     float LastHoloPresence;
 
+
     public override void Init()
     {
         Transform hpHolo = transform.Find(string.Format("{0}/hp_hologram", C.Name));
@@ -123,7 +124,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
             }
         };
     }
-
+    
     public override void Destroy()
     {
         
@@ -300,4 +301,20 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
         RefreshCapture();
         UpdateColor();
     }
+
+    void OnDrawGizmos()
+    {
+        SWBFPath path = SpawnPath.Get();
+        if(path != null)
+        {
+            Gizmos.color = Color.green;
+            for(int i = 1; i < path.Nodes.Length; i++)
+            {
+                SWBFPath.Node nodePrevious = path.Nodes[i - 1];
+                SWBFPath.Node nodeCurrent = path.Nodes[i];
+                Gizmos.DrawLine(nodePrevious.Position, nodeCurrent.Position);
+            }
+        }
+    }
+
 }

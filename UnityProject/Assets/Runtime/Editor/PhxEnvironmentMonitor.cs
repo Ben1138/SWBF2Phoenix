@@ -7,7 +7,7 @@ public class PhxEnvironmentMonitor : EditorWindow
 {
     GUIStyle StdStyle = new GUIStyle();
     GUIStyle AddonStyle = new GUIStyle();
-
+    Vector2 Scroll;
 
     void OnEnable()
     {
@@ -37,6 +37,8 @@ public class PhxEnvironmentMonitor : EditorWindow
         }
 
         PhxPath gamePath = PhxGame.Instance.GamePath;
+
+        Scroll = EditorGUILayout.BeginScrollView(Scroll);
         EditorGUILayout.LabelField("Game Path", env.GameDataPath - gamePath);
         EditorGUILayout.LabelField("Addon Path", env.AddonDataPath != null ? (env.AddonDataPath - gamePath).ToString() : "NONE");
         EditorGUILayout.Space();
@@ -51,5 +53,6 @@ public class PhxEnvironmentMonitor : EditorWindow
         {
             EditorGUILayout.LabelField(lvl.DisplayPath, string.Format("{0:0.} %", env.GetProgress(lvl.Handle) * 100.0f), lvl.bIsAddon ? AddonStyle : StdStyle);
         }
+        EditorGUILayout.EndScrollView();
     }
 }

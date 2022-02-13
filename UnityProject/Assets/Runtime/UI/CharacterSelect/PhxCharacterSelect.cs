@@ -5,10 +5,11 @@ using LibSWBF2.Enums;
 
 public class PhxCharacterSelect : PhxMenuInterface
 {
-    static PhxGame GAME => PhxGame.Instance;
-    static PhxScene RTS => PhxGame.GetScene();
-    static PhxMatch MTC => PhxGame.GetMatch();
-    static PhxCamera CAM => PhxGame.GetCamera();
+    static PhxGame Game => PhxGame.Instance;
+    static PhxScene Scene => PhxGame.GetScene();
+    static PhxMatch Match => PhxGame.GetMatch();
+    static PhxCamera Camera => PhxGame.GetCamera();
+
 
     [Header("References")]
     public PhxUIMap Map;
@@ -33,7 +34,7 @@ public class PhxCharacterSelect : PhxMenuInterface
     {
         Clear();
 
-        var team = MTC.Teams[MTC.Player.Team - 1];
+        var team = Match.Teams[Match.Player.Team - 1];
         foreach (var cl in team.UnitClasses)
         {
             Add(cl.Unit);
@@ -55,7 +56,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         // Destroy unit preview instances
         for (int i = 0; i < UnitPreviews.Count; ++i)
         {
-            RTS.DestroyInstance(UnitPreviews[i].GetInstance());
+            Scene.DestroyInstance(UnitPreviews[i].GetInstance());
         }
         UnitPreviews.Clear();
     }
@@ -69,7 +70,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         }
          
         // CSP = Char Select Preview
-        IPhxControlableInstance preview = RTS.CreateInstance(cl, cl.Name+"_CSP" + nameCounter++, Vector3.zero, Quaternion.identity, false, GAME.CharSelectTransform) as IPhxControlableInstance;
+        IPhxControlableInstance preview = Scene.CreateInstance(cl, cl.Name+"_CSP" + nameCounter++, Vector3.zero, Quaternion.identity, false, Game.CharSelectTransform) as IPhxControlableInstance;
         preview.Fixate();
         UnitPreviews.Add(preview);
 
@@ -90,7 +91,7 @@ public class PhxCharacterSelect : PhxMenuInterface
                 if (section.TryGetValue("WeaponName", out IPhxPropRef nameVal))
                 {
                     PhxProp<string> weapName = (PhxProp<string>)nameVal;
-                    PhxClass weapClass = RTS.GetClass(weapName);
+                    PhxClass weapClass = Scene.GetClass(weapName);
                     if(weapClass != null)
                     {
                         PhxProp<int> medalProp = weapClass.P.Get<PhxProp<int>>("MedalsTypeToUnlock");
@@ -169,18 +170,18 @@ public class PhxCharacterSelect : PhxMenuInterface
 
         // For some reason, we have to trigger the volume in order
         // for it to be actually active...
-        GAME.CharSelectPPVolume.gameObject.SetActive(false);
-        GAME.CharSelectPPVolume.gameObject.SetActive(true);
+        Game.CharSelectPPVolume.gameObject.SetActive(false);
+        Game.CharSelectPPVolume.gameObject.SetActive(true);
 
         BtnSpawn.onClick.AddListener(SpawnClicked);
         BtnSwitchTeam.onClick.AddListener(SwitchTeamClicked);
         BtnNextCamera.onClick.AddListener(NextCameraClicked);
         Map.OnCPSelect += OnCPSelected;
 
-        PhxCommandpost[] cps = RTS.GetCommandPosts();
+        PhxCommandpost[] cps = Scene.GetCommandPosts();
         for (int i = 0; i < cps.Length; ++i)
         {
-            if (cps[i].Team == MTC.Player.Team)
+            if (cps[i].Team == Match.Player.Team)
             {
                 Map.SelectCP(cps[i]);
                 break;
@@ -192,7 +193,12 @@ public class PhxCharacterSelect : PhxMenuInterface
 
     void OnCPSelected(PhxCommandpost cp)
     {
-        //Debug.Log($"Selected CP '{cp.name}'");
+        if (Scene.GetCPCameraTransform(cp, out PhxTransform t))
+        {
+            Game.Camera.transform.position = t.Position;
+            Game.Camera.transform.rotation = t.Rotation;
+        }
+
         SpawnCP = cp;
     }
     
@@ -200,16 +206,16 @@ public class PhxCharacterSelect : PhxMenuInterface
     {
         if (CurrentSelection != null && SpawnCP != null)
         {
-            MTC.SpawnPlayer(CurrentSelection, SpawnCP);
+            Match.SpawnPlayer(CurrentSelection, SpawnCP);
         }
     }
 
     void SwitchTeamClicked()
     {
-        MTC.Player.Team = MTC.Player.Team == 1 ? 2 : 1;
+        Match.Player.Team = Match.Player.Team == 1 ? 2 : 1;
         UpdateCharacterList();
 
-        PhxCommandpost[] cps = RTS.GetCommandPosts();
+        PhxCommandpost[] cps = Scene.GetCommandPosts();
         for (int i = 0; i < cps.Length; ++i)
         {
             cps[i].UpdateColor();
@@ -218,6 +224,6 @@ public class PhxCharacterSelect : PhxMenuInterface
 
     void NextCameraClicked()
     {
-        CAM.Fixed(RTS.GetNextCameraShot());
+        Camera.Fixed(Scene.GetNextCameraShot());
     }
 }

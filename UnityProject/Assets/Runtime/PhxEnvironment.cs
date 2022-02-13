@@ -55,7 +55,8 @@ public class PhxEnvironment
     public bool              IsLoaded => Stage == EnvStage.Loaded;
     public Action<Texture2D> OnLoadscreenLoaded;
     public Action            OnExecuteMain;
-    public Action            OnLoaded;
+    public Action            OnLoaded;          // Same frame load is done
+    public Action            OnPostLoad;        // one frame AFTER load is done
 
     public PhxPath GameDataPath { get; private set; }
     public PhxPath AddonDataPath { get; private set; }
@@ -85,6 +86,8 @@ public class PhxEnvironment
     // To prevent loading an lvl more than once.
     // The path here always describes the relative 2-leaf lvl path
     Dictionary<PhxPath, SWBF2Handle> PathToHandle = new Dictionary<PhxPath, SWBF2Handle>();
+
+    bool FirePostLoadEvent;
 
 
     PhxEnvironment(PhxPath dataPath, PhxPath addonPath)
@@ -316,6 +319,13 @@ public class PhxEnvironment
 
     public void Tick(float deltaTime)
     {
+        // This needs to come first
+        if (FirePostLoadEvent)
+        {
+            OnPostLoad?.Invoke();
+            FirePostLoadEvent = false;
+        }
+
         for (int i = 0; i < Loading.Count; ++i)
         {
             ELoadStatus status = EnvCon.GetStatus(Loading[i].Handle);
@@ -542,5 +552,7 @@ public class PhxEnvironment
 
         Stage = EnvStage.Loaded;
         OnLoaded?.Invoke();
+
+        FirePostLoadEvent = true;
     }
 }
