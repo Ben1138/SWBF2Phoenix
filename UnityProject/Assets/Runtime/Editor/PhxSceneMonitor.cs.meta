@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD:UnityProject/Assets/Runtime/Editor/PhxSceneMonitor.cs.meta
 guid: d4dba88fbb08cdf44b3ea7a4d6989441
+=======
+guid: cdffc5a50406f4b458f8ddedb290e733
+>>>>>>> SRP:UnityProject/Assets/Runtime/GameClasses/effects/PhxEffect.cs.meta
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

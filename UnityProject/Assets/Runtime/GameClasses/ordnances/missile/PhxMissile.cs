@@ -14,7 +14,6 @@ public class PhxMissileClass : PhxOrdnanceClass
 
     public PhxProp<float> MinSpeed = new PhxProp<float>(10f);
     public PhxProp<float> Acceleration = new PhxProp<float>(50f);
-    public PhxProp<float> Gravity = new PhxProp<float>(0f);
     public PhxProp<float> Rebound = new PhxProp<float>(0f);
     public PhxProp<float> TurnRate = new PhxProp<float>(0f);
 
@@ -32,20 +31,21 @@ public class PhxMissileClass : PhxOrdnanceClass
 [RequireComponent(typeof(Rigidbody), typeof(Light))]
 public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
 {
-
     // for heatseeking
     PhxInstance Target; 
 
     PhxMissileClass MissileClass;
    
-    Rigidbody Body;
+    protected Rigidbody Body;
     Light Light;
 
-    List<Collider> Colliders;
-    List<Collider> IgnoredColliders;
+    protected List<Collider> Colliders;
+    protected List<Collider> IgnoredColliders;
 
 
-    PhxEffect TrailEffect;
+    protected PhxEffect TrailEffect;
+
+    protected float TimeAlive;
 
 
     public override void Init()
@@ -71,6 +71,10 @@ public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
         Body.interpolation = RigidbodyInterpolation.Interpolate;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
+        Body.centerOfMass = Vector3.zero;
+        Body.inertiaTensor = new Vector3(1f,1f,1f);
+        Body.inertiaTensorRotation = Quaternion.identity;
+
         SWBFModel Mapping = ModelLoader.Instance.GetModelMapping(gameObject, MissileClass.GeometryName.Get());
         if (Mapping != null)
         {
@@ -92,6 +96,7 @@ public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
             TrailEffect.SetLooping();
             TrailEffect.SetParent(transform);
             TrailEffect.SetLocalTransform(Vector3.zero, Quaternion.identity);
+            TrailEffect.SetDynamic(true);
         } 
     }
 
@@ -125,6 +130,8 @@ public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
         }
 
         TrailEffect?.Play();
+
+        TimeAlive = 0f;
     }
 
     public override void Destroy()
@@ -137,10 +144,17 @@ public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
         TrailEffect?.Stop();
     }
 
-    public void TickPhysics(float deltaTime)
+    public virtual void TickPhysics(float deltaTime)
     {
-        // Manual gravity, since it varies
-        Body.AddForce(9.8f * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
+        TimeAlive += deltaTime;
+        if (TimeAlive > MissileClass.LifeSpan)
+        {
+            ParentPool.Free(this);
+            return;
+        }
+
+        // Don't think missiles actually use gravity, shells do though
+        // Body.AddForce(9.8f * MissileClass.Gravity * Vector3.down, ForceMode.Acceleration);
 
         if (Vector3.Magnitude(Body.velocity) > MissileClass.Velocity)
         {
@@ -157,11 +171,18 @@ public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
         }
     }
 
+
     void OnCollisionEnter(Collision coll)
     {
         if (gameObject.activeSelf)
         {
             ContactPoint Contact = coll.GetContact(0);
+
+            /*
+            EXPLOSION
+
+            TODO: Figure out what explosion param to use when...
+            */
 
             PhxClass Exp = MissileClass.ExplosionImpact.Get();
             if (Exp == null)
@@ -169,10 +190,7 @@ public class PhxMissile : PhxOrdnance, IPhxTickablePhysics
                 Exp = MissileClass.ExplosionName.Get();
             }
             
-
-            Debug.LogFormat("Missile hit collider: {0}", Contact.otherCollider.name);
-
-            PhxExplosionManager.AddExplosion(null, Exp as PhxExplosionClass, Contact.point, Quaternion.LookRotation(Contact.normal, Vector3.up));
+            PhxExplosionManager.AddExplosion(null, Exp as PhxExplosionClass, Contact.point, Quaternion.identity);
 
             ParentPool.Free(this);
         }
