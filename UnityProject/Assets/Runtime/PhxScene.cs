@@ -55,7 +55,6 @@ public class PhxScene
     public PhxAnimStateMachineManager StateMachines { get; private set; }
 
     int InstanceCounter;
-    int AdjustPathsCountdown = 0;
 
 
     public PhxScene(PhxEnvironment env, Container c)
@@ -80,12 +79,9 @@ public class PhxScene
         });
         StateMachines = new PhxAnimStateMachineManager();
 
-#if UNITY_EDITOR
-        PathsRoot = new GameObject("PathsRoot");
-#endif
-
         ModelLoader.Instance.PhyMat = PhxGame.Instance.GroundPhyMat;
         ENV.OnPostLoad += CalcCPCamPositions;
+        ENV.OnPostLoad += AdjustPaths;
     }
 
     public void SetProperty(string instName, string propName, object propValue)
@@ -295,12 +291,6 @@ public class PhxScene
             }
 
             WorldRoots.Add(worldRoot);
-
-            // Adjust path nodes after 3 frames from now
-            // (arbitrarily chosen, should be greater than 1)
-            // We need to do this deferred in order for the 
-            // physics engine to recognize our just created objects.
-            AdjustPathsCountdown = 3;
         }
     }
 
@@ -334,9 +324,6 @@ public class PhxScene
             UnityEngine.Object.Destroy(WorldRoots[i]);
         }
         WorldRoots.Clear();
-#if UNITY_EDITOR
-        UnityEngine.Object.Destroy(PathsRoot);
-#endif
     }
 
     // TODO: implement object pooling
@@ -403,15 +390,6 @@ public class PhxScene
         {
             TickableInstances[i].Tick(deltaTime);
         }
-
-        if (AdjustPathsCountdown > 0)
-        {
-            AdjustPathsCountdown--;
-            if (AdjustPathsCountdown == 0)
-            {
-                AdjustPaths();
-            }
-        }
     }
 
     public void TickPhysics(float deltaTime)
@@ -442,21 +420,6 @@ public class PhxScene
                     node.Position = hit.point;
                 }
             }
-#if UNITY_EDITOR
-            if (path != null)
-            {
-                GameObject pathGO = new GameObject(keyvalue.Key);
-                for (int i = 0; i < path.Nodes.Length; ++i)
-                {
-                    GameObject node = new GameObject($"Node{i}");
-                    node.transform.position = path.Nodes[i].Position;
-                    node.transform.rotation = path.Nodes[i].Rotation;
-                    node.transform.SetParent(pathGO.transform);
-                    DrawIcon(node, 0);
-                }
-                pathGO.transform.SetParent(PathsRoot.transform);
-            }
-#endif
         }
     }
 
