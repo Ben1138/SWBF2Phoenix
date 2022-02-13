@@ -233,7 +233,7 @@ public class PhxGame : MonoBehaviour
         Env = PhxEnvironment.Create(StdLVLPC, addonPath);
         Env.ScheduleRel("load/common.lvl");
         Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
-        Env.OnLoaded += OnEnvLoaded;
+        Env.OnPostLoad += OnEnvLoaded;
         Env.Run(mapScript, "ScriptInit", "ScriptPostLoad");
     }
 
@@ -269,10 +269,10 @@ public class PhxGame : MonoBehaviour
             Env.ScheduleRel("load/common.lvl");
 
             Env.OnLoadscreenLoaded += OnLoadscreenTextureLoaded;
-            Env.OnLoaded += OnEnvLoaded;
+            Env.OnPostLoad += OnEnvLoaded;
 
             Env.OnExecuteMain += sceneInit.ScriptInit;
-            Env.OnLoaded += sceneInit.ScriptPostLoad;
+            Env.OnPostLoad += sceneInit.ScriptPostLoad;
 
             Env.Run(null);
         };
