@@ -12,10 +12,15 @@ public class PhxBoltClass : PhxOrdnanceClass
     public PhxProp<Color> LightColor = new PhxProp<Color>(Color.red);
     public PhxProp<float> LightRadius = new PhxProp<float>(1f);
     public PhxProp<float> LaserLength = new PhxProp<float>(1f);
-    public PhxProp<float> LaserWidth = new PhxProp<float>(1f);
+    public PhxProp<float> LaserWidth = new PhxProp<float>(.05f);
     public PhxProp<float> Velocity = new PhxProp<float>(1f);
 
     public PhxProp<string> ImpactEffectStatic = new PhxProp<string>(null);
+    public PhxProp<string> ImpactEffectRigid = new PhxProp<string>(null);
+    public PhxProp<string> ImpactEffectSoft = new PhxProp<string>(null);
+    public PhxProp<string> ImpactEffectTerrain = new PhxProp<string>(null);
+    public PhxProp<string> ImpactEffectWater = new PhxProp<string>(null);
+    public PhxProp<string> ImpactEffectShield = new PhxProp<string>(null);
 
     public PhxProp<PhxClass> ExplosionName = new PhxProp<PhxClass>(null);
 }
@@ -102,7 +107,30 @@ public class PhxBolt : PhxOrdnance
             SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectStatic.Get(), Pos, Rot);
 
             PhxExplosionManager.AddExplosion(null, BoltClass.ExplosionName.Get() as PhxExplosionClass, Pos, Rot);
+            if (coll.gameObject.layer == LayerMask.NameToLayer("TerrainAll"))
+            {
+                SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectTerrain.Get(), Point.point, Quaternion.identity);
+            }
+            else if (coll.gameObject.layer == LayerMask.NameToLayer("BuildingAll") ||
+                    coll.gameObject.layer == LayerMask.NameToLayer("BuildingOrdnance"))
+            {
+                SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectStatic.Get(), Point.point, Quaternion.identity);
+            }
+            else if (coll.gameObject.layer == LayerMask.NameToLayer("SoldierAll"))
+            {
+                SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectSoft.Get(), Point.point, Quaternion.identity);
+            }
+            else 
+            {
+                SCENE.EffectsManager.PlayEffectOnce(BoltClass.ImpactEffectRigid.Get(), Point.point, Quaternion.identity);                
+            }
 
+
+            if (BoltClass.ExplosionName.Get() != null)
+            {
+                PhxExplosionManager.AddExplosion(null, BoltClass.ExplosionName.Get() as PhxExplosionClass, Point.point, Quaternion.identity);            
+            }
+    
             ParentPool.Free(this);
         }
     }

@@ -166,6 +166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bd9a4db6d42fac478a083058c4cb159, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  VehicleClass: rep_fly_arc170fighter_sc
 --- !u!1 &484971822
 GameObject:
   m_ObjectHideFlags: 0
@@ -407,9 +408,9 @@ TerrainCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1565331436}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 7458103be9a58244089e1784868fb4ae, type: 2}
   m_Enabled: 1
-  m_TerrainData: {fileID: 15600000, guid: de3070379c1ec614f98c8c3a20269546, type: 2}
+  m_TerrainData: {fileID: 15600000, guid: 1871b0efb2c4c472d9204dadfc952b4e, type: 2}
   m_EnableTreeColliders: 1
 --- !u!218 &1565331438
 Terrain:
@@ -420,7 +421,7 @@ Terrain:
   m_GameObject: {fileID: 1565331436}
   m_Enabled: 1
   serializedVersion: 6
-  m_TerrainData: {fileID: 15600000, guid: de3070379c1ec614f98c8c3a20269546, type: 2}
+  m_TerrainData: {fileID: 15600000, guid: 1871b0efb2c4c472d9204dadfc952b4e, type: 2}
   m_TreeDistance: 5000
   m_TreeBillboardDistance: 50
   m_TreeCrossFadeLength: 5

@@ -94,7 +94,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
 
     // Vehicle related fields
-    PhxSeat CurrentSection;
+    PhxSeat CurrentSeat;
+
     PhxPoser Poser;
 
 
@@ -159,7 +160,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     public override void Init()
     {
-        // soldier
         gameObject.layer = LayerMask.NameToLayer("SoldierAll");
 
         ViewConstraint.x = 45f;
@@ -177,9 +177,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             ControlValues[i] = GetControlSpeed(states[i]);
         }
 
-        HpWeapons = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_r_clavicle/bone_r_upperarm/bone_r_forearm/bone_r_hand/hp_weapons");
-        Neck = transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_neck");
+        HpWeapons = UnityUtils.FindChildTransform(transform, "hp_weapons"); //transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_r_clavicle/bone_r_upperarm/bone_r_forearm/bone_r_hand/hp_weapons");
+        Neck = UnityUtils.FindChildTransform(transform, "bone_neck"); //transform.Find("dummyroot/bone_root/bone_a_spine/bone_b_spine/bone_ribcage/bone_neck");
         Spine = transform.Find("dummyroot/bone_root/bone_a_spine");
+        if (Spine == null)
+        {
+            Spine = UnityUtils.FindChildTransform(transform, "bone_b_spine");
+        }
         Debug.Assert(HpWeapons != null);
         Debug.Assert(Neck != null);
         Debug.Assert(Spine != null);
@@ -373,7 +377,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     public void SetFree(Vector3 position)
     {
         Context = PhxSoldierContext.Free;
-        CurrentSection = null;
+        CurrentSeat = null;
 
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 80f;
@@ -404,7 +408,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     public void SetPilot(PhxSeat section)
     {
         Context = PhxSoldierContext.Pilot;
-        CurrentSection = section;
+        CurrentSeat = section;
 
         if (Body != null)
         {
@@ -427,10 +431,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
 
-            if (CurrentSection.PilotAnimationType != PilotAnimationType.None)
+            if (CurrentSeat.PilotAnimationType != PilotAnimationType.None)
             {
-                bool isStatic = CurrentSection.PilotAnimationType == PilotAnimationType.StaticPose;
-                string animName = isStatic ? CurrentSection.PilotAnimation : CurrentSection.Pilot9Pose;
+                bool isStatic = CurrentSeat.PilotAnimationType == PilotAnimationType.StaticPose;
+                string animName = isStatic ? CurrentSeat.PilotAnimation : CurrentSeat.Pilot9Pose;
                 
                 Poser = new PhxPoser("human_4", "human_" + animName, transform, isStatic);   
             }    
@@ -482,11 +486,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     {
         Vector4 Input = new Vector4(Controller.MoveDirection.x, Controller.MoveDirection.y, Controller.mouseX, Controller.mouseY);
 
-        if (Poser != null && CurrentSection != null)
+        if (Poser != null && CurrentSeat != null)
         {
             float blend = 2f * deltaTime;
 
-            if (CurrentSection.PilotAnimationType == PilotAnimationType.NinePose)
+            if (CurrentSeat.PilotAnimationType == PilotAnimationType.NinePose)
             {
                 if (Vector4.Magnitude(Input) < .001f)
                 {
@@ -535,7 +539,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     }
                 }
             }
-            else if (CurrentSection.PilotAnimationType == PilotAnimationType.FivePose)
+            else if (CurrentSeat.PilotAnimationType == PilotAnimationType.FivePose)
             {
                 if (Mathf.Abs(Input.z) + Mathf.Abs(Input.w) < .001f)
                 {
@@ -561,7 +565,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     Poser.SetState(PhxFivePoseState.TurnUp, blend);            
                 }
             }
-            else if (CurrentSection.PilotAnimationType == PilotAnimationType.StaticPose)
+            else if (CurrentSeat.PilotAnimationType == PilotAnimationType.StaticPose)
             {
                 Poser.SetState();
             }
@@ -622,10 +626,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
             if (ClosestVehicle != null)
             {
-                CurrentSection = ClosestVehicle.TryEnterVehicle(this);
-                if (CurrentSection != null)
+                CurrentSeat = ClosestVehicle.TryEnterVehicle(this);
+                if (CurrentSeat != null)
                 {
-                    SetPilot(CurrentSection);
+                    SetPilot(CurrentSeat);
                     Controller.Enter = false;
                     return;
                 }

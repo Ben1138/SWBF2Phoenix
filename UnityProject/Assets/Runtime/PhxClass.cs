@@ -66,7 +66,7 @@ public abstract class PhxClass
                     }
                     catch (Exception e)
                     {
-                        Debug.LogErrorFormat("Failed to get all props from class: {0}", ec.Name);
+                        Debug.LogErrorFormat("Failed to get all props from class: {0} Exception: {1}", ec.Name, e.ToString());
                     }
 
                     Debug.Assert(propHashes.Length == propValues.Length);
@@ -106,6 +106,44 @@ public abstract class PhxClass
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    section.SetSections(foundSections.ToArray());
+                }
+                else if (typeof(PhxImpliedSection).IsAssignableFrom(type.GetField(member.Name).FieldType))
+                {
+                    PhxImpliedSection section = type.GetField(member.Name).GetValue(this) as PhxImpliedSection;
+
+                    // Read properties from top to bottom to fill property sections
+                    uint[] propHashes = new uint[0];
+                    string[] propValues = new string[0];
+                    try {
+                        ec.GetAllProperties(out propHashes, out propValues);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogErrorFormat("Failed to get all props from class: {0} Exception: {1}", ec.Name, e.ToString());
+                    }
+
+                    Debug.Assert(propHashes.Length == propValues.Length);
+
+                    var foundSections = new List<Dictionary<string, IPhxPropRef>>();
+                    Dictionary<string, IPhxPropRef> currSection = null;
+
+                    for (int i = 0; i < propHashes.Length; ++i)
+                    {
+                        // Every time we encounter the section header, start a new section
+                        if (propHashes[i] == section.NameHash)
+                        {
+                            foundSections.Add(section.GetDefault());
+                            currSection = foundSections[foundSections.Count - 1];
+                        }
+
+                        //string propNameOut = null;
+                        if (currSection != null && section.HasProperty(propHashes[i], out string propNameOut))
+                        {
+                            currSection[propNameOut].SetFromString(propValues[i]);
                         }
                     }
 
