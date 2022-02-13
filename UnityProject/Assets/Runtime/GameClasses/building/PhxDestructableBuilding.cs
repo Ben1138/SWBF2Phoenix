@@ -28,6 +28,8 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
 
     public PhxProp<float> CurHealth = new PhxProp<float>(1f);
 
+    public List<PhxDamageEffect> DamageEffects = new List<PhxDamageEffect>();
+
     public GameObject BuiltGeometry;
     public GameObject DestroyedGeometry;
 
@@ -81,12 +83,39 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
             DestroyedGeometry.transform.localRotation = Quaternion.identity;
             DestroyedGeometry.SetActive(false);
         }
-    }
 
+        CurHealth.Set(C.MaxHealth.Get());
 
-    public override void Destroy()
-    {
+        EntityClass EC = C.EntityClass;
+        EC.GetAllProperties(out uint[] properties, out string[] values);
 
+        PhxDamageEffect CurrDamageEffect = null;
+
+        int i = 0;
+        while (i < properties.Length)
+        {
+            if (properties[i] == HashUtils.GetFNV("DamageStartPercent"))
+            {
+                CurrDamageEffect = new PhxDamageEffect();
+                DamageEffects.Add(CurrDamageEffect);
+
+                CurrDamageEffect.DamageStartPercent = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture) / 100f;
+            }
+            else if (properties[i] == HashUtils.GetFNV("DamageStopPercent"))
+            {
+                CurrDamageEffect.DamageStopPercent = float.Parse(values[i], System.Globalization.CultureInfo.InvariantCulture) / 100f;
+            }
+            else if (properties[i] == HashUtils.GetFNV("DamageEffect"))
+            {
+                CurrDamageEffect.Effect = SCENE.EffectsManager.LendEffect(values[i]);
+            }
+            else if (properties[i] == HashUtils.GetFNV("DamageAttachPoint"))
+            {
+                CurrDamageEffect.DamageAttachPoint = UnityUtils.FindChildTransform(transform, values[i]);
+            }
+
+            i++;
+        }
     }
 
 
@@ -103,6 +132,11 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
                 
                 IsBuilt = true;
             }
+
+            foreach (PhxDamageEffect DamageEffect in DamageEffects)
+            {
+                DamageEffect.Update(HealthPercent);
+            }
         }
         else 
         {
@@ -118,5 +152,5 @@ public class PhxDestructableBuilding : PhxInstance<PhxDestructableBuilding.Class
         }
     }
 
-    public virtual void TickPhysics(float deltaTime){}
+    public override void Destroy(){}
 }

@@ -519,7 +519,7 @@ public class PhxHover : PhxVehicle
         Vector3 netForce = Vector3.zero;
         Vector3 netPos = Vector3.zero;
 
-        LayerMask Mask = (1 << 11) | (1 << 12) | (1 << 13);
+        LayerMask Mask = (1 << 11) | (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
 
 
         for (int CurrSpringIndex = 0; CurrSpringIndex < Springs.Count; CurrSpringIndex++)
