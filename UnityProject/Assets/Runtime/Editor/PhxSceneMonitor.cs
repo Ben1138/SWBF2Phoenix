@@ -5,6 +5,8 @@ using UnityEditor;
 
 public class PhxSceneMonitor : EditorWindow
 {
+    Vector2 Scroll;
+
     [MenuItem("Phoenix/Scene Monitor")]
     public static void OpenSceneMonitor()
     {
@@ -26,6 +28,7 @@ public class PhxSceneMonitor : EditorWindow
             return;
         }
 
+        Scroll = EditorGUILayout.BeginScrollView(Scroll);
         EditorGUILayout.LabelField("World Instances", scene.GetInstanceCount().ToString());
         EditorGUILayout.LabelField("Tickables", scene.GetTickableCount().ToString());
         EditorGUILayout.LabelField("Tickables Physics", scene.GetTickablePhysicsCount().ToString());
@@ -38,5 +41,6 @@ public class PhxSceneMonitor : EditorWindow
         {
             EditorGUILayout.LabelField($"Name: {cp.name}", $"Team: {cp.Team.Get()}");
         }
+        EditorGUILayout.EndScrollView();
     }
 }

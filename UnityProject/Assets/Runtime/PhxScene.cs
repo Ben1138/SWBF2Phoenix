@@ -39,15 +39,19 @@ public class PhxScene
     Dictionary<string, PhxRegion>  Regions  = new Dictionary<string, PhxRegion>();
 
     List<GameObject>  WorldRoots = new List<GameObject>();
+
+    // Camera positions
     List<PhxTransform> CameraShots = new List<PhxTransform>();
     int CurrCamIdx;
+    const float CameraMaxDistance = 15.0f;
+    Dictionary<PhxCommandpost, PhxTransform> CPCamPositions = new Dictionary<PhxCommandpost, PhxTransform>();
 
     PhxProjectiles Projectiles = new PhxProjectiles();
     public readonly PhxEffectsManager EffectsManager = new PhxEffectsManager();
 
     CraMain Cra;
-
     int InstanceCounter;
+
 
     public PhxScene(PhxEnvironment env, Container c)
     {
@@ -56,6 +60,7 @@ public class PhxScene
         Cra = new CraMain();
 
         ModelLoader.Instance.PhyMat = PhxGame.Instance.GroundPhyMat;
+        ENV.OnPostLoad += CalcCPCamPositions;
     }
 
     public void SetProperty(string instName, string propName, object propValue)
@@ -340,6 +345,11 @@ public class PhxScene
         return CommandPosts.ToArray();
     }
 
+    public bool GetCPCameraTransform(PhxCommandpost cp, out PhxTransform camTransform)
+    {
+        return CPCamPositions.TryGetValue(cp, out camTransform);
+    }
+
     public void Tick(float deltaTime)
     {
         Projectiles.Tick(deltaTime);
@@ -479,6 +489,28 @@ public class PhxScene
             }
         }
         return instanceObjects;
+    }
+
+    void CalcCPCamPositions()
+    {
+        for (int i = 0; i < CommandPosts.Count; ++i)
+        {
+            Transform t = CommandPosts[i].transform;
+            Vector3 direction = (2.0f * -t.forward + t.up).normalized;
+            Vector3 right = -t.right;
+
+            float closestDistance = CameraMaxDistance;
+            if (Physics.Raycast(t.position, direction, out RaycastHit info, CameraMaxDistance))
+            {
+                closestDistance = info.distance;
+            }
+
+            CPCamPositions.Add(CommandPosts[i], new PhxTransform 
+            {
+                Position = t.position + direction * closestDistance,
+                Rotation = Quaternion.LookRotation(-direction, Vector3.Cross(right, -direction))
+            });
+        }
     }
 
 #if UNITY_EDITOR
