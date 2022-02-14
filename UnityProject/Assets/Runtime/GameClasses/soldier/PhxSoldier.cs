@@ -7,12 +7,12 @@ using UnityEngine.Animations;
 using LibSWBF2.Utils;
 using System.Runtime.ExceptionServices;
 
-public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*ICraAnimated,*/ IPhxTickable
+public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, ICraAnimated, IPhxTickable
 {
-    static PhxGame GAME => PhxGame.Instance;
-    static PhxMatch MTC => PhxGame.GetMatch();
-    static PhxScene SCENE => PhxGame.GetScene();
-    static PhxCamera CAM => PhxGame.GetCamera();
+    static PhxGame Game => PhxGame.Instance;
+    static PhxMatch Match => PhxGame.GetMatch();
+    static PhxScene Scene => PhxGame.GetScene();
+    static PhxCamera Camera => PhxGame.GetCamera();
 
 
     public class ClassProperties : PhxClass
@@ -27,11 +27,12 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
         public PhxProp<string> HealthType = new PhxProp<string>("person");
         public PhxProp<float>  MaxHealth = new PhxProp<float>(100.0f);
 
-        // Default animation for soldier classes seems to be hardcoded to "human".
-        // For example, there's no "AnimationName" anywhere in the odf hierarchy:
-        //   rep_inf_ep3_rifleman -> rep_inf_default_rifleman -> rep_inf_default -> com_inf_default
+        // Are these two the same? If so, which one has precedence?
         public PhxProp<string> AnimationName = new PhxProp<string>("human");
         public PhxProp<string> SkeletonName = new PhxProp<string>("human");
+
+        public PhxMultiProp ComboAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
+        public PhxMultiProp CustomAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
 
         public PhxProp<float> MaxSpeed = new PhxProp<float>(1.0f);
         public PhxProp<float> MaxStrafeSpeed = new PhxProp<float>(1.0f);
@@ -100,6 +101,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
 
     PhxPoser Poser;
 
+    PhxAnimHuman Animator;
     PhxAnimHandle StateMachine;
     Rigidbody Body;
 
@@ -230,7 +232,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
             if (section.TryGetValue("WeaponName", out IPhxPropRef nameVal))
             {
                 PhxProp<string> weapCh = (PhxProp<string>)nameVal;
-                PhxClass weapClass = SCENE.GetClass(weapCh);
+                PhxClass weapClass = Scene.GetClass(weapCh);
                 if (weapClass != null)
                 {
                     PhxProp<int> medalProp = weapClass.P.Get<PhxProp<int>>("MedalsTypeToUnlock");
@@ -240,7 +242,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
                         continue;
                     }
 
-                    IPhxWeapon weap = SCENE.CreateInstance(weapClass, false, HpWeapons) as IPhxWeapon;
+                    IPhxWeapon weap = Scene.CreateInstance(weapClass, false, HpWeapons) as IPhxWeapon;
                     if (weap != null)
                     {
                         weap.SetIgnoredColliders(new List<Collider>() {gameObject.GetComponent<CapsuleCollider>()});
@@ -287,7 +289,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
         {
             characterAnim = C.SkeletonName;
         }
-        StateMachine = SCENE.StateMachines.StateMachine_NewHuman(transform, characterAnim, weapAnimBanks, null);
+
+        Animator = new PhxAnimHuman(Scene.AnimResolver, transform, characterAnim, weapAnimBanks);
+
+        string combo = C.ComboAnimationBank.Get<string>(2);
+        StateMachine = Scene.StateMachines.StateMachine_NewHuman(Animator, combo);
 
         // this needs to happen after the Animator is initialized, since swicthing
         // will weapons will most likely cause an animation bank change aswell
@@ -368,6 +374,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
     {
         //Animator.Anim.SetState(1, Animator.StandShootPrimary);
         //Animator.Anim.RestartState(1);
+        Animator.InputShootPrimary.SetBool(true);
     }
 
     void Reload()
@@ -636,8 +643,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
             
         }
 
-        //Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
-        //Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
+        Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
+        Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
+        Animator.InputCrouch.SetBool(Controller.Crouch);
+        Animator.InputEnergy.SetFloat(100.0f);
 
         //Vector3 lookWalkForward = Controller.ViewDirection;
         //lookWalkForward.y = 0f;
@@ -995,8 +1004,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, /*
         }
     }
 
-    //public CraStateMachine GetStateMachine()
-    //{
-    //    return Animator.Anim;
-    //}
+    public CraStateMachine GetStateMachine()
+    {
+        return Animator.Machine;
+    }
 }

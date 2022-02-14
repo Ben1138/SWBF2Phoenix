@@ -52,6 +52,8 @@ public class PhxScene
     public readonly PhxEffectsManager EffectsManager = new PhxEffectsManager();
 
     CraMain Cra;
+
+    public PhxAnimationResolver AnimResolver { get; private set; }
     public PhxAnimStateMachineManager StateMachines { get; private set; }
 
     int InstanceCounter;
@@ -77,7 +79,9 @@ public class PhxScene
 
             BoneHashFunction = (string input) => { return (int)HashUtils.GetCRC(input); }
         });
-        StateMachines = new PhxAnimStateMachineManager();
+
+        AnimResolver = new PhxAnimationResolver();
+        StateMachines = new PhxAnimStateMachineManager(EnvCon, AnimResolver);
 
         ModelLoader.Instance.PhyMat = PhxGame.Instance.GroundPhyMat;
         ENV.OnPostLoad += CalcCPCamPositions;
