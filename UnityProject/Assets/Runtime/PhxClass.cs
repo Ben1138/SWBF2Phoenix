@@ -88,21 +88,29 @@ public abstract class PhxClass
                             for (int j = 0; j < section.Properties.Length; ++j)
                             {
                                 string propName = section.Properties[j].Item1;
-                                uint propNameHash = HashUtils.GetFNV(propName);
 
-                                // if we encounter a matching property, grab it
-                                if (propHashes[i] == propNameHash)
-                                {                 
-                                    IPhxPropRef prop = section.Properties[j].Item2.ShallowCopy();
-                                    prop.SetFromString(propValues[i]);
+                                // This is a Hack introduced for WEAPONSECTION's, since sometimes the section properties
+                                // have a number (corresponding to the section number), and sometimes they don't.
+                                for (int k = 0; k < 10; ++k)
+                                {
+                                    uint propNameHash = HashUtils.GetFNV($"{propName}{k}");
 
-                                    if (currSection.ContainsKey(propName))
-                                    {
-                                        Debug.LogErrorFormat("Section already contains key: {0} value: {3} (in PhxClass: {1}, Section index: {2})", propName, ec.Name, foundSections.Count - 1, propValues[i]);
-                                    }
-                                    else
-                                    {
-                                        currSection.Add(propName, prop);
+                                    // if we encounter a matching property, grab it
+                                    if (propHashes[i] == propNameHash)
+                                    {                 
+                                        IPhxPropRef prop = section.Properties[j].Item2.ShallowCopy();
+                                        prop.SetFromString(propValues[i]);
+
+                                        if (currSection.ContainsKey(propName))
+                                        {
+                                            Debug.LogErrorFormat("Section already contains key: {0} value: {3} (in PhxClass: {1}, Section index: {2})", propName, ec.Name, foundSections.Count - 1, propValues[i]);
+                                        }
+                                        else
+                                        {
+                                            currSection.Add(propName, prop);
+                                        }
+
+                                        break;
                                     }
                                 }
                             }

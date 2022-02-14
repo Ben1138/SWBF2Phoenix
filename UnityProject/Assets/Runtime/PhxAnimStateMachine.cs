@@ -352,80 +352,79 @@ public unsafe struct PhxAnimState
     public bool PlayExplosion;
     public bool MustShowOneFrame;
 
-    //public PhxAnimValue Duration;
+    public PhxAnimValue Duration;
 
-    //public string SoundName;
-    //public PhxAnimValue SoundStart;
+    public fixed char SoundName[32]; // TODO: Replace with sound reference (handle)
+    public PhxAnimValue SoundStart;
 
-    //// Use root animation for velocity
-    //public bool UseAnimatedMove;
-    //public PhxAnimAnimatedMove AnimatedMove;
+    // Use root animation for velocity
+    public bool UseAnimatedMove;
+    public PhxAnimAnimatedMove AnimatedMove;
 
-    //public PhxAnimThrustAlignment AlignedToThrust;
-    //public float Gravity;
-    //public bool UseGravityVelocityTarget;
-    //public PhxAnimValue GravityVelocityTarget;
+    public PhxAnimThrustAlignment AlignedToThrust;
+    public float Gravity;
+    public bool UseGravityVelocityTarget;
+    public PhxAnimValue GravityVelocityTarget;
 
-    //public PhxInputControl InputLocks; // Flags
-    //public PhxAnimValue InputLockDuration;
+    public PhxInputControl InputLocks; // Flags
+    public PhxAnimValue InputLockDuration;
 
-    //public float ThrustFactor;
-    //public float StrafeFactor;
-    //public float TurnFactor;
-    //public float PitchFactor;
+    public float ThrustFactor;
+    public float StrafeFactor;
+    public float TurnFactor;
+    public float PitchFactor;
 
-    //public PhxAnimPosture AllowedPostures;
+    public PhxAnimPosture AllowedPostures;
 
-    //public fixed bool TurnOffLightsaber[10];
-    //public byte NumTurnOffLightsabers;
+    public fixed bool TurnOffLightsaber[10];
+    public byte NumTurnOffLightsabers;
 
-    //public PhxAnimValue EnergyRestoreRate;
+    public PhxAnimValue EnergyRestoreRate;
 
-    ////public NativeArray<PhxAnimAttack> Attacks;
-    //public byte NumAttacks;
+    //public NativeArray<PhxAnimAttack> Attacks;
+    public byte NumAttacks;
 
-    ////public NativeArray<PhxAnimTransition> Transition;
-    //public int NumTransitions;
+    //public NativeArray<PhxAnimTransition> Transition;
+    public int NumTransitions;
 
-    //public bool UseDeflect;
-    //public PhxAnimDeflect Deflect;
+    public bool UseDeflect;
+    public PhxAnimDeflect Deflect;
 
-    //public static PhxAnimState CreateDefault()
-    //{
-    //    // Note: Doesn't initialize Arrays!
-    //    return new PhxAnimState
-    //    {
-    //        NumAnimations = 0,
+    public static PhxAnimState CreateDefault()
+    {
+        // Note: Doesn't initialize Arrays!
+        return new PhxAnimState
+        {
+            NumAnimations = 0,
 
-    //        RestartAnimation = false,
-    //        PlayExplosion = false,
-    //        MustShowOneFrame = false,
-    //        Duration = new PhxAnimValue { Value = -1f, Type = PhxAnimValueType.FromAnim },
-    //        SoundName = null,
-    //        SoundStart = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.Seconds },
-    //        UseAnimatedMove = false,
-    //        AnimatedMove = PhxAnimAnimatedMove.CreateDefault(),
-    //        AlignedToThrust = PhxAnimThrustAlignment.No,
-    //        Gravity = 1f,
-    //        UseGravityVelocityTarget = false,
-    //        GravityVelocityTarget = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.None },
-    //        InputLocks = PhxInputControl.None,
-    //        InputLockDuration = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.Seconds },
-    //        ThrustFactor = 1f,
-    //        StrafeFactor = 1f,
-    //        TurnFactor = 1f,
-    //        PitchFactor = 1f,
-    //        AllowedPostures = PhxAnimPosture.All,
-    //        NumTurnOffLightsabers = 0,
-    //        EnergyRestoreRate = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.FromSoldier },
+            RestartAnimation = false,
+            PlayExplosion = false,
+            MustShowOneFrame = false,
+            Duration = new PhxAnimValue { Value = -1f, Type = PhxAnimValueType.FromAnim },
+            SoundStart = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.Seconds },
+            UseAnimatedMove = false,
+            AnimatedMove = PhxAnimAnimatedMove.CreateDefault(),
+            AlignedToThrust = PhxAnimThrustAlignment.No,
+            Gravity = 1f,
+            UseGravityVelocityTarget = false,
+            GravityVelocityTarget = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.None },
+            InputLocks = PhxInputControl.None,
+            InputLockDuration = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.Seconds },
+            ThrustFactor = 1f,
+            StrafeFactor = 1f,
+            TurnFactor = 1f,
+            PitchFactor = 1f,
+            AllowedPostures = PhxAnimPosture.All,
+            NumTurnOffLightsabers = 0,
+            EnergyRestoreRate = new PhxAnimValue { Value = 0f, Type = PhxAnimValueType.FromSoldier },
 
-    //        NumAttacks = 0,
-    //        NumTransitions = 0,
+            NumAttacks = 0,
+            NumTransitions = 0,
 
-    //        UseDeflect = false,
-    //        Deflect = new PhxAnimDeflect { Animation = PhxAnim.CreateDefault(), DeflectAngleMin = -180, DeflectAngleMax = 180, EnergyCost = 0f }
-    //    };
-    //}
+            UseDeflect = false,
+            Deflect = new PhxAnimDeflect { Animation = PhxAnim.CreateDefault(), DeflectAngleMin = -180, DeflectAngleMax = 180, EnergyCost = 0f }
+        };
+    }
 }
 
 public class PhxAnimStateMachineManager

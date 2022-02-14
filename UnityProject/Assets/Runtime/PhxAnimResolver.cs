@@ -204,24 +204,24 @@ public class PhxAnimationResolver
                 }
             }
 
-            // 2. From weapon parent
+            // 2. From character parent
             next = animDesc;
-            if (next.Weapon.ToLower() != animDesc.ParentWeapon.ToLower())
+            if (next.Character.ToLower() != animDesc.ParentCharacter.ToLower())
             {
-                next.Weapon = animDesc.ParentWeapon;
-                next.ParentWeapon = null;
+                next.Character = animDesc.ParentCharacter;
+                next.ParentCharacter = null;
                 if (ResolveAnim(next, out found, out clip, out scope))
                 {
                     return true;
                 }
             }
 
-            // 3. From character parent
+            // 3. From weapon parent
             next = animDesc;
-            if (next.Character.ToLower() != animDesc.ParentCharacter.ToLower())
+            if (next.Weapon.ToLower() != animDesc.ParentWeapon.ToLower())
             {
-                next.Character = animDesc.ParentCharacter;
-                next.ParentCharacter = null;
+                next.Weapon = animDesc.ParentWeapon;
+                next.ParentWeapon = null;
                 if (ResolveAnim(next, out found, out clip, out scope))
                 {
                     return true;

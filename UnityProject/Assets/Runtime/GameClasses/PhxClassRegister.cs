@@ -51,6 +51,7 @@ public static class PhxClassRegister
         { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
         { "launcher",       new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
         { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
+        { "melee",          new GameBaseClass(typeof(PhxMelee.ClassProperties),          typeof(PhxMelee))          },
 
         
         // Right now, there's custom object pooling just for projectiles, meaning, PhxBolt's are not instantiated via

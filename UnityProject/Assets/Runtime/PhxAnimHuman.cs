@@ -105,6 +105,9 @@ public class PhxAnimHuman
 
     public PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, string[] weaponAnimBanks)
     {
+        Debug.Assert(weaponAnimBanks != null);
+        Debug.Assert(weaponAnimBanks.Length > 0);
+
         Machine = CraStateMachine.CreateNew();
         WeaponNameToSetIdx = new Dictionary<string, int>();
 
@@ -657,13 +660,14 @@ public class PhxAnimHuman
                 state = LayerLower.NewState(player, stateName);
                 break;
             case PhxAnimScope.Upper:
+            case PhxAnimScope.Full:
                 player.Assign(root, new CraMask(true, "root_a_spine"));
                 state = LayerUpper.NewState(player, stateName);
                 break;
-            case PhxAnimScope.Full:
-                player.Assign(root);
-                state = LayerLower.NewState(player, stateName);
-                break;
+            //case PhxAnimScope.Full:
+            //    player.Assign(root);
+            //    state = LayerLower.NewState(player, stateName);
+            //    break;
         }
         Debug.Assert(player.IsValid());
         return state;
@@ -688,6 +692,8 @@ public class PhxAnimHuman
         set.CrouchAlertWalkForward = CreateState(root, character, weapon, "crouchalert", "walkforward", "CrouchAlertWalkForward");
         set.CrouchAlertWalkBackward = CreateState(root, character, weapon, "crouchalert", "walkbackward", "CrouchAlertWalkBackward");
 
+        // human_sabre_stand_idle_emote_full in rep.lvl doesn't contain the lower body animation, although the .msh does...
+        // Idk why, maybe the lower body got compiled out at munge?
         set.StandIdle = CreateState(root, character, weapon, "stand", "idle_emote", "StandIdle");
         set.StandIdleCheckweapon = CreateState(root, character, weapon, "stand", "idle_checkweapon", "StandIdleCheckweapon");
         set.StandIdleLookaround = CreateState(root, character, weapon, "stand", "idle_lookaround", "StandIdleLookaround");

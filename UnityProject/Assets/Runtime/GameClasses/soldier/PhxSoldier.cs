@@ -31,9 +31,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         public PhxProp<string> AnimationName = new PhxProp<string>("human");
         public PhxProp<string> SkeletonName = new PhxProp<string>("human");
 
-        public PhxMultiProp ComboAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
-        public PhxMultiProp CustomAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
-
         public PhxProp<float> MaxSpeed = new PhxProp<float>(1.0f);
         public PhxProp<float> MaxStrafeSpeed = new PhxProp<float>(1.0f);
         public PhxProp<float> MaxTurnSpeed = new PhxProp<float>(1.0f);
@@ -291,9 +288,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
 
         Animator = new PhxAnimHuman(Scene.AnimResolver, transform, characterAnim, weapAnimBanks);
-
-        string combo = C.ComboAnimationBank.Get<string>(2);
-        StateMachine = Scene.StateMachines.StateMachine_NewHuman(Animator, combo);
+        StateMachine = Scene.StateMachines.StateMachine_NewHuman(Animator);
 
         // this needs to happen after the Animator is initialized, since swicthing
         // will weapons will most likely cause an animation bank change aswell

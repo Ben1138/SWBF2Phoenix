@@ -22,7 +22,21 @@ public class PhxAnimTest : PhxUnityScript
     public override void ScriptInit()
     {
         PhxLuaAPI.ReadDataFile("ingame.lvl");
-        PhxLuaAPI.ReadDataFile("side/rep.lvl");
+        PhxLuaAPI.ReadDataFile("side/rep.lvl",
+            "rep_inf_ep2_rifleman",
+            "rep_inf_ep2_rocketeer",
+            "rep_inf_ep2_sniper",
+            "rep_inf_ep2_engineer",
+            "rep_inf_ep2_jettrooper",
+            "rep_inf_ep3_rifleman",
+            "rep_inf_ep3_rocketeer",
+            "rep_inf_ep3_sniper",
+            "rep_inf_ep3_sniper_felucia",
+            "rep_inf_ep3_engineer",
+            "rep_inf_ep3_officer",
+            "rep_inf_ep3_jettrooper",
+            "rep_hero_obiwan"
+        );
     }
 
     public override void ScriptPostLoad()
@@ -82,7 +96,7 @@ public class PhxAnimTest : PhxUnityScript
 
         if (SpawnPlayer)
         {
-            MATCH.SpawnPlayer(classes[3], transform.position, Quaternion.identity);
+            MATCH.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
         }
     }
 
