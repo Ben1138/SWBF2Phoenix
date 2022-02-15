@@ -93,7 +93,7 @@ public abstract class PhxClass
                                 // have a number (corresponding to the section number), and sometimes they don't.
                                 for (int k = 0; k < 10; ++k)
                                 {
-                                    uint propNameHash = HashUtils.GetFNV($"{propName}{k}");
+                                    uint propNameHash = HashUtils.GetFNV($"{propName}{(k==0?"":k.ToString())}");
 
                                     // if we encounter a matching property, grab it
                                     if (propHashes[i] == propNameHash)

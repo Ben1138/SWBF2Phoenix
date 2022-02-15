@@ -293,7 +293,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         // this needs to happen after the Animator is initialized, since swicthing
         // will weapons will most likely cause an animation bank change aswell
         NextWeapon(0);
-        NextWeapon(1);
+        //NextWeapon(1);
     }
 
     public override void Destroy()
@@ -352,7 +352,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         if (Weapons[channel][WeaponIdx[channel]] != null)
         {
             Weapons[channel][WeaponIdx[channel]].GetInstance().gameObject.SetActive(true);
-            //Animator.SetAnimBank(Weapons[channel][WeaponIdx[channel]].GetAnimBankName());
+            Animator.SetActiveWeaponBank(Weapons[channel][WeaponIdx[channel]].GetAnimBankName());
         }
         else
         {
@@ -641,7 +641,18 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
         Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
         Animator.InputCrouch.SetBool(Controller.Crouch);
+        Animator.InputShootPrimary.SetBool(Controller.ShootPrimary);
+        Animator.InputShootSecondary.SetBool(Controller.ShootSecondary);
         Animator.InputEnergy.SetFloat(100.0f);
+
+        if (Controller.NextPrimaryWeapon)
+        {
+            NextWeapon(0);
+        }
+        //if (Controller.NextSecondaryWeapon)
+        //{
+        //    NextWeapon(1);
+        //}
 
         //Vector3 lookWalkForward = Controller.ViewDirection;
         //lookWalkForward.y = 0f;

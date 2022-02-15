@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PhxAnimTest : PhxUnityScript
 {
-    static PhxMatch MATCH => PhxGame.GetMatch();
+    static PhxMatch Match => PhxGame.GetMatch();
 
     public Transform AITarget;
     public int Width;
@@ -45,16 +45,16 @@ public class PhxAnimTest : PhxUnityScript
 
         string[] classNames =
         {
-            "rep_inf_ep2_rifleman",
+            //"rep_inf_ep2_rifleman",
             //"rep_inf_ep2_rocketeer",
-            "rep_inf_ep2_sniper",
-            "rep_inf_ep2_engineer",
+            //"rep_inf_ep2_sniper",
+            //"rep_inf_ep2_engineer",
             //"rep_inf_ep2_jettrooper",
-            "rep_inf_ep3_rifleman",
-            //"rep_inf_ep3_rocketeer",
-            "rep_inf_ep3_sniper",
-            "rep_inf_ep3_sniper_felucia",
-            "rep_inf_ep3_engineer",
+            //"rep_inf_ep3_rifleman",
+            "rep_inf_ep3_rocketeer",
+            //"rep_inf_ep3_sniper",
+            //"rep_inf_ep3_sniper_felucia",
+            //"rep_inf_ep3_engineer",
             //"rep_inf_ep3_officer",
             //"rep_inf_ep3_jettrooper",
         };
@@ -86,7 +86,7 @@ public class PhxAnimTest : PhxUnityScript
                     PhxClass spawnClass = classes[Random.Range(0, classes.Length)];
 
                     int idx = x + (Width * y);
-                    Instances[idx] = MATCH.SpawnAI<PhxAnimTestController>(spawnClass, pos, Quaternion.identity);
+                    Instances[idx] = Match.SpawnAI<PhxAnimTestController>(spawnClass, pos, Quaternion.identity);
                     Instances[idx].Fixate();
                     PhxAnimTestController ai = Instances[idx].GetController() as PhxAnimTestController;
                     ai.TestAim = AITarget;
@@ -96,7 +96,7 @@ public class PhxAnimTest : PhxUnityScript
 
         if (SpawnPlayer)
         {
-            MATCH.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
+            Match.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
         }
     }
 

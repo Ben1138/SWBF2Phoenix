@@ -485,33 +485,6 @@ public class PhxAnimStateMachineManager
         }
     }
 
-    CraState CreateState(CraLayer layer, Transform root, string character, string weapon, string posture, string anim, string stateName =null)
-    {
-        PhxAnimDesc animDesc = new PhxAnimDesc { Character = character, Weapon = weapon, Posture = posture, Animation = anim };
-        if (!Resolver.ResolveAnim(animDesc, out CraClip clip, out PhxAnimScope scope, out bool loop))
-        {
-            return CraState.None;
-        }
-        Debug.Assert(clip.IsValid());
-        CraPlayer player = CraPlayer.CreateNew();
-        player.SetLooping(loop);
-        player.SetClip(clip);
-        switch(scope)
-        {
-            case PhxAnimScope.Lower:
-                player.Assign(root, new CraMask(true, "bone_pelvis"));
-                break;
-            case PhxAnimScope.Upper:
-                player.Assign(root, new CraMask(true, "root_a_spine"));
-                break;
-            case PhxAnimScope.Full:
-                player.Assign(root);
-                break;
-        }
-        Debug.Assert(player.IsValid());
-        return layer.NewState(player, stateName);
-    }
-
     unsafe struct PhxAnimMachineData
     {
         public CraStateMachine AnimMachine;

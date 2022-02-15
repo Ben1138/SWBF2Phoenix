@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public struct PhxAnimDesc
-{                       // E.g.:
+{                              // E.g.:
     public string Character;   //  human
     public string Weapon;      //  rifle
     public string Posture;     //  stand
-    public string Animation;   //  shoot
-    public string Scope;       //  full
+    public string Animation;   //  shoot (optional, e.g. sprint doesn't have these)
+    public string Scope;       //  full  (optional)
 
     public string ParentCharacter;
     public string ParentWeapon;
@@ -16,6 +16,11 @@ public struct PhxAnimDesc
     // Otherwise, it's a movement animation
     public bool IsWeaponAnimation()
     {
+        if (string.IsNullOrEmpty(Animation))
+        {
+            return false;
+        }
+
         PhxUtils.IntFromStringEnd(Animation, out string anim);
         return
             anim.ToLower() == "shoot" ||
@@ -26,7 +31,7 @@ public struct PhxAnimDesc
 
     public override string ToString()
     {
-        return $"{Character}_{Weapon}_{Posture}_{Animation}{(!string.IsNullOrEmpty(Scope) ? $"_{Scope}" : "")}";
+        return $"{Character}_{Weapon}_{Posture}{(!string.IsNullOrEmpty(Animation) ? $"_{Animation}" : "")}{(!string.IsNullOrEmpty(Scope) ? $"_{Scope}" : "")}";
     }
 
     public static bool operator ==(in PhxAnimDesc lhs, in PhxAnimDesc rhs)
@@ -47,18 +52,18 @@ public struct PhxAnimDesc
 
 public enum PhxAnimScope
 {
-    Lower, Upper, Full
+    None, Lower, Upper, Full
 }
 
 public class PhxAnimationResolver
 {
     readonly Dictionary<string, string> WeaponInheritance = new Dictionary<string, string>()
     {
-        { "melee",   /* --> */ "tool"   },
-        { "grenade", /* --> */ "tool"   },
-        { "tool",    /* --> */ "pistol" },
-        { "pistol",  /* --> */ "rifle"  },
-        { "bazooka", /* --> */ "rifle"  },
+        { "melee",   /* --> */ "tool"  },
+        { "grenade", /* --> */ "tool"  },
+        { "pistol",  /* --> */ "tool"  },
+        { "tool",    /* --> */ "rifle" },
+        { "bazooka", /* --> */ "rifle" },
     };
 
     // Add weapons with no alert states here.
@@ -77,12 +82,12 @@ public class PhxAnimationResolver
     public bool ResolveAnim(PhxAnimDesc animDesc, out CraClip clip, out PhxAnimScope scope, out bool loop)
     {
         bool found = ResolveAnim(animDesc, out PhxAnimDesc resolved, out clip, out scope);
-        if (found && resolved != animDesc)
-        {
-            Debug.Log($"{animDesc} --> {resolved}");
-        }
+        //if (found && resolved != animDesc)
+        //{
+        //    Debug.Log($"{animDesc} --> {resolved}");
+        //}
         // Don't loop weapon and turn animations, but everything else
-        loop = !resolved.IsWeaponAnimation() && !resolved.Animation.ToLower().StartsWith("turn");
+        loop = !resolved.IsWeaponAnimation() && (string.IsNullOrEmpty(resolved.Animation) || !resolved.Animation.ToLower().StartsWith("turn"));
         return found;
     }
 
@@ -287,7 +292,7 @@ public class PhxAnimationResolver
                 {
                     scope = PhxAnimScope.Upper;
                 }
-                else if (found.Animation.ToLower().StartsWith("turn"))
+                else if (!string.IsNullOrEmpty(found.Animation) && found.Animation.ToLower().StartsWith("turn"))
                 {
                     scope = PhxAnimScope.Lower;
                 }
@@ -311,7 +316,7 @@ public class PhxAnimationResolver
                         break;
                     default:
                         Debug.LogError($"Unknown animation scope '{found.Scope}'!");
-                        scope = PhxAnimScope.Full;
+                        scope = PhxAnimScope.None;
                         break;
                 }
             }
