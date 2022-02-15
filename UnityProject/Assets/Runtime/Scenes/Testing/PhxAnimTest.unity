@@ -4498,8 +4498,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AITarget: {fileID: 1508070288}
-  Width: 8
-  Height: 8
+  Width: 4
+  Height: 4
   Padding: 1.5
   SpawnPlayer: 1
   SpawnMobs: 0

@@ -79,15 +79,13 @@ public class PhxAnimationResolver
         NoAlertSupport.Add(weapon);
     }
 
-    public bool ResolveAnim(PhxAnimDesc animDesc, out CraClip clip, out PhxAnimScope scope, out bool loop)
+    public bool ResolveAnim(PhxAnimDesc animDesc, out CraClip clip, out PhxAnimScope scope)
     {
         bool found = ResolveAnim(animDesc, out PhxAnimDesc resolved, out clip, out scope);
         //if (found && resolved != animDesc)
         //{
         //    Debug.Log($"{animDesc} --> {resolved}");
         //}
-        // Don't loop weapon and turn animations, but everything else
-        loop = !resolved.IsWeaponAnimation() && (string.IsNullOrEmpty(resolved.Animation) || !resolved.Animation.ToLower().StartsWith("turn"));
         return found;
     }
 
@@ -288,13 +286,13 @@ public class PhxAnimationResolver
             found = animDesc;
             if (string.IsNullOrEmpty(found.Scope))
             {
-                if (found.IsWeaponAnimation())
-                {
-                    scope = PhxAnimScope.Upper;
-                }
-                else if (!string.IsNullOrEmpty(found.Animation) && found.Animation.ToLower().StartsWith("turn"))
+                if (!string.IsNullOrEmpty(found.Animation) && found.Animation.ToLower().StartsWith("turn"))
                 {
                     scope = PhxAnimScope.Lower;
+                }
+                else if (found.IsWeaponAnimation() || found.Posture.ToLower() == "sprint")
+                {
+                    scope = PhxAnimScope.Upper;
                 }
                 else
                 {

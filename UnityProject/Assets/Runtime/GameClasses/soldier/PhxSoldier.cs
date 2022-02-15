@@ -641,6 +641,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
         Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
         Animator.InputCrouch.SetBool(Controller.Crouch);
+        Animator.InputSprint.SetBool(Controller.Sprint);
         Animator.InputShootPrimary.SetBool(Controller.ShootPrimary);
         Animator.InputShootSecondary.SetBool(Controller.ShootSecondary);
         Animator.InputEnergy.SetFloat(100.0f);
@@ -654,229 +655,85 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         //    NextWeapon(1);
         //}
 
-        //Vector3 lookWalkForward = Controller.ViewDirection;
-        //lookWalkForward.y = 0f;
-        //Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
-        //Quaternion moveRot = Quaternion.identity;
+        Vector3 lookWalkForward = Controller.ViewDirection;
+        lookWalkForward.y = 0f;
+        Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
+        Quaternion moveRot = Quaternion.identity;
 
-        //LandTimer = Mathf.Max(LandTimer - deltaTime, 0f);
-        //TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
+        LandTimer = Mathf.Max(LandTimer - deltaTime, 0f);
+        TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
 
-        //if (LandTimer == 0f)
-        //{
-        //    float accStep = C.Acceleration * deltaTime;
-        //    float thrustFactor = ControlValues[(int)State][0];
-        //    float strafeFactor = ControlValues[(int)State][1];
-        //    float turnFactor = ControlValues[(int)State][2];
+        if (LandTimer == 0f)
+        {
+            float accStep = C.Acceleration * deltaTime;
+            float thrustFactor = ControlValues[(int)State][0];
+            float strafeFactor = ControlValues[(int)State][1];
+            float turnFactor = ControlValues[(int)State][2];
 
-        //    Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
-        //    Vector3 moveDirWorld = lookRot * moveDirLocal;
+            Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
+            Vector3 moveDirWorld = lookRot * moveDirLocal;
 
-        //    // Stand - Crouch - Sprint
-        //    if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
-        //    {
-        //        // TODO: base turn speed in degreees/sec really 45?
-        //        MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
+            float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
+            Animator.InputMagnitude.SetFloat(walk);
 
-        //        if (moveDirLocal.magnitude == 0f)
-        //        {
-        //            CurrSpeed *= 0.1f * deltaTime;
+            // Stand - Crouch - Sprint
+            if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
+            {
+                // TODO: base turn speed in degreees/sec really 45?
+                MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
 
-        //            if (TurnTimer > 0f)
-        //            {
-        //                lookRot = Quaternion.Slerp(lookRot, TurnStart, TurnTimer / TurnTime);
-        //            }
-        //            else
-        //            {
-        //                //float rotDiff = Quaternion.Angle(transform.rotation, lookRot);
-        //                float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, lookRot.eulerAngles.y);
-        //                if (rotDiff < -40f || rotDiff > 60f)
-        //                {
-        //                    TurnTimer = TurnTime;
-        //                    TurnStart = transform.rotation;
-        //                    Animator.Anim.SetState(0, rotDiff < 0f ? Animator.TurnLeft : Animator.TurnRight);
-        //                    Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
-        //                    Animator.Anim.RestartState(0);
-        //                }
+                if (moveDirLocal.magnitude == 0f)
+                {
+                    CurrSpeed *= 0.1f * deltaTime;
 
-        //                lookRot = transform.rotation;
-        //                moveRot = lookRot;
-        //            }
-        //        }
-        //        else
-        //        {
-        //            CurrSpeed += moveDirWorld * accStep;
+                    if (TurnTimer > 0f)
+                    {
+                        lookRot = Quaternion.Slerp(lookRot, TurnStart, TurnTimer / TurnTime);
+                    }
+                    else
+                    {
+                        //float rotDiff = Quaternion.Angle(transform.rotation, lookRot);
+                        float rotDiff = Mathf.DeltaAngle(transform.rotation.eulerAngles.y, lookRot.eulerAngles.y);
+                        if (rotDiff < -40f || rotDiff > 60f)
+                        {
+                            TurnTimer = TurnTime;
+                            TurnStart = transform.rotation;
 
-        //            float maxSpeed = moveDirLocal.z < 0.2f ? C.MaxStrafeSpeed : C.MaxSpeed;
-        //            float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
-        //            CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
+                            CraInput turn = rotDiff < 0f ? Animator.InputTurnLeft : Animator.InputTurnRight;
+                            turn.SetBool(true);
+                        }
 
-        //            moveRot = Quaternion.LookRotation(moveDirWorld);
-        //            if (moveDirLocal.z <= 0f)
-        //            {
-        //                // invert look direction when strafing left/right
-        //                moveDirWorld = -moveDirWorld;
-        //            }
-        //            lookRot = Quaternion.LookRotation(moveDirWorld);
-        //        }
+                        lookRot = transform.rotation;
+                        moveRot = lookRot;
+                    }
+                }
+                else
+                {
+                    CurrSpeed += moveDirWorld * accStep;
 
-        //        if (TurnTimer == 0f)
-        //        {
-        //            // ---------------------------------------------------------------------------------------------
-        //            // Forward
-        //            // ---------------------------------------------------------------------------------------------
-        //            float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
-        //            if (Controller.MoveDirection.y <= 0f)
-        //            {
-        //                // invert animation direction for strafing (left/right)
-        //                walk = -walk;
-        //            }
+                    float maxSpeed = moveDirLocal.z < 0.2f ? C.MaxStrafeSpeed : C.MaxSpeed;
+                    float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
+                    CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
 
-        //            if (State == PhxControlState.Sprint)
-        //            {
-        //                Animator.Anim.SetState(0, Animator.StandSprint);
-        //            }
-        //            else if (walk > 0.2f && walk <= 0.75f)
-        //            {
-        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertWalk : Animator.StandWalk);
-        //                Animator.Anim.SetPlaybackSpeed(0, Animator.StandWalk, walk / 0.75f);
-        //            }
-        //            else if (walk > 0.75f)
-        //            {
-        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertRun : Animator.StandRun);
-        //                Animator.Anim.SetPlaybackSpeed(0, Animator.StandRun, walk);
-        //            }
-        //            else if (walk < -0.2f)
-        //            {
-        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertBackward : Animator.StandBackward);
-        //                Animator.Anim.SetPlaybackSpeed(0, Animator.StandBackward, -walk);
-        //            }
-        //            else
-        //            {
-        //                Animator.Anim.SetState(0, AlertTimer > 0f ? Animator.StandAlertIdle : Animator.StandIdle);
-        //            }
-        //            // ---------------------------------------------------------------------------------------------
-        //        }
-        //    }
+                    moveRot = Quaternion.LookRotation(moveDirWorld);
+                    if (moveDirLocal.z <= 0f)
+                    {
+                        // invert look direction when strafing left/right
+                        moveDirWorld = -moveDirWorld;
+                    }
+                    lookRot = Quaternion.LookRotation(moveDirWorld);
+                }
+            }
 
-        //    // Stand - Crouch
-        //    if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
-        //    {
-        //        State = Controller.Crouch ? PhxControlState.Crouch : PhxControlState.Stand;
-
-        //        // ---------------------------------------------------------------------------------------------
-        //        // Idle
-        //        // ---------------------------------------------------------------------------------------------
-        //        if (Controller.IdleTime >= IdleTime)
-        //        {
-        //            if (bHasLookaroundIdleAnim && !bHasCheckweaponIdleAnim)
-        //            {
-        //                //Anim.SetTrigger(IdleNames[0]);
-        //            }
-        //            else if (!bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-        //            {
-        //                //Anim.SetTrigger(IdleNames[1]);
-        //            }
-        //            else if (bHasLookaroundIdleAnim && bHasCheckweaponIdleAnim)
-        //            {
-        //                //Anim.SetTrigger(IdleNames[UnityEngine.Random.Range(0, 1)]);
-        //            }
-        //            Controller.ResetIdleTime();
-        //        }
-        //        if (!Controller.IsIdle && LastIdle)
-        //        {
-        //            //Anim.SetTrigger("UnIdle");
-        //        }
-        //        // ---------------------------------------------------------------------------------------------
-
-
-        //        // ---------------------------------------------------------------------------------------------
-        //        // Shooting
-        //        // ---------------------------------------------------------------------------------------------
-        //        if (Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
-        //        {
-        //            if (Controller.ShootPrimary)
-        //            {
-        //                // only fire when not currently turning
-        //                //Weap.Fire = TurnTimer <= 0f;
-
-        //                Weapons[0][WeaponIdx[0]].Fire(Controller, Controller.GetAimPosition());
-        //                AlertTimer = AlertTime;
-        //            }
-        //            else if (Controller.ShootSecondary)
-        //            {
-        //                Weapons[1][WeaponIdx[1]].Fire(Controller, Controller.GetAimPosition());
-        //                AlertTimer = AlertTime;
-        //            }
-        //            else if (Controller.Reload)
-        //            {
-        //                Weapons[0][WeaponIdx[0]].Reload();
-        //                //Anim.SetTrigger("Reload");
-        //            }
-        //        }
-        //        // ---------------------------------------------------------------------------------------------
-        //        if (Controller.NextPrimaryWeapon)
-        //        {
-        //            NextWeapon(0);
-        //        }
-        //        if (Controller.NextSecondaryWeapon)
-        //        {
-        //            NextWeapon(1);
-        //        }
-        //    }
-
-        //    // Stand - Sprint
-        //    if (State == PhxControlState.Stand || State == PhxControlState.Sprint)
-        //    {
-        //        // ---------------------------------------------------------------------------------------------
-        //        // Jumping
-        //        // ---------------------------------------------------------------------------------------------
-        //        if (Controller.Jump)
-        //        {
-        //            State = PhxControlState.Jump;
-        //            JumpTimer = JumpTime;
-
-        //            Animator.Anim.SetState(0, Animator.Jump);
-        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
-
-        //            Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
-        //        }
-        //        // ---------------------------------------------------------------------------------------------
-        //    }
-
-        //    // Stand
-        //    if (State == PhxControlState.Stand)
-        //    {
-        //        if (Controller.MoveDirection.y > 0.2f && Controller.Sprint && Weapons[0][WeaponIdx[0]].GetReloadProgress() == 1f)
-        //        {
-        //            State = PhxControlState.Sprint;
-        //        }
-        //    }
-
-        //    // Crouch
-        //    if (State == PhxControlState.Crouch)
-        //    {
-        //        if (Controller.Jump)
-        //        {
-        //            State = PhxControlState.Stand;
-        //        }
-
-        //        // TODO: verify
-        //        else if (Controller.MoveDirection.y > 0.8f && Controller.Sprint)
-        //        {
-        //            State = PhxControlState.Sprint;
-        //        }
-        //    }
-
-        //    // Sprint
-        //    if (State == PhxControlState.Sprint)
-        //    {
-        //        if (Controller.MoveDirection.y < 0.8f || !Controller.Sprint)
-        //        {
-        //            State = PhxControlState.Stand;
-        //        }
-        //    }
-        //}
+            if (!IsFixated)
+            {
+                Animator.InputMagnitude.SetFloat(Body.velocity.magnitude / 7f);
+            }
+        }
+        else
+        {
+            Animator.InputMagnitude.SetFloat(0f);
+        }
 
         if (IsFixated)
         {
@@ -935,30 +792,30 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         //    }
         //}
 
-        //if (Grounded && LandTimer == 0f && (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint))
-        //{
-        //    //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
-        //    Body.AddForce(CurrSpeed - Body.velocity, ForceMode.VelocityChange);
-        //    Body.MoveRotation(lookRot);
+        if (Grounded && LandTimer == 0f && (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint))
+        {
+            //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
+            Body.AddForce(CurrSpeed - Body.velocity, ForceMode.VelocityChange);
+            Body.MoveRotation(lookRot);
 
-        //    if (CurrSpeed != Vector3.zero)
-        //    {
-        //        Vector3 upper = moveRot * StepCheckOffset;
+            if (CurrSpeed != Vector3.zero)
+            {
+                Vector3 upper = moveRot * StepCheckOffset;
 
-        //        // Handling stairs/steps/slopes
-        //        if (Physics.Raycast(Body.position + upper, Vector3.down, out RaycastHit hit, upper.y * 2f))
-        //        {
-        //            float height = hit.point.y - Body.position.y;
-        //            if (Mathf.Abs(height) > 0.05f && Mathf.Abs(height) <= MaxStepHeight)
-        //            {
-        //                //Debug.Log($"Height: {height}");
-        //                Body.AddForce(Vector3.up * height * StepUpForceMulti, ForceMode.VelocityChange);
-        //            }
-        //        }
+                // Handling stairs/steps/slopes
+                if (Physics.Raycast(Body.position + upper, Vector3.down, out RaycastHit hit, upper.y * 2f))
+                {
+                    float height = hit.point.y - Body.position.y;
+                    if (Mathf.Abs(height) > 0.05f && Mathf.Abs(height) <= MaxStepHeight)
+                    {
+                        //Debug.Log($"Height: {height}");
+                        Body.AddForce(Vector3.up * height * StepUpForceMulti, ForceMode.VelocityChange);
+                    }
+                }
 
-        //        //Debug.DrawRay(Body.position + upper, Vector3.down * upper.y, Color.red);
-        //    }
-        //}
+                //Debug.DrawRay(Body.position + upper, Vector3.down * upper.y, Color.red);
+            }
+        }
 
         //Anim.SetBool("Alert", AlertTimer > 0f);
         LastIdle = Controller.IsIdle;

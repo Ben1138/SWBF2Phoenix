@@ -34,115 +34,12 @@ public struct PhxScopedState
 {
     public CraState Lower;
     public CraState Upper;
-    public CraState Full;
 }
-
-//public struct PhxAnimSetHumanLower
-//{
-//    public CraState StandIdle;
-//    public CraState StandWalkForward;
-//    public CraState StandRunForward;
-//    public CraState StandRunBackward;
-//    public CraState StandTurnLeft;
-//    public CraState StandTurnRight;
-//    public CraState StandAlertIdle;
-//    public CraState StandAlertWalkForward;
-//    public CraState StandAlertRunForward;
-//    public CraState StandAlertRunBackward;
-
-//    public CraState CrouchIdle;
-//    public CraState CrouchIdleTakeknee;
-//    public CraState CrouchTurnLeft;
-//    public CraState CrouchTurnRight;
-//    public CraState CrouchWalkForward;
-//    public CraState CrouchWalkBackward;
-//    public CraState CrouchAlertIdle;
-//    public CraState CrouchAlertWalkForward;
-//    public CraState CrouchAlertWalkBackward;
-
-//    public CraState JetpackHover;
-//    public CraState Sprint;
-//}
-
-//public struct PhxAnimSetHumanUpper
-//{
-//    // Upper
-//    public CraState StandIdle;
-//    public CraState StandWalkForward;
-//    public CraState StandRunForward;
-//    public CraState StandRunBackward;
-//    public CraState StandHitFront;
-//    public CraState StandHitBack;
-//    public CraState StandHitLeft;
-//    public CraState StandHitRight;
-//    public CraState StandReload;
-//    public CraState StandShootPrimary;
-//    public CraState StandShootSecondary;
-//    public CraState StandAlertIdle;
-//    public CraState StandAlertWalkForward;
-//    public CraState StandAlertRunForward;
-//    public CraState StandAlertRunBackward;
-
-//    public CraState CrouchIdle;
-//    public CraState CrouchWalkForward;
-//    public CraState CrouchWalkBackward;
-//    public CraState CrouchHitFront;
-//    public CraState CrouchHitLeft;
-//    public CraState CrouchHitRight;
-//    public CraState CrouchReload;
-//    public CraState CrouchShoot;
-//    public CraState CrouchAlertIdle;
-//    public CraState CrouchAlertWalkForward;
-//    public CraState CrouchAlertWalkBackward;
-
-//    public CraState Sprint;
-//}
-
-//public struct PhxAnimSetHumanFull
-//{
-//    public CraState StandIdleCheckweapon;
-//    public CraState StandIdleLookaround;
-//    public CraState StandGetupFront;
-//    public CraState StandGetupBack;
-//    public CraState StandDeathForward;
-//    public CraState StandDeathBackward;
-//    public CraState StandDeathLeft;
-//    public CraState StandDeathRight;
-//    public CraState StandDeadhero;
-
-//    public CraState ThrownBounceFrontSoft;
-//    public CraState ThrownBounceBackSoft;
-//    public CraState ThrownFlail;
-//    public CraState ThrownFlyingFront;
-//    public CraState ThrownFlyingBack;
-//    public CraState ThrownFlyingLeft;
-//    public CraState ThrownFlyingRight;
-//    public CraState ThrownLandFrontSoft;
-//    public CraState ThrownLandBackSoft;
-//    public CraState ThrownTumbleFront;
-//    public CraState ThrownTumbleBack;
-
-//    public CraState Jump;
-//    public CraState Fall;
-//    public CraState LandSoft;
-//    public CraState LandHard;
-//    public CraState RollLeft;
-//    public CraState RollRight;
-//    public CraState Choking;
-//}
-
-
-
-
 
 // For each weapon, will shall generate one animation set
 // Also, a Set should include a basepose (skeleton setup)
 public struct PhxAnimHumanSet
 {
-    //public PhxAnimSetHumanLower Lower;
-    //public PhxAnimSetHumanUpper Upper;
-    //public PhxAnimSetHumanFull  Full;
-
     // Lower
     public PhxScopedState StandTurnLeft;
     public PhxScopedState StandTurnRight;
@@ -231,19 +128,18 @@ public class PhxAnimHuman
     public CraStateMachine Machine { get; private set; }
     public CraLayer LayerLower { get; private set; }
     public CraLayer LayerUpper { get; private set; }
-    public CraLayer LayerFull { get; private set; }
 
     public CraInput InputMovementX { get; private set; }
     public CraInput InputMovementY { get; private set; }
+    public CraInput InputMagnitude { get; private set; }
+    public CraInput InputTurnLeft { get; private set; }
+    public CraInput InputTurnRight { get; private set; }
     public CraInput InputCrouch { get; private set; }
     public CraInput InputSprint { get; private set; }
     public CraInput InputShootPrimary { get; private set; }
     public CraInput InputShootSecondary { get; private set; }
     public CraInput InputEnergy { get; private set; }
 
-
-    CraState StateNoneUpper;
-    CraState StateNoneFull;
     PhxAnimHumanSet[] Sets;
     byte ActiveSet;
 
@@ -265,22 +161,17 @@ public class PhxAnimHuman
 
         LayerLower = Machine.NewLayer();
         LayerUpper = Machine.NewLayer();
-        LayerFull  = Machine.NewLayer();
 
         InputMovementX = Machine.NewInput(CraValueType.Float, "Movement X");
         InputMovementY = Machine.NewInput(CraValueType.Float, "Movement Y");
+        InputMagnitude = Machine.NewInput(CraValueType.Float, "Magnitude");
+        InputTurnLeft = Machine.NewInput(CraValueType.Bool, "Turn Left");
+        InputTurnRight = Machine.NewInput(CraValueType.Bool, "Turn Right");
         InputCrouch = Machine.NewInput(CraValueType.Bool, "Crouch");
         InputSprint = Machine.NewInput(CraValueType.Bool, "Sprint");
         InputEnergy = Machine.NewInput(CraValueType.Float, "Energy");
         InputShootPrimary = Machine.NewInput(CraValueType.Bool, "Shoot Primary");
         InputShootSecondary = Machine.NewInput(CraValueType.Bool, "Shoot Secondary");
-
-        StateNoneUpper = LayerUpper.NewState(CraPlayer.None);
-        StateNoneFull = LayerFull.NewState(CraPlayer.None);
-#if UNITY_EDITOR
-        StateNoneUpper.SetName("None");
-        StateNoneFull.SetName("None");
-#endif
 
         Sets = new PhxAnimHumanSet[weaponAnimBanks.Length];
         ActiveSet = 0;
@@ -293,14 +184,16 @@ public class PhxAnimHuman
             Sets[i] = GenerateSet(root, characterAnimBank, weaponAnimBanks[i]);
 
             Transitions_Stand(ref Sets[i]);
-            //Transitions_Crouch(ref Sets[i]);
-            //Transitions_StandToCrouch(ref Sets[i]);
-            //Transitions_CrouchToStand(ref Sets[i]);
+            Transitions_StandTurn(ref Sets[i]);
+            Transitions_Crouch(ref Sets[i]);
+            Transitions_CrouchTurn(ref Sets[i]);
+            Transitions_StandToCrouch(ref Sets[i]);
+            Transitions_CrouchToStand(ref Sets[i]);
+            Transitions_Sprint(ref Sets[i]);
         }
 
         LayerLower.SetActiveState(Sets[ActiveSet].StandIdle.Lower);
         LayerUpper.SetActiveState(Sets[ActiveSet].StandIdle.Upper);
-        LayerFull.SetActiveState(StateNoneFull);
     }
 
     void Transition(in PhxScopedState from, in PhxScopedState to, float transitionTime, params CraConditionOr[] args)
@@ -312,10 +205,6 @@ public class PhxAnimHuman
         if (from.Upper.IsValid() && to.Upper.IsValid())
         {
             Transition(from.Upper, to.Upper, transitionTime, args);
-        }
-        if (from.Full.IsValid() && to.Full.IsValid())
-        {
-            Transition(from.Full, to.Full, transitionTime, args);
         }
     }
 
@@ -487,218 +376,385 @@ public class PhxAnimHuman
         );
     }
 
-    //void Transitions_Crouch(ref PhxAnimHumanSet set)
-    //{
-    //    // Crouch Idle --> Crouch Walk Forward
-    //    set.CrouchIdle.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.CrouchWalkForward,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Greater,
-    //                Input = InputMovementX,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-    //                CompareToAbsolute = true
-    //            }
-    //        },
-    //        Or1 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Greater,
-    //                Input = InputMovementY,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-    //            }
-    //        },
-    //    });
+    void Transitions_StandTurn(ref PhxAnimHumanSet set)
+    {
+        Transition(set.StandIdle, set.StandTurnLeft, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputTurnLeft
+                }
+            }
+        );
 
-    //    // Crouch Walk Forward --> Crouch Idle
-    //    set.CrouchWalkForward.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.CrouchIdle,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.LessOrEqual,
-    //                Input = InputMovementX,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-    //                CompareToAbsolute = true
-    //            },
-    //            And1 = new CraCondition
-    //            {
-    //                Type = CraConditionType.LessOrEqual,
-    //                Input = InputMovementY,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-    //                CompareToAbsolute = true
-    //            }
-    //        },
-    //    });
+        Transition(set.StandIdle, set.StandTurnRight, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputTurnRight
+                }
+            }
+        );
 
-    //    // Crouch Idle --> Crouch Walk Backward
-    //    set.CrouchIdle.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.CrouchWalkBackward,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Less,
-    //                Input = InputMovementY,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -0.2f },
-    //            }
-    //        },
-    //    });
+        Transition(set.StandTurnLeft, set.StandIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                },
+            }
+        );
 
-    //    // Crouch Walk Backward --> Crouch Idle
-    //    set.CrouchWalkBackward.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.CrouchIdle,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.LessOrEqual,
-    //                Input = InputMovementX,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-    //                CompareToAbsolute = true
-    //            },
-    //            And1 = new CraCondition
-    //            {
-    //                Type = CraConditionType.LessOrEqual,
-    //                Input = InputMovementY,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.2f },
-    //                CompareToAbsolute = true
-    //            }
-    //        },
-    //    });
-    //}
+        Transition(set.StandTurnRight, set.StandIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                },
+            }
+        );
+    }
 
-    //void Transitions_StandToCrouch(ref PhxAnimHumanSet set)
-    //{
-    //    // Stand Idle --> Crouch Idle
-    //    set.StandIdle.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.CrouchIdle,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Equal,
-    //                Input = InputCrouch,
-    //                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
-    //                CompareToAbsolute = true
-    //            }
-    //        },
-    //    });
+    void Transitions_Crouch(ref PhxAnimHumanSet set)
+    {
+        Transition(set.CrouchIdle, set.CrouchWalkForward, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                }
+            },
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                }
+            }
+        );
 
-    //    // Stand Walk Forward --> Crouch Walk Forward
-    //    set.StandWalkForward.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.CrouchWalkForward,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Equal,
-    //                Input = InputCrouch,
-    //                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
-    //                CompareToAbsolute = true
-    //            }
-    //        },
-    //    });
+        Transition(set.CrouchWalkForward, set.CrouchIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                }
+            }
+        );
 
-    //    // Stand Run Forward --> Crouch Walk Forward
-    //    set.StandRunForward.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.CrouchWalkForward,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Equal,
-    //                Input = InputCrouch,
-    //                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
-    //                CompareToAbsolute = true
-    //            }
-    //        },
-    //    });
-    //}
+        Transition(set.CrouchIdle, set.CrouchWalkBackward, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                }
+            }
+        );
 
-    //void Transitions_CrouchToStand(ref PhxAnimHumanSet set)
-    //{
-    //    // Crouch Idle --> Stand Idle
-    //    set.CrouchIdle.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.StandIdle,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Equal,
-    //                Input = InputCrouch,
-    //                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
-    //                CompareToAbsolute = true
-    //            }
-    //        },
-    //    });
+        Transition(set.CrouchWalkBackward, set.CrouchIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                }
+            }
+        );
+    }
 
-    //    // Crouch Walk Forward --> Stand Walk Forward
-    //    set.CrouchWalkForward.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.StandWalkForward,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Equal,
-    //                Input = InputCrouch,
-    //                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
-    //                CompareToAbsolute = true
-    //            },
-    //            And1 = new CraCondition
-    //            {
-    //                Type = CraConditionType.LessOrEqual,
-    //                Input = InputMovementX,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-    //            }
-    //        },
-    //    });
+    void Transitions_CrouchTurn(ref PhxAnimHumanSet set)
+    {
+        Transition(set.CrouchIdle, set.CrouchTurnLeft, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputTurnLeft
+                }
+            }
+        );
 
-    //    // Crouch Walk Forward --> Stand Run Forward
-    //    set.CrouchWalkForward.NewTransition(new CraTransitionData
-    //    {
-    //        Target = set.StandRunForward,
-    //        TransitionTime = 0.15f,
-    //        Or0 = new CraConditionOr
-    //        {
-    //            And0 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Equal,
-    //                Input = InputCrouch,
-    //                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
-    //                CompareToAbsolute = true
-    //            },
-    //            And1 = new CraCondition
-    //            {
-    //                Type = CraConditionType.Greater,
-    //                Input = InputMovementY,
-    //                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
-    //            }
-    //        },
-    //    });
-    //}
+        Transition(set.CrouchIdle, set.CrouchTurnRight, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputTurnRight
+                }
+            }
+        );
+
+        Transition(set.CrouchTurnLeft, set.CrouchIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                },
+            }
+        );
+
+        Transition(set.CrouchTurnRight, set.CrouchIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                },
+            }
+        );
+    }
+
+    void Transitions_StandToCrouch(ref PhxAnimHumanSet set)
+    {
+        Transition(set.StandIdle, set.CrouchIdle, 0.25f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputCrouch,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                    CompareToAbsolute = true
+                }
+            }
+        );
+
+        Transition(set.StandWalkForward, set.CrouchWalkForward, 0.25f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputCrouch,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                    CompareToAbsolute = true
+                }
+            }
+        );
+
+        Transition(set.StandRunForward, set.CrouchWalkForward, 0.25f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputCrouch,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                    CompareToAbsolute = true
+                }
+            }
+        );
+    }
+
+    void Transitions_CrouchToStand(ref PhxAnimHumanSet set)
+    {
+        Transition(set.CrouchIdle, set.StandIdle, 0.25f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputCrouch,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    CompareToAbsolute = true
+                }
+            }
+        );
+
+        Transition(set.CrouchWalkForward, set.StandWalkForward, 0.25f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputCrouch,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                }
+            }
+        );
+
+        Transition(set.CrouchWalkForward, set.StandRunForward, 0.25f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputCrouch,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                }
+            }
+        );
+
+        Transition(set.CrouchWalkBackward, set.StandRunBackward, 0.25f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputCrouch,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    CompareToAbsolute = true
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                }
+            }
+        );
+    }
+
+    void Transitions_Sprint(ref PhxAnimHumanSet set)
+    {
+        Transition(set.StandRunForward, set.Sprint, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputSprint,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                }
+            }
+        );
+
+        Transition(set.Sprint, set.StandRunForward, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                }
+            },
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputSprint,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                }
+            }
+        );
+    }
 
     //public PhxAnimPosture GetCurrentPosture()
     //{
@@ -805,23 +861,17 @@ public class PhxAnimHuman
         LayerUpper.SetActiveState(Sets[idx].StandIdle.Upper, 0.15f);
     }
 
-    CraState CreateState(Transform root, in PhxAnimDesc animDesc, ref PhxAnimScope animScope)
+    CraState CreateState(Transform root, CraClip clip, bool loop, PhxAnimScope assignScope)
     {
-        if (!Resolver.ResolveAnim(animDesc, out CraClip clip, out PhxAnimScope scope, out bool loop))
-        {
-            return CraState.None;
-        }
         Debug.Assert(clip.IsValid());
+        Debug.Assert(assignScope == PhxAnimScope.Lower || assignScope == PhxAnimScope.Upper);
+
         CraPlayer player = CraPlayer.CreateNew();
         player.SetLooping(loop);
         player.SetClip(clip);
         CraState state = CraState.None;
-        if (animScope == PhxAnimScope.None)
-        {
-            animScope = scope;
-        }
         string splitBoneName = PhxUtils.FindTransformRecursive(root, "bone_a_spine") != null ? "bone_a_spine" : "bone_b_spine";
-        switch (animScope)
+        switch (assignScope)
         {
             case PhxAnimScope.Lower:
                 player.Assign(root, new CraMask(CraMaskOperation.Difference, true, splitBoneName));
@@ -830,10 +880,6 @@ public class PhxAnimHuman
             case PhxAnimScope.Upper:
                 player.Assign(root, new CraMask(CraMaskOperation.Intersection, true, splitBoneName));
                 state = LayerUpper.NewState(player);
-                break;
-            case PhxAnimScope.Full:
-                player.Assign(root);
-                state = LayerFull.NewState(player);
                 break;
         }
         Debug.Assert(player.IsValid());
@@ -847,53 +893,38 @@ public class PhxAnimHuman
         PhxScopedState res;
         res.Lower = CraState.None;
         res.Upper = CraState.None;
-        res.Full  = CraState.None;
 
         // lower override only for non-rifle weapons
         overrideLowerRifle = overrideLowerRifle && weapon != "rifle";
 
-        PhxAnimScope animScope = PhxAnimScope.None;
-        if (overrideLowerRifle)
+        if (!Resolver.ResolveAnim(animDesc, out CraClip clip, out PhxAnimScope animScope))
         {
-            animScope = PhxAnimScope.Upper;
-        }
-        CraState state = CreateState(root, in animDesc, ref animScope);
-        if (!state.IsValid())
-        {
-            Debug.LogError($"Couldnt resolve {animDesc}!");
+            Debug.LogError($"Couldn't resolve {animDesc}!");
             return res;
         }
-
+        Debug.Assert(clip.IsValid());
         Debug.Assert(animScope != PhxAnimScope.None);
-        //Debug.Assert((animScope == PhxAnimScope.Full) != useLowerRifle);
 
-        switch (animScope)
+        bool loop = !animDesc.IsWeaponAnimation() && (string.IsNullOrEmpty(animDesc.Animation) || !animDesc.Animation.ToLower().StartsWith("turn"));
+        if (overrideLowerRifle || animScope == PhxAnimScope.Upper)
         {
-            case PhxAnimScope.Lower:
-                res.Lower = state;
-                break;
-            case PhxAnimScope.Upper:
-                res.Upper = state;
-                break;
-            case PhxAnimScope.Full:
-                res.Full = state;
-                break;
-        }
-
-        if (overrideLowerRifle)
-        {
-            Debug.Assert(res.Upper.IsValid());
-            Debug.Assert(!res.Full.IsValid());
-
             animDesc.Weapon = "rifle";
-            animScope = PhxAnimScope.Lower;
-            state = CreateState(root, in animDesc, ref animScope);
-            Debug.Assert(state.IsValid());
-            Debug.Assert(animScope == PhxAnimScope.Lower);
-            res.Lower = state;
-        }
+            if (!Resolver.ResolveAnim(animDesc, out CraClip clipRifle, out PhxAnimScope animScopeRifle))
+            {
+                Debug.LogError($"Couldn't resolve {animDesc}!");
+                return res;
+            }
 
-        Debug.Assert(res.Full.IsValid() || res.Lower.IsValid());
+            res.Lower = CreateState(root, clipRifle, loop, PhxAnimScope.Lower);
+        }
+        else
+        {
+            res.Lower = CreateState(root, clip, loop, PhxAnimScope.Lower);
+        }
+        res.Upper = CreateState(root, clip, loop, PhxAnimScope.Upper);
+
+        Debug.Assert(res.Lower.IsValid());
+        Debug.Assert(res.Upper.IsValid());
         return res;
     }
 
@@ -958,7 +989,7 @@ public class PhxAnimHuman
         set.ThrownTumbleFront = CreateScopedState(root, character, weapon, "thrown", "tumblefront", false);
         set.ThrownTumbleBack = CreateScopedState(root, character, weapon, "thrown", "tumbleback", false);
 
-        set.Sprint = CreateScopedState(root, character, weapon, "sprint", null, true);
+        set.Sprint = CreateScopedState(root, character, weapon, "sprint", null, false);
         set.JetpackHover = CreateScopedState(root, character, weapon, "jetpack_hover", null, false);
         set.Jump = CreateScopedState(root, character, weapon, "jump", null, false);
         set.Fall = CreateScopedState(root, character, weapon, "fall", null, false);
@@ -973,7 +1004,6 @@ public class PhxAnimHuman
                 PhxScopedState state = (PhxScopedState)field.GetValue(set);
                 if (state.Lower.IsValid()) state.Lower.SetName($"Lower {weapon} {field.Name}");
                 if (state.Upper.IsValid()) state.Upper.SetName($"Upper {weapon} {field.Name}");
-                if (state.Full.IsValid()) state.Full.SetName($"Full {weapon} {field.Name}");
             }
         }
 #endif
