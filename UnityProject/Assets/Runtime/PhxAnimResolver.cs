@@ -73,19 +73,44 @@ public class PhxAnimationResolver
         "bazooka", "melee"
     };
 
+    struct PhxCached
+    {
+        public CraClip Clip;
+        public PhxAnimScope Scope;
+    }
+    struct PhxClipSearch
+    {
+        public PhxAnimDesc Desc;
+        public PhxAnimScope FindScope;
+    }
+    Dictionary<PhxClipSearch, PhxCached> ResolvedAnimations = new Dictionary<PhxClipSearch, PhxCached>();
+
 
     public void AddNoAlertSupportWeapon(string weapon)
     {
         NoAlertSupport.Add(weapon);
     }
 
-    public bool ResolveAnim(PhxAnimDesc animDesc, out CraClip clip, out PhxAnimScope scope)
+    public bool ResolveAnim(ref PhxAnimDesc animDesc, out CraClip clip, out PhxAnimScope clipScope, PhxAnimScope findScope = PhxAnimScope.None)
     {
-        bool found = ResolveAnim(animDesc, out PhxAnimDesc resolved, out clip, out scope);
-        //if (found && resolved != animDesc)
-        //{
-        //    Debug.Log($"{animDesc} --> {resolved}");
-        //}
+        if (ResolvedAnimations.TryGetValue(new PhxClipSearch { Desc = animDesc, FindScope = findScope }, out PhxCached result))
+        {
+            Debug.Log($"Found already resolved clip: {animDesc}");
+            clip = result.Clip;
+            clipScope = result.Scope;
+            return true;
+        }
+
+        bool found = ResolveAnim(animDesc, out PhxAnimDesc resolved, out clip, out clipScope, findScope);
+        if (found)
+        {
+            ResolvedAnimations.Add(new PhxClipSearch { Desc = animDesc, FindScope = findScope }, new PhxCached { Clip = clip, Scope = clipScope });
+            if (resolved != animDesc)
+            {
+                Debug.Log($"{animDesc} --> {resolved}");
+            }
+        }
+        animDesc = resolved;
         return found;
     }
 
@@ -93,10 +118,10 @@ public class PhxAnimationResolver
     // resolve animation inheritance (which requires to know about all
     // animations beforehand), or just apply the rules recursively until
     // a matching animation is found. I'm going with the latter for now.
-    public bool ResolveAnim(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope scope)
+    bool ResolveAnim(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope clipScope, PhxAnimScope findScope = PhxAnimScope.None)
     {
         clip = CraClip.None;
-        if (FindScope(animDesc, out found, out clip, out scope))
+        if (FindScope(animDesc, out found, out clip, out clipScope, findScope))
         {
             return true;
         }
@@ -126,7 +151,7 @@ public class PhxAnimationResolver
             {
                 next.Character = animDesc.ParentCharacter;
                 next.ParentCharacter = null;
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -142,7 +167,7 @@ public class PhxAnimationResolver
                 if (i != idx)
                 {
                     next.Animation = $"{anim}{i}";
-                    if (FindScope(next, out found, out clip, out scope))
+                    if (FindScope(next, out found, out clip, out clipScope, findScope))
                     {
                         return true;
                     }
@@ -151,7 +176,7 @@ public class PhxAnimationResolver
             if (idx >= 0)
             {
                 next.Animation = anim;
-                if (FindScope(next, out found, out clip, out scope))
+                if (FindScope(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -162,7 +187,7 @@ public class PhxAnimationResolver
             if (next.Posture.ToLower() != "stand")
             {
                 next.Posture = "stand";
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -174,7 +199,7 @@ public class PhxAnimationResolver
             {
                 next.Weapon = animDesc.ParentWeapon;
                 next.ParentWeapon = null;
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -192,7 +217,7 @@ public class PhxAnimationResolver
                 if (next.Posture.ToLower() == "standalert")
                 {
                     next.Posture = "stand";
-                    if (ResolveAnim(next, out found, out clip, out scope))
+                    if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                     {
                         return true;
                     }
@@ -200,7 +225,7 @@ public class PhxAnimationResolver
                 else if (next.Posture.ToLower() == "crouchalert")
                 {
                     next.Posture = "crouch";
-                    if (ResolveAnim(next, out found, out clip, out scope))
+                    if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                     {
                         return true;
                     }
@@ -213,7 +238,7 @@ public class PhxAnimationResolver
             {
                 next.Character = animDesc.ParentCharacter;
                 next.ParentCharacter = null;
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -225,7 +250,7 @@ public class PhxAnimationResolver
             {
                 next.Weapon = animDesc.ParentWeapon;
                 next.ParentWeapon = null;
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -237,7 +262,7 @@ public class PhxAnimationResolver
             if (next.Posture.ToLower() == "standalert")
             {
                 next.Posture = "stand";
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -245,7 +270,7 @@ public class PhxAnimationResolver
             else if (next.Posture.ToLower() == "crouchalert")
             {
                 next.Posture = "crouch";
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -253,10 +278,10 @@ public class PhxAnimationResolver
 
             // 5. Idle fallback
             next = animDesc;
-            if (next.Animation.ToLower().StartsWith("idle") || next.Animation.ToLower().StartsWith("turn"))
+            if ((next.Animation.ToLower() != "idle_emote" && next.Animation.ToLower().StartsWith("idle")) || next.Animation.ToLower().StartsWith("turn"))
             {
                 next.Animation = "idle_emote";
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -266,7 +291,7 @@ public class PhxAnimationResolver
             if (next.Posture.ToLower() != "stand")
             {
                 next.Posture = "stand";
-                if (ResolveAnim(next, out found, out clip, out scope))
+                if (ResolveAnim(next, out found, out clip, out clipScope, findScope))
                 {
                     return true;
                 }
@@ -274,11 +299,11 @@ public class PhxAnimationResolver
         }
 
         found = animDesc;
-        scope = PhxAnimScope.Full;
+        clipScope = PhxAnimScope.Full;
         return false;
     }
 
-    bool FindScope(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope scope)
+    bool FindScope(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope clipScope, PhxAnimScope findScope)
     {
         clip = PhxAnimLoader.Import(animDesc.Character, animDesc.ToString());
         if (clip.IsValid())
@@ -288,15 +313,15 @@ public class PhxAnimationResolver
             {
                 if (!string.IsNullOrEmpty(found.Animation) && found.Animation.ToLower().StartsWith("turn"))
                 {
-                    scope = PhxAnimScope.Lower;
+                    clipScope = PhxAnimScope.Lower;
                 }
-                else if (found.IsWeaponAnimation() || found.Posture.ToLower() == "sprint")
+                else if (animDesc.Character.ToLower() == "human" && animDesc.Weapon.ToLower() == "rifle")
                 {
-                    scope = PhxAnimScope.Upper;
+                    clipScope = PhxAnimScope.Full;
                 }
                 else
                 {
-                    scope = PhxAnimScope.Full;
+                    clipScope = PhxAnimScope.Upper;
                 }
             }
             else
@@ -304,51 +329,66 @@ public class PhxAnimationResolver
                 switch (found.Scope.ToLower())
                 {
                     case "lower":
-                        scope = PhxAnimScope.Lower;
+                        clipScope = PhxAnimScope.Lower;
                         break;
                     case "upper":
-                        scope = PhxAnimScope.Upper;
+                        clipScope = PhxAnimScope.Upper;
                         break;
                     case "full":
-                        scope = PhxAnimScope.Full;
+                        clipScope = PhxAnimScope.Full;
                         break;
                     default:
                         Debug.LogError($"Unknown animation scope '{found.Scope}'!");
-                        scope = PhxAnimScope.None;
+                        clipScope = PhxAnimScope.None;
                         break;
                 }
             }
+
+            //(animDesc.Character.ToLower() != "human" || animDesc.Weapon.ToLower() != "rifle") && 
+            if (findScope != PhxAnimScope.None && clipScope != PhxAnimScope.Full && clipScope != findScope)
+            {
+                return false;
+            }
+
             return true;
         }
 
         if (!string.IsNullOrEmpty(animDesc.Scope))
         {
             found = animDesc;
-            scope = PhxAnimScope.Full;
+            clipScope = PhxAnimScope.None;
             return false;
         }
 
-        animDesc.Scope = "lower";
-        if (FindScope(animDesc, out found, out clip, out scope))
+        if (findScope == PhxAnimScope.None || findScope == PhxAnimScope.Lower)
         {
-            Debug.Assert(scope == PhxAnimScope.Lower);
-            return true;
+            animDesc.Scope = "lower";
+            if (FindScope(animDesc, out found, out clip, out clipScope, findScope))
+            {
+                Debug.Assert(clipScope == PhxAnimScope.Lower);
+                return true;
+            }
         }
 
-        animDesc.Scope = "upper";
-        if (FindScope(animDesc, out found, out clip, out scope))
+        if (findScope == PhxAnimScope.None || findScope == PhxAnimScope.Upper)
         {
-            Debug.Assert(scope == PhxAnimScope.Upper);
-            return true;
+            animDesc.Scope = "upper";
+            if (FindScope(animDesc, out found, out clip, out clipScope, findScope))
+            {
+                Debug.Assert(clipScope == PhxAnimScope.Upper);
+                return true;
+            }
         }
 
         animDesc.Scope = "full";
-        if (FindScope(animDesc, out found, out clip, out scope))
+        if (FindScope(animDesc, out found, out clip, out clipScope, findScope))
         {
-            Debug.Assert(scope == PhxAnimScope.Full);
+            Debug.Assert(clipScope == PhxAnimScope.Full);
             return true;
         }
 
+        found = animDesc;
+        clipScope = PhxAnimScope.None;
         return false;
     }
 }

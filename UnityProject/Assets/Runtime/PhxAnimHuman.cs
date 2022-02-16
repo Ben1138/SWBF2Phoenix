@@ -378,7 +378,7 @@ public class PhxAnimHuman
 
     void Transitions_StandTurn(ref PhxAnimHumanSet set)
     {
-        Transition(set.StandIdle, set.StandTurnLeft, 0.15f,
+        Transition(set.StandIdle.Lower, set.StandTurnLeft.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -403,7 +403,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.StandIdle, set.StandTurnRight, 0.15f,
+        Transition(set.StandIdle.Lower, set.StandTurnRight.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -428,7 +428,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.StandTurnLeft, set.StandIdle, 0.15f,
+        Transition(set.StandTurnLeft.Lower, set.StandIdle.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -438,7 +438,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.StandTurnRight, set.StandIdle, 0.15f,
+        Transition(set.StandTurnRight.Lower, set.StandIdle.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -528,7 +528,7 @@ public class PhxAnimHuman
 
     void Transitions_CrouchTurn(ref PhxAnimHumanSet set)
     {
-        Transition(set.CrouchIdle, set.CrouchTurnLeft, 0.15f,
+        Transition(set.CrouchIdle.Lower, set.CrouchTurnLeft.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -553,7 +553,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.CrouchIdle, set.CrouchTurnRight, 0.15f,
+        Transition(set.CrouchIdle.Lower, set.CrouchTurnRight.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -578,7 +578,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.CrouchTurnLeft, set.CrouchIdle, 0.15f,
+        Transition(set.CrouchTurnLeft.Lower, set.CrouchIdle.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -588,7 +588,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.CrouchTurnRight, set.CrouchIdle, 0.15f,
+        Transition(set.CrouchTurnRight.Lower, set.CrouchIdle.Lower, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -897,24 +897,24 @@ public class PhxAnimHuman
         // lower override only for non-rifle weapons
         overrideLowerRifle = overrideLowerRifle && weapon != "rifle";
 
-        if (!Resolver.ResolveAnim(animDesc, out CraClip clip, out PhxAnimScope animScope))
+        var inputDesc = animDesc;
+        if (!Resolver.ResolveAnim(ref animDesc, out CraClip clip, out PhxAnimScope animScope))
         {
-            Debug.LogError($"Couldn't resolve {animDesc}!");
+            Debug.LogError($"Couldn't resolve {inputDesc}!");
             return res;
         }
         Debug.Assert(clip.IsValid());
         Debug.Assert(animScope != PhxAnimScope.None);
 
         bool loop = !animDesc.IsWeaponAnimation() && (string.IsNullOrEmpty(animDesc.Animation) || !animDesc.Animation.ToLower().StartsWith("turn"));
-        if (overrideLowerRifle || animScope == PhxAnimScope.Upper)
+        if (animScope == PhxAnimScope.Upper)
         {
-            animDesc.Weapon = "rifle";
-            if (!Resolver.ResolveAnim(animDesc, out CraClip clipRifle, out PhxAnimScope animScopeRifle))
+            //animDesc.Weapon = "rifle";
+            if (!Resolver.ResolveAnim(ref animDesc, out CraClip clipRifle, out _, PhxAnimScope.Lower))
             {
-                Debug.LogError($"Couldn't resolve {animDesc}!");
+                Debug.LogError($"Couldn't resolve {inputDesc} on scope Lower!");
                 return res;
             }
-
             res.Lower = CreateState(root, clipRifle, loop, PhxAnimScope.Lower);
         }
         else
