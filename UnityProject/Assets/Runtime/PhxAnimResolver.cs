@@ -305,6 +305,7 @@ public class PhxAnimationResolver
 
     bool FindScope(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope clipScope, PhxAnimScope findScope)
     {
+        // TODO: Implement a "Does animation exist?" function instead of loading the clip every time
         clip = PhxAnimLoader.Import(animDesc.Character, animDesc.ToString());
         if (clip.IsValid())
         {
@@ -344,12 +345,12 @@ public class PhxAnimationResolver
                 }
             }
 
-            //(animDesc.Character.ToLower() != "human" || animDesc.Weapon.ToLower() != "rifle") && 
             if (findScope != PhxAnimScope.None && clipScope != PhxAnimScope.Full && clipScope != findScope)
             {
                 return false;
             }
 
+            // TODO: Finally load clip here
             return true;
         }
 
