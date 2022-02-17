@@ -69,18 +69,18 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         public PhxProp<string> AISizeType = new PhxProp<string>("SOLDIER");
     }
 
-    // Original SWBF2 Control States, see: com_inf_default.odf
-    enum PhxControlState
+    // See: com_inf_default.odf
+    Dictionary<string, PhxAnimPosture> ControlToPosture = new Dictionary<string, PhxAnimPosture>()
     {
-        Stand,
-        Crouch,
-        Prone,
-        Sprint,
-        Jet,
-        Jump,
-        Roll,
-        Tumble,
-    }
+        { "stand", PhxAnimPosture.Stand },
+        { "crouch", PhxAnimPosture.Crouch },
+        { "prone", PhxAnimPosture.Prone },
+        { "sprint", PhxAnimPosture.Sprint },
+        { "jet", PhxAnimPosture.Jet },
+        { "jump", PhxAnimPosture.Jump },
+        { "roll", PhxAnimPosture.Roll },
+        { "tumble", PhxAnimPosture.Thrown },
+    };
 
     enum PhxSoldierContext
     {
@@ -107,8 +107,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     Transform Spine;
     Transform Neck;
 
-    PhxControlState State;
-
     // Physical raycast downwards
     bool Grounded;
     int GroundedLayerMask;
@@ -120,7 +118,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     // Minimum time not grounded, after which we're considered falling
     const float FallTime = 0.2f;
 
-    // Count time while jumping/falling
+    // How long we're already falling
     float FallTimer;
 
     // Minimum time we're considered falling when jumping
@@ -151,7 +149,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     const float IdleTime = 10f;
 
     // <stance>, <thrustfactor> <strafefactor> <turnfactor>
-    float[][] ControlValues;
+    Dictionary<PhxAnimPosture, float[]> ControlValues = new Dictionary<PhxAnimPosture, float[]>();
 
     // First array index is whether:
     // - 0 : Primary Weapon
@@ -172,11 +170,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         // Assume we're grounded on spawn
         Grounded = true;
 
-        PhxControlState[] states = (PhxControlState[])Enum.GetValues(typeof(PhxControlState));
-        ControlValues = new float[states.Length][];
-        for (int i = 0; i < states.Length; ++i)
+        foreach (var cs in ControlToPosture)
         {
-            ControlValues[i] = GetControlSpeed(states[i]);
+            ControlValues.Add(cs.Value, GetControlSpeed(cs.Key));
         }
 
         HpWeapons = PhxUtils.FindTransformRecursive(transform, "hp_weapons");
@@ -459,12 +455,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
 
     // see: com_inf_default
-    float[] GetControlSpeed(PhxControlState state)
+    float[] GetControlSpeed(string controlName)
     {
         foreach (object[] values in C.ControlSpeed.Values)
         {
-            string controlName = values[0] as string;
-            if (!string.IsNullOrEmpty(controlName) && controlName == state.ToString().ToLowerInvariant())
+            if (!string.IsNullOrEmpty(controlName) && controlName == (string)values[0])
             {
                 return new float[3]
                 {
@@ -474,7 +469,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 };
             }
         }
-        Debug.LogError($"Cannot find control state '{state}'!");
+        Debug.LogError($"Cannot find control state '{controlName}'!");
         return null;
     }
 
@@ -638,13 +633,24 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             
         }
 
+        Grounded = Physics.OverlapSphere(Body.position, 0.2f, GroundedLayerMask).Length > 1;
+
+        if (Controller.Jump)
+        {
+            Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
+        }
+
         Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
         Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
         Animator.InputCrouch.SetBool(Controller.Crouch);
         Animator.InputSprint.SetBool(Controller.Sprint);
+        Animator.InputJump.SetBool(Controller.Jump);
         Animator.InputShootPrimary.SetBool(Controller.ShootPrimary);
         Animator.InputShootSecondary.SetBool(Controller.ShootSecondary);
         Animator.InputEnergy.SetFloat(100.0f);
+        Animator.InputGrounded.SetBool(Grounded);
+
+        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutputPosture.GetInt();
 
         if (Controller.NextPrimaryWeapon)
         {
@@ -660,15 +666,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
         Quaternion moveRot = Quaternion.identity;
 
-        LandTimer = Mathf.Max(LandTimer - deltaTime, 0f);
         TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
 
-        if (LandTimer == 0f)
+        if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Sprint)
         {
             float accStep = C.Acceleration * deltaTime;
-            float thrustFactor = ControlValues[(int)State][0];
-            float strafeFactor = ControlValues[(int)State][1];
-            float turnFactor = ControlValues[(int)State][2];
+            float thrustFactor = ControlValues[posture][0];
+            float strafeFactor = ControlValues[posture][1];
+            float turnFactor = ControlValues[posture][2];
 
             Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
             Vector3 moveDirWorld = lookRot * moveDirLocal;
@@ -677,7 +682,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Animator.InputMagnitude.SetFloat(walk);
 
             // Stand - Crouch - Sprint
-            if (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint)
+            if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Sprint)
             {
                 // TODO: base turn speed in degreees/sec really 45?
                 MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
@@ -732,6 +737,24 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
         else
         {
+            if (posture == PhxAnimPosture.Fall)
+            {
+                FallTimer += deltaTime;
+                if (Grounded)
+                {
+                    Animator.InputLandHardness.SetInt(FallTimer < 1f ? 1 : 2);
+                }
+            }
+            else
+            {
+                FallTimer = 0;
+            }
+
+            if (posture == PhxAnimPosture.Land)
+            {
+                Animator.InputLandHardness.SetInt(0);
+            }
+
             Animator.InputMagnitude.SetFloat(0f);
         }
 
@@ -740,9 +763,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             //transform.rotation = lookRot;
             return;
         }
-
-
-        Grounded = Physics.OverlapSphere(Body.position, 0.2f, GroundedLayerMask).Length > 1;
 
         // Not jumping -> Falling
         //if (State != PhxControlState.Jump && !Grounded)
@@ -792,7 +812,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         //    }
         //}
 
-        if (Grounded && LandTimer == 0f && (State == PhxControlState.Stand || State == PhxControlState.Crouch || State == PhxControlState.Sprint))
+        if (Grounded && (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Sprint))
         {
             //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
             Body.AddForce(CurrSpeed - Body.velocity, ForceMode.VelocityChange);
@@ -843,7 +863,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             return;
         }
 
-        if (State == PhxControlState.Stand || State == PhxControlState.Crouch)
+        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutputPosture.GetInt();
+        if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch)
         {
             //if (Animator.Anim.GetCurrentStateIdx(1) == Animator.StandShootPrimary)
             //{

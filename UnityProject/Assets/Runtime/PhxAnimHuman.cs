@@ -136,9 +136,16 @@ public class PhxAnimHuman
     public CraInput InputTurnRight { get; private set; }
     public CraInput InputCrouch { get; private set; }
     public CraInput InputSprint { get; private set; }
+    public CraInput InputJump { get; private set; }
     public CraInput InputShootPrimary { get; private set; }
     public CraInput InputShootSecondary { get; private set; }
     public CraInput InputEnergy { get; private set; }
+    public CraInput InputGrounded { get; private set; }
+    public CraInput InputMultiJump { get; private set; }
+    public CraInput InputLandHardness { get; private set; }
+
+    public CraOutput OutputPosture { get; private set; }
+
 
     PhxAnimHumanSet[] Sets;
     byte ActiveSet;
@@ -169,9 +176,15 @@ public class PhxAnimHuman
         InputTurnRight = Machine.NewInput(CraValueType.Bool, "Turn Right");
         InputCrouch = Machine.NewInput(CraValueType.Bool, "Crouch");
         InputSprint = Machine.NewInput(CraValueType.Bool, "Sprint");
+        InputJump = Machine.NewInput(CraValueType.Bool, "Jump");
         InputEnergy = Machine.NewInput(CraValueType.Float, "Energy");
         InputShootPrimary = Machine.NewInput(CraValueType.Bool, "Shoot Primary");
         InputShootSecondary = Machine.NewInput(CraValueType.Bool, "Shoot Secondary");
+        InputGrounded = Machine.NewInput(CraValueType.Bool, "Grounded");
+        InputMultiJump = Machine.NewInput(CraValueType.Bool, "Multi Jump");
+        InputLandHardness = Machine.NewInput(CraValueType.Int, "Land Hardness");
+
+        OutputPosture = Machine.NewOutput(CraValueType.Int, "Posture");
 
         Sets = new PhxAnimHumanSet[weaponAnimBanks.Length];
         ActiveSet = 0;
@@ -185,11 +198,15 @@ public class PhxAnimHuman
 
             Transitions_Stand(ref Sets[i]);
             Transitions_StandTurn(ref Sets[i]);
+            Transitions_StandToFall(ref Sets[i]);
+            Transitions_StandToCrouch(ref Sets[i]);
             Transitions_Crouch(ref Sets[i]);
             Transitions_CrouchTurn(ref Sets[i]);
-            Transitions_StandToCrouch(ref Sets[i]);
             Transitions_CrouchToStand(ref Sets[i]);
+            Transitions_CrouchToFall(ref Sets[i]);
             Transitions_Sprint(ref Sets[i]);
+            Transitions_Jump(ref Sets[i]);
+            Transitions_Land(ref Sets[i]);
         }
 
         LayerLower.SetActiveState(Sets[ActiveSet].StandIdle.Lower);
@@ -756,6 +773,262 @@ public class PhxAnimHuman
         );
     }
 
+    void Transitions_Jump(ref PhxAnimHumanSet set)
+    {
+        Transition(set.StandIdle, set.Jump, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputJump,
+                }
+            }
+        );
+
+        Transition(set.StandWalkForward, set.Jump, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputJump,
+                }
+            }
+        );
+
+        Transition(set.StandRunForward, set.Jump, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputJump,
+                }
+            }
+        );
+
+        Transition(set.StandRunBackward, set.Jump, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputJump,
+                }
+            }
+        );
+
+        Transition(set.Sprint, set.Jump, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputJump,
+                }
+            }
+        );
+
+        Transition(set.Jump, set.Jump, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputMultiJump,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputJump,
+                }
+            }
+        );
+
+        Transition(set.Jump, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished,
+                }
+            }
+        );
+
+        Transition(set.Jump, set.LandSoft, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished,
+                }
+            }
+        );
+    }
+
+    void Transitions_StandToFall(ref PhxAnimHumanSet set)
+    {
+        Transition(set.StandIdle, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                }
+            }
+        );
+
+        Transition(set.StandWalkForward, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                }
+            }
+        );
+
+        Transition(set.StandRunForward, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                }
+            }
+        );
+
+        Transition(set.StandRunBackward, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                }
+            }
+        );
+    }
+
+    void Transitions_CrouchToFall(ref PhxAnimHumanSet set)
+    {
+        Transition(set.CrouchIdle, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                }
+            }
+        );
+
+        Transition(set.CrouchWalkForward, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                }
+            }
+        );
+
+        Transition(set.CrouchWalkBackward, set.Fall, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                }
+            }
+        );
+    }
+
+    void Transitions_Land(ref PhxAnimHumanSet set)
+    {
+        Transition(set.Fall, set.LandSoft, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputLandHardness,
+                    Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = 1 }
+                }
+            }
+        );
+
+        Transition(set.Fall, set.LandHard, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputGrounded,
+                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Equal,
+                    Input = InputLandHardness,
+                    Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = 2 }
+                }
+            }
+        );
+
+        Transition(set.LandSoft, set.StandIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished,
+                }
+            }
+        );
+
+        Transition(set.LandHard, set.StandIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished,
+                }
+            }
+        );
+    }
+
     //public PhxAnimPosture GetCurrentPosture()
     //{
     //    // Maybe introduce CraOutput's such that a state can
@@ -886,16 +1159,13 @@ public class PhxAnimHuman
         return state;
     }
 
-    PhxScopedState CreateScopedState(Transform root, string character, string weapon, string posture, string anim, bool overrideLowerRifle)
+    PhxScopedState CreateScopedState(Transform root, string character, string weapon, string posture, string anim, bool loop)
     {
         PhxAnimDesc animDesc = new PhxAnimDesc { Character = character, Weapon = weapon, Posture = posture, Animation = anim };
 
         PhxScopedState res;
         res.Lower = CraState.None;
         res.Upper = CraState.None;
-
-        // lower override only for non-rifle weapons
-        overrideLowerRifle = overrideLowerRifle && weapon != "rifle";
 
         var inputDesc = animDesc;
         if (!Resolver.ResolveAnim(ref animDesc, out CraClip clip, out PhxAnimScope animScope))
@@ -906,7 +1176,6 @@ public class PhxAnimHuman
         Debug.Assert(clip.IsValid());
         Debug.Assert(animScope != PhxAnimScope.None);
 
-        bool loop = !animDesc.IsWeaponAnimation() && (string.IsNullOrEmpty(animDesc.Animation) || !animDesc.Animation.ToLower().StartsWith("turn"));
         if (animScope == PhxAnimScope.Upper)
         {
             //animDesc.Weapon = "rifle";
@@ -934,11 +1203,11 @@ public class PhxAnimHuman
 
         set.CrouchIdle = CreateScopedState(root, character, weapon, "crouch", "idle_emote", true);
         set.CrouchIdleTakeknee = CreateScopedState(root, character, weapon, "crouch", "idle_takeknee", false);
-        set.CrouchHitFront = CreateScopedState(root, character, weapon, "crouch", "hitfront", true);
-        set.CrouchHitLeft = CreateScopedState(root, character, weapon, "crouch", "hitleft", true);
-        set.CrouchHitRight = CreateScopedState(root, character, weapon, "crouch", "hitright", true);
-        set.CrouchReload = CreateScopedState(root, character, weapon, "crouch", "reload", true);
-        set.CrouchShoot = CreateScopedState(root, character, weapon, "crouch", "shoot", true);
+        set.CrouchHitFront = CreateScopedState(root, character, weapon, "crouch", "hitfront", false);
+        set.CrouchHitLeft = CreateScopedState(root, character, weapon, "crouch", "hitleft", false);
+        set.CrouchHitRight = CreateScopedState(root, character, weapon, "crouch", "hitright", false);
+        set.CrouchReload = CreateScopedState(root, character, weapon, "crouch", "reload", false);
+        set.CrouchShoot = CreateScopedState(root, character, weapon, "crouch", "shoot", false);
         set.CrouchTurnLeft = CreateScopedState(root, character, weapon, "crouch", "turnleft", false);
         set.CrouchTurnRight = CreateScopedState(root, character, weapon, "crouch", "turnright", false);
         set.CrouchWalkForward = CreateScopedState(root, character, weapon, "crouch", "walkforward", true);
@@ -950,25 +1219,24 @@ public class PhxAnimHuman
         // human_sabre_stand_idle_emote_full in rep.lvl doesn't contain the lower body animation, although the .msh does...
         // Idk why, maybe the lower body got compiled out at munge?
         set.StandIdle = CreateScopedState(root, character, weapon, "stand", "idle_emote", true);
-        //set.StandIdle = CreateScopedState(root, character, weapon, "sprint", null, true);
         set.StandIdleCheckweapon = CreateScopedState(root, character, weapon, "stand", "idle_checkweapon", false);
         set.StandIdleLookaround = CreateScopedState(root, character, weapon, "stand", "idle_lookaround", false);
         set.StandWalkForward = CreateScopedState(root, character, weapon, "stand", "walkforward", true);
         set.StandRunForward = CreateScopedState(root, character, weapon, "stand", "runforward", true);
         set.StandRunBackward = CreateScopedState(root, character, weapon, "stand", "runbackward", true);
-        set.StandReload = CreateScopedState(root, character, weapon, "stand", "reload", true);
-        set.StandShootPrimary = CreateScopedState(root, character, weapon, "stand", "shoot", true);
-        set.StandShootSecondary = CreateScopedState(root, character, weapon, "stand", "shoot_secondary", true);
+        set.StandReload = CreateScopedState(root, character, weapon, "stand", "reload", false);
+        set.StandShootPrimary = CreateScopedState(root, character, weapon, "stand", "shoot", false);
+        set.StandShootSecondary = CreateScopedState(root, character, weapon, "stand", "shoot_secondary", false);
         set.StandAlertIdle = CreateScopedState(root, character, weapon, "standalert", "idle_emote", true);
         set.StandAlertWalkForward = CreateScopedState(root, character, weapon, "standalert", "walkforward", true);
         set.StandAlertRunForward = CreateScopedState(root, character, weapon, "standalert", "runforward", true);
         set.StandAlertRunBackward = CreateScopedState(root, character, weapon, "standalert", "runbackward", true);
         set.StandTurnLeft = CreateScopedState(root, character, weapon, "stand", "turnleft", false);
         set.StandTurnRight = CreateScopedState(root, character, weapon, "stand", "turnright", false);
-        set.StandHitFront = CreateScopedState(root, character, weapon, "stand", "hitfront", true);
-        set.StandHitBack = CreateScopedState(root, character, weapon, "stand", "hitback", true);
-        set.StandHitLeft = CreateScopedState(root, character, weapon, "stand", "hitleft", true);
-        set.StandHitRight = CreateScopedState(root, character, weapon, "stand", "hitright", true);
+        set.StandHitFront = CreateScopedState(root, character, weapon, "stand", "hitfront", false);
+        set.StandHitBack = CreateScopedState(root, character, weapon, "stand", "hitback", false);
+        set.StandHitLeft = CreateScopedState(root, character, weapon, "stand", "hitleft", false);
+        set.StandHitRight = CreateScopedState(root, character, weapon, "stand", "hitright", false);
         set.StandGetupFront = CreateScopedState(root, character, weapon, "stand", "getupfront", false);
         set.StandGetupBack = CreateScopedState(root, character, weapon, "stand", "getupback", false);
         set.StandDeathForward = CreateScopedState(root, character, weapon, "stand", "death_forward", false);
@@ -989,12 +1257,73 @@ public class PhxAnimHuman
         set.ThrownTumbleFront = CreateScopedState(root, character, weapon, "thrown", "tumblefront", false);
         set.ThrownTumbleBack = CreateScopedState(root, character, weapon, "thrown", "tumbleback", false);
 
-        set.Sprint = CreateScopedState(root, character, weapon, "sprint", null, false);
-        set.JetpackHover = CreateScopedState(root, character, weapon, "jetpack_hover", null, false);
+        set.Sprint = CreateScopedState(root, character, weapon, "sprint", null, true);
+        set.JetpackHover = CreateScopedState(root, character, weapon, "jetpack_hover", null, true);
         set.Jump = CreateScopedState(root, character, weapon, "jump", null, false);
-        set.Fall = CreateScopedState(root, character, weapon, "fall", null, false);
+        set.Fall = CreateScopedState(root, character, weapon, "fall", null, true);
         set.LandSoft = CreateScopedState(root, character, weapon, "landsoft", null, false);
         set.LandHard = CreateScopedState(root, character, weapon, "landhard", null, false);
+
+        WritePosture(set.CrouchIdle, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchIdleTakeknee, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchHitFront, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchHitLeft, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchHitRight, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchReload, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchShoot, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchTurnLeft, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchTurnRight, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchWalkForward, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchWalkBackward, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchAlertIdle, PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchAlertWalkForward , PhxAnimPosture.Crouch);
+        WritePosture(set.CrouchAlertWalkBackward, PhxAnimPosture.Crouch);
+
+        WritePosture(set.StandIdle, PhxAnimPosture.Stand);
+        WritePosture(set.StandIdleCheckweapon, PhxAnimPosture.Stand);
+        WritePosture(set.StandIdleLookaround, PhxAnimPosture.Stand);
+        WritePosture(set.StandWalkForward, PhxAnimPosture.Stand);
+        WritePosture(set.StandRunForward, PhxAnimPosture.Stand);
+        WritePosture(set.StandRunBackward, PhxAnimPosture.Stand);
+        WritePosture(set.StandReload, PhxAnimPosture.Stand);
+        WritePosture(set.StandShootPrimary, PhxAnimPosture.Stand);
+        WritePosture(set.StandShootSecondary, PhxAnimPosture.Stand);
+        WritePosture(set.StandAlertIdle, PhxAnimPosture.Stand);
+        WritePosture(set.StandAlertWalkForward, PhxAnimPosture.Stand);
+        WritePosture(set.StandAlertRunForward, PhxAnimPosture.Stand);
+        WritePosture(set.StandAlertRunBackward, PhxAnimPosture.Stand);
+        WritePosture(set.StandTurnLeft, PhxAnimPosture.Stand);
+        WritePosture(set.StandTurnRight, PhxAnimPosture.Stand);
+        WritePosture(set.StandHitFront, PhxAnimPosture.Stand);
+        WritePosture(set.StandHitBack, PhxAnimPosture.Stand);
+        WritePosture(set.StandHitLeft, PhxAnimPosture.Stand);
+        WritePosture(set.StandHitRight, PhxAnimPosture.Stand);
+        WritePosture(set.StandGetupFront, PhxAnimPosture.Stand);
+        WritePosture(set.StandGetupBack, PhxAnimPosture.Stand);        
+        WritePosture(set.StandDeathForward, PhxAnimPosture.Stand);
+        WritePosture(set.StandDeathBackward, PhxAnimPosture.Stand);
+        WritePosture(set.StandDeathLeft, PhxAnimPosture.Stand);
+        WritePosture(set.StandDeathRight, PhxAnimPosture.Stand);
+        WritePosture(set.StandDeadhero, PhxAnimPosture.Stand);
+
+        WritePosture(set.ThrownBounceFrontSoft, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownBounceBackSoft, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownFlail, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownFlyingFront, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownFlyingBack, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownFlyingLeft, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownFlyingRight, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownLandFrontSoft, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownLandBackSoft, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownTumbleFront, PhxAnimPosture.Thrown);
+        WritePosture(set.ThrownTumbleBack, PhxAnimPosture.Thrown);
+
+        WritePosture(set.Sprint, PhxAnimPosture.Sprint);
+        WritePosture(set.JetpackHover, PhxAnimPosture.Jet);
+        WritePosture(set.Jump, PhxAnimPosture.Jump);
+        WritePosture(set.Fall, PhxAnimPosture.Fall);
+        WritePosture(set.LandSoft, PhxAnimPosture.Land);
+        WritePosture(set.LandHard, PhxAnimPosture.Land);
 
 #if UNITY_EDITOR
         foreach (var field in set.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
@@ -1020,5 +1349,10 @@ public class PhxAnimHuman
     public void SetActive(bool status = true)
     {
         Machine.SetActive(status);
+    }
+
+    void WritePosture(PhxScopedState state, PhxAnimPosture posture)
+    {
+        state.Lower.WriteOutput(new CraWriteOutput { Output = OutputPosture, Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)posture } });
     }
 }

@@ -45,6 +45,9 @@ public enum PhxAnimPosture : ushort
     Jet = 1 << 7,
     Thrown = 1 << 8,
 
+    Fall = 1 << 9,
+    Land = 1 << 10,
+
     Roll = RollLeft | RollRight,
 
     All = 0xffff
