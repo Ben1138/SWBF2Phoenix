@@ -18,7 +18,9 @@ public enum PhxWeaponState : int
 }
 
 
-public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, IPhxWeapon, IPhxTickable
+public class PhxWeapon : PhxGenericWeapon<PhxCannon.ClassProperties> { }
+
+public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable where T : PhxGenericWeapon<T>.ClassProperties
 {
 	protected PhxGame Game => PhxGame.Instance;
     protected PhxScene Scene => PhxGame.GetScene();
@@ -53,8 +55,12 @@ public class PhxGenericWeapon : PhxInstance<PhxGenericWeapon.ClassProperties>, I
 
 	public class ClassProperties : PhxClass
 	{
-        public PhxProp<string> AnimationBank = new PhxProp<string>("");
         public PhxProp<string> GeometryName = new PhxProp<string>("");
+
+        public PhxProp<string> AnimationBank = new PhxProp<string>("");
+        public PhxMultiProp ComboAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
+
+        public PhxProp<string> FirePointName = new PhxProp<string>("hp_fire");
 
         // Various state time values
         public PhxProp<float> ShotDelay = new PhxProp<float>(0.5f);

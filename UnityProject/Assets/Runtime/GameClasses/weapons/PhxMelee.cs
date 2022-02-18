@@ -1,30 +1,71 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 
-public class PhxMelee : PhxInstance<PhxMelee.ClassProperties>, IPhxWeapon
+public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
 {
-    public class ClassProperties : PhxClass
+    public new class ClassProperties : PhxGenericWeapon<ClassProperties>.ClassProperties
     {
-        // TODO: This probably needs to go to PhxGenericWeapon.ClassProperties
-        public PhxMultiProp ComboAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
-        //public PhxMultiProp CustomAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
+        public PhxProp<float> LightSaberLength = new PhxProp<float>(1.0f);
+        public PhxProp<float> LightSaberWidth = new PhxProp<float>(0.08f);
+        public PhxProp<Texture2D> LightSaberTexture = new PhxProp<Texture2D>(null);
+        public PhxProp<Color> LightSaberTrailColor = new PhxProp<Color>(Color.white);
     }
 
-    protected Transform FirePoint;
     protected string WeaponAnimBankName = "sabre";
+
+    static Material LightsaberMat;
+    LineRenderer Blade;
 
     public override void Init()
     {
         if (transform.childCount > 0)
         {
-            FirePoint = transform.GetChild(0).Find("hp_fire");
+            FirePoint = transform.GetChild(0).Find(C.FirePointName);
         }
 
         if (C.ComboAnimationBank.Values.Count > 0)
         {
             WeaponAnimBankName = C.ComboAnimationBank.Get<string>(0).Split('_')[1];
         }
+
+        if (LightsaberMat == null)
+        {
+            LightsaberMat = Resources.Load<Material>("PhxMaterial_lightsabre");
+        }
+
+        Blade = FirePoint.gameObject.AddComponent<LineRenderer>();
+        Blade.shadowCastingMode = ShadowCastingMode.Off;
+        Blade.lightProbeUsage = LightProbeUsage.Off;
+        Blade.textureMode = LineTextureMode.DistributePerSegment;
+        Blade.useWorldSpace = false;
+        Blade.startWidth = C.LightSaberWidth;
+        Blade.endWidth = C.LightSaberWidth;
+        Blade.positionCount = 4;
+
+        const float tipLength = 0.2f;
+        Blade.SetPosition(0, new Vector3(0f, 0f, C.LightSaberLength));
+        Blade.SetPosition(1, new Vector3(0f, 0f, C.LightSaberLength - tipLength));
+        Blade.SetPosition(2, Vector3.zero);
+        Blade.SetPosition(3, Vector3.zero);
+
+        Blade.material = LightsaberMat;
+        Blade.material.SetTexture("_UnlitColorMap", C.LightSaberTexture);
+        Blade.material.SetTexture("_EmissiveColorMap", C.LightSaberTexture);
+        Blade.material.SetInt("_UseEmissiveIntensity", 0);
+        Blade.material.SetColor("_EmissiveColor", C.LightSaberTrailColor.Get() * Mathf.Pow(8.5f, 2.71828f));
+        Blade.material.SetFloat("_EmissiveExposureWeight", 0.0f);
+
+        GameObject pointLightGO = new GameObject("LightsaberLight");
+        pointLightGO.transform.SetParent(FirePoint);
+        pointLightGO.transform.localPosition = new Vector3(0f, 0f, C.LightSaberLength / 2f);
+
+        var pointLight = pointLightGO.AddHDLight(HDLightTypeAndShape.Point);
+        pointLight.color = C.LightSaberTrailColor;
+        pointLight.intensity = 1e+07f;
+        pointLight.range = 5f;
     }
 
     public override void Destroy()
@@ -36,7 +77,7 @@ public class PhxMelee : PhxInstance<PhxMelee.ClassProperties>, IPhxWeapon
     {
         return this;
     }
-    public bool Fire(PhxPawnController owner, Vector3 targetPos)
+    public override bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
         return false;
     }
@@ -53,7 +94,7 @@ public class PhxMelee : PhxInstance<PhxMelee.ClassProperties>, IPhxWeapon
     {
 
     }
-    public string GetAnimBankName()
+    public override string GetAnimBankName()
     {
         return WeaponAnimBankName;
     }
@@ -63,7 +104,7 @@ public class PhxMelee : PhxInstance<PhxMelee.ClassProperties>, IPhxWeapon
 
     }
 
-    public Transform GetFirePoint()
+    public override Transform GetFirePoint()
     {
         return FirePoint;
     }

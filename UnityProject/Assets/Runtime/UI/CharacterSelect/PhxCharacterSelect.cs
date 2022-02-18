@@ -39,7 +39,7 @@ public class PhxCharacterSelect : PhxMenuInterface
         {
             Add(cl.Unit);
         }
-        //charSel.Add(team.HeroClass);
+        Add(team.HeroClass);
     }
 
     public override void Clear()

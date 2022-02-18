@@ -47,9 +47,9 @@ public static class PhxClassRegister
         { "vehiclespawn",   new GameBaseClass(null,                                      typeof(PhxVehicleSpawn))   },
 
         
-        { "weapon",         new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
+        { "weapon",         new GameBaseClass(typeof(PhxWeapon.ClassProperties),         typeof(PhxWeapon))         },
         { "grenade",        new GameBaseClass(typeof(PhxGrenade.ClassProperties),        typeof(PhxGrenade))        },
-        { "launcher",       new GameBaseClass(typeof(PhxGenericWeapon.ClassProperties),  typeof(PhxGenericWeapon))  },
+        { "launcher",       new GameBaseClass(typeof(PhxLauncher.ClassProperties),       typeof(PhxLauncher))       },
         { "cannon",         new GameBaseClass(typeof(PhxCannon.ClassProperties),         typeof(PhxCannon))         },
         { "melee",          new GameBaseClass(typeof(PhxMelee.ClassProperties),          typeof(PhxMelee))          },
 

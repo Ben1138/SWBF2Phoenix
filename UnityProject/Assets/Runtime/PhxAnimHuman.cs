@@ -139,12 +139,14 @@ public class PhxAnimHuman
     public CraInput InputJump { get; private set; }
     public CraInput InputShootPrimary { get; private set; }
     public CraInput InputShootSecondary { get; private set; }
+    public CraInput InputReload { get; private set; }
     public CraInput InputEnergy { get; private set; }
     public CraInput InputGrounded { get; private set; }
     public CraInput InputMultiJump { get; private set; }
     public CraInput InputLandHardness { get; private set; }
 
     public CraOutput OutputPosture { get; private set; }
+    public CraOutput OutputStrafeBackwards { get; private set; }
 
 
     PhxAnimHumanSet[] Sets;
@@ -172,19 +174,21 @@ public class PhxAnimHuman
         InputMovementX = Machine.NewInput(CraValueType.Float, "Movement X");
         InputMovementY = Machine.NewInput(CraValueType.Float, "Movement Y");
         InputMagnitude = Machine.NewInput(CraValueType.Float, "Magnitude");
-        InputTurnLeft = Machine.NewInput(CraValueType.Bool, "Turn Left");
-        InputTurnRight = Machine.NewInput(CraValueType.Bool, "Turn Right");
+        InputTurnLeft = Machine.NewInput(CraValueType.Trigger, "Turn Left");
+        InputTurnRight = Machine.NewInput(CraValueType.Trigger, "Turn Right");
         InputCrouch = Machine.NewInput(CraValueType.Bool, "Crouch");
         InputSprint = Machine.NewInput(CraValueType.Bool, "Sprint");
-        InputJump = Machine.NewInput(CraValueType.Bool, "Jump");
+        InputJump = Machine.NewInput(CraValueType.Trigger, "Jump");
         InputEnergy = Machine.NewInput(CraValueType.Float, "Energy");
-        InputShootPrimary = Machine.NewInput(CraValueType.Bool, "Shoot Primary");
-        InputShootSecondary = Machine.NewInput(CraValueType.Bool, "Shoot Secondary");
+        InputShootPrimary = Machine.NewInput(CraValueType.Trigger, "Shoot Primary");
+        InputShootSecondary = Machine.NewInput(CraValueType.Trigger, "Shoot Secondary");
+        InputReload = Machine.NewInput(CraValueType.Trigger, "Reload");
         InputGrounded = Machine.NewInput(CraValueType.Bool, "Grounded");
         InputMultiJump = Machine.NewInput(CraValueType.Bool, "Multi Jump");
         InputLandHardness = Machine.NewInput(CraValueType.Int, "Land Hardness");
 
         OutputPosture = Machine.NewOutput(CraValueType.Int, "Posture");
+        OutputStrafeBackwards = Machine.NewOutput(CraValueType.Bool, "Strafe Backwards");
 
         Sets = new PhxAnimHumanSet[weaponAnimBanks.Length];
         ActiveSet = 0;
@@ -196,17 +200,20 @@ public class PhxAnimHuman
             WeaponNameToSetIdx.Add(weaponAnimBanks[i], i);
             Sets[i] = GenerateSet(root, characterAnimBank, weaponAnimBanks[i]);
 
-            Transitions_Stand(ref Sets[i]);
-            Transitions_StandTurn(ref Sets[i]);
-            Transitions_StandToFall(ref Sets[i]);
-            Transitions_StandToCrouch(ref Sets[i]);
-            Transitions_Crouch(ref Sets[i]);
-            Transitions_CrouchTurn(ref Sets[i]);
-            Transitions_CrouchToStand(ref Sets[i]);
-            Transitions_CrouchToFall(ref Sets[i]);
-            Transitions_Sprint(ref Sets[i]);
-            Transitions_Jump(ref Sets[i]);
-            Transitions_Land(ref Sets[i]);
+            // TODO: Do not generate reload states when current weapon doesn't have/support reload
+            Transitions_Stand(in Sets[i]);
+            Transitions_StandReload(in Sets[i]);
+            Transitions_StandTurn(in Sets[i]);
+            Transitions_StandToFall(in Sets[i]);
+            Transitions_StandToCrouch(in Sets[i]);
+            Transitions_Crouch(in Sets[i]);
+            Transitions_CrouchReload(in Sets[i]);
+            Transitions_CrouchTurn(in Sets[i]);
+            Transitions_CrouchToStand(in Sets[i]);
+            Transitions_CrouchToFall(in Sets[i]);
+            Transitions_Sprint(in Sets[i]);
+            Transitions_Jump(in Sets[i]);
+            Transitions_Land(in Sets[i]);
         }
 
         LayerLower.SetActiveState(Sets[ActiveSet].StandIdle.Lower);
@@ -247,7 +254,7 @@ public class PhxAnimHuman
         from.NewTransition(transition);
     }
 
-    void Transitions_Stand(ref PhxAnimHumanSet set)
+    void Transitions_Stand(in PhxAnimHumanSet set)
     {
         Transition(set.StandIdle, set.StandWalkForward, 0.15f,
             new CraConditionOr
@@ -393,7 +400,112 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_StandTurn(ref PhxAnimHumanSet set)
+    void Transitions_StandReload(in PhxAnimHumanSet set)
+    {
+        Transition(set.StandIdle, set.StandReload, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputReload
+                }
+            }
+        );
+
+        Transition(set.StandReload, set.StandIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                }
+            }
+        );
+
+        Transition(set.StandReload.Lower, set.StandWalkForward.Lower, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                }
+            },
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                }
+            }
+        );
+
+        Transition(set.StandReload.Lower, set.StandRunBackward.Lower, 0.15f,
+            new CraConditionOr
+            {
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                }
+            }
+        );
+
+        Transition(set.StandAlertWalkForward.Upper, set.StandReload.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputReload
+                }
+            }
+        );
+
+        Transition(set.StandAlertRunForward.Upper, set.StandReload.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputReload
+                }
+            }
+        );
+
+        Transition(set.StandAlertRunBackward.Upper, set.StandReload.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputReload
+                }
+            }
+        );
+    }
+
+    void Transitions_StandTurn(in PhxAnimHumanSet set)
     {
         Transition(set.StandIdle.Lower, set.StandTurnLeft.Lower, 0.15f,
             new CraConditionOr
@@ -466,7 +578,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_Crouch(ref PhxAnimHumanSet set)
+    void Transitions_Crouch(in PhxAnimHumanSet set)
     {
         Transition(set.CrouchIdle, set.CrouchWalkForward, 0.15f,
             new CraConditionOr
@@ -543,7 +655,57 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_CrouchTurn(ref PhxAnimHumanSet set)
+    void Transitions_CrouchReload(in PhxAnimHumanSet set)
+    {
+        Transition(set.CrouchIdle, set.CrouchReload, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputReload
+                }
+            }
+        );
+
+        Transition(set.CrouchReload.Lower, set.CrouchWalkForward.Lower, 0.15f,
+            // Conditions copied from CrouchIdle --> CrouchWalkForward
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                }
+            },
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Greater,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                }
+            }
+        );
+
+        Transition(set.CrouchReload.Lower, set.CrouchWalkBackward.Lower, 0.15f,
+            // Conditions copied from CrouchIdle --> CrouchWalkBackward
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Less,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                }
+            }
+        );
+    }
+
+    void Transitions_CrouchTurn(in PhxAnimHumanSet set)
     {
         Transition(set.CrouchIdle.Lower, set.CrouchTurnLeft.Lower, 0.15f,
             new CraConditionOr
@@ -616,7 +778,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_StandToCrouch(ref PhxAnimHumanSet set)
+    void Transitions_StandToCrouch(in PhxAnimHumanSet set)
     {
         Transition(set.StandIdle, set.CrouchIdle, 0.25f,
             new CraConditionOr
@@ -658,7 +820,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_CrouchToStand(ref PhxAnimHumanSet set)
+    void Transitions_CrouchToStand(in PhxAnimHumanSet set)
     {
         Transition(set.CrouchIdle, set.StandIdle, 0.25f,
             new CraConditionOr
@@ -731,7 +893,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_Sprint(ref PhxAnimHumanSet set)
+    void Transitions_Sprint(in PhxAnimHumanSet set)
     {
         Transition(set.StandRunForward, set.Sprint, 0.15f,
             new CraConditionOr
@@ -773,7 +935,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_Jump(ref PhxAnimHumanSet set)
+    void Transitions_Jump(in PhxAnimHumanSet set)
     {
         Transition(set.StandIdle, set.Jump, 0.15f,
             new CraConditionOr
@@ -880,7 +1042,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_StandToFall(ref PhxAnimHumanSet set)
+    void Transitions_StandToFall(in PhxAnimHumanSet set)
     {
         Transition(set.StandIdle, set.Fall, 0.15f,
             new CraConditionOr
@@ -931,7 +1093,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_CrouchToFall(ref PhxAnimHumanSet set)
+    void Transitions_CrouchToFall(in PhxAnimHumanSet set)
     {
         Transition(set.CrouchIdle, set.Fall, 0.15f,
             new CraConditionOr
@@ -970,7 +1132,7 @@ public class PhxAnimHuman
         );
     }
 
-    void Transitions_Land(ref PhxAnimHumanSet set)
+    void Transitions_Land(in PhxAnimHumanSet set)
     {
         Transition(set.Fall, set.LandSoft, 0.15f,
             new CraConditionOr
@@ -1325,6 +1487,18 @@ public class PhxAnimHuman
         WritePosture(set.LandSoft, PhxAnimPosture.Land);
         WritePosture(set.LandHard, PhxAnimPosture.Land);
 
+
+        WriteStafeBackwards(set.StandRunBackward, true);
+        WriteStafeBackwards(set.StandAlertRunBackward, true);
+        WriteStafeBackwards(set.CrouchAlertWalkBackward, true);
+
+        WriteStafeBackwards(set.StandWalkForward, false);
+        WriteStafeBackwards(set.StandRunForward, false);
+        WriteStafeBackwards(set.StandAlertWalkForward, false);
+        WriteStafeBackwards(set.StandAlertRunForward, false);
+        WriteStafeBackwards(set.CrouchAlertWalkForward, false);
+
+
 #if UNITY_EDITOR
         foreach (var field in set.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
         {
@@ -1354,5 +1528,10 @@ public class PhxAnimHuman
     void WritePosture(PhxScopedState state, PhxAnimPosture posture)
     {
         state.Lower.WriteOutput(new CraWriteOutput { Output = OutputPosture, Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)posture } });
+    }
+
+    void WriteStafeBackwards(PhxScopedState state, bool backwards)
+    {
+        state.Lower.WriteOutput(new CraWriteOutput { Output = OutputStrafeBackwards, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = backwards } });
     }
 }
