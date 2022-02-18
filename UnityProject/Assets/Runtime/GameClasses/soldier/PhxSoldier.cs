@@ -179,9 +179,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Debug.Assert(Spine != null);
 
         Body = gameObject.AddComponent<Rigidbody>();
-        Body.mass = 0.1f;
-        Body.drag = 0.2f;
-        Body.angularDrag = 10f;
+        Body.mass = 80f;
+        Body.drag = 0f;
+        Body.angularDrag = 1000f;
         Body.interpolation = RigidbodyInterpolation.Extrapolate;
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
@@ -360,7 +360,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     public override void PlayIntroAnim()
     {
-        Animator.InputReload.SetBool(true);
+        Animator.InputReload.SetTrigger(true);
     }
 
     void FireAnimation(bool primary)
@@ -635,7 +635,21 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             
         }
 
-        if (Controller.Jump)
+        bool sprint = Controller.Sprint;
+        bool jump = Controller.Jump;
+        bool ShootPrimary = Controller.ShootPrimary;
+        bool ShootSecondary = Controller.ShootSecondary;
+        bool reload = Controller.Reload;
+        if (Animator.OutputIsReloading.GetBool())
+        {
+            sprint = false;
+            jump = false;
+            ShootPrimary = false;
+            ShootSecondary = false;
+            reload = false;
+        }
+
+        if (jump)
         {
             Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
         }
@@ -643,11 +657,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
         Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
         Animator.InputCrouch.SetBool(Controller.Crouch);
-        Animator.InputSprint.SetBool(Controller.Sprint);
-        Animator.InputJump.SetTrigger(Controller.Jump);
-        Animator.InputShootPrimary.SetTrigger(Controller.ShootPrimary);
-        Animator.InputShootSecondary.SetTrigger(Controller.ShootSecondary);
-        Animator.InputReload.SetTrigger(Controller.Reload);
+        Animator.InputSprint.SetBool(sprint);
+        Animator.InputJump.SetTrigger(jump);
+        Animator.InputShootPrimary.SetTrigger(ShootPrimary);
+        Animator.InputShootSecondary.SetTrigger(ShootSecondary);
+        Animator.InputReload.SetTrigger(reload);
         Animator.InputEnergy.SetFloat(100.0f);
         Animator.InputGrounded.SetBool(Grounded);
 
@@ -734,12 +748,33 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
         else
         {
-            if (posture == PhxAnimPosture.Fall)
+            if (posture == PhxAnimPosture.Jump || posture == PhxAnimPosture.Fall)
             {
                 FallTimer += deltaTime;
                 if (Grounded)
                 {
                     Animator.InputLandHardness.SetInt(FallTimer < 1f ? 1 : 2);
+                }
+                else
+                {
+                    float accStep = C.Acceleration * deltaTime;
+                    float thrustFactor = ControlValues[PhxAnimPosture.Jump][0];
+                    float strafeFactor = ControlValues[PhxAnimPosture.Jump][1];
+                    float turnFactor = ControlValues[PhxAnimPosture.Jump][2];
+
+                    //Debug.Log($"{thrustFactor} {strafeFactor} {turnFactor}");
+
+                    Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
+                    Vector3 moveDirWorld = lookRot * moveDirLocal;
+                    if (moveDirWorld != Vector3.zero)
+                    {
+                        lookRot = Quaternion.LookRotation(moveDirWorld);
+                    }
+
+                    CurrSpeed += moveDirWorld * accStep;
+                    float maxSpeed = moveDirLocal.z < 0.2f ? C.MaxStrafeSpeed : C.MaxSpeed;
+                    float forwardFactor = moveDirLocal.z < 0.2f ? strafeFactor : thrustFactor;
+                    CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
                 }
             }
             else
@@ -811,11 +846,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         //    }
         //}
 
-        if (Grounded && (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Sprint))
+        if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Sprint)
         {
             //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
-            Body.AddForce(CurrSpeed - Body.velocity, ForceMode.VelocityChange);
+            Body.velocity = CurrSpeed;
             Body.MoveRotation(lookRot); // TODO: Use torque here
+
+            //lookRot.ToAngleAxis(out float angle, out Vector3 axis);
+            //Body.angularVelocity = axis * angle * Mathf.Deg2Rad;
 
             if (CurrSpeed != Vector3.zero)
             {
@@ -835,9 +873,21 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 //Debug.DrawRay(Body.position + upper, Vector3.down * upper.y, Color.red);
             }
         }
+        else if (posture == PhxAnimPosture.Jump || posture == PhxAnimPosture.Fall)
+        {
+            Body.AddForce(CurrSpeed, ForceMode.Acceleration);
+            Body.MoveRotation(lookRot);
+        }
+        else if (posture == PhxAnimPosture.Land)
+        {
+            Body.velocity = Vector3.zero;
+            Body.angularVelocity = Vector3.zero;
+        }
 
         //Anim.SetBool("Alert", AlertTimer > 0f);
         LastIdle = Controller.IsIdle;
+
+        Controller.Jump = false;
     }
 
     void OnDrawGizmosSelected()

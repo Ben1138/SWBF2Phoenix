@@ -386,14 +386,14 @@ public class PhxScene
     public void Tick(float deltaTime)
     {
         Projectiles.Tick(deltaTime);
-        Cra?.Tick();
-
-        // Update instances AFTER animation update!
-        // Instances might adapt some bone transformations (e.g. PhxSoldier)
         for (int i = 0; i < TickableInstances.Count; ++i)
         {
             TickableInstances[i].Tick(deltaTime);
         }
+        UnityEngine.Profiling.Profiler.BeginSample("Update Cra");
+        // Update Animations AFTER soldiers are updated.
+        Cra?.Tick();
+        UnityEngine.Profiling.Profiler.EndSample();
     }
 
     public void TickPhysics(float deltaTime)

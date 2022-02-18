@@ -38,12 +38,13 @@ public class PhxAnimTest : PhxUnityScript
             "rep_hero_obiwan"
         );
 
-        //PhxLuaAPI.ReadDataFile("side/cis.lvl",
+        PhxLuaAPI.ReadDataFile("side/cis.lvl",
         //    "cis_inf_rifleman",
         //    "cis_inf_rocketeer",
         //    "cis_inf_sniper",
         //    "cis_inf_marine"
-        //);
+                "cis_hero_darthmaul"
+        );
     }
 
     public override void ScriptPostLoad()
@@ -103,7 +104,7 @@ public class PhxAnimTest : PhxUnityScript
 
         if (SpawnPlayer)
         {
-            Match.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
+            Match.SpawnPlayer(scene.GetClass("cis_hero_darthmaul"), transform.position, Quaternion.identity);
         }
     }
 

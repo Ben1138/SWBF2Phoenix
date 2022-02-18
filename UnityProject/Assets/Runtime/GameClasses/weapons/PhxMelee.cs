@@ -21,10 +21,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
 
     public override void Init()
     {
-        if (transform.childCount > 0)
-        {
-            FirePoint = transform.GetChild(0).Find(C.FirePointName);
-        }
+        base.Init();
 
         if (C.ComboAnimationBank.Values.Count > 0)
         {
@@ -55,7 +52,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         Blade.material.SetTexture("_UnlitColorMap", C.LightSaberTexture);
         Blade.material.SetTexture("_EmissiveColorMap", C.LightSaberTexture);
         Blade.material.SetInt("_UseEmissiveIntensity", 0);
-        Blade.material.SetColor("_EmissiveColor", C.LightSaberTrailColor.Get() * Mathf.Pow(8.5f, 2.71828f));
+        Blade.material.SetColor("_EmissiveColor", C.LightSaberTrailColor.Get() * Mathf.Pow(2f, 8.5f));
         Blade.material.SetFloat("_EmissiveExposureWeight", 0.0f);
 
         GameObject pointLightGO = new GameObject("LightsaberLight");

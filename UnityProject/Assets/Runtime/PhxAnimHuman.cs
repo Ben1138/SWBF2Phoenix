@@ -147,6 +147,7 @@ public class PhxAnimHuman
 
     public CraOutput OutputPosture { get; private set; }
     public CraOutput OutputStrafeBackwards { get; private set; }
+    public CraOutput OutputIsReloading { get; private set; }
 
 
     PhxAnimHumanSet[] Sets;
@@ -189,6 +190,7 @@ public class PhxAnimHuman
 
         OutputPosture = Machine.NewOutput(CraValueType.Int, "Posture");
         OutputStrafeBackwards = Machine.NewOutput(CraValueType.Bool, "Strafe Backwards");
+        OutputIsReloading = Machine.NewOutput(CraValueType.Bool, "Is Reloading");
 
         Sets = new PhxAnimHumanSet[weaponAnimBanks.Length];
         ActiveSet = 0;
@@ -471,7 +473,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.StandAlertWalkForward.Upper, set.StandReload.Upper, 0.15f,
+        Transition(set.StandWalkForward.Upper, set.StandReload.Upper, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -482,7 +484,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.StandAlertRunForward.Upper, set.StandReload.Upper, 0.15f,
+        Transition(set.StandRunForward.Upper, set.StandReload.Upper, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -493,13 +495,43 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.StandAlertRunBackward.Upper, set.StandReload.Upper, 0.15f,
+        Transition(set.StandRunBackward.Upper, set.StandReload.Upper, 0.15f,
             new CraConditionOr
             {
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Trigger,
                     Input = InputReload
+                }
+            }
+        );
+
+        Transition(set.StandReload.Upper, set.StandWalkForward.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                }
+            }
+        );
+
+        Transition(set.StandReload.Upper, set.StandRunForward.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                }
+            }
+        );
+
+        Transition(set.StandReload.Upper, set.StandRunBackward.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
                 }
             }
         );
@@ -668,8 +700,31 @@ public class PhxAnimHuman
             }
         );
 
+        Transition(set.CrouchReload, set.CrouchIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementX,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                },
+                And2 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InputMovementY,
+                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    CompareToAbsolute = true
+                }
+            }
+        );
+
         Transition(set.CrouchReload.Lower, set.CrouchWalkForward.Lower, 0.15f,
-            // Conditions copied from CrouchIdle --> CrouchWalkForward
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -692,14 +747,55 @@ public class PhxAnimHuman
         );
 
         Transition(set.CrouchReload.Lower, set.CrouchWalkBackward.Lower, 0.15f,
-            // Conditions copied from CrouchIdle --> CrouchWalkBackward
             new CraConditionOr
             {
-                And0 = new CraCondition
+                And1 = new CraCondition
                 {
                     Type = CraConditionType.Less,
                     Input = InputMovementY,
                     Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                }
+            }
+        );
+
+        Transition(set.CrouchWalkForward.Upper, set.CrouchReload.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputReload
+                }
+            }
+        );
+
+        Transition(set.CrouchWalkBackward.Upper, set.CrouchReload.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InputReload
+                }
+            }
+        );
+
+        Transition(set.CrouchReload.Upper, set.CrouchWalkForward.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                }
+            }
+        );
+
+        Transition(set.CrouchReload.Upper, set.CrouchWalkBackward.Upper, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
                 }
             }
         );
@@ -1356,6 +1452,7 @@ public class PhxAnimHuman
 
         Debug.Assert(res.Lower.IsValid());
         Debug.Assert(res.Upper.IsValid());
+
         return res;
     }
 
@@ -1426,77 +1523,88 @@ public class PhxAnimHuman
         set.LandSoft = CreateScopedState(root, character, weapon, "landsoft", null, false);
         set.LandHard = CreateScopedState(root, character, weapon, "landhard", null, false);
 
-        WritePosture(set.CrouchIdle, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchIdleTakeknee, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchHitFront, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchHitLeft, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchHitRight, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchReload, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchShoot, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchTurnLeft, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchTurnRight, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchWalkForward, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchWalkBackward, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchAlertIdle, PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchAlertWalkForward , PhxAnimPosture.Crouch);
-        WritePosture(set.CrouchAlertWalkBackward, PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchIdle, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchIdleTakeknee, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchHitFront, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchHitLeft, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchHitRight, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchReload, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchShoot, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchTurnLeft, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchTurnRight, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchWalkForward, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchWalkBackward, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchAlertIdle, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchAlertWalkForward , OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteInt(set.CrouchAlertWalkBackward, OutputPosture, (int)PhxAnimPosture.Crouch);
 
-        WritePosture(set.StandIdle, PhxAnimPosture.Stand);
-        WritePosture(set.StandIdleCheckweapon, PhxAnimPosture.Stand);
-        WritePosture(set.StandIdleLookaround, PhxAnimPosture.Stand);
-        WritePosture(set.StandWalkForward, PhxAnimPosture.Stand);
-        WritePosture(set.StandRunForward, PhxAnimPosture.Stand);
-        WritePosture(set.StandRunBackward, PhxAnimPosture.Stand);
-        WritePosture(set.StandReload, PhxAnimPosture.Stand);
-        WritePosture(set.StandShootPrimary, PhxAnimPosture.Stand);
-        WritePosture(set.StandShootSecondary, PhxAnimPosture.Stand);
-        WritePosture(set.StandAlertIdle, PhxAnimPosture.Stand);
-        WritePosture(set.StandAlertWalkForward, PhxAnimPosture.Stand);
-        WritePosture(set.StandAlertRunForward, PhxAnimPosture.Stand);
-        WritePosture(set.StandAlertRunBackward, PhxAnimPosture.Stand);
-        WritePosture(set.StandTurnLeft, PhxAnimPosture.Stand);
-        WritePosture(set.StandTurnRight, PhxAnimPosture.Stand);
-        WritePosture(set.StandHitFront, PhxAnimPosture.Stand);
-        WritePosture(set.StandHitBack, PhxAnimPosture.Stand);
-        WritePosture(set.StandHitLeft, PhxAnimPosture.Stand);
-        WritePosture(set.StandHitRight, PhxAnimPosture.Stand);
-        WritePosture(set.StandGetupFront, PhxAnimPosture.Stand);
-        WritePosture(set.StandGetupBack, PhxAnimPosture.Stand);        
-        WritePosture(set.StandDeathForward, PhxAnimPosture.Stand);
-        WritePosture(set.StandDeathBackward, PhxAnimPosture.Stand);
-        WritePosture(set.StandDeathLeft, PhxAnimPosture.Stand);
-        WritePosture(set.StandDeathRight, PhxAnimPosture.Stand);
-        WritePosture(set.StandDeadhero, PhxAnimPosture.Stand);
+        WriteInt(set.StandIdle, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandIdleCheckweapon, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandIdleLookaround, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandWalkForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandRunForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandRunBackward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandReload, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandShootPrimary, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandShootSecondary, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandAlertIdle, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandAlertWalkForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandAlertRunForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandAlertRunBackward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandTurnLeft, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandTurnRight, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandHitFront, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandHitBack, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandHitLeft, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandHitRight, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandGetupFront, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandGetupBack, OutputPosture, (int)PhxAnimPosture.Stand);        
+        WriteInt(set.StandDeathForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandDeathBackward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandDeathLeft, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandDeathRight, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteInt(set.StandDeadhero, OutputPosture, (int)PhxAnimPosture.Stand);
 
-        WritePosture(set.ThrownBounceFrontSoft, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownBounceBackSoft, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownFlail, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownFlyingFront, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownFlyingBack, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownFlyingLeft, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownFlyingRight, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownLandFrontSoft, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownLandBackSoft, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownTumbleFront, PhxAnimPosture.Thrown);
-        WritePosture(set.ThrownTumbleBack, PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownBounceFrontSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownBounceBackSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownFlail, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownFlyingFront, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownFlyingBack, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownFlyingLeft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownFlyingRight, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownLandFrontSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownLandBackSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownTumbleFront, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteInt(set.ThrownTumbleBack, OutputPosture, (int)PhxAnimPosture.Thrown);
 
-        WritePosture(set.Sprint, PhxAnimPosture.Sprint);
-        WritePosture(set.JetpackHover, PhxAnimPosture.Jet);
-        WritePosture(set.Jump, PhxAnimPosture.Jump);
-        WritePosture(set.Fall, PhxAnimPosture.Fall);
-        WritePosture(set.LandSoft, PhxAnimPosture.Land);
-        WritePosture(set.LandHard, PhxAnimPosture.Land);
+        WriteInt(set.Sprint, OutputPosture, (int)PhxAnimPosture.Sprint);
+        WriteInt(set.JetpackHover, OutputPosture, (int)PhxAnimPosture.Jet);
+        WriteInt(set.Jump, OutputPosture, (int)PhxAnimPosture.Jump);
+        WriteInt(set.Fall, OutputPosture, (int)PhxAnimPosture.Fall);
+        WriteInt(set.LandSoft, OutputPosture, (int)PhxAnimPosture.Land);
+        WriteInt(set.LandHard, OutputPosture, (int)PhxAnimPosture.Land);
 
 
-        WriteStafeBackwards(set.StandRunBackward, true);
-        WriteStafeBackwards(set.StandAlertRunBackward, true);
-        WriteStafeBackwards(set.CrouchAlertWalkBackward, true);
+        WriteBool(set.StandRunBackward, OutputStrafeBackwards, true);
+        WriteBool(set.StandAlertRunBackward, OutputStrafeBackwards, true);
+        WriteBool(set.CrouchAlertWalkBackward, OutputStrafeBackwards, true);
 
-        WriteStafeBackwards(set.StandWalkForward, false);
-        WriteStafeBackwards(set.StandRunForward, false);
-        WriteStafeBackwards(set.StandAlertWalkForward, false);
-        WriteStafeBackwards(set.StandAlertRunForward, false);
-        WriteStafeBackwards(set.CrouchAlertWalkForward, false);
+        WriteBool(set.StandWalkForward, OutputStrafeBackwards, false);
+        WriteBool(set.StandRunForward, OutputStrafeBackwards, false);
+        WriteBool(set.StandAlertWalkForward, OutputStrafeBackwards, false);
+        WriteBool(set.StandAlertRunForward, OutputStrafeBackwards, false);
+        WriteBool(set.CrouchAlertWalkForward, OutputStrafeBackwards, false);
+
+        WriteBool(set.StandReload, OutputIsReloading, true);
+        WriteBool(set.StandIdle.Upper, OutputIsReloading, false);
+        WriteBool(set.StandWalkForward.Upper, OutputIsReloading, false);
+        WriteBool(set.StandRunForward.Upper, OutputIsReloading, false);
+        WriteBool(set.StandRunBackward.Upper, OutputIsReloading, false);
+        WriteBool(set.CrouchReload, OutputIsReloading, true);
+        WriteBool(set.CrouchIdle.Upper, OutputIsReloading, false);
+        WriteBool(set.CrouchWalkForward.Upper, OutputIsReloading, false);
+        WriteBool(set.CrouchWalkBackward.Upper, OutputIsReloading, false);
+
 
 
 #if UNITY_EDITOR
@@ -1525,13 +1633,25 @@ public class PhxAnimHuman
         Machine.SetActive(status);
     }
 
-    void WritePosture(PhxScopedState state, PhxAnimPosture posture)
+    void WriteInt(PhxScopedState state, CraOutput output, int value)
     {
-        state.Lower.WriteOutput(new CraWriteOutput { Output = OutputPosture, Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)posture } });
+        WriteInt(state.Lower, output, value);
+        WriteInt(state.Upper, output, value);
     }
 
-    void WriteStafeBackwards(PhxScopedState state, bool backwards)
+    void WriteInt(CraState state, CraOutput output, int value)
     {
-        state.Lower.WriteOutput(new CraWriteOutput { Output = OutputStrafeBackwards, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = backwards } });
+        state.WriteOutput(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = value } });
+    }
+
+    void WriteBool(PhxScopedState state, CraOutput output, bool value)
+    {
+        WriteBool(state.Lower, output, value);
+        WriteBool(state.Upper, output, value);
+    }
+
+    void WriteBool(CraState state, CraOutput output, bool value)
+    {
+        state.WriteOutput(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = value } });
     }
 }
