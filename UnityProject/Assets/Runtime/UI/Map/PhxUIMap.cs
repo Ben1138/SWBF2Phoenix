@@ -80,7 +80,7 @@ public class PhxUIMap : MonoBehaviour
         MapMat = image.materialForRendering;
         Debug.Assert(MapMat != null);
 
-        CPSelectSound = SoundLoader.LoadSound("ui_menumove");
+        CPSelectSound = SoundLoader.Instance.LoadSound("ui_menumove");
 
         // TODO: Load texture from "MapTexture" property specified in PhxCommandpost class
         Texture2D cpTexture = TextureLoader.Instance.ImportUITexture("hud_flag_icon");

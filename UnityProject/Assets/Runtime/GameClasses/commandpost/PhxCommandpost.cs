@@ -80,7 +80,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
 
         AudioAmbient = gameObject.AddComponent<AudioSource>();
         AudioAmbient.spatialBlend = 1.0f;
-        AudioAmbient.clip = SoundLoader.LoadSound("com_blg_commandpost2");
+        AudioAmbient.clip = SoundLoader.Instance.LoadSound("com_blg_commandpost2");
         AudioAmbient.pitch = 1.0f;
         AudioAmbient.volume = 0.5f;
         AudioAmbient.rolloffMode = AudioRolloffMode.Linear;

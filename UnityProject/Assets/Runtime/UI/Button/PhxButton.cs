@@ -36,8 +36,8 @@ public class PhxButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandl
         Center.texture = TextureLoader.Instance.ImportUITexture("bf2_buttons_items_center");
         Right.texture  = TextureLoader.Instance.ImportUITexture("bf2_buttons_botright");
 
-        HoverSound = SoundLoader.LoadSound("ui_menumove");
-        ClickSound = SoundLoader.LoadSound("ui_planetzoom");
+        HoverSound = SoundLoader.Instance.LoadSound("ui_menumove");
+        ClickSound = SoundLoader.Instance.LoadSound("ui_planetzoom");
     }
 
     void Update()
