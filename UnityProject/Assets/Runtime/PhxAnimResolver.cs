@@ -278,7 +278,7 @@ public class PhxAnimationResolver
 
             // 5. Idle fallback
             next = animDesc;
-            if ((next.Animation.ToLower() != "idle_emote" && next.Animation.ToLower().StartsWith("idle")) || next.Animation.ToLower().StartsWith("turn"))
+            if (!string.IsNullOrEmpty(next.Animation) && ((next.Animation.ToLower() != "idle_emote" && next.Animation.ToLower().StartsWith("idle")) || next.Animation.ToLower().StartsWith("turn")))
             {
                 next.Animation = "idle_emote";
                 if (ResolveAnim(next, out found, out clip, out clipScope, findScope))

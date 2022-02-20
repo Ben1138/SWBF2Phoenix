@@ -74,6 +74,9 @@ public abstract class PhxClass
                     var foundSections = new List<Dictionary<string, IPhxPropRef>>();
                     Dictionary<string, IPhxPropRef> currSection = null;
 
+                    HashSet<int> parsedIndices = new HashSet<int>();
+                    int currentSectionIdx = -1;
+
                     for (int i = 0; i < propHashes.Length; ++i)
                     {
                         // Every time we encounter the section header, start a new section
@@ -81,39 +84,33 @@ public abstract class PhxClass
                         {
                             foundSections.Add(new Dictionary<string, IPhxPropRef>());
                             currSection = foundSections[foundSections.Count - 1];
+                            currentSectionIdx = int.Parse(propValues[i]);
+                        }
+                        else if (section.ContainsProperty(propHashes[i], out _, out int sectionIdx) && sectionIdx != currentSectionIdx)
+                        {
+                            foundSections.Add(new Dictionary<string, IPhxPropRef>());
+                            currSection = foundSections[foundSections.Count - 1];
+                            currentSectionIdx = sectionIdx;
                         }
 
-                        if (currSection != null)
+                        // if we encounter a matching property, grab it
+                        if (currSection != null && section.ContainsProperty(propHashes[i], out int propIdx, out _))
                         {
-                            for (int j = 0; j < section.Properties.Length; ++j)
+                            string propName = section.Properties[propIdx].Item1;
+
+                            IPhxPropRef prop = section.Properties[propIdx].Item2.ShallowCopy();
+                            prop.SetFromString(propValues[i]);
+
+                            if (currSection.ContainsKey(propName))
                             {
-                                string propName = section.Properties[j].Item1;
-
-                                // This is a Hack introduced for WEAPONSECTION's, since sometimes the section properties
-                                // have a number (corresponding to the section number), and sometimes they don't.
-                                for (int k = 0; k < 10; ++k)
-                                {
-                                    uint propNameHash = HashUtils.GetFNV($"{propName}{(k==0?"":k.ToString())}");
-
-                                    // if we encounter a matching property, grab it
-                                    if (propHashes[i] == propNameHash)
-                                    {                 
-                                        IPhxPropRef prop = section.Properties[j].Item2.ShallowCopy();
-                                        prop.SetFromString(propValues[i]);
-
-                                        if (currSection.ContainsKey(propName))
-                                        {
-                                            Debug.LogErrorFormat("Section already contains key: {0} value: {3} (in PhxClass: {1}, Section index: {2})", propName, ec.Name, foundSections.Count - 1, propValues[i]);
-                                        }
-                                        else
-                                        {
-                                            currSection.Add(propName, prop);
-                                        }
-
-                                        break;
-                                    }
-                                }
+                                Debug.LogErrorFormat("Section already contains key: {0} value: {3} (in PhxClass: {1}, Section index: {2})", propName, ec.Name, foundSections.Count - 1, propValues[i]);
                             }
+                            else
+                            {
+                                currSection.Add(propName, prop);
+                            }
+
+                            break;
                         }
                     }
 

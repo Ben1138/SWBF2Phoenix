@@ -59,6 +59,7 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
 
         public PhxProp<string> AnimationBank = new PhxProp<string>("");
         public PhxMultiProp ComboAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
+        public PhxMultiProp CustomAnimationBank = new PhxMultiProp(typeof(string), typeof(string), typeof(string));
 
         public PhxProp<string> FirePointName = new PhxProp<string>("hp_fire");
 
@@ -134,7 +135,7 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
 
         if (transform.childCount > 0)
         {
-            FirePoint = transform.GetChild(0).Find("hp_fire");
+            FirePoint = transform.GetChild(0).Find(C.FirePointName);
         }
 
         if (FirePoint == null)
@@ -374,10 +375,23 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
         ReloadCallback += callback;
     }
 
-    public virtual string GetAnimBankName()
+    public virtual PhxAnimWeapon GetAnimInfo()
     {
-        return C.AnimationBank.Get();
+        PhxAnimWeapon info = new PhxAnimWeapon
+        {
+            AnimationBank = C.AnimationBank.Get(),
+            Combo = C.CustomAnimationBank.Get<string>(2),
+            Parent = C.CustomAnimationBank.Get<string>(1),
+            SupportsAlert = true,
+            SupportsReload = true
+        };
+        if (C.ComboAnimationBank.Values.Count > 0)
+        {
+            info.AnimationBank = C.ComboAnimationBank.Get<string>(0).Split('_')[1];
+        }
+        return info;
     }
+
 
     public int GetMagazineSize()
     {

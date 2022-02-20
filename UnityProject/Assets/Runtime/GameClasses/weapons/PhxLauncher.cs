@@ -13,4 +13,11 @@ public class PhxLauncher : PhxGenericWeapon<PhxLauncher.ClassProperties>
     {
         base.Init();
     }
+
+    public override PhxAnimWeapon GetAnimInfo()
+    {
+        PhxAnimWeapon info = base.GetAnimInfo();
+        info.SupportsAlert = false;
+        return info;
+    }
 }

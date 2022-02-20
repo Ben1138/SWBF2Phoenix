@@ -168,7 +168,7 @@ public interface IPhxWeapon
     public void Reload();
     public void OnShot(Action callback);
     public void OnReload(Action callback);
-    public string GetAnimBankName();
+    public PhxAnimWeapon GetAnimInfo();
 
     public void SetFirePoint(Transform FirePoint);
 

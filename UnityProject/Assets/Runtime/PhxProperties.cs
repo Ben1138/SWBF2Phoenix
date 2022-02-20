@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Globalization;
 using UnityEngine;
 using LibSWBF2.Wrappers;
-using LibSWBF2.Enums;
+using LibSWBF2.Utils;
 using JetBrains.Annotations;
 using System.Collections;
 
@@ -153,7 +153,12 @@ public sealed class PhxMultiProp : IPhxPropRef
 
 /// <summary>
 /// Properties within a property section are NOT registered to the 
-/// properties database and are as such not setable fromn lua!
+/// properties database and are as such not setable from lua!
+/// A property section may or may not start with a header (section name).
+/// When no section name is present, section properties are enumerated like:
+///     WeaponName1
+///     WeaponName2
+///     ...
 /// </summary>
 public class PhxPropertySection : IEnumerable
 {
@@ -179,6 +184,28 @@ public class PhxPropertySection : IEnumerable
         {
             yield return Sections[i];
         }
+    }
+
+    public bool ContainsProperty(uint propNameHash, out int propIdx, out int sectionIdx)
+    {
+        for (int i = 0; i < Properties.Length; ++i)
+        {
+            string sectionPropName = Properties[i].Item1;
+            // Since property sections sometimes don't have a header, their property names
+            // will have a number postfix on them instead.
+            for (int j = 1; j < 10; ++j)
+            {
+                if (propNameHash == HashUtils.GetFNV($"{sectionPropName}{(j == 0 ? "" : j.ToString())}"))
+                {
+                    propIdx = i;
+                    sectionIdx = j;
+                    return true;
+                }
+            }
+        }
+        propIdx = -1;
+        sectionIdx = -1;
+        return false;
     }
 }
 

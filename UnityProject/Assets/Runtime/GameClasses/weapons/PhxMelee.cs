@@ -8,13 +8,17 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
 {
     public new class ClassProperties : PhxGenericWeapon<ClassProperties>.ClassProperties
     {
-        public PhxProp<float> LightSaberLength = new PhxProp<float>(1.0f);
-        public PhxProp<float> LightSaberWidth = new PhxProp<float>(0.08f);
-        public PhxProp<Texture2D> LightSaberTexture = new PhxProp<Texture2D>(null);
-        public PhxProp<Color> LightSaberTrailColor = new PhxProp<Color>(Color.white);
-    }
+        public PhxProp<int> NumDamageEdges = new PhxProp<int>(0);
+        public PhxImpliedSection LightSabers = new PhxImpliedSection(
+            ("FirePointName", new PhxProp<string>("")),
+            ("LightSaberLength", new PhxProp<float>(1f)),
+            ("LightSaberWidth", new PhxProp<float>(1f)),
+            ("LightSaberTexture", new PhxProp<Texture2D>(null)),
+            ("LightSaberTrailColor", new PhxProp<Color>(Color.white))
+        );
 
-    protected string WeaponAnimBankName = "sabre";
+        // TODO: AttachedFirePoint (see cis_weap_doublesaber.odf)
+    }
 
     static Material LightsaberMat;
     LineRenderer Blade;
@@ -23,114 +27,79 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
     {
         base.Init();
 
-        if (C.ComboAnimationBank.Values.Count > 0)
-        {
-            WeaponAnimBankName = C.ComboAnimationBank.Get<string>(0).Split('_')[1];
-        }
-
         if (LightsaberMat == null)
         {
             LightsaberMat = Resources.Load<Material>("PhxMaterial_lightsabre");
         }
 
-        Blade = FirePoint.gameObject.AddComponent<LineRenderer>();
-        Blade.shadowCastingMode = ShadowCastingMode.Off;
-        Blade.lightProbeUsage = LightProbeUsage.Off;
-        Blade.textureMode = LineTextureMode.DistributePerSegment;
-        Blade.useWorldSpace = false;
-        Blade.startWidth = C.LightSaberWidth;
-        Blade.endWidth = C.LightSaberWidth;
-        Blade.positionCount = 4;
-
-        const float tipLength = 0.2f;
-        Blade.SetPosition(0, new Vector3(0f, 0f, C.LightSaberLength));
-        Blade.SetPosition(1, new Vector3(0f, 0f, C.LightSaberLength - tipLength));
-        Blade.SetPosition(2, Vector3.zero);
-        Blade.SetPosition(3, Vector3.zero);
-
-        Blade.material = LightsaberMat;
-        Blade.material.SetTexture("_UnlitColorMap", C.LightSaberTexture);
-        Blade.material.SetTexture("_EmissiveColorMap", C.LightSaberTexture);
-        Blade.material.SetInt("_UseEmissiveIntensity", 0);
-        Blade.material.SetColor("_EmissiveColor", C.LightSaberTrailColor.Get() * Mathf.Pow(2f, 8.5f));
-        Blade.material.SetFloat("_EmissiveExposureWeight", 0.0f);
-
-        GameObject pointLightGO = new GameObject("LightsaberLight");
-        pointLightGO.transform.SetParent(FirePoint);
-        pointLightGO.transform.localPosition = new Vector3(0f, 0f, C.LightSaberLength / 2f);
-
-        var pointLight = pointLightGO.AddHDLight(HDLightTypeAndShape.Point);
-        pointLight.color = C.LightSaberTrailColor;
-        pointLight.intensity = 1e+07f;
-        pointLight.range = 5f;
+        foreach (Dictionary<string, IPhxPropRef> section in C.LightSabers)
+        {
+            CreateBlade(section);
+        }
     }
 
     public override void Destroy()
     {
-        
+        base.Destroy();
     }
 
-    public PhxInstance GetInstance()
-    {
-        return this;
-    }
     public override bool Fire(PhxPawnController owner, Vector3 targetPos)
     {
         return false;
     }
 
-    public void Reload()
+    public override PhxAnimWeapon GetAnimInfo()
     {
-
-    }
-    public void OnShot(Action callback)
-    {
-
-    }
-    public void OnReload(Action callback)
-    {
-
-    }
-    public override string GetAnimBankName()
-    {
-        return WeaponAnimBankName;
+        PhxAnimWeapon info = base.GetAnimInfo();
+        info.SupportsAlert = false;
+        info.SupportsReload = false;
+        return info;
     }
 
-    public void SetFirePoint(Transform FirePoint)
+    void CreateBlade(Dictionary<string, IPhxPropRef> bladeProps)
     {
+        PhxProp<string> firePointName = bladeProps["FirePointName"] as PhxProp<string>;
+        PhxProp<float> lightSaberWidth = bladeProps["LightSaberWidth"] as PhxProp<float>;
+        PhxProp<float> lightSaberLength = bladeProps["LightSaberLength"] as PhxProp<float>;
+        PhxProp<Texture2D> lightSaberTexture = bladeProps["LightSaberTexture"] as PhxProp<Texture2D>;
+        PhxProp<Color> lightSaberTrailColor = bladeProps["LightSaberTrailColor"] as PhxProp<Color>;
 
+        Transform firePoint = transform.GetChild(0).Find(firePointName);
+        if (firePoint == null)
+        {
+            Debug.LogError($"Couldn't find '{firePointName}' for lightsaber blade!");
+            return;
+        }
+
+        Blade = firePoint.gameObject.AddComponent<LineRenderer>();
+        Blade.shadowCastingMode = ShadowCastingMode.Off;
+        Blade.lightProbeUsage = LightProbeUsage.Off;
+        Blade.textureMode = LineTextureMode.DistributePerSegment;
+        Blade.useWorldSpace = false;
+        Blade.startWidth = lightSaberWidth;
+        Blade.endWidth = lightSaberWidth;
+        Blade.positionCount = 4;
+
+        const float tipLength = 0.2f;
+        Blade.SetPosition(0, new Vector3(0f, 0f, lightSaberLength));
+        Blade.SetPosition(1, new Vector3(0f, 0f, lightSaberLength - tipLength));
+        Blade.SetPosition(2, Vector3.zero);
+        Blade.SetPosition(3, Vector3.zero);
+
+        Blade.material = LightsaberMat;
+        Blade.material.SetTexture("_UnlitColorMap", lightSaberTexture);
+        Blade.material.SetTexture("_EmissiveColorMap", lightSaberTexture);
+        Blade.material.SetInt("_UseEmissiveIntensity", 0);
+        Blade.material.SetColor("_EmissiveColor", lightSaberTrailColor.Get() * Mathf.Pow(2f, 8.5f));
+        Blade.material.SetFloat("_EmissiveExposureWeight", 0.0f);
+
+        GameObject pointLightGO = new GameObject("LightsaberLight");
+        pointLightGO.transform.SetParent(FirePoint);
+        pointLightGO.transform.localPosition = new Vector3(0f, 0f, lightSaberLength / 2f);
+
+        var pointLight = pointLightGO.AddHDLight(HDLightTypeAndShape.Point);
+        pointLight.color = lightSaberTrailColor;
+        pointLight.intensity = 1e+07f;
+        pointLight.range = 5f;
     }
-
-    public override Transform GetFirePoint()
-    {
-        return FirePoint;
-    }
-    public void GetFirePoint(out Vector3 Pos, out Quaternion Rot)
-    {
-        Pos = FirePoint.position;
-        Rot = FirePoint.rotation;
-    }
-
-
-    public void SetIgnoredColliders(List<Collider> Colliders)
-    {
-
-    }
-    public List<Collider> GetIgnoredColliders()
-    {
-        return null;
-    }
-
-    public PhxPawnController GetOwnerController()
-    {
-        return null;
-    }
-    public bool IsFiring() { return false; }
-
-    public int GetMagazineSize() { return 0; }
-    public int GetTotalAmmo() { return 0; }
-    public int GetMagazineAmmo() { return 0; }
-    public int GetAvailableAmmo() { return 0; }
-    public float GetReloadTime() { return 0f; }
-    public float GetReloadProgress() { return 1f; }
 }

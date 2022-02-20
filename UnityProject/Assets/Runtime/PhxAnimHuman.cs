@@ -36,6 +36,15 @@ public struct PhxScopedState
     public CraState Upper;
 }
 
+public struct PhxAnimWeapon
+{
+    public string AnimationBank;
+    public string Combo;
+    public string Parent;
+    public bool SupportsReload;
+    public bool SupportsAlert;
+}
+
 // For each weapon, will shall generate one animation set
 // Also, a Set should include a basepose (skeleton setup)
 public struct PhxAnimHumanSet
@@ -154,18 +163,18 @@ public class PhxAnimHuman
     byte ActiveSet;
 
     PhxAnimationResolver Resolver;
-    Dictionary<string, int> WeaponNameToSetIdx;
+    Dictionary<string, int> WeaponAnimToSetIdx;
 
     const float Deadzone = 0.05f;
 
 
-    public PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, string[] weaponAnimBanks)
+    public PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, PhxAnimWeapon[] weapons)
     {
-        Debug.Assert(weaponAnimBanks != null);
-        Debug.Assert(weaponAnimBanks.Length > 0);
+        Debug.Assert(weapons != null);
+        Debug.Assert(weapons.Length > 0);
 
         Machine = CraStateMachine.CreateNew();
-        WeaponNameToSetIdx = new Dictionary<string, int>();
+        WeaponAnimToSetIdx = new Dictionary<string, int>();
 
         Resolver = resolver;
 
@@ -192,15 +201,15 @@ public class PhxAnimHuman
         OutputStrafeBackwards = Machine.NewOutput(CraValueType.Bool, "Strafe Backwards");
         OutputIsReloading = Machine.NewOutput(CraValueType.Bool, "Is Reloading");
 
-        Sets = new PhxAnimHumanSet[weaponAnimBanks.Length];
+        Sets = new PhxAnimHumanSet[weapons.Length];
         ActiveSet = 0;
 
         for (int i = 0; i < Sets.Length; ++i)
         {
             bool weaponSupportsAlert = true;
 
-            WeaponNameToSetIdx.Add(weaponAnimBanks[i], i);
-            Sets[i] = GenerateSet(root, characterAnimBank, weaponAnimBanks[i]);
+            WeaponAnimToSetIdx.Add(weapons[i].AnimationBank, i);
+            Sets[i] = GenerateSet(root, characterAnimBank, weapons[i]);
 
             // TODO: Do not generate reload states when current weapon doesn't have/support reload
             Transitions_Stand(in Sets[i]);
@@ -1381,7 +1390,7 @@ public class PhxAnimHuman
 
     public void SetActiveWeaponBank(string weaponAnimBank)
     {
-        if (!WeaponNameToSetIdx.TryGetValue(weaponAnimBank, out int idx))
+        if (!WeaponAnimToSetIdx.TryGetValue(weaponAnimBank, out int idx))
         {
             Debug.LogError($"Unknown weapon animation bank '{weaponAnimBank}'!");
             return;
@@ -1436,7 +1445,7 @@ public class PhxAnimHuman
 
         if (animScope == PhxAnimScope.Upper)
         {
-            //animDesc.Weapon = "rifle";
+            animDesc.Scope = null;
             if (!Resolver.ResolveAnim(ref animDesc, out CraClip clipRifle, out _, PhxAnimScope.Lower))
             {
                 Debug.LogError($"Couldn't resolve {inputDesc} on scope Lower!");
@@ -1456,72 +1465,74 @@ public class PhxAnimHuman
         return res;
     }
 
-    PhxAnimHumanSet GenerateSet(Transform root, string character, string weapon)
+    PhxAnimHumanSet GenerateSet(Transform root, string character, PhxAnimWeapon weapon)
     {
+        // TODO: Do not generate Reload/Alert states if not supported!
+        string weaponName = weapon.AnimationBank;
         PhxAnimHumanSet set = new PhxAnimHumanSet();
 
-        set.CrouchIdle = CreateScopedState(root, character, weapon, "crouch", "idle_emote", true);
-        set.CrouchIdleTakeknee = CreateScopedState(root, character, weapon, "crouch", "idle_takeknee", false);
-        set.CrouchHitFront = CreateScopedState(root, character, weapon, "crouch", "hitfront", false);
-        set.CrouchHitLeft = CreateScopedState(root, character, weapon, "crouch", "hitleft", false);
-        set.CrouchHitRight = CreateScopedState(root, character, weapon, "crouch", "hitright", false);
-        set.CrouchReload = CreateScopedState(root, character, weapon, "crouch", "reload", false);
-        set.CrouchShoot = CreateScopedState(root, character, weapon, "crouch", "shoot", false);
-        set.CrouchTurnLeft = CreateScopedState(root, character, weapon, "crouch", "turnleft", false);
-        set.CrouchTurnRight = CreateScopedState(root, character, weapon, "crouch", "turnright", false);
-        set.CrouchWalkForward = CreateScopedState(root, character, weapon, "crouch", "walkforward", true);
-        set.CrouchWalkBackward = CreateScopedState(root, character, weapon, "crouch", "walkbackward", true);
-        set.CrouchAlertIdle = CreateScopedState(root, character, weapon, "crouchalert", "idle_emote", true);
-        set.CrouchAlertWalkForward = CreateScopedState(root, character, weapon, "crouchalert", "walkforward", true);
-        set.CrouchAlertWalkBackward = CreateScopedState(root, character, weapon, "crouchalert", "walkbackward", true);
+        set.CrouchIdle = CreateScopedState(root, character, weaponName, "crouch", "idle_emote", true);
+        set.CrouchIdleTakeknee = CreateScopedState(root, character, weaponName, "crouch", "idle_takeknee", false);
+        set.CrouchHitFront = CreateScopedState(root, character, weaponName, "crouch", "hitfront", false);
+        set.CrouchHitLeft = CreateScopedState(root, character, weaponName, "crouch", "hitleft", false);
+        set.CrouchHitRight = CreateScopedState(root, character, weaponName, "crouch", "hitright", false);
+        set.CrouchReload = CreateScopedState(root, character, weaponName, "crouch", "reload", false);
+        set.CrouchShoot = CreateScopedState(root, character, weaponName, "crouch", "shoot", false);
+        set.CrouchTurnLeft = CreateScopedState(root, character, weaponName, "crouch", "turnleft", false);
+        set.CrouchTurnRight = CreateScopedState(root, character, weaponName, "crouch", "turnright", false);
+        set.CrouchWalkForward = CreateScopedState(root, character, weaponName, "crouch", "walkforward", true);
+        set.CrouchWalkBackward = CreateScopedState(root, character, weaponName, "crouch", "walkbackward", true);
+        set.CrouchAlertIdle = CreateScopedState(root, character, weaponName, "crouchalert", "idle_emote", true);
+        set.CrouchAlertWalkForward = CreateScopedState(root, character, weaponName, "crouchalert", "walkforward", true);
+        set.CrouchAlertWalkBackward = CreateScopedState(root, character, weaponName, "crouchalert", "walkbackward", true);
 
         // human_sabre_stand_idle_emote_full in rep.lvl doesn't contain the lower body animation, although the .msh does...
         // Idk why, maybe the lower body got compiled out at munge?
-        set.StandIdle = CreateScopedState(root, character, weapon, "stand", "idle_emote", true);
-        set.StandIdleCheckweapon = CreateScopedState(root, character, weapon, "stand", "idle_checkweapon", false);
-        set.StandIdleLookaround = CreateScopedState(root, character, weapon, "stand", "idle_lookaround", false);
-        set.StandWalkForward = CreateScopedState(root, character, weapon, "stand", "walkforward", true);
-        set.StandRunForward = CreateScopedState(root, character, weapon, "stand", "runforward", true);
-        set.StandRunBackward = CreateScopedState(root, character, weapon, "stand", "runbackward", true);
-        set.StandReload = CreateScopedState(root, character, weapon, "stand", "reload", false);
-        set.StandShootPrimary = CreateScopedState(root, character, weapon, "stand", "shoot", false);
-        set.StandShootSecondary = CreateScopedState(root, character, weapon, "stand", "shoot_secondary", false);
-        set.StandAlertIdle = CreateScopedState(root, character, weapon, "standalert", "idle_emote", true);
-        set.StandAlertWalkForward = CreateScopedState(root, character, weapon, "standalert", "walkforward", true);
-        set.StandAlertRunForward = CreateScopedState(root, character, weapon, "standalert", "runforward", true);
-        set.StandAlertRunBackward = CreateScopedState(root, character, weapon, "standalert", "runbackward", true);
-        set.StandTurnLeft = CreateScopedState(root, character, weapon, "stand", "turnleft", false);
-        set.StandTurnRight = CreateScopedState(root, character, weapon, "stand", "turnright", false);
-        set.StandHitFront = CreateScopedState(root, character, weapon, "stand", "hitfront", false);
-        set.StandHitBack = CreateScopedState(root, character, weapon, "stand", "hitback", false);
-        set.StandHitLeft = CreateScopedState(root, character, weapon, "stand", "hitleft", false);
-        set.StandHitRight = CreateScopedState(root, character, weapon, "stand", "hitright", false);
-        set.StandGetupFront = CreateScopedState(root, character, weapon, "stand", "getupfront", false);
-        set.StandGetupBack = CreateScopedState(root, character, weapon, "stand", "getupback", false);
-        set.StandDeathForward = CreateScopedState(root, character, weapon, "stand", "death_forward", false);
-        set.StandDeathBackward = CreateScopedState(root, character, weapon, "stand", "death_backward", false);
-        set.StandDeathLeft = CreateScopedState(root, character, weapon, "stand", "death_left", false);
-        set.StandDeathRight = CreateScopedState(root, character, weapon, "stand", "death_right", false);
-        set.StandDeadhero = CreateScopedState(root, character, weapon, "stand", "idle_emote", false);
+        set.StandIdle = CreateScopedState(root, character, weaponName, "stand", "idle_emote", true);
+        set.StandIdleCheckweapon = CreateScopedState(root, character, weaponName, "stand", "idle_checkweapon", false);
+        set.StandIdleLookaround = CreateScopedState(root, character, weaponName, "stand", "idle_lookaround", false);
+        set.StandWalkForward = CreateScopedState(root, character, weaponName, "stand", "walkforward", true);
+        set.StandRunForward = CreateScopedState(root, character, weaponName, "stand", "runforward", true);
+        set.StandRunBackward = CreateScopedState(root, character, weaponName, "stand", "runbackward", true);
+        set.StandReload = CreateScopedState(root, character, weaponName, "stand", "reload", false);
+        set.StandShootPrimary = CreateScopedState(root, character, weaponName, "stand", "shoot", false);
+        set.StandShootSecondary = CreateScopedState(root, character, weaponName, "stand", "shoot_secondary", false);
+        set.StandAlertIdle = CreateScopedState(root, character, weaponName, "standalert", "idle_emote", true);
+        set.StandAlertWalkForward = CreateScopedState(root, character, weaponName, "standalert", "walkforward", true);
+        set.StandAlertRunForward = CreateScopedState(root, character, weaponName, "standalert", "runforward", true);
+        set.StandAlertRunBackward = CreateScopedState(root, character, weaponName, "standalert", "runbackward", true);
+        set.StandTurnLeft = CreateScopedState(root, character, weaponName, "stand", "turnleft", false);
+        set.StandTurnRight = CreateScopedState(root, character, weaponName, "stand", "turnright", false);
+        set.StandHitFront = CreateScopedState(root, character, weaponName, "stand", "hitfront", false);
+        set.StandHitBack = CreateScopedState(root, character, weaponName, "stand", "hitback", false);
+        set.StandHitLeft = CreateScopedState(root, character, weaponName, "stand", "hitleft", false);
+        set.StandHitRight = CreateScopedState(root, character, weaponName, "stand", "hitright", false);
+        set.StandGetupFront = CreateScopedState(root, character, weaponName, "stand", "getupfront", false);
+        set.StandGetupBack = CreateScopedState(root, character, weaponName, "stand", "getupback", false);
+        set.StandDeathForward = CreateScopedState(root, character, weaponName, "stand", "death_forward", false);
+        set.StandDeathBackward = CreateScopedState(root, character, weaponName, "stand", "death_backward", false);
+        set.StandDeathLeft = CreateScopedState(root, character, weaponName, "stand", "death_left", false);
+        set.StandDeathRight = CreateScopedState(root, character, weaponName, "stand", "death_right", false);
+        set.StandDeadhero = CreateScopedState(root, character, weaponName, "stand", "idle_emote", false);
 
-        set.ThrownBounceFrontSoft = CreateScopedState(root, character, weapon, "thrown", "bouncefrontsoft", false);
-        set.ThrownBounceBackSoft = CreateScopedState(root, character, weapon, "thrown", "bouncebacksoft", false);
-        set.ThrownFlail = CreateScopedState(root, character, weapon, "thrown", "flail", false);
-        set.ThrownFlyingFront = CreateScopedState(root, character, weapon, "thrown", "flyingfront", false);
-        set.ThrownFlyingBack = CreateScopedState(root, character, weapon, "thrown", "flyingback", false);
-        set.ThrownFlyingLeft = CreateScopedState(root, character, weapon, "thrown", "flyingleft", false);
-        set.ThrownFlyingRight = CreateScopedState(root, character, weapon, "thrown", "flyingright", false);
-        set.ThrownLandFrontSoft = CreateScopedState(root, character, weapon, "thrown", "landfrontsoft", false);
-        set.ThrownLandBackSoft = CreateScopedState(root, character, weapon, "thrown", "landbacksoft", false);
-        set.ThrownTumbleFront = CreateScopedState(root, character, weapon, "thrown", "tumblefront", false);
-        set.ThrownTumbleBack = CreateScopedState(root, character, weapon, "thrown", "tumbleback", false);
+        set.ThrownBounceFrontSoft = CreateScopedState(root, character, weaponName, "thrown", "bouncefrontsoft", false);
+        set.ThrownBounceBackSoft = CreateScopedState(root, character, weaponName, "thrown", "bouncebacksoft", false);
+        set.ThrownFlail = CreateScopedState(root, character, weaponName, "thrown", "flail", false);
+        set.ThrownFlyingFront = CreateScopedState(root, character, weaponName, "thrown", "flyingfront", false);
+        set.ThrownFlyingBack = CreateScopedState(root, character, weaponName, "thrown", "flyingback", false);
+        set.ThrownFlyingLeft = CreateScopedState(root, character, weaponName, "thrown", "flyingleft", false);
+        set.ThrownFlyingRight = CreateScopedState(root, character, weaponName, "thrown", "flyingright", false);
+        set.ThrownLandFrontSoft = CreateScopedState(root, character, weaponName, "thrown", "landfrontsoft", false);
+        set.ThrownLandBackSoft = CreateScopedState(root, character, weaponName, "thrown", "landbacksoft", false);
+        set.ThrownTumbleFront = CreateScopedState(root, character, weaponName, "thrown", "tumblefront", false);
+        set.ThrownTumbleBack = CreateScopedState(root, character, weaponName, "thrown", "tumbleback", false);
 
-        set.Sprint = CreateScopedState(root, character, weapon, "sprint", null, true);
-        set.JetpackHover = CreateScopedState(root, character, weapon, "jetpack_hover", null, true);
-        set.Jump = CreateScopedState(root, character, weapon, "jump", null, false);
-        set.Fall = CreateScopedState(root, character, weapon, "fall", null, true);
-        set.LandSoft = CreateScopedState(root, character, weapon, "landsoft", null, false);
-        set.LandHard = CreateScopedState(root, character, weapon, "landhard", null, false);
+        set.Sprint = CreateScopedState(root, character, weaponName, "sprint", null, true);
+        set.JetpackHover = CreateScopedState(root, character, weaponName, "jetpack_hover", null, true);
+        set.Jump = CreateScopedState(root, character, weaponName, "jump", null, false);
+        set.Fall = CreateScopedState(root, character, weaponName, "fall", null, true);
+        set.LandSoft = CreateScopedState(root, character, weaponName, "landsoft", null, false);
+        set.LandHard = CreateScopedState(root, character, weaponName, "landhard", null, false);
 
         WriteInt(set.CrouchIdle, OutputPosture, (int)PhxAnimPosture.Crouch);
         WriteInt(set.CrouchIdleTakeknee, OutputPosture, (int)PhxAnimPosture.Crouch);
@@ -1613,8 +1624,8 @@ public class PhxAnimHuman
             if (field.FieldType == typeof(PhxScopedState))
             {
                 PhxScopedState state = (PhxScopedState)field.GetValue(set);
-                if (state.Lower.IsValid()) state.Lower.SetName($"Lower {weapon} {field.Name}");
-                if (state.Upper.IsValid()) state.Upper.SetName($"Upper {weapon} {field.Name}");
+                if (state.Lower.IsValid()) state.Lower.SetName($"Lower {weaponName} {field.Name}");
+                if (state.Upper.IsValid()) state.Upper.SetName($"Upper {weaponName} {field.Name}");
             }
         }
 #endif

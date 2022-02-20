@@ -207,7 +207,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             new List<IPhxWeapon>()
         };
 
-        HashSet<string> weaponAnimBanks = new HashSet<string>();
+        HashSet<PhxAnimWeapon> weaponAnimBanks = new HashSet<PhxAnimWeapon>();
 
         foreach (Dictionary<string, IPhxPropRef> section in C.Weapons)
         {
@@ -237,10 +237,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     {
                         weap.SetIgnoredColliders(new List<Collider>() {gameObject.GetComponent<CapsuleCollider>()});
 
-                        string weapAnimName = weap.GetAnimBankName();
-                        if (!string.IsNullOrEmpty(weapAnimName))
+                        PhxAnimWeapon weapAnim = weap.GetAnimInfo();
+                        if (!string.IsNullOrEmpty(weapAnim.AnimationBank) && !weaponAnimBanks.Contains(weapAnim))
                         {
-                            weaponAnimBanks.Add(weapAnimName);
+                            weaponAnimBanks.Add(weapAnim);
                         }
 
                         weapons[channel].Add(weap);
@@ -271,7 +271,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Animation
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        string[] weapAnimBanks = new string[weaponAnimBanks.Count];
+        PhxAnimWeapon[] weapAnimBanks = new PhxAnimWeapon[weaponAnimBanks.Count];
         weaponAnimBanks.CopyTo(weapAnimBanks);
 
         string characterAnim = C.AnimationName;
@@ -350,7 +350,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         if (Weapons[channel][WeaponIdx[channel]] != null)
         {
             Weapons[channel][WeaponIdx[channel]].GetInstance().gameObject.SetActive(true);
-            Animator.SetActiveWeaponBank(Weapons[channel][WeaponIdx[channel]].GetAnimBankName());
+            PhxAnimWeapon info = Weapons[channel][WeaponIdx[channel]].GetAnimInfo();
+            Animator.SetActiveWeaponBank(info.AnimationBank);
         }
         else
         {
