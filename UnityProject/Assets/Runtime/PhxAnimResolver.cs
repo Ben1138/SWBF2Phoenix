@@ -105,10 +105,10 @@ public class PhxAnimationResolver
         if (found)
         {
             ResolvedAnimations.Add(new PhxClipSearch { Desc = animDesc, FindScope = findScope }, new PhxCached { Clip = clip, Scope = clipScope });
-            if (resolved != animDesc)
-            {
-                Debug.Log($"{animDesc} --> {resolved}");
-            }
+            //if (resolved != animDesc)
+            //{
+            //    Debug.Log($"{animDesc} --> {resolved}");
+            //}
         }
         animDesc = resolved;
         return found;

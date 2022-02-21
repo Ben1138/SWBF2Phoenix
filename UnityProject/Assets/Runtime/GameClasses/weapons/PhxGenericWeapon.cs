@@ -380,7 +380,7 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
         PhxAnimWeapon info = new PhxAnimWeapon
         {
             AnimationBank = C.AnimationBank.Get(),
-            Combo = C.CustomAnimationBank.Get<string>(2),
+            Combo = C.ComboAnimationBank.Get<string>(2),
             Parent = C.CustomAnimationBank.Get<string>(1),
             SupportsAlert = true,
             SupportsReload = true

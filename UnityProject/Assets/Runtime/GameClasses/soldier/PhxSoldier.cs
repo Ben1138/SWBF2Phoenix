@@ -366,8 +366,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     void FireAnimation(bool primary)
     {
-        //Animator.Anim.SetState(1, Animator.StandShootPrimary);
-        //Animator.Anim.RestartState(1);
         Animator.InputShootPrimary.SetBool(true);
     }
 
@@ -578,6 +576,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
     }
 
+    static bool ShootPrimaryLastFrame = false;
     void UpdateState(float deltaTime)
     {
         if (Context == PhxSoldierContext.Pilot && Controller != null)
@@ -633,7 +632,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     return;
                 }
             }
-            
         }
 
         bool sprint = Controller.Sprint;
@@ -648,6 +646,19 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             ShootPrimary = false;
             ShootSecondary = false;
             reload = false;
+        }
+
+        if (!ShootPrimaryLastFrame && ShootPrimary)
+        {
+            ShootPrimaryLastFrame = true;
+        }
+        else if (ShootPrimaryLastFrame && !ShootPrimary)
+        {
+            ShootPrimaryLastFrame = false;
+        }
+        else if (ShootPrimaryLastFrame && ShootPrimary)
+        {
+            ShootPrimary = false;
         }
 
         if (jump)

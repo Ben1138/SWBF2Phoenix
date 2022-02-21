@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Profiling;
+using LibSWBF2.Enums;
+using LibSWBF2.Wrappers;
+using LibSWBF2.Utils;
 
 
 
@@ -134,6 +137,8 @@ public struct PhxAnimHumanSet
 
 public class PhxAnimHuman
 {
+    PhxEnvironment Env => PhxGame.GetEnvironment();
+
     public CraStateMachine Machine { get; private set; }
     public CraLayer LayerLower { get; private set; }
     public CraLayer LayerUpper { get; private set; }
@@ -166,6 +171,7 @@ public class PhxAnimHuman
     Dictionary<string, int> WeaponAnimToSetIdx;
 
     const float Deadzone = 0.05f;
+    Dictionary<string, CraInput> ComboButtons = new Dictionary<string, CraInput>();
 
 
     public PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, PhxAnimWeapon[] weapons)
@@ -197,6 +203,12 @@ public class PhxAnimHuman
         InputMultiJump = Machine.NewInput(CraValueType.Bool, "Multi Jump");
         InputLandHardness = Machine.NewInput(CraValueType.Int, "Land Hardness");
 
+        ComboButtons = new Dictionary<string, CraInput>
+        {
+            { "Fire", InputShootPrimary },
+            { "FireSecondary", InputShootSecondary },
+        };
+
         OutputPosture = Machine.NewOutput(CraValueType.Int, "Posture");
         OutputStrafeBackwards = Machine.NewOutput(CraValueType.Bool, "Strafe Backwards");
         OutputIsReloading = Machine.NewOutput(CraValueType.Bool, "Is Reloading");
@@ -211,7 +223,7 @@ public class PhxAnimHuman
             WeaponAnimToSetIdx.Add(weapons[i].AnimationBank, i);
             Sets[i] = GenerateSet(root, characterAnimBank, weapons[i]);
 
-            // TODO: Do not generate reload states when current weapon doesn't have/support reload
+            // TODO: Do not generate reload states when current weapon doesn't have/support reload (same for Alert)
             Transitions_Stand(in Sets[i]);
             Transitions_StandReload(in Sets[i]);
             Transitions_StandTurn(in Sets[i]);
@@ -247,7 +259,6 @@ public class PhxAnimHuman
     {
         Debug.Assert(from.IsValid());
         Debug.Assert(to.IsValid());
-        Debug.Assert(args.Length <= 4);
 
         CraTransitionData transition = new CraTransitionData
         {
@@ -257,8 +268,14 @@ public class PhxAnimHuman
 
         // No fixed() needed, since 'transition' is allocated on the stack
         CraConditionOr* or = &transition.Or0;
-        for (int i = 0; i < Mathf.Min(args.Length, 4); ++i)
+        for (int i = 0; i < args.Length; ++i)
         {
+            if (i >= 10)
+            {
+                Debug.LogError("Cra currently doesn't support more than 10 'Or' conditions!");
+                break;
+            }
+
             or[i] = args[i];
         }
 
@@ -1114,7 +1131,7 @@ public class PhxAnimHuman
             }
         );
 
-        Transition(set.Jump, set.Fall, 0.15f,
+        Transition(set.Jump, set.Fall, 1.0f,
             new CraConditionOr
             {
                 And0 = new CraCondition
@@ -1296,98 +1313,6 @@ public class PhxAnimHuman
         );
     }
 
-    //public PhxAnimPosture GetCurrentPosture()
-    //{
-    //    // Maybe introduce CraOutput's such that a state can
-    //    // write to an output when it becomes active and we
-    //    // can simply read that output here instead of doing
-    //    // a whole bunch of compares.
-
-    //    CraState state = LayerLower.GetActiveState();
-    //    PhxAnimHumanSet set = Sets[ActiveSet];
-
-    //    if (state == set.Sprint)
-    //    {
-    //        return PhxAnimPosture.Sprint;
-    //    }
-    //    if (state == set.Jump)
-    //    {
-    //        return PhxAnimPosture.Jump;
-    //    }
-    //    if (state == set.RollLeft)
-    //    {
-    //        return PhxAnimPosture.RollLeft;
-    //    }
-    //    if (state == set.RollRight)
-    //    {
-    //        return PhxAnimPosture.RollRight;
-    //    }
-    //    if (state == set.Jet)
-    //    {
-    //        return PhxAnimPosture.Jet;
-    //    }
-
-    //    if (state == set.StandIdle ||
-    //        state == set.StandIdleCheckweapon ||
-    //        state == set.StandIdleLookaround ||
-    //        state == set.StandTurnLeft ||
-    //        state == set.StandTurnRight ||
-    //        state == set.StandShootPrimary ||
-    //        state == set.StandShootSecondary ||
-    //        state == set.StandReload ||
-    //        state == set.StandRunBackward ||
-    //        state == set.StandRunForward ||
-    //        state == set.StandWalkForward ||
-    //        //state == set.StandWalkBackward ||
-    //        state == set.StandHitFront ||
-    //        state == set.StandHitBack ||
-    //        state == set.StandHitLeft ||
-    //        state == set.StandHitRight ||
-    //        state == set.StandAlertIdle ||
-    //        state == set.StandAlertRunBackward ||
-    //        state == set.StandAlertRunForward ||
-    //        //state == set.StandAlertWalkBackward ||
-    //        state == set.StandAlertWalkForward)
-    //    {
-    //        return PhxAnimPosture.Stand;
-    //    }
-
-    //    if (state == set.CrouchIdle ||
-    //        state == set.CrouchIdleTakeknee ||
-    //        state == set.CrouchTurnLeft ||
-    //        state == set.CrouchTurnRight ||
-    //        state == set.CrouchHitFront ||
-    //        state == set.CrouchHitLeft ||
-    //        state == set.CrouchHitRight ||
-    //        state == set.CrouchShoot ||
-    //        state == set.CrouchReload ||
-    //        state == set.CrouchWalkForward ||
-    //        state == set.CrouchWalkBackward ||
-    //        state == set.CrouchAlertIdle ||
-    //        state == set.CrouchAlertWalkBackward ||
-    //        state == set.CrouchAlertWalkForward)
-    //    {
-    //        return PhxAnimPosture.Crouch;
-    //    }
-
-    //    if (state == set.ThrownBounceFrontSoft ||
-    //        state == set.ThrownBounceBackSoft ||
-    //        state == set.ThrownFlail ||
-    //        state == set.ThrownFlyingFront ||
-    //        state == set.ThrownFlyingBack ||
-    //        state == set.ThrownFlyingLeft ||
-    //        state == set.ThrownFlyingRight ||
-    //        state == set.ThrownLandFrontSoft ||
-    //        state == set.ThrownLandBackSoft ||
-    //        state == set.ThrownTumbleFront ||
-    //        state == set.ThrownTumbleBack)
-    //    {
-    //        return PhxAnimPosture.Thrown;
-    //    }
-
-    //    return PhxAnimPosture.None;
-    //}
-
     public void SetActiveWeaponBank(string weaponAnimBank)
     {
         if (!WeaponAnimToSetIdx.TryGetValue(weaponAnimBank, out int idx))
@@ -1399,6 +1324,11 @@ public class PhxAnimHuman
         // TODO: How to keep current states?
         LayerLower.SetActiveState(Sets[idx].StandIdle.Lower, 0.15f);
         LayerUpper.SetActiveState(Sets[idx].StandIdle.Upper, 0.15f);
+    }
+
+    public void SetActive(bool status = true)
+    {
+        Machine.SetActive(status);
     }
 
     CraState CreateState(Transform root, CraClip clip, bool loop, PhxAnimScope assignScope)
@@ -1486,8 +1416,6 @@ public class PhxAnimHuman
         set.CrouchAlertWalkForward = CreateScopedState(root, character, weaponName, "crouchalert", "walkforward", true);
         set.CrouchAlertWalkBackward = CreateScopedState(root, character, weaponName, "crouchalert", "walkbackward", true);
 
-        // human_sabre_stand_idle_emote_full in rep.lvl doesn't contain the lower body animation, although the .msh does...
-        // Idk why, maybe the lower body got compiled out at munge?
         set.StandIdle = CreateScopedState(root, character, weaponName, "stand", "idle_emote", true);
         set.StandIdleCheckweapon = CreateScopedState(root, character, weaponName, "stand", "idle_checkweapon", false);
         set.StandIdleLookaround = CreateScopedState(root, character, weaponName, "stand", "idle_lookaround", false);
@@ -1616,7 +1544,10 @@ public class PhxAnimHuman
         WriteBool(set.CrouchWalkForward.Upper, OutputIsReloading, false);
         WriteBool(set.CrouchWalkBackward.Upper, OutputIsReloading, false);
 
-
+        if (!string.IsNullOrEmpty(weapon.Combo))
+        {
+            CreateCombo(in set, root, character, weaponName, weapon.Combo);
+        }
 
 #if UNITY_EDITOR
         foreach (var field in set.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
@@ -1631,17 +1562,6 @@ public class PhxAnimHuman
 #endif
 
         return set;
-    }
-
-    public void PlayIntroAnim()
-    {
-        //LayerLower.SetActiveState(Sets[ActiveSet].StandReload);
-        LayerUpper.SetActiveState(Sets[ActiveSet].StandReload.Upper);
-    }
-
-    public void SetActive(bool status = true)
-    {
-        Machine.SetActive(status);
     }
 
     void WriteInt(PhxScopedState state, CraOutput output, int value)
@@ -1664,5 +1584,243 @@ public class PhxAnimHuman
     void WriteBool(CraState state, CraOutput output, bool value)
     {
         state.WriteOutput(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = value } });
+    }
+
+    unsafe void CreateCombo(in PhxAnimHumanSet set, Transform root, string character, string weapon, string comboName)
+    {
+        var con = Env.EnvCon;
+        Config combo = con.FindConfig(EConfigType.Combo, comboName);
+        if (combo == null)
+        {
+            Debug.LogError($"Couldn't find combo {comboName}!");
+        }
+        else
+        {
+            uint Hash_State = HashUtils.GetFNV("State");
+            uint Hash_Duration = HashUtils.GetFNV("Duration");
+            uint Hash_Animation = HashUtils.GetFNV("Animation");
+            uint Hash_EnergyRestoreRate = HashUtils.GetFNV("EnergyRestoreRate");
+            uint Hash_InputLock = HashUtils.GetFNV("InputLock");
+            uint Hash_Transition = HashUtils.GetFNV("Transition");
+            uint Hash_If = HashUtils.GetFNV("If");
+            uint Hash_Or = HashUtils.GetFNV("Or");
+            uint Hash_Button = HashUtils.GetFNV("Button");
+
+            // Since transitions may refer to yet undefined states (or in circles), we need
+            // to store all the transitions and apply them AFTER the full combo has been parsed.
+            List<PhxComboTransitionCache> Transitions = new List<PhxComboTransitionCache>();
+            Dictionary<string, PhxScopedState> ComboStates = new Dictionary<string, PhxScopedState>();
+
+            Field[] fields = combo.GetFields();
+            for (int i = 0; i < fields.Length; ++i)
+            {
+                Field field = fields[i];
+                if (field.GetNameHash() == Hash_State)
+                {
+                    string stateName = field.GetString();
+                    if (ComboStates.ContainsKey(stateName))
+                    {
+                        Debug.LogError($"State '{stateName}' is defined more than once in combo '{comboName}'!");
+                    }
+                    else if (field.Scope != null)
+                    {
+                        List<PhxComboTransitionCache> localTransitions = new List<PhxComboTransitionCache>();
+                        PhxScopedState state = new PhxScopedState();
+                        bool hasAnimation = false;
+
+                        Field[] stateFields = field.Scope.GetFields();
+                        for (int j = 0; j < stateFields.Length; ++j)
+                        {
+                            Field stateField = stateFields[j];
+                            if (stateField.GetNameHash() == Hash_Animation)
+                            {
+                                if (hasAnimation)
+                                {
+                                    Debug.LogError($"Combo '{comboName}' tried to assign more than once Animation to state '{stateName}'!");
+                                    continue;
+                                }
+
+                                string animname = stateField.GetString();
+                                string[] split = animname.Split(new char[] { '_' }, 2);
+                                state = CreateScopedState(root, character, weapon, split[0], split[1], true);
+                                if (state.Lower.IsValid() && state.Upper.IsValid())
+                                {
+                                    state.Lower.GetPlayer().SetLooping(false);
+                                    state.Upper.GetPlayer().SetLooping(false);
+    #if UNITY_EDITOR
+                                    if (state.Lower.IsValid()) state.Lower.SetName($"COMBO Lower {weapon} {stateName}");
+                                    if (state.Upper.IsValid()) state.Upper.SetName($"COMBO Upper {weapon} {stateName}");
+    #endif
+                                    hasAnimation = true;
+                                }
+                                else
+                                {
+                                    Debug.LogError($"Failed to create state '{stateName}' in Combo '{comboName}'!");
+                                }
+                            }
+                            else if (stateField.GetNameHash() == Hash_Duration)
+                            {
+                                float time = stateField.GetFloat(0);
+                                if (time <= 0f)
+                                {
+                                    state.Lower.GetPlayer().SetLooping(true);
+                                    state.Upper.GetPlayer().SetLooping(true);
+                                }
+                                else
+                                {
+                                    bool asFrames = stateField.GetNumValues() > 1 && stateField.GetString(1).ToLower() == "frames";
+                                    if (asFrames)
+                                    {
+                                        // convert from battlefront frames (30 fps) to time
+                                        time /= 30f;
+                                    }
+                                    CraPlayRange range = new CraPlayRange { MinTime = 0f, MaxTime = time };
+                                    state.Lower.GetPlayer().SetPlayRange(range);
+                                    state.Upper.GetPlayer().SetPlayRange(range);
+                                }
+                            }
+                            else if (stateField.GetNameHash() == Hash_Transition)
+                            {
+                                localTransitions.Add(new PhxComboTransitionCache { Transition = stateField });
+                            }
+                        }
+
+                        if (stateName.ToLower() == "idle")
+                        {
+                            hasAnimation = true;
+                            state = set.StandIdle;
+                        }
+
+                        if (hasAnimation)
+                        {
+                            for (int j = 0; j < localTransitions.Count; ++j)
+                            {
+                                var lt = localTransitions[j];
+                                lt.SourceState = state;
+                                localTransitions[j] = lt;
+                            }
+                            ComboStates.Add(stateName, state);
+                            Transitions.AddRange(localTransitions);
+                        }
+                    }
+                }
+            }
+
+            for (int ti = 0; ti < Transitions.Count; ++ti)
+            {
+                if (!Transitions[ti].SourceState.Lower.IsValid() || !Transitions[ti].SourceState.Upper.IsValid())
+                {
+                    // TODO: This should never happen later on
+                    continue;
+                }
+
+                PhxScopedState targetState = set.StandIdle;
+                string targetStateName = Transitions[ti].Transition.GetString();
+                if (targetStateName.ToLower() != "idle")
+                {
+                    if (!ComboStates.TryGetValue(targetStateName, out targetState))
+                    {
+                        Debug.LogError($"Tried to transition to unknown state '{targetStateName}' in combo '{comboName}'!");
+                        continue;
+                    }
+                }
+
+                if (!targetState.Lower.IsValid() || !targetState.Upper.IsValid())
+                {
+                    // TODO: This should never happen later on
+                    continue;
+                }
+
+                List<CraConditionOr> Ors = new List<CraConditionOr>();
+
+                // Assumption: When the target state has the same animation assigned as
+                // the source state, continue playing on target where we left off in source.
+                // E.g.: In rep_hero_obiwan.combo, ATTACK3 and RECOVER3 have the same animation,
+                // but it doesn't restart when entering RECOVER3
+                void CheckSameAnimation(CraState src, CraState tar)
+                {
+                    if (tar.GetPlayer().GetClip() == src.GetPlayer().GetClip())
+                    {
+                        tar.SetSyncState(src);
+                    }
+                }
+                CheckSameAnimation(Transitions[ti].SourceState.Lower, targetState.Lower);
+                CheckSameAnimation(Transitions[ti].SourceState.Upper, targetState.Upper);
+
+
+                Field[] orFields = Transitions[ti].Transition.Scope.GetFields();
+                if (orFields.Length == 0)
+                {
+                    CraConditionOr newOr = new CraConditionOr();
+                    newOr.And0 = new CraCondition
+                    {
+                        Type = CraConditionType.IsFinished
+                    };
+                    Ors.Add(newOr);
+                }
+                else
+                {
+                    for (int oi = 0; oi < orFields.Length; ++oi)
+                    {
+                        Field orField = orFields[oi];
+                        if (orField.GetNameHash() == Hash_If || orField.GetNameHash() == Hash_Or)
+                        {
+                            CraConditionOr newOr = new CraConditionOr();
+                            CraCondition* and = &newOr.And0;
+
+                            int andIdx = 0;
+                            Field[] andFields = orField.Scope.GetFields();
+                            for (int ai = 0; ai < andFields.Length; ++ai)
+                            {
+                                if (andIdx >= 10)
+                                {
+                                    Debug.LogError("Cra currently doesn't support more than 10 'And' conditions!");
+                                    break;
+                                }
+
+                                Field andField = andFields[ai];
+                                if (andField.GetNameHash() == Hash_Button)
+                                {
+                                    string comboButton = andField.GetString();
+                                    if (!ComboButtons.TryGetValue(comboButton, out CraInput input))
+                                    {
+                                        Debug.LogError($"Cannot resolve unknown Combo Button '{comboButton}' to a CraInput!");
+                                        continue;
+                                    }
+
+                                    and[andIdx].Input = input;
+                                    and[andIdx].Type = CraConditionType.Trigger;
+                                    andIdx++;
+                                }
+                            }
+
+                            if (andIdx > 0)
+                            {
+                                Ors.Add(newOr);
+                            }
+                        }
+                    }
+                }
+
+                //if (Ors.Count == 0)
+                //{
+                //    Ors.Add(new CraConditionOr
+                //    {
+                //        And0 = new CraCondition
+                //        {
+                //            Type = CraConditionType.IsFinished
+                //        }
+                //    });
+                //}
+
+                Transition(Transitions[ti].SourceState, targetState, 0.15f, Ors.ToArray());
+            }
+        }
+    }
+
+    struct PhxComboTransitionCache
+    {
+        public PhxScopedState SourceState;
+        public Field Transition;
     }
 }

@@ -61,6 +61,7 @@ public class PhxEnvironment
     public PhxPath GameDataPath { get; private set; }
     public PhxPath AddonDataPath { get; private set; }
     public EnvStage Stage { get; private set; }
+    public Container EnvCon { get; private set; }
 
     bool CanSchedule => Stage == EnvStage.Init || Stage == EnvStage.ExecuteMain;
     bool CanExecute  => Stage == EnvStage.ExecuteMain || Stage == EnvStage.CreateScene || Stage == EnvStage.Loaded;
@@ -68,7 +69,6 @@ public class PhxEnvironment
     PhxLuaRuntime  LuaRT;
     SWBF2Handle LoadscreenHandle;
 
-    Container EnvCon;
     Level     WorldLevel;     // points to level inside 'Loaded'
     Level     LoadscreenLVL;  // points to level inside 'Loaded'
 

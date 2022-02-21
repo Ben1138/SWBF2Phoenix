@@ -35,7 +35,10 @@ public class PhxAnimTest : PhxUnityScript
             //"rep_inf_ep3_engineer",
             //"rep_inf_ep3_officer",
             //"rep_inf_ep3_jettrooper",
-            "rep_hero_obiwan"
+            "rep_hero_obiwan",
+            "rep_hero_aalya",
+            "rep_hero_kiyadi",
+            "rep_hero_macewindu"
         );
 
         PhxLuaAPI.ReadDataFile("side/cis.lvl",
@@ -43,7 +46,8 @@ public class PhxAnimTest : PhxUnityScript
         //    "cis_inf_rocketeer",
         //    "cis_inf_sniper",
         //    "cis_inf_marine"
-                "cis_hero_darthmaul"
+                "cis_hero_darthmaul",
+                "cis_hero_grievous"
         );
     }
 
@@ -104,7 +108,7 @@ public class PhxAnimTest : PhxUnityScript
 
         if (SpawnPlayer)
         {
-            Match.SpawnPlayer(scene.GetClass("cis_hero_darthmaul"), transform.position, Quaternion.identity);
+            Match.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
         }
     }
 

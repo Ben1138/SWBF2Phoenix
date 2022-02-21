@@ -5,6 +5,8 @@ using LibSWBF2.Utils;
 
 public static class PhxAnimLoader
 {
+    public const float BakeFPS = 120f;
+
     public static Container Con;
 
     static Dictionary<uint, CraClip> ClipDB = new Dictionary<uint, CraClip>();
@@ -180,7 +182,7 @@ public static class PhxAnimLoader
             bones.Add(bone);
         }
         srcClip.SetBones(bones.ToArray());
-        srcClip.Bake(120f);
+        srcClip.Bake(BakeFPS);
         clip = CraClip.CreateNew(srcClip);
         ClipDB.Add(animID, clip);
         return clip;

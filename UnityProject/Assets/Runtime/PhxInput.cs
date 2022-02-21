@@ -53,4 +53,6 @@ public class PhxInput
     {
         return !IsAxis(input) || input == PhxInputControl.FireBoth;
     }
+
+
 }
