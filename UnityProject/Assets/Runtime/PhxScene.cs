@@ -72,8 +72,7 @@ public class PhxScene
             MaxBones       = 30000,
 
             StateMachines  = new CraBufferSettings { Capacity = 2000,   GrowFactor = 1.5f },
-            Inputs         = new CraBufferSettings { Capacity = 10000,  GrowFactor = 1.5f },
-            Outputs        = new CraBufferSettings { Capacity = 10000,  GrowFactor = 1.5f },
+            MachineValues  = new CraBufferSettings { Capacity = 10000,  GrowFactor = 1.5f },
             States         = new CraBufferSettings { Capacity = 200000, GrowFactor = 1.5f },
             Transitions    = new CraBufferSettings { Capacity = 40000,  GrowFactor = 1.5f },
 

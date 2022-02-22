@@ -193,7 +193,7 @@ public class PhxPropertySection : IEnumerable
             string sectionPropName = Properties[i].Item1;
             // Since property sections sometimes don't have a header, their property names
             // will have a number postfix on them instead.
-            for (int j = 1; j < 10; ++j)
+            for (int j = 0; j < 10; ++j)
             {
                 if (propNameHash == HashUtils.GetFNV($"{sectionPropName}{(j == 0 ? "" : j.ToString())}"))
                 {

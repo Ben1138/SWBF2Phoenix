@@ -474,7 +474,7 @@ public class PhxAnimStateMachineManager
         return h;
     }
 
-    public void StateMachine_SetInputFloat(CraInput input, float value)
+    public void StateMachine_SetInputFloat(CraMachineValue input, float value)
     {
         input.SetFloat(value);
     }

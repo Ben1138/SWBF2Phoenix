@@ -289,7 +289,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         // Assume we're grounded on spawn
         Grounded = true;
-        Animator.InputGrounded.SetBool(true);
+        Animator.InGrounded.SetBool(true);
 
         // this needs to happen after the Animator is initialized, since swicthing
         // will weapons will most likely cause an animation bank change aswell
@@ -307,7 +307,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Destroy(Body);
         Body = null;
         Grounded = true;
-        Animator.InputGrounded.SetBool(true);
+        Animator.InGrounded.SetBool(true);
 
         Destroy(GetComponent<CapsuleCollider>());
     }
@@ -365,12 +365,12 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     public override void PlayIntroAnim()
     {
-        Animator.InputReload.SetTrigger(true);
+        Animator.InReload.SetTrigger(true);
     }
 
     void FireAnimation(bool primary)
     {
-        Animator.InputShootPrimary.SetBool(true);
+        Animator.InShootPrimary.SetBool(true);
     }
 
     void Reload()
@@ -643,7 +643,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         bool ShootPrimary = Controller.ShootPrimary;
         bool ShootSecondary = Controller.ShootSecondary;
         bool reload = Controller.Reload;
-        if (Animator.OutputIsReloading.GetBool())
+        if (Animator.OutIsReloading.GetBool())
         {
             sprint = false;
             jump = false;
@@ -670,19 +670,18 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
         }
 
-        Animator.InputMovementX.SetFloat(Controller.MoveDirection.x);
-        Animator.InputMovementY.SetFloat(Controller.MoveDirection.y);
-        Animator.InputCrouch.SetBool(Controller.Crouch);
-        Animator.InputSprint.SetBool(sprint);
-        Animator.InputJump.SetTrigger(jump);
-        Animator.InputShootPrimary.SetTrigger(ShootPrimary);
-        Animator.InputShootSecondary.SetTrigger(ShootSecondary);
-        Animator.InputReload.SetTrigger(reload);
-        Animator.InputEnergy.SetFloat(100.0f);
-        Animator.InputGrounded.SetBool(Grounded);
+        Animator.InMovementX.SetFloat(Controller.MoveDirection.x);
+        Animator.InMovementY.SetFloat(Controller.MoveDirection.y);
+        Animator.InCrouch.SetBool(Controller.Crouch);
+        Animator.InSprint.SetBool(sprint);
+        Animator.InJump.SetTrigger(jump);
+        Animator.InShootPrimary.SetTrigger(ShootPrimary);
+        Animator.InShootSecondary.SetTrigger(ShootSecondary);
+        Animator.InReload.SetTrigger(reload);
+        Animator.InEnergy.SetFloat(100.0f);
+        Animator.InGrounded.SetBool(Grounded);
 
-        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutputPosture.GetInt();
-        Animator.InputPosture.SetInt((int)posture);
+        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutPosture.GetInt();
 
         if (Controller.NextPrimaryWeapon)
         {
@@ -699,14 +698,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             if (player.IsValid())
             {
                 float time = player.GetTime();
-                for (int i = 0; i < Animator.OutputAttacks.Length; ++i)
+                for (int i = 0; i < Animator.OutAttacks.Length; ++i)
                 {
-                    var output = Animator.OutputAttacks[i];
-                    if (output.OutputAttackID.GetInt() >= 0)
+                    var output = Animator.OutAttacks[i];
+                    if (output.AttackID.GetInt() >= 0)
                     {
-                        float timeStart = output.OutputAttackDamageTimeStart.GetFloat();
-                        float timeEnd = output.OutputAttackDamageTimeEnd.GetFloat();
-                        PhxAnimTimeMode mode = (PhxAnimTimeMode)output.OutputAttackDamageTimeMode.GetInt();
+                        float timeStart = output.AttackDamageTimeStart.GetFloat();
+                        float timeEnd = output.AttackDamageTimeEnd.GetFloat();
+                        PhxAnimTimeMode mode = (PhxAnimTimeMode)output.AttackDamageTimeMode.GetInt();
                         if (mode == PhxAnimTimeMode.Frames)
                         {
                             // Battlefront Frames (30 FPS) to time
@@ -728,7 +727,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                                 continue;
                             }
 
-                            int edge = output.OutputAttackEdge.GetInt();
+                            int edge = output.AttackEdge.GetInt();
                             if (edge >= melee.C.LightSabers.Sections.Length)
                             {
                                 Debug.LogError($"Tried to perform melee attack on edge {edge} with just {melee.C.LightSabers.Sections.Length} edges present!");
@@ -741,14 +740,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                             Debug.Assert(lengthProp != null);
                             Debug.Assert(widthProp != null);
 
-                            float length = output.OutputAttackDamageLength.GetFloat();
-                            if (output.OutputAttackDamageLengthFromEdge.GetBool())
+                            float length = output.AttackDamageLength.GetFloat();
+                            if (output.AttackDamageLengthFromEdge.GetBool())
                             {
                                 length *= lengthProp;
                             }
 
-                            float width = output.OutputAttackDamageWidth.GetFloat();
-                            if (output.OutputAttackDamageLengthFromEdge.GetBool())
+                            float width = output.AttackDamageWidth.GetFloat();
+                            if (output.AttackDamageLengthFromEdge.GetBool())
                             {
                                 width *= widthProp;
                             }
@@ -771,7 +770,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                                     continue;
                                 }
 
-                                float damage = output.OutputAttackDamage.GetFloat();
+                                float damage = output.AttackDamage.GetFloat();
                                 Debug.Log($"Deal {damage} Damage to {hits[hi].gameObject.name}!");
                             }
                         }
@@ -798,7 +797,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Vector3 moveDirWorld = lookRot * moveDirLocal;
 
             float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
-            Animator.InputMagnitude.SetFloat(walk);
+            Animator.InMagnitude.SetFloat(walk);
 
             // TODO: base turn speed in degreees/sec really 45?
             MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
@@ -820,7 +819,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                         TurnTimer = TurnTime;
                         TurnStart = transform.rotation;
 
-                        CraInput turn = rotDiff < 0f ? Animator.InputTurnLeft : Animator.InputTurnRight;
+                        CraMachineValue turn = rotDiff < 0f ? Animator.InTurnLeft : Animator.InTurnRight;
                         turn.SetTrigger(true);
                     }
 
@@ -837,7 +836,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
 
                 moveRot = Quaternion.LookRotation(moveDirWorld);
-                if (Animator.OutputStrafeBackwards.GetBool())
+                if (Animator.OutStrafeBackwards.GetBool())
                 {
                     // invert look direction when strafing left/right backwards
                     moveDirWorld = -moveDirWorld;
@@ -847,7 +846,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
             if (!IsFixated)
             {
-                Animator.InputMagnitude.SetFloat(Body.velocity.magnitude / 7f);
+                Animator.InMagnitude.SetFloat(Body.velocity.magnitude / 7f);
             }
         }
         else
@@ -857,7 +856,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 FallTimer += deltaTime;
                 if (Grounded)
                 {
-                    Animator.InputLandHardness.SetInt(FallTimer < 1f ? 1 : 2);
+                    Animator.InLandHardness.SetInt(FallTimer < 1f ? 1 : 2);
                 }
                 else
                 {
@@ -888,10 +887,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
             if (posture == PhxAnimPosture.Land)
             {
-                Animator.InputLandHardness.SetInt(0);
+                Animator.InLandHardness.SetInt(0);
             }
 
-            Animator.InputMagnitude.SetFloat(0f);
+            Animator.InMagnitude.SetFloat(0f);
         }
 
         if (IsFixated)
@@ -1016,7 +1015,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             return;
         }
 
-        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutputPosture.GetInt();
+        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutPosture.GetInt();
         if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch)
         {
             //if (Animator.Anim.GetCurrentStateIdx(1) == Animator.StandShootPrimary)

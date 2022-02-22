@@ -84,9 +84,12 @@ public abstract class PhxClass
                         {
                             foundSections.Add(new Dictionary<string, IPhxPropRef>());
                             currSection = foundSections[foundSections.Count - 1];
-                            currentSectionIdx = int.Parse(propValues[i]);
+                            if (!int.TryParse(propValues[i], out currentSectionIdx))
+                            {
+                                currentSectionIdx = PhxUtils.IntFromStringEnd(propValues[i], out _);
+                            }
                         }
-                        else if (section.ContainsProperty(propHashes[i], out _, out int sectionIdx) && sectionIdx != currentSectionIdx)
+                        else if (section.ContainsProperty(propHashes[i], out _, out int sectionIdx) && sectionIdx > 0 &&  sectionIdx != currentSectionIdx)
                         {
                             foundSections.Add(new Dictionary<string, IPhxPropRef>());
                             currSection = foundSections[foundSections.Count - 1];
