@@ -20,6 +20,8 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         // TODO: AttachedFirePoint (see cis_weap_doublesaber.odf)
     }
 
+    List<Transform> Edges = new List<Transform>();
+
     static Material LightsaberMat;
     LineRenderer Blade;
 
@@ -56,6 +58,15 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         return info;
     }
 
+    public Transform GetEdge(int idx)
+    {
+        if (idx >= 0 && idx < Edges.Count)
+        {
+            return Edges[idx];
+        }
+        return null;
+    }
+
     void CreateBlade(Dictionary<string, IPhxPropRef> bladeProps)
     {
         PhxProp<string> firePointName = bladeProps["FirePointName"] as PhxProp<string>;
@@ -70,6 +81,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
             Debug.LogError($"Couldn't find '{firePointName}' for lightsaber blade!");
             return;
         }
+        Edges.Add(firePoint);
 
         Blade = firePoint.gameObject.AddComponent<LineRenderer>();
         Blade.shadowCastingMode = ShadowCastingMode.Off;
@@ -94,7 +106,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         Blade.material.SetFloat("_EmissiveExposureWeight", 0.0f);
 
         GameObject pointLightGO = new GameObject("LightsaberLight");
-        pointLightGO.transform.SetParent(FirePoint);
+        pointLightGO.transform.SetParent(firePoint);
         pointLightGO.transform.localPosition = new Vector3(0f, 0f, lightSaberLength / 2f);
 
         var pointLight = pointLightGO.AddHDLight(HDLightTypeAndShape.Point);

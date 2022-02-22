@@ -101,6 +101,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     PhxAnimHuman Animator;
     PhxAnimHandle StateMachine;
     Rigidbody Body;
+    CapsuleCollider MovementColl;
 
     // Important skeleton bones
     Transform HpWeapons;
@@ -143,8 +144,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     bool IsFixated => Body == null;
 
 
-    bool bHasLookaroundIdleAnim = false;
-    bool bHasCheckweaponIdleAnim = false;
+    bool HasCombo = false;
     bool LastIdle = false;
     const float IdleTime = 10f;
 
@@ -186,10 +186,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
-        CapsuleCollider coll = gameObject.AddComponent<CapsuleCollider>();
-        coll.height = 1.8f;
-        coll.radius = 0.3f;
-        coll.center = new Vector3(0f, 0.9f, 0f);
+        MovementColl = gameObject.AddComponent<CapsuleCollider>();
+        MovementColl.height = 1.8f;
+        MovementColl.radius = 0.3f;
+        MovementColl.center = new Vector3(0f, 0.9f, 0f);
 
         // Idk whether there's a better method for this, but haven't found any
         GroundedLayerMask = 0;
@@ -240,6 +240,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                         PhxAnimWeapon weapAnim = weap.GetAnimInfo();
                         if (!string.IsNullOrEmpty(weapAnim.AnimationBank) && !weaponAnimBanks.Contains(weapAnim))
                         {
+                            if (!string.IsNullOrEmpty(weapAnim.Combo))
+                            {
+                                HasCombo = true;
+                            }
                             weaponAnimBanks.Add(weapAnim);
                         }
 
@@ -678,6 +682,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InputGrounded.SetBool(Grounded);
 
         PhxAnimPosture posture = (PhxAnimPosture)Animator.OutputPosture.GetInt();
+        Animator.InputPosture.SetInt((int)posture);
 
         if (Controller.NextPrimaryWeapon)
         {
@@ -687,6 +692,93 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         //{
         //    NextWeapon(1);
         //}
+
+        if (HasCombo)
+        {
+            CraPlayer player = Animator.LayerUpper.GetActiveState().GetPlayer();
+            if (player.IsValid())
+            {
+                float time = player.GetTime();
+                for (int i = 0; i < Animator.OutputAttacks.Length; ++i)
+                {
+                    var output = Animator.OutputAttacks[i];
+                    if (output.OutputAttackID.GetInt() >= 0)
+                    {
+                        float timeStart = output.OutputAttackDamageTimeStart.GetFloat();
+                        float timeEnd = output.OutputAttackDamageTimeEnd.GetFloat();
+                        PhxAnimTimeMode mode = (PhxAnimTimeMode)output.OutputAttackDamageTimeMode.GetInt();
+                        if (mode == PhxAnimTimeMode.Frames)
+                        {
+                            // Battlefront Frames (30 FPS) to time
+                            timeStart /= 30f;
+                            timeEnd /= 30f;
+                        }
+                        else if (mode == PhxAnimTimeMode.FromAnim)
+                        {
+                            timeStart *= player.GetClip().GetDuration();
+                            timeEnd *= player.GetClip().GetDuration();
+                        }
+
+                        if (time >= timeStart && time <= timeEnd)
+                        {
+                            PhxMelee melee = Weapons[0][WeaponIdx[0]] as PhxMelee;
+                            if (melee == null)
+                            {
+                                Debug.LogError("Tried to perform melee attack with no melee weapon in hand!");
+                                continue;
+                            }
+
+                            int edge = output.OutputAttackEdge.GetInt();
+                            if (edge >= melee.C.LightSabers.Sections.Length)
+                            {
+                                Debug.LogError($"Tried to perform melee attack on edge {edge} with just {melee.C.LightSabers.Sections.Length} edges present!");
+                                continue;
+                            }
+
+                            var section = melee.C.LightSabers.Sections[edge];
+                            PhxProp<float> lengthProp = section["LightSaberLength"] as PhxProp<float>;
+                            PhxProp<float> widthProp = section["LightSaberWidth"] as PhxProp<float>;
+                            Debug.Assert(lengthProp != null);
+                            Debug.Assert(widthProp != null);
+
+                            float length = output.OutputAttackDamageLength.GetFloat();
+                            if (output.OutputAttackDamageLengthFromEdge.GetBool())
+                            {
+                                length *= lengthProp;
+                            }
+
+                            float width = output.OutputAttackDamageWidth.GetFloat();
+                            if (output.OutputAttackDamageLengthFromEdge.GetBool())
+                            {
+                                width *= widthProp;
+                            }
+
+                            Transform edgeTransform = melee.GetEdge(edge);
+                            Debug.Assert(edgeTransform != null);
+
+                            Vector3 edgeFrom = edgeTransform.position;
+                            Vector3 edgeTo = edgeFrom + edgeTransform.forward * length;
+
+                            int mask = 0;
+                            mask |= 1 << LayerMask.NameToLayer("SoldierAll");
+                            mask |= 1 << LayerMask.NameToLayer("VehicleAll");
+                            mask |= 1 << LayerMask.NameToLayer("BuildingAll");
+                            Collider[] hits = Physics.OverlapCapsule(edgeFrom, edgeTo, width, mask, QueryTriggerInteraction.Ignore);
+                            for (int hi = 0; hi < hits.Length; ++hi)
+                            {
+                                if (hits[hi] == MovementColl)
+                                {
+                                    continue;
+                                }
+
+                                float damage = output.OutputAttackDamage.GetFloat();
+                                Debug.Log($"Deal {damage} Damage to {hits[hi].gameObject.name}!");
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         Vector3 lookWalkForward = Controller.ViewDirection;
         lookWalkForward.y = 0f;

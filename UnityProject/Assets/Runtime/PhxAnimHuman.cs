@@ -135,6 +135,26 @@ public struct PhxAnimHumanSet
     public PhxScopedState Sprint;
 }
 
+public enum PhxAnimTimeMode
+{
+    Seconds, Frames, FromAnim
+}
+
+public struct PhxAnimAttackOutput
+{
+    public CraOutput OutputAttackID;
+    public CraOutput OutputAttackEdge;
+    public CraOutput OutputAttackDamageTimeStart;
+    public CraOutput OutputAttackDamageTimeEnd;
+    public CraOutput OutputAttackDamageTimeMode; // PhxAnimTimeMode
+    public CraOutput OutputAttackDamageLength;
+    public CraOutput OutputAttackDamageLengthFromEdge; // bool
+    public CraOutput OutputAttackDamageWidth;
+    public CraOutput OutputAttackDamageWidthFromEdge;
+    public CraOutput OutputAttackDamage;
+    public CraOutput OutputAttackPush;
+}
+
 public class PhxAnimHuman
 {
     PhxEnvironment Env => PhxGame.GetEnvironment();
@@ -158,10 +178,12 @@ public class PhxAnimHuman
     public CraInput InputGrounded { get; private set; }
     public CraInput InputMultiJump { get; private set; }
     public CraInput InputLandHardness { get; private set; }
+    public CraInput InputPosture { get; private set; }
 
     public CraOutput OutputPosture { get; private set; }
     public CraOutput OutputStrafeBackwards { get; private set; }
     public CraOutput OutputIsReloading { get; private set; }
+    public PhxAnimAttackOutput[] OutputAttacks { get; private set; }
 
 
     PhxAnimHumanSet[] Sets;
@@ -173,8 +195,24 @@ public class PhxAnimHuman
     const float Deadzone = 0.05f;
     Dictionary<string, CraInput> ComboButtons = new Dictionary<string, CraInput>();
 
+    static Dictionary<string, PhxAnimPosture> StrToPosture = new Dictionary<string, PhxAnimPosture>()
+    {
+        { "All", PhxAnimPosture.All },
+        { "Any", PhxAnimPosture.All },
 
-    public PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, PhxAnimWeapon[] weapons)
+        { "Stand",     PhxAnimPosture.Stand     },
+        { "Crouch",    PhxAnimPosture.Crouch    },
+        { "Prone",     PhxAnimPosture.Prone     },
+        { "Sprint",    PhxAnimPosture.Sprint    },
+        { "Jump",      PhxAnimPosture.Jump      },
+        { "RollLeft",  PhxAnimPosture.RollLeft  },
+        { "RollRight", PhxAnimPosture.RollRight },
+        { "Roll",      PhxAnimPosture.Roll      },
+        { "Jet",       PhxAnimPosture.Jet       },
+    };
+
+
+    public unsafe PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, PhxAnimWeapon[] weapons)
     {
         Debug.Assert(weapons != null);
         Debug.Assert(weapons.Length > 0);
@@ -202,6 +240,7 @@ public class PhxAnimHuman
         InputGrounded = Machine.NewInput(CraValueType.Bool, "Grounded");
         InputMultiJump = Machine.NewInput(CraValueType.Bool, "Multi Jump");
         InputLandHardness = Machine.NewInput(CraValueType.Int, "Land Hardness");
+        InputPosture = Machine.NewInput(CraValueType.Int, "Posture");
 
         ComboButtons = new Dictionary<string, CraInput>
         {
@@ -213,13 +252,30 @@ public class PhxAnimHuman
         OutputStrafeBackwards = Machine.NewOutput(CraValueType.Bool, "Strafe Backwards");
         OutputIsReloading = Machine.NewOutput(CraValueType.Bool, "Is Reloading");
 
+        OutputAttacks = new PhxAnimAttackOutput[4];
+        for (int i = 0; i < OutputAttacks.Length; ++i)
+        {
+            OutputAttacks[i].OutputAttackID = Machine.NewOutput(CraValueType.Int, $"[{i}] Attack ID");
+            OutputAttacks[i].OutputAttackEdge = Machine.NewOutput(CraValueType.Int, $"[{i}] Attack Edge");
+            OutputAttacks[i].OutputAttackDamageTimeStart = Machine.NewOutput(CraValueType.Float, $"[{i}] Attack Damage Time Start");
+            OutputAttacks[i].OutputAttackDamageTimeEnd = Machine.NewOutput(CraValueType.Float, $"[{i}] Attack Damage Time End");
+            OutputAttacks[i].OutputAttackDamageTimeMode = Machine.NewOutput(CraValueType.Int, $"[{i}] Attack Damage Time Mode");
+            OutputAttacks[i].OutputAttackDamageLength = Machine.NewOutput(CraValueType.Float, $"[{i}] Attack Damage Length");
+            OutputAttacks[i].OutputAttackDamageLengthFromEdge = Machine.NewOutput(CraValueType.Bool, $"[{i}] Attack Damage Length From Edge");
+            OutputAttacks[i].OutputAttackDamageWidth = Machine.NewOutput(CraValueType.Float, $"[{i}] Attack Damage Width");
+            OutputAttacks[i].OutputAttackDamageWidthFromEdge = Machine.NewOutput(CraValueType.Bool, $"[{i}] Attack Damage Width From Edge");
+            OutputAttacks[i].OutputAttackDamage = Machine.NewOutput(CraValueType.Float, $"[{i}] Attack Damage");
+            OutputAttacks[i].OutputAttackPush = Machine.NewOutput(CraValueType.Float, $"[{i}] Attack IPush");
+
+            // TODO: Unify inputs and outputs
+            OutputAttacks[i].OutputAttackID.SetValue(new CraValueUnion { Type = CraValueType.Int, ValueInt = -1 });
+        }
+
         Sets = new PhxAnimHumanSet[weapons.Length];
         ActiveSet = 0;
 
         for (int i = 0; i < Sets.Length; ++i)
         {
-            bool weaponSupportsAlert = true;
-
             WeaponAnimToSetIdx.Add(weapons[i].AnimationBank, i);
             Sets[i] = GenerateSet(root, characterAnimBank, weapons[i]);
 
@@ -1462,87 +1518,80 @@ public class PhxAnimHuman
         set.LandSoft = CreateScopedState(root, character, weaponName, "landsoft", null, false);
         set.LandHard = CreateScopedState(root, character, weaponName, "landhard", null, false);
 
-        WriteInt(set.CrouchIdle, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchIdleTakeknee, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchHitFront, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchHitLeft, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchHitRight, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchReload, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchShoot, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchTurnLeft, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchTurnRight, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchWalkForward, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchWalkBackward, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchAlertIdle, OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchAlertWalkForward , OutputPosture, (int)PhxAnimPosture.Crouch);
-        WriteInt(set.CrouchAlertWalkBackward, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchIdle, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchIdleTakeknee, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchHitFront, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchHitLeft, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchHitRight, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchReload, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchShoot, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchTurnLeft, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchTurnRight, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchWalkForward, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchWalkBackward, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchAlertIdle, OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchAlertWalkForward , OutputPosture, (int)PhxAnimPosture.Crouch);
+        WriteIntOnEnter(set.CrouchAlertWalkBackward, OutputPosture, (int)PhxAnimPosture.Crouch);
 
-        WriteInt(set.StandIdle, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandIdleCheckweapon, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandIdleLookaround, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandWalkForward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandRunForward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandRunBackward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandReload, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandShootPrimary, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandShootSecondary, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandAlertIdle, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandAlertWalkForward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandAlertRunForward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandAlertRunBackward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandTurnLeft, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandTurnRight, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandHitFront, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandHitBack, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandHitLeft, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandHitRight, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandGetupFront, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandGetupBack, OutputPosture, (int)PhxAnimPosture.Stand);        
-        WriteInt(set.StandDeathForward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandDeathBackward, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandDeathLeft, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandDeathRight, OutputPosture, (int)PhxAnimPosture.Stand);
-        WriteInt(set.StandDeadhero, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandIdle, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandIdleCheckweapon, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandIdleLookaround, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandWalkForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandRunForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandRunBackward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandReload, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandShootPrimary, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandShootSecondary, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandAlertIdle, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandAlertWalkForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandAlertRunForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandAlertRunBackward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandTurnLeft, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandTurnRight, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandHitFront, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandHitBack, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandHitLeft, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandHitRight, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandGetupFront, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandGetupBack, OutputPosture, (int)PhxAnimPosture.Stand);        
+        WriteIntOnEnter(set.StandDeathForward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandDeathBackward, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandDeathLeft, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandDeathRight, OutputPosture, (int)PhxAnimPosture.Stand);
+        WriteIntOnEnter(set.StandDeadhero, OutputPosture, (int)PhxAnimPosture.Stand);
 
-        WriteInt(set.ThrownBounceFrontSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownBounceBackSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownFlail, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownFlyingFront, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownFlyingBack, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownFlyingLeft, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownFlyingRight, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownLandFrontSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownLandBackSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownTumbleFront, OutputPosture, (int)PhxAnimPosture.Thrown);
-        WriteInt(set.ThrownTumbleBack, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownBounceFrontSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownBounceBackSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownFlail, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownFlyingFront, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownFlyingBack, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownFlyingLeft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownFlyingRight, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownLandFrontSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownLandBackSoft, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownTumbleFront, OutputPosture, (int)PhxAnimPosture.Thrown);
+        WriteIntOnEnter(set.ThrownTumbleBack, OutputPosture, (int)PhxAnimPosture.Thrown);
 
-        WriteInt(set.Sprint, OutputPosture, (int)PhxAnimPosture.Sprint);
-        WriteInt(set.JetpackHover, OutputPosture, (int)PhxAnimPosture.Jet);
-        WriteInt(set.Jump, OutputPosture, (int)PhxAnimPosture.Jump);
-        WriteInt(set.Fall, OutputPosture, (int)PhxAnimPosture.Fall);
-        WriteInt(set.LandSoft, OutputPosture, (int)PhxAnimPosture.Land);
-        WriteInt(set.LandHard, OutputPosture, (int)PhxAnimPosture.Land);
+        WriteIntOnEnter(set.Sprint, OutputPosture, (int)PhxAnimPosture.Sprint);
+        WriteIntOnEnter(set.JetpackHover, OutputPosture, (int)PhxAnimPosture.Jet);
+        WriteIntOnEnter(set.Jump, OutputPosture, (int)PhxAnimPosture.Jump);
+        WriteIntOnEnter(set.Fall, OutputPosture, (int)PhxAnimPosture.Fall);
+        WriteIntOnEnter(set.LandSoft, OutputPosture, (int)PhxAnimPosture.Land);
+        WriteIntOnEnter(set.LandHard, OutputPosture, (int)PhxAnimPosture.Land);
 
 
-        WriteBool(set.StandRunBackward, OutputStrafeBackwards, true);
-        WriteBool(set.StandAlertRunBackward, OutputStrafeBackwards, true);
-        WriteBool(set.CrouchAlertWalkBackward, OutputStrafeBackwards, true);
+        WriteBoolOnEnter(set.StandRunBackward, OutputStrafeBackwards, true);
+        WriteBoolOnEnter(set.StandAlertRunBackward, OutputStrafeBackwards, true);
+        WriteBoolOnEnter(set.CrouchAlertWalkBackward, OutputStrafeBackwards, true);
+        WriteBoolOnLeave(set.StandRunBackward, OutputStrafeBackwards, false);
+        WriteBoolOnLeave(set.StandAlertRunBackward, OutputStrafeBackwards, false);
+        WriteBoolOnLeave(set.CrouchAlertWalkBackward, OutputStrafeBackwards, false);
 
-        WriteBool(set.StandWalkForward, OutputStrafeBackwards, false);
-        WriteBool(set.StandRunForward, OutputStrafeBackwards, false);
-        WriteBool(set.StandAlertWalkForward, OutputStrafeBackwards, false);
-        WriteBool(set.StandAlertRunForward, OutputStrafeBackwards, false);
-        WriteBool(set.CrouchAlertWalkForward, OutputStrafeBackwards, false);
+        WriteBoolOnEnter(set.StandReload, OutputIsReloading, true);
+        WriteBoolOnEnter(set.CrouchReload, OutputIsReloading, true);
+        WriteBoolOnLeave(set.StandReload, OutputIsReloading, false);
+        WriteBoolOnLeave(set.CrouchReload, OutputIsReloading, false);
 
-        WriteBool(set.StandReload, OutputIsReloading, true);
-        WriteBool(set.StandIdle.Upper, OutputIsReloading, false);
-        WriteBool(set.StandWalkForward.Upper, OutputIsReloading, false);
-        WriteBool(set.StandRunForward.Upper, OutputIsReloading, false);
-        WriteBool(set.StandRunBackward.Upper, OutputIsReloading, false);
-        WriteBool(set.CrouchReload, OutputIsReloading, true);
-        WriteBool(set.CrouchIdle.Upper, OutputIsReloading, false);
-        WriteBool(set.CrouchWalkForward.Upper, OutputIsReloading, false);
-        WriteBool(set.CrouchWalkBackward.Upper, OutputIsReloading, false);
 
         if (!string.IsNullOrEmpty(weapon.Combo))
         {
@@ -1564,26 +1613,37 @@ public class PhxAnimHuman
         return set;
     }
 
-    void WriteInt(PhxScopedState state, CraOutput output, int value)
+    void WriteIntOnEnter(PhxScopedState state, CraOutput output, int value)
     {
-        WriteInt(state.Lower, output, value);
-        WriteInt(state.Upper, output, value);
+        WriteIntOnEnter(state.Lower, output, value);
+        WriteIntOnEnter(state.Upper, output, value);
     }
 
-    void WriteInt(CraState state, CraOutput output, int value)
+    void WriteIntOnEnter(CraState state, CraOutput output, int value)
     {
-        state.WriteOutput(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = value } });
+        state.WriteOutputOnEnter(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = value } });
     }
 
-    void WriteBool(PhxScopedState state, CraOutput output, bool value)
+    void WriteBoolOnEnter(PhxScopedState state, CraOutput output, bool value)
     {
-        WriteBool(state.Lower, output, value);
-        WriteBool(state.Upper, output, value);
+        WriteBoolOnEnter(state.Lower, output, value);
+        WriteBoolOnEnter(state.Upper, output, value);
     }
 
-    void WriteBool(CraState state, CraOutput output, bool value)
+    void WriteBoolOnLeave(CraState state, CraOutput output, bool value)
     {
-        state.WriteOutput(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = value } });
+        state.WriteOutputOnLeave(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = value } });
+    }
+
+    void WriteBoolOnLeave(PhxScopedState state, CraOutput output, bool value)
+    {
+        WriteBoolOnLeave(state.Lower, output, value);
+        WriteBoolOnLeave(state.Upper, output, value);
+    }
+
+    void WriteBoolOnEnter(CraState state, CraOutput output, bool value)
+    {
+        state.WriteOutputOnEnter(new CraWriteOutput { Output = output, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = value } });
     }
 
     unsafe void CreateCombo(in PhxAnimHumanSet set, Transform root, string character, string weapon, string comboName)
@@ -1596,20 +1656,10 @@ public class PhxAnimHuman
         }
         else
         {
-            uint Hash_State = HashUtils.GetFNV("State");
-            uint Hash_Duration = HashUtils.GetFNV("Duration");
-            uint Hash_Animation = HashUtils.GetFNV("Animation");
-            uint Hash_EnergyRestoreRate = HashUtils.GetFNV("EnergyRestoreRate");
-            uint Hash_InputLock = HashUtils.GetFNV("InputLock");
-            uint Hash_Transition = HashUtils.GetFNV("Transition");
-            uint Hash_If = HashUtils.GetFNV("If");
-            uint Hash_Or = HashUtils.GetFNV("Or");
-            uint Hash_Button = HashUtils.GetFNV("Button");
-
             // Since transitions may refer to yet undefined states (or in circles), we need
             // to store all the transitions and apply them AFTER the full combo has been parsed.
             List<PhxComboTransitionCache> Transitions = new List<PhxComboTransitionCache>();
-            Dictionary<string, PhxScopedState> ComboStates = new Dictionary<string, PhxScopedState>();
+            Dictionary<string, PhxComboState> ComboStates = new Dictionary<string, PhxComboState>();
 
             Field[] fields = combo.GetFields();
             for (int i = 0; i < fields.Length; ++i)
@@ -1618,91 +1668,285 @@ public class PhxAnimHuman
                 if (field.GetNameHash() == Hash_State)
                 {
                     string stateName = field.GetString();
+                    bool isIdle = stateName.ToLower() == "idle";
+
                     if (ComboStates.ContainsKey(stateName))
                     {
                         Debug.LogError($"State '{stateName}' is defined more than once in combo '{comboName}'!");
                     }
-                    else if (field.Scope != null)
+                    if (!CreateComboState(root, character, weapon, comboName, field, out PhxComboState comboState) && !isIdle)
                     {
-                        List<PhxComboTransitionCache> localTransitions = new List<PhxComboTransitionCache>();
-                        PhxScopedState state = new PhxScopedState();
-                        bool hasAnimation = false;
+                        Debug.LogError($"Failed to create combo state '{stateName}' in Combo '{comboName}'!");
+                        continue;
+                    }
 
-                        Field[] stateFields = field.Scope.GetFields();
-                        for (int j = 0; j < stateFields.Length; ++j)
+                    if (isIdle)
+                    {
+                        comboState.State = set.StandIdle;
+                    }
+
+                    List<PhxComboTransitionCache> localTransitions = new List<PhxComboTransitionCache>();
+
+                    int attackCount = 0;
+                    Field[] stateFields = field.Scope.GetFields();
+                    for (int j = 0; j < stateFields.Length; ++j)
+                    {
+                        Field stateField = stateFields[j];
+                        if (stateField.GetNameHash() == Hash_Duration)
                         {
-                            Field stateField = stateFields[j];
-                            if (stateField.GetNameHash() == Hash_Animation)
+                            float time = stateField.GetFloat(0);
+                            if (time <= 0f)
                             {
-                                if (hasAnimation)
+                                comboState.State.Lower.GetPlayer().SetLooping(true);
+                                comboState.State.Upper.GetPlayer().SetLooping(true);
+                            }
+                            else
+                            {
+                                bool asFrames = stateField.GetNumValues() > 1 && stateField.GetString(1).ToLower() == "frames";
+                                if (asFrames)
                                 {
-                                    Debug.LogError($"Combo '{comboName}' tried to assign more than once Animation to state '{stateName}'!");
+                                    // convert from battlefront frames (30 fps) to time
+                                    time /= 30f;
+                                }
+                                CraPlayRange range = new CraPlayRange { MinTime = 0f, MaxTime = time };
+                                comboState.State.Lower.GetPlayer().SetPlayRange(range);
+                                comboState.State.Upper.GetPlayer().SetPlayRange(range);
+                            }
+                        }
+                        else if (stateField.GetNameHash() == Hash_Transition)
+                        {
+                            localTransitions.Add(new PhxComboTransitionCache 
+                            { 
+                                TargetStateField = stateField, 
+                                SourceStateIsIdle = isIdle
+                            });
+                        }
+                        else if (stateField.GetNameHash() == Hash_Posture)
+                        {
+                            if (comboState.Posture != PhxAnimPosture.None)
+                            {
+                                Debug.LogError($"State '{stateName}' has more than one Posture entry in Combo '{comboName}'!");
+                                continue;
+                            }
+
+                            // TODO: Use as condition in transitions?
+                            for (byte pi = 0; pi < stateField.GetNumValues(); ++pi)
+                            {
+                                string postureStr = stateField.GetString(pi);
+                                bool negate = postureStr.StartsWith("!");
+                                if (negate)
+                                {
+                                    postureStr = postureStr.Substring(1, postureStr.Length - 1);
+                                }
+                                if (!StrToPosture.TryGetValue(postureStr, out PhxAnimPosture p))
+                                {
+                                    Debug.LogError($"Unknown posture '{postureStr}' in state '{stateName}' in Combo '{comboName}'!");
                                     continue;
                                 }
-
-                                string animname = stateField.GetString();
-                                string[] split = animname.Split(new char[] { '_' }, 2);
-                                state = CreateScopedState(root, character, weapon, split[0], split[1], true);
-                                if (state.Lower.IsValid() && state.Upper.IsValid())
+                                if (negate)
                                 {
-                                    state.Lower.GetPlayer().SetLooping(false);
-                                    state.Upper.GetPlayer().SetLooping(false);
-    #if UNITY_EDITOR
-                                    if (state.Lower.IsValid()) state.Lower.SetName($"COMBO Lower {weapon} {stateName}");
-                                    if (state.Upper.IsValid()) state.Upper.SetName($"COMBO Upper {weapon} {stateName}");
-    #endif
-                                    hasAnimation = true;
+                                    comboState.Posture &= ~p;
                                 }
                                 else
                                 {
-                                    Debug.LogError($"Failed to create state '{stateName}' in Combo '{comboName}'!");
+                                    comboState.Posture |= p;
                                 }
                             }
-                            else if (stateField.GetNameHash() == Hash_Duration)
+                        }
+                        else if (stateField.GetNameHash() == Hash_Attack)
+                        {
+                            if (attackCount >= 4)
                             {
-                                float time = stateField.GetFloat(0);
-                                if (time <= 0f)
+                                Debug.LogError($"PhxAnimHuman does currently not support more thasn 4 Attacks!");
+                                continue;
+                            }
+
+                            int   id = 0;
+                            int   edge = 0;
+                            float timeStart = 0.2f;
+                            float timeEnd = 0.3f;
+                            int   timeMode = 2; // default: FromAnim
+                            float length = 1f;
+                            bool  lengthFromEdge = true;
+                            float width = 1f;
+                            bool  widthFromEdge = true;
+                            float damage = 0f;
+                            float push = 0f;
+
+                            Field[] attackFields = stateField.Scope.GetFields();
+                            for (int ai = 0; ai < attackFields.Length; ++ai)
+                            {
+                                Field attackField = attackFields[ai];
+                                if (attackField.GetNameHash() == Hash_AttackId)
                                 {
-                                    state.Lower.GetPlayer().SetLooping(true);
-                                    state.Upper.GetPlayer().SetLooping(true);
+                                    // Hash function doesn't really matter here,
+                                    // since we just want to compare attacks
+                                    id = (int)HashUtils.GetFNV(attackField.GetString());
                                 }
-                                else
+                                else if (attackField.GetNameHash() == Hash_Edge)
                                 {
-                                    bool asFrames = stateField.GetNumValues() > 1 && stateField.GetString(1).ToLower() == "frames";
-                                    if (asFrames)
+                                    edge = (int)attackField.GetFloat();
+                                }
+                                else if (attackField.GetNameHash() == Hash_DamageTime)
+                                {
+                                    Debug.Assert(attackField.GetNumValues() >= 2);
+
+                                    timeStart = attackField.GetFloat(0);
+                                    timeEnd = attackField.GetFloat(1);
+                                    if (attackField.GetNumValues() >= 3)
                                     {
-                                        // convert from battlefront frames (30 fps) to time
-                                        time /= 30f;
+                                        string mode = attackField.GetString(2);
+                                        switch (mode)
+                                        {
+                                            case "Seconds":  timeMode = (int)PhxAnimTimeMode.Seconds;  break;
+                                            case "Frames":   timeMode = (int)PhxAnimTimeMode.Frames;   break;
+                                            case "FromAnim": timeMode = (int)PhxAnimTimeMode.FromAnim; break;
+                                            default: Debug.LogError($"Unknown time mode '{mode}'!");   break;
+                                        }
                                     }
-                                    CraPlayRange range = new CraPlayRange { MinTime = 0f, MaxTime = time };
-                                    state.Lower.GetPlayer().SetPlayRange(range);
-                                    state.Upper.GetPlayer().SetPlayRange(range);
+                                }
+                                else if (attackField.GetNameHash() == Hash_DamageLength)
+                                {
+                                    length = attackField.GetFloat(0);
+                                    lengthFromEdge = attackField.GetNumValues() > 1 && attackField.GetString(1) == "FromEdge";
+                                }
+                                else if (attackField.GetNameHash() == Hash_DamageWidth)
+                                {
+                                    width = attackField.GetFloat(0);
+                                    widthFromEdge = attackField.GetNumValues() > 1 && attackField.GetString(1) == "FromEdge";
+                                }
+                                else if (attackField.GetNameHash() == Hash_Damage)
+                                {
+                                    damage = attackField.GetFloat();
+                                }
+                                else if (attackField.GetNameHash() == Hash_Push)
+                                {
+                                    push = attackField.GetFloat();
                                 }
                             }
-                            else if (stateField.GetNameHash() == Hash_Transition)
-                            {
-                                localTransitions.Add(new PhxComboTransitionCache { Transition = stateField });
-                            }
-                        }
 
-                        if (stateName.ToLower() == "idle")
-                        {
-                            hasAnimation = true;
-                            state = set.StandIdle;
-                        }
-
-                        if (hasAnimation)
-                        {
-                            for (int j = 0; j < localTransitions.Count; ++j)
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput 
+                            { 
+                                Output = OutputAttacks[attackCount].OutputAttackID,
+                                Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = id }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
                             {
-                                var lt = localTransitions[j];
-                                lt.SourceState = state;
-                                localTransitions[j] = lt;
-                            }
-                            ComboStates.Add(stateName, state);
-                            Transitions.AddRange(localTransitions);
+                                Output = OutputAttacks[attackCount].OutputAttackEdge,
+                                Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = edge }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamageTimeStart,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = timeStart }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamageTimeEnd,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = timeEnd }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamageTimeMode,
+                                Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = timeMode }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamageLength,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = length }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamageLengthFromEdge,
+                                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = lengthFromEdge }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamageWidth,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = width }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamageWidthFromEdge,
+                                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = widthFromEdge }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackDamage,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = damage }
+                            });
+                            comboState.State.Upper.WriteOutputOnEnter(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackPush,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = push }
+                            });
+
+
+                            comboState.State.Upper.WriteOutputOnLeave(new CraWriteOutput
+                            {
+                                Output = OutputAttacks[attackCount].OutputAttackID,
+                                Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = -1 }
+                            });
+
+
+                            attackCount++;
                         }
                     }
+
+                    for (int j = 0; j < localTransitions.Count; ++j)
+                    {
+                        var lt = localTransitions[j];
+                        lt.SourceState = comboState.State;
+                        localTransitions[j] = lt;
+                    }
+                    ComboStates.Add(stateName, comboState);
+                    Transitions.AddRange(localTransitions);
+                }
+            }
+
+            // Posture transitions State --> Walk
+            foreach (var comboState in ComboStates)
+            {
+                PhxComboState state = comboState.Value;
+
+                if ((state.Posture & PhxAnimPosture.Stand) != 0)
+                {
+                    // TODO: Add transitions to all lower walk states and back
+                    // Make sure lower walk states can't transition further (e.g. to sprint or crouch)
+
+                    Transition(state.State.Lower, set.StandWalkForward.Lower, 0.15f,
+                        new CraConditionOr
+                        {
+                            And0 = new CraCondition
+                            {
+                                Type = CraConditionType.Greater,
+                                Input = InputMovementX,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                                CompareToAbsolute = true
+                            }
+                        },
+                        new CraConditionOr
+                        {
+                            And0 = new CraCondition
+                            {
+                                Type = CraConditionType.Greater,
+                                Input = InputMovementY,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                            }
+                        }
+                    );
+
+                    Transition(state.State.Lower, set.StandRunBackward.Lower, 0.15f,
+                        new CraConditionOr
+                        {
+                            And0 = new CraCondition
+                            {
+                                Type = CraConditionType.Less,
+                                Input = InputMovementY,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                            }
+                        }
+                    );
                 }
             }
 
@@ -1714,8 +1958,10 @@ public class PhxAnimHuman
                     continue;
                 }
 
-                PhxScopedState targetState = set.StandIdle;
-                string targetStateName = Transitions[ti].Transition.GetString();
+                PhxComboState targetState = new PhxComboState();
+                targetState.State = set.StandIdle;
+
+                string targetStateName = Transitions[ti].TargetStateField.GetString();
                 if (targetStateName.ToLower() != "idle")
                 {
                     if (!ComboStates.TryGetValue(targetStateName, out targetState))
@@ -1725,13 +1971,11 @@ public class PhxAnimHuman
                     }
                 }
 
-                if (!targetState.Lower.IsValid() || !targetState.Upper.IsValid())
+                if (!targetState.State.Lower.IsValid() || !targetState.State.Upper.IsValid())
                 {
                     // TODO: This should never happen later on
                     continue;
                 }
-
-                List<CraConditionOr> Ors = new List<CraConditionOr>();
 
                 // Assumption: When the target state has the same animation assigned as
                 // the source state, continue playing on target where we left off in source.
@@ -1744,83 +1988,160 @@ public class PhxAnimHuman
                         tar.SetSyncState(src);
                     }
                 }
-                CheckSameAnimation(Transitions[ti].SourceState.Lower, targetState.Lower);
-                CheckSameAnimation(Transitions[ti].SourceState.Upper, targetState.Upper);
+                CheckSameAnimation(Transitions[ti].SourceState.Lower, targetState.State.Lower);
+                CheckSameAnimation(Transitions[ti].SourceState.Upper, targetState.State.Upper);
 
+                CraConditionOr[] conditions = GetComboTransitionConditions(Transitions[ti].TargetStateField.Scope);
+                Transition(Transitions[ti].SourceState, targetState.State, 0.15f, conditions);
 
-                Field[] orFields = Transitions[ti].Transition.Scope.GetFields();
-                if (orFields.Length == 0)
+                // IDLE is a special state that corresponds to the entire postures the Combo state is allowed in
+                if (Transitions[ti].SourceStateIsIdle)
                 {
-                    CraConditionOr newOr = new CraConditionOr();
-                    newOr.And0 = new CraCondition
+                    // Walk --> State
+                    if ((targetState.Posture & PhxAnimPosture.Stand) != 0)
                     {
-                        Type = CraConditionType.IsFinished
-                    };
-                    Ors.Add(newOr);
+                        Transition(set.StandWalkForward.Upper, targetState.State.Upper, 0.15f,
+                            conditions
+                        );
+
+                        Transition(set.StandRunForward.Upper, targetState.State.Upper, 0.15f,
+                            conditions
+                        );
+
+                        Transition(set.StandRunBackward.Upper, targetState.State.Upper, 0.15f,
+                            conditions
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    bool CreateComboState(Transform root, string character, string weapon, string comboName, Field state, out PhxComboState comboState)
+    {
+        comboState = new PhxComboState();
+
+        string stateName = state.GetString();
+        Field[] stateFields = state.Scope.GetFields();
+        for (int i = 0; i < stateFields.Length; ++i)
+        {
+            Field stateField = stateFields[i];
+            if (stateField.GetNameHash() == Hash_Animation)
+            {
+                string animname = stateField.GetString();
+                string[] split = animname.Split(new char[] { '_' }, 2);
+                comboState.State = CreateScopedState(root, character, weapon, split[0], split[1], true);
+                if (comboState.State.Lower.IsValid() && comboState.State.Upper.IsValid())
+                {
+                    comboState.State.Lower.GetPlayer().SetLooping(false);
+                    comboState.State.Upper.GetPlayer().SetLooping(false);
+#if UNITY_EDITOR
+                    if (comboState.State.Lower.IsValid()) comboState.State.Lower.SetName($"COMBO Lower {weapon} {stateName}");
+                    if (comboState.State.Upper.IsValid()) comboState.State.Upper.SetName($"COMBO Upper {weapon} {stateName}");
+#endif
+                    return true;
                 }
                 else
                 {
-                    for (int oi = 0; oi < orFields.Length; ++oi)
-                    {
-                        Field orField = orFields[oi];
-                        if (orField.GetNameHash() == Hash_If || orField.GetNameHash() == Hash_Or)
-                        {
-                            CraConditionOr newOr = new CraConditionOr();
-                            CraCondition* and = &newOr.And0;
-
-                            int andIdx = 0;
-                            Field[] andFields = orField.Scope.GetFields();
-                            for (int ai = 0; ai < andFields.Length; ++ai)
-                            {
-                                if (andIdx >= 10)
-                                {
-                                    Debug.LogError("Cra currently doesn't support more than 10 'And' conditions!");
-                                    break;
-                                }
-
-                                Field andField = andFields[ai];
-                                if (andField.GetNameHash() == Hash_Button)
-                                {
-                                    string comboButton = andField.GetString();
-                                    if (!ComboButtons.TryGetValue(comboButton, out CraInput input))
-                                    {
-                                        Debug.LogError($"Cannot resolve unknown Combo Button '{comboButton}' to a CraInput!");
-                                        continue;
-                                    }
-
-                                    and[andIdx].Input = input;
-                                    and[andIdx].Type = CraConditionType.Trigger;
-                                    andIdx++;
-                                }
-                            }
-
-                            if (andIdx > 0)
-                            {
-                                Ors.Add(newOr);
-                            }
-                        }
-                    }
+                    Debug.LogError($"Failed to create state '{stateName}' in Combo '{comboName}'!");
                 }
 
-                //if (Ors.Count == 0)
-                //{
-                //    Ors.Add(new CraConditionOr
-                //    {
-                //        And0 = new CraCondition
-                //        {
-                //            Type = CraConditionType.IsFinished
-                //        }
-                //    });
-                //}
-
-                Transition(Transitions[ti].SourceState, targetState, 0.15f, Ors.ToArray());
+                break;
             }
         }
+        comboState = new PhxComboState();
+        return false;
+    }
+
+    unsafe CraConditionOr[] GetComboTransitionConditions(Scope transitionScope)
+    {
+        List<CraConditionOr> Ors = new List<CraConditionOr>();
+        Field[] orFields = transitionScope.GetFields();
+        if (orFields.Length == 0)
+        {
+            CraConditionOr newOr = new CraConditionOr();
+            newOr.And0 = new CraCondition
+            {
+                Type = CraConditionType.IsFinished
+            };
+            Ors.Add(newOr);
+        }
+        else
+        {
+            for (int oi = 0; oi < orFields.Length; ++oi)
+            {
+                Field orField = orFields[oi];
+                if (orField.GetNameHash() == Hash_If || orField.GetNameHash() == Hash_Or)
+                {
+                    CraConditionOr newOr = new CraConditionOr();
+                    CraCondition* and = &newOr.And0;
+
+                    int andIdx = 0;
+                    Field[] andFields = orField.Scope.GetFields();
+                    for (int ai = 0; ai < andFields.Length; ++ai)
+                    {
+                        if (andIdx >= 10)
+                        {
+                            Debug.LogError("Cra currently doesn't support more than 10 'And' conditions!");
+                            break;
+                        }
+
+                        Field andField = andFields[ai];
+                        if (andField.GetNameHash() == Hash_Button)
+                        {
+                            string comboButton = andField.GetString();
+                            if (!ComboButtons.TryGetValue(comboButton, out CraInput input))
+                            {
+                                Debug.LogError($"Cannot resolve unknown Combo Button '{comboButton}' to a CraInput!");
+                                continue;
+                            }
+
+                            and[andIdx].Input = input;
+                            and[andIdx].Type = CraConditionType.Trigger;
+                            andIdx++;
+                        }
+                    }
+
+                    if (andIdx > 0)
+                    {
+                        Ors.Add(newOr);
+                    }
+                }
+            }
+        }
+
+        return Ors.ToArray();
     }
 
     struct PhxComboTransitionCache
     {
         public PhxScopedState SourceState;
-        public Field Transition;
+        public Field TargetStateField;
+        public bool SourceStateIsIdle;
     }
+
+    struct PhxComboState
+    {
+        public PhxScopedState State;
+        public PhxAnimPosture Posture;
+    }
+
+    static readonly uint Hash_State = HashUtils.GetFNV("State");
+    static readonly uint Hash_Duration = HashUtils.GetFNV("Duration");
+    static readonly uint Hash_Animation = HashUtils.GetFNV("Animation");
+    static readonly uint Hash_EnergyRestoreRate = HashUtils.GetFNV("EnergyRestoreRate");
+    static readonly uint Hash_InputLock = HashUtils.GetFNV("InputLock");
+    static readonly uint Hash_Transition = HashUtils.GetFNV("Transition");
+    static readonly uint Hash_Attack = HashUtils.GetFNV("Attack");
+    static readonly uint Hash_AttackId = HashUtils.GetFNV("AttackId");
+    static readonly uint Hash_Edge = HashUtils.GetFNV("Edge");
+    static readonly uint Hash_DamageTime = HashUtils.GetFNV("DamageTime");
+    static readonly uint Hash_Damage = HashUtils.GetFNV("Damage");
+    static readonly uint Hash_Push = HashUtils.GetFNV("Push");
+    static readonly uint Hash_DamageLength = HashUtils.GetFNV("DamageLength");
+    static readonly uint Hash_DamageWidth = HashUtils.GetFNV("DamageWidth");
+    static readonly uint Hash_If = HashUtils.GetFNV("If");
+    static readonly uint Hash_Or = HashUtils.GetFNV("Or");
+    static readonly uint Hash_Posture = HashUtils.GetFNV("Posture");
+    static readonly uint Hash_Button = HashUtils.GetFNV("Button");
 }

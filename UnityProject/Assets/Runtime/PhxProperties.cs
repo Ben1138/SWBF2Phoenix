@@ -216,7 +216,7 @@ public class PhxImpliedSection : IEnumerable
     public (string, IPhxPropRef)[] Properties { get; private set; }
     public uint NameHash { get; private set; }
 
-    Dictionary<string, IPhxPropRef>[] Sections;
+    public Dictionary<string, IPhxPropRef>[] Sections { get; private set; }
 
 
     List<uint> PropertyHashes;
