@@ -37,7 +37,7 @@ public class PhxAnimTest : PhxUnityScript
             "rep_inf_ep3_jettrooper",
             "rep_hero_obiwan",
             "rep_hero_aalya",
-            "rep_hero_kiyadi",
+            "rep_hero_kiyadimundi",
             "rep_hero_macewindu"
         );
 
@@ -108,7 +108,7 @@ public class PhxAnimTest : PhxUnityScript
 
         if (SpawnPlayer)
         {
-            Match.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
+            Match.SpawnPlayer(scene.GetClass("rep_hero_aalya"), transform.position, Quaternion.identity);
         }
     }
 

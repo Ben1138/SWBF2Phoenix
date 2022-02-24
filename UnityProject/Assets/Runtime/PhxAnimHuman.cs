@@ -244,6 +244,7 @@ public class PhxAnimHuman
         {
             { "Fire", InShootPrimary },
             { "FireSecondary", InShootSecondary },
+            { "Reload", InReload },
         };
 
         OutPosture = Machine.NewMachineValue(CraValueType.Int, "Posture");
@@ -499,6 +500,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 },
                 And1 = new CraCondition
@@ -590,6 +592,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 }
             }
@@ -600,6 +603,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 }
             }
@@ -610,6 +614,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 }
             }
@@ -673,6 +678,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 },
             }
@@ -683,6 +689,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 },
             }
@@ -784,6 +791,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 },
                 And1 = new CraCondition
@@ -864,6 +872,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 }
             }
@@ -874,6 +883,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 }
             }
@@ -937,6 +947,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 },
             }
@@ -947,6 +958,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished
                 },
             }
@@ -1195,6 +1207,7 @@ public class PhxAnimHuman
                 },
                 And1 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished,
                 }
             }
@@ -1211,6 +1224,7 @@ public class PhxAnimHuman
                 },
                 And1 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished,
                 }
             }
@@ -1350,6 +1364,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished,
                 }
             }
@@ -1360,6 +1375,7 @@ public class PhxAnimHuman
             {
                 And0 = new CraCondition
                 {
+                    Input = CraMachineValue.None,
                     Type = CraConditionType.IsFinished,
                 }
             }
@@ -1691,7 +1707,7 @@ public class PhxAnimHuman
                         Field stateField = stateFields[j];
                         if (stateField.GetNameHash() == Hash_Duration)
                         {
-                            float time = stateField.GetFloat(0);
+                            float time = GetTimeValue(stateField, comboState.State.Lower.GetPlayer().GetClip().GetDuration());
                             if (time <= 0f)
                             {
                                 comboState.State.Lower.GetPlayer().SetLooping(true);
@@ -1699,12 +1715,6 @@ public class PhxAnimHuman
                             }
                             else
                             {
-                                bool asFrames = stateField.GetNumValues() > 1 && stateField.GetString(1).ToLower() == "frames";
-                                if (asFrames)
-                                {
-                                    // convert from battlefront frames (30 fps) to time
-                                    time /= 30f;
-                                }
                                 CraPlayRange range = new CraPlayRange { MinTime = 0f, MaxTime = time };
                                 comboState.State.Lower.GetPlayer().SetPlayRange(range);
                                 comboState.State.Upper.GetPlayer().SetPlayRange(range);
@@ -1988,7 +1998,10 @@ public class PhxAnimHuman
                 CheckSameAnimation(Transitions[ti].SourceState.Lower, targetState.State.Lower);
                 CheckSameAnimation(Transitions[ti].SourceState.Upper, targetState.State.Upper);
 
-                CraConditionOr[] conditions = GetComboTransitionConditions(Transitions[ti].TargetStateField.Scope);
+                CraPlayRange stateRange = Transitions[ti].SourceState.Upper.GetPlayer().GetPlayRange();
+                float stateDuration = stateRange.MaxTime - stateRange.MinTime;
+
+                CraConditionOr[] conditions = GetComboTransitionConditions(Transitions[ti].TargetStateField.Scope, stateDuration);
                 Transition(Transitions[ti].SourceState, targetState.State, 0.15f, conditions);
 
                 // IDLE is a special state that corresponds to the entire postures the Combo state is allowed in
@@ -2050,7 +2063,7 @@ public class PhxAnimHuman
         return false;
     }
 
-    unsafe CraConditionOr[] GetComboTransitionConditions(Scope transitionScope)
+    unsafe CraConditionOr[] GetComboTransitionConditions(Scope transitionScope, float stateDuration)
     {
         List<CraConditionOr> Ors = new List<CraConditionOr>();
         Field[] orFields = transitionScope.GetFields();
@@ -2059,6 +2072,7 @@ public class PhxAnimHuman
             CraConditionOr newOr = new CraConditionOr();
             newOr.And0 = new CraCondition
             {
+                Input = CraMachineValue.None,
                 Type = CraConditionType.IsFinished
             };
             Ors.Add(newOr);
@@ -2097,6 +2111,22 @@ public class PhxAnimHuman
                             and[andIdx].Type = CraConditionType.Trigger;
                             andIdx++;
                         }
+                        else if (andField.GetNameHash() == Hash_TimeStart)
+                        {
+                            float time = GetTimeValue(andField, stateDuration);
+                            and[andIdx].Input = CraMachineValue.None;
+                            and[andIdx].Type = CraConditionType.TimeMin;
+                            and[andIdx].Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
+                            andIdx++;
+                        }
+                        else if (andField.GetNameHash() == Hash_TimeEnd)
+                        {
+                            float time = GetTimeValue(andField, stateDuration);
+                            and[andIdx].Input = CraMachineValue.None;
+                            and[andIdx].Type = CraConditionType.TimeMax;
+                            and[andIdx].Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
+                            andIdx++;
+                        }
                     }
 
                     if (andIdx > 0)
@@ -2108,6 +2138,30 @@ public class PhxAnimHuman
         }
 
         return Ors.ToArray();
+    }
+
+    float GetTimeValue(Field timeField, float duration)
+    {
+        float time = timeField.GetFloat(0);
+        if (timeField.GetNumValues() > 1)
+        {
+            if (timeField.GetString(1).ToLower() == "frames")
+            {
+                // convert from battlefront frames (30 fps) to time
+                time /= 30f;
+            }
+            else if (timeField.GetString(1).ToLower() == "fromanim")
+            {
+                // time is a multiplier of duration
+                time *= duration;
+            }
+            else if (timeField.GetString(1).ToLower() == "fromend")
+            {
+                // start measuring time from end
+                time = duration + time;
+            }
+        }
+        return time;
     }
 
     struct PhxComboTransitionCache
@@ -2141,4 +2195,6 @@ public class PhxAnimHuman
     static readonly uint Hash_Or = HashUtils.GetFNV("Or");
     static readonly uint Hash_Posture = HashUtils.GetFNV("Posture");
     static readonly uint Hash_Button = HashUtils.GetFNV("Button");
+    static readonly uint Hash_TimeStart = HashUtils.GetFNV("TimeStart");
+    static readonly uint Hash_TimeEnd = HashUtils.GetFNV("TimeEnd");
 }
