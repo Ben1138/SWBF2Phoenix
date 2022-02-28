@@ -89,7 +89,7 @@ public sealed class PhxPropertyDB
         }
         else if (destType == typeof(AudioClip))
         {
-            outVal = Convert.ChangeType(SoundLoader.LoadSound(value), destType, CultureInfo.InvariantCulture);
+            outVal = Convert.ChangeType(SoundLoader.Instance.LoadSound(value), destType, CultureInfo.InvariantCulture);
         }
         else if (destType == typeof(SWBFPath))
         {

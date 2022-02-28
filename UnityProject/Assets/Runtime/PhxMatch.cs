@@ -217,7 +217,7 @@ public class PhxMatch
 
             if (UIBack == null)
             {
-                UIBack = SoundLoader.LoadSound("ui_menuBack");
+                UIBack = SoundLoader.Instance.LoadSound("ui_menuBack");
             }
             GAME.PlayUISound(UIBack, 1.2f);
         }

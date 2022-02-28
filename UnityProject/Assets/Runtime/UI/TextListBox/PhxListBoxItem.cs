@@ -129,7 +129,7 @@ public class PhxListBoxItem : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         Debug.Assert(Icon2 != null);
         Debug.Assert(Txt != null);
 
-        HoverSound = SoundLoader.LoadSound("ui_menumove");
+        HoverSound = SoundLoader.Instance.LoadSound("ui_menumove");
     }
 
     void Update()
