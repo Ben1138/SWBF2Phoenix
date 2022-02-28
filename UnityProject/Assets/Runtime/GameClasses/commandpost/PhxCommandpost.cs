@@ -19,6 +19,9 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
         public PhxMultiProp   DischargeSound = new PhxMultiProp(typeof(AudioClip), typeof(string));
         public PhxMultiProp   LostSound      = new PhxMultiProp(typeof(AudioClip), typeof(string));
 
+        public PhxMultiProp HoloImageGeometry = new PhxMultiProp(typeof(string), typeof(string));
+        public PhxProp<PhxClass> HoloOdf      = new PhxProp<PhxClass>(null);
+
         public PhxProp<Texture2D> MapTexture = new PhxProp<Texture2D>(null);
         public PhxProp<float>     MapScale   = new PhxProp<float>(1.0f);
     }
@@ -30,8 +33,12 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
 
     [Header("References")]
     public LineRenderer HoloRay;
-    public GameObject   HoloIcon;
+    public PhxHoloIcon HoloIcon;
     public HDAdditionalLightData Light;
+
+    public static GameObject Team1Icon;
+    public static GameObject Team2Icon;
+    public static PhxHoloIcon Hologram; //Atm crash when trying to load more than one time
 
     [Header("Settings")]
     public Vector2 CapturePitch = new Vector2(0.5f, 1.5f);
@@ -123,6 +130,16 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
                 newRegion.OnLeave += RemoveFromCapture;
             }
         };
+
+        if (C.HoloOdf.Get() != null && Hologram == null)
+        {
+            Hologram = (PhxHoloIcon)Scene.CreateInstance(C.HoloOdf, C.HoloOdf.Get().Name, new Vector3(0.0f, 0.0f, 0.0f), Quaternion.identity, false, gameObject.transform);
+        }
+
+        if (Hologram != null)
+        {
+            HoloIcon = Instantiate(Hologram, new Vector3(gameObject.transform.position.x, gameObject.transform.position.y + 4.2f, gameObject.transform.position.z), Quaternion.identity, gameObject.transform);
+        }
     }
     
     public override void Destroy()
@@ -267,6 +284,68 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
         CaptureCount = teamCounts[CaptureTeam];
     }
 
+    public void ChangeIcon()
+    {
+        if (Team1Icon == null || Team2Icon == null) { LoadIcons(); }
+
+        switch (Team)
+        {
+            case 1:
+                HoloIcon.LoadIcon(Team1Icon, Match.Player.Team == Team);
+                break;
+            case 2:
+                HoloIcon.LoadIcon(Team2Icon, Match.Player.Team == Team);
+                break;
+            default:
+                HoloIcon.LoadIcon(null, true);
+                break;
+        }
+    }
+
+    public void ChangeColorIcon()
+    {
+        if (CaptureToNeutral) { return; }
+        HoloIcon.ChangeColorIcon(Match.Player.Team == Team);
+    }
+
+    void LoadIcons()
+    {
+        string name = PhxGame.GetMatch().getTeamName(1); //Odf use full name but teams only 3 first chars
+        if (name.Equals("imp")) { name = "emp"; } //Do not know how to solve better atm
+
+        for (int i = 0; i < C.HoloImageGeometry.GetCount(); i++)
+        {
+            if (name.Equals(C.HoloImageGeometry.Get<string>(1, i).Substring(0, 3).ToLower()))
+            {
+                Team1Icon = ModelLoader.Instance.GetGameObjectFromModel(C.HoloImageGeometry.Get<string>(0, i), "");
+            }
+        }
+
+        name = PhxGame.GetMatch().getTeamName(2);
+        if (name.Equals("imp")) { name = "emp"; } //Do not know how to solve better atm
+
+        for (int i = 0; i < C.HoloImageGeometry.GetCount(); i++)
+        {
+            if (name.Equals(C.HoloImageGeometry.Get<string>(1, i).Substring(0, 3).ToLower()))
+            {
+                Team2Icon = ModelLoader.Instance.GetGameObjectFromModel(C.HoloImageGeometry.Get<string>(0, i), "");
+            }
+        }
+
+        //To be destroy and be invisible
+        Vector3 scale = new Vector3(0, 0, 0);
+        if (Team1Icon != null)
+        {
+            Team1Icon.transform.localScale = scale;
+            Team1Icon.transform.parent = this.gameObject.transform;
+        }
+        if (Team2Icon != null)
+        {
+            Team2Icon.transform.localScale = scale;
+            Team2Icon.transform.parent = this.gameObject.transform;
+        }
+    }
+
     void ApplyTeam(int oldTeam)
     {
         if (Team == oldTeam)
@@ -300,6 +379,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
 
         RefreshCapture();
         UpdateColor();
+        ChangeIcon();
     }
 
     void OnDrawGizmos()

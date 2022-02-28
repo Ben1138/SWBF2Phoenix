@@ -337,6 +337,12 @@ public class PhxMatch
         Teams[teamIdx].Name = name;
     }
 
+    public String getTeamName(int teamIdx)
+    {
+        if (!CheckTeamIdx(--teamIdx)) return "";
+        return Teams[teamIdx].Name;
+    }
+
     public void SetTeamIcon(int teamIdx, string iconName)
     {
         if (!CheckTeamIdx(--teamIdx)) return;
