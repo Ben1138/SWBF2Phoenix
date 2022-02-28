@@ -86,7 +86,7 @@ public class PhxCharacterItem : MonoBehaviour, IPointerClickHandler, IPointerEnt
         boxTexDst.SetPixels32(boxTexSrc.GetPixels32());
         boxTexDst.Apply();
 
-        Sound = SoundLoader.LoadSound("ui_menumove");
+        Sound = SoundLoader.Instance.LoadSound("ui_menumove");
     }
 
     void Update()
