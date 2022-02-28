@@ -113,7 +113,7 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
     {   
         if (C.FireSound.Get() != null)
         {
-            AudioClip FireSound = SoundLoader.LoadSound(C.FireSound.Get());
+            AudioClip FireSound = SoundLoader.Instance.LoadSound(C.FireSound.Get());
 
             if (FireSound != null)
             {
@@ -257,7 +257,7 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
             {
                 // PitchSpread was previously used here to vary the sound pitch, that was a misunderstanding
                 // as PitchSpread is part of the weapon's aim spread, not sound
-                Audio.Play();
+                Audio.PlayOneShot(Audio.clip, 1.0f);
             }
 
             if (SalvoIndex < C.SalvoCount)

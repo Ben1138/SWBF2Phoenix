@@ -31,7 +31,6 @@ public class PhxEnvironment
     {
         public SWBF2Handle Handle;
         public Level Level;
-        public bool bIsSoundBank;
 
         // For Debug
         public PhxPath DisplayPath;
@@ -329,30 +328,33 @@ public class PhxEnvironment
         for (int i = 0; i < Loading.Count; ++i)
         {
             ELoadStatus status = EnvCon.GetStatus(Loading[i].Handle);
+
             if (status == ELoadStatus.Loaded)
             {
                 LVL scheduled = Loading[i];
-                if (!scheduled.bIsSoundBank)
+                
+                var lvl = EnvCon.GetLevel(Loading[i].Handle);
+                Debug.Assert(lvl != null);
+                scheduled.Level = lvl;
+
+                if (lvl.IsWorldLevel)
                 {
-                    var lvl = EnvCon.GetLevel(Loading[i].Handle);
-                    Debug.Assert(lvl != null);
-                    scheduled.Level = lvl;
-
-                    if (lvl.IsWorldLevel)
+                    if (WorldLevel != null)
                     {
-                        if (WorldLevel != null)
-                        {
-                            Debug.LogErrorFormat("Encounterred another world lvl '{0}' in environment! Previously found world lvl: '{1}'", lvl.Name, WorldLevel.Name);
-                        }
-                        else
-                        {
-                            WorldLevel = lvl;
-                        }
+                        Debug.LogErrorFormat("Encounterred another world lvl '{0}' in environment! Previously found world lvl: '{1}'", lvl.Name, WorldLevel.Name);
                     }
-
-                    // grab lvl localizations, if any
-                    Localizations.AddRange(lvl.Get<Localization>());
+                    else
+                    {
+                        WorldLevel = lvl;
+                    }
                 }
+
+                // grab lvl localizations, if any
+                Localizations.AddRange(lvl.Get<Localization>());
+                
+
+                SoundLoader.Instance.InitializeSoundProperties(lvl);
+
 
                 Loaded.Add(scheduled);
                 Loading.RemoveAt(i);
@@ -470,20 +472,11 @@ public class PhxEnvironment
 
         if (absPath.Exists() && absPath.IsFile())
         {
-            bool bSoundBank = absPath.HasExtension(".bnk");
-            if (bSoundBank)
-            {
-                handle = EnvCon.AddSoundBank(absPath);
-            }
-            else
-            {
-                handle = EnvCon.AddLevel(absPath, subLVLs);
-            }
+            handle = EnvCon.AddLevel(absPath, subLVLs);
+
             Loading.Add(new LVL
             {
                 Handle = handle,
-                bIsSoundBank = absPath.HasExtension(".bnk"),
-
                 DisplayPath = absPath.GetLeaf(2),
                 bIsAddon = absPath.Contains("/addon/")
             });
