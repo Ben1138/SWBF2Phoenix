@@ -63,7 +63,7 @@ public static class PhxAnimationLoader
 
         uint dummyroot = HashUtils.GetCRC("dummyroot");
 
-        uint[] boneCRCs = bank.GetBoneCRCs();
+        uint[] boneCRCs = bank.GetBoneCRCs(animNameCRC);
         List<CraBone> bones = new List<CraBone>();
         for (int i = 0; i < boneCRCs.Length; ++i)
         {
