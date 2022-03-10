@@ -36,8 +36,6 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
     public PhxHoloIcon HoloIcon;
     public HDAdditionalLightData Light;
 
-    public static GameObject Team1Icon;
-    public static GameObject Team2Icon;
     public static PhxHoloIcon Hologram; //Atm crash when trying to load more than one time
 
     [Header("Settings")]
@@ -286,63 +284,41 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
 
     public void ChangeIcon()
     {
-        if (Team1Icon == null || Team2Icon == null) { LoadIcons(); }
+        if (CaptureToNeutral) { return; }
+        if (Match.Teams[Team].Hologram == null) { LoadIcon(ref Match.Teams[Team].Hologram); }
 
-        switch (Team)
-        {
-            case 1:
-                HoloIcon.LoadIcon(Team1Icon, Match.Player.Team == Team);
-                break;
-            case 2:
-                HoloIcon.LoadIcon(Team2Icon, Match.Player.Team == Team);
-                break;
-            default:
-                HoloIcon.LoadIcon(null, true);
-                break;
-        }
+        HoloIcon.LoadIcon(Match.GetTeamHologram(Team), Match.Player.Team == Team);
     }
 
     public void ChangeColorIcon()
     {
         if (CaptureToNeutral) { return; }
+        if (Match.Teams[Team].Hologram == null) { LoadIcon(ref Match.Teams[Team].Hologram); }
+
         HoloIcon.ChangeColorIcon(Match.Player.Team == Team);
     }
 
-    void LoadIcons()
+    private void LoadIcon(ref GameObject icon)
     {
-        string name = PhxGame.GetMatch().getTeamName(1); //Odf use full name but teams only 3 first chars
+        string name = Match.getTeamName(Team); //Odf use full name but teams only 3 first chars
         if (name.Equals("imp")) { name = "emp"; } //Do not know how to solve better atm
 
         for (int i = 0; i < C.HoloImageGeometry.GetCount(); i++)
         {
             if (name.Equals(C.HoloImageGeometry.Get<string>(1, i).Substring(0, 3).ToLower()))
             {
-                Team1Icon = ModelLoader.Instance.GetGameObjectFromModel(C.HoloImageGeometry.Get<string>(0, i), "");
+                icon = ModelLoader.Instance.GetGameObjectFromModel(C.HoloImageGeometry.Get<string>(0, i), "");
             }
         }
 
-        name = PhxGame.GetMatch().getTeamName(2);
-        if (name.Equals("imp")) { name = "emp"; } //Do not know how to solve better atm
-
-        for (int i = 0; i < C.HoloImageGeometry.GetCount(); i++)
-        {
-            if (name.Equals(C.HoloImageGeometry.Get<string>(1, i).Substring(0, 3).ToLower()))
-            {
-                Team2Icon = ModelLoader.Instance.GetGameObjectFromModel(C.HoloImageGeometry.Get<string>(0, i), "");
-            }
-        }
+        Debug.Log(icon);
 
         //To be destroy and be invisible
-        Vector3 scale = new Vector3(0, 0, 0);
-        if (Team1Icon != null)
+        //Vector3 scale = new Vector3(0, 0, 0);
+        if (icon != null)
         {
-            Team1Icon.transform.localScale = scale;
-            Team1Icon.transform.parent = this.gameObject.transform;
-        }
-        if (Team2Icon != null)
-        {
-            Team2Icon.transform.localScale = scale;
-            Team2Icon.transform.parent = this.gameObject.transform;
+            icon.transform.localScale = new Vector3(0, 0, 0);
+            icon.transform.parent = this.gameObject.transform; //Maybe has to be changed now
         }
     }
 
