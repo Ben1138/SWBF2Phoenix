@@ -25,6 +25,9 @@ public class PhxHoloIcon : PhxInstance<PhxHoloIcon.ClassProperties>, IPhxTickabl
         {
             mat = Resources.Load<UnityEngine.Material>("CPHoloIcon");
             matEnemy = Resources.Load<UnityEngine.Material>("CPHoloIconEnemy");
+
+            mat.SetFloat("_Scale", 1.0f);   //Be sure to restart the shader before start
+            matEnemy.SetFloat("_Scale", 1.0f);
         }
     }
 
@@ -48,20 +51,7 @@ public class PhxHoloIcon : PhxInstance<PhxHoloIcon.ClassProperties>, IPhxTickabl
 
         obj.transform.localScale = new Vector3(2.5f, 2.5f, 2.5f);
 
-        Renderer renderer = gameObject.GetComponentInChildren(typeof(Renderer)) as Renderer;
-        Material[] mats = renderer.materials;
-        for (int i = 0; i < mats.Length; i++)
-        {
-            if (userTeam)
-            {
-                mats[i] = mat;
-            }
-            else
-            {
-                mats[i] = matEnemy;
-            }
-        }
-        renderer.materials = mats;
+        ChangeColorIcon(userTeam);
     }
 
     public void ChangeColorIcon(bool userTeam)
@@ -90,7 +80,7 @@ public class PhxHoloIcon : PhxInstance<PhxHoloIcon.ClassProperties>, IPhxTickabl
         {
             obj.transform.Rotate(new Vector3(0.0f, RotationSpeed * Time.deltaTime, 0.0f));
 
-            counter += Time.deltaTime;
+            counter += Time.deltaTime; //Should be inside the shader
             if (counter >= 5.0f)
             {
                 scale = 1.8f;
