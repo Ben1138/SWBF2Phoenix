@@ -84,11 +84,6 @@ public static class PhxAnimLoader
         CraSourceClip srcClip = new CraSourceClip();
         srcClip.Name = string.IsNullOrEmpty(clipNameOverride) ? animNameCRC.ToString() : clipNameOverride;
 
-        if (animNameCRC == HashUtils.GetCRC("human_sabre_sprint_full"))
-        {
-            Debug.Log("");
-        }
-
         uint dummyroot = HashUtils.GetCRC("dummyroot");
         uint[] boneCRCs = bank.GetBoneCRCs(animNameCRC);
 

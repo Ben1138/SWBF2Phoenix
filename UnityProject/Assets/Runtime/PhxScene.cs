@@ -391,7 +391,7 @@ public class PhxScene
         }
         UnityEngine.Profiling.Profiler.BeginSample("Update Cra");
         // Update Animations AFTER soldiers are updated.
-        Cra?.Tick();
+        Cra?.Tick(deltaTime);
         UnityEngine.Profiling.Profiler.EndSample();
     }
 

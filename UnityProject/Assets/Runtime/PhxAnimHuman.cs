@@ -75,7 +75,7 @@ public struct PhxAnimHumanSet
     public PhxScopedState StandShootPrimary;
     public PhxScopedState StandShootSecondary;
 
-    // Full
+    // Lower + Upper
     public PhxScopedState StandIdleCheckweapon;
     public PhxScopedState StandIdleLookaround;
     public PhxScopedState StandGetupFront;
@@ -106,7 +106,7 @@ public struct PhxAnimHumanSet
     public PhxScopedState CrouchReload;
     public PhxScopedState CrouchShoot;
 
-    // Full
+    // Lower + Upper
     public PhxScopedState ThrownBounceFrontSoft;
     public PhxScopedState ThrownBounceBackSoft;
     public PhxScopedState ThrownFlail;
@@ -119,7 +119,7 @@ public struct PhxAnimHumanSet
     public PhxScopedState ThrownTumbleFront;
     public PhxScopedState ThrownTumbleBack;
 
-    // Full
+    // Lower + Upper
     public PhxScopedState Jump;
     public PhxScopedState Fall;
     public PhxScopedState LandSoft;
@@ -239,6 +239,10 @@ public class PhxAnimHuman
         InGrounded = Machine.NewMachineValue(CraValueType.Bool, "Grounded");
         InMultiJump = Machine.NewMachineValue(CraValueType.Bool, "Multi Jump");
         InLandHardness = Machine.NewMachineValue(CraValueType.Int, "Land Hardness");
+
+        InShootPrimary.SetTriggerMaxLifeTime(0.5f);
+        InShootSecondary.SetTriggerMaxLifeTime(0.5f);
+        InReload.SetTriggerMaxLifeTime(0.5f);
 
         ComboButtons = new Dictionary<string, CraMachineValue>
         {
@@ -1457,9 +1461,13 @@ public class PhxAnimHuman
             res.Lower = CreateState(root, clip, loop, PhxAnimScope.Lower);
         }
         res.Upper = CreateState(root, clip, loop, PhxAnimScope.Upper);
+        ResetButtonTriggersOnEnter(res.Lower);
 
         Debug.Assert(res.Lower.IsValid());
         Debug.Assert(res.Upper.IsValid());
+
+        res.Lower.SetSyncState(res.Upper);
+        res.Upper.SetSyncState(res.Lower);
 
         return res;
     }
@@ -1659,6 +1667,25 @@ public class PhxAnimHuman
         state.WriteOnEnter(new CraWriteOutput { MachineValue = machineValue, Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = value } });
     }
 
+    //void WriteTriggerOnEnter(PhxScopedState state, CraMachineValue machineValue, bool value)
+    //{
+    //    WriteTriggerOnEnter(state.Lower, machineValue, value);
+    //    WriteTriggerOnEnter(state.Upper, machineValue, value);
+    //}
+
+    void WriteTriggerOnEnter(CraState state, CraMachineValue machineValue, bool value)
+    {
+        state.WriteOnEnter(new CraWriteOutput { MachineValue = machineValue, Value = new CraValueUnion { Type = CraValueType.Trigger, ValueBool = value } });
+    }
+
+    void ResetButtonTriggersOnEnter(CraState state)
+    {
+        //WriteTriggerOnEnter(state, InJump, false);
+        //WriteTriggerOnEnter(state, InShootPrimary, false);
+        //WriteTriggerOnEnter(state, InShootSecondary, false);
+        //WriteTriggerOnEnter(state, InReload, false);
+    }
+
     unsafe void CreateCombo(in PhxAnimHumanSet set, Transform root, string character, string weapon, string comboName)
     {
         var con = Env.EnvCon;
@@ -1802,6 +1829,10 @@ public class PhxAnimHuman
                                     timeEnd = attackField.GetFloat(1);
                                     if (attackField.GetNumValues() >= 3)
                                     {
+                                        EDataValueType t1 = attackField.GetValueType(0);
+                                        EDataValueType t2 = attackField.GetValueType(1);
+                                        EDataValueType t3 = attackField.GetValueType(2);
+
                                         string mode = attackField.GetString(2);
                                         switch (mode)
                                         {
@@ -1911,7 +1942,7 @@ public class PhxAnimHuman
                 }
             }
 
-            // Posture transitions State --> Walk
+            // Posture transitions Combo State --> Walk
             foreach (var comboState in ComboStates)
             {
                 PhxComboState state = comboState.Value;
@@ -2007,7 +2038,7 @@ public class PhxAnimHuman
                 // IDLE is a special state that corresponds to the entire postures the Combo state is allowed in
                 if (Transitions[ti].SourceStateIsIdle)
                 {
-                    // Walk --> State
+                    // Walk --> Combo State
                     if ((targetState.Posture & PhxAnimPosture.Stand) != 0)
                     {
                         Transition(set.StandWalkForward.Upper, targetState.State.Upper, 0.15f,
@@ -2045,6 +2076,7 @@ public class PhxAnimHuman
                 {
                     comboState.State.Lower.GetPlayer().SetLooping(false);
                     comboState.State.Upper.GetPlayer().SetLooping(false);
+                    ResetButtonTriggersOnEnter(comboState.State.Lower);
 #if UNITY_EDITOR
                     if (comboState.State.Lower.IsValid()) comboState.State.Lower.SetName($"COMBO Lower {weapon} {stateName}");
                     if (comboState.State.Upper.IsValid()) comboState.State.Upper.SetName($"COMBO Upper {weapon} {stateName}");
