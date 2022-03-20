@@ -14,16 +14,19 @@ using System.Reflection;
 public class PhxAnimationGroup
 {
     List<Animation> Animators;
+    List<Vector3> StartPoints;
     List<string>    AnimationNames;
 
     public PhxAnimationGroup()
     {
         Animators = new List<Animation>();
         AnimationNames = new List<string>();
+        StartPoints = new List<Vector3>();
     }
 
     public bool AddInstanceAnimationPair(Animation anim, string AnimationName)
     {
+        StartPoints.Add(anim.gameObject.transform.position);
         Animators.Add(anim);
         AnimationNames.Add(AnimationName);
 
@@ -43,11 +46,13 @@ public class PhxAnimationGroup
     {
         for (int i = 0; i < Animators.Count; i++)
         {
+            Animators[i].gameObject.transform.parent.position = StartPoints[i];
+            Animators[i].gameObject.transform.localPosition = Vector3.zero;
+            
             Animators[i].enabled = true;
             Animators[i].Play(AnimationNames[i]);
 
             AnimationState aState = Animators[i][AnimationNames[i]];
-            aState.speed = 3f;
         }
     }
 
@@ -58,9 +63,16 @@ public class PhxAnimationGroup
             Animators[i].Rewind(AnimationNames[i]);
         }   
     }
+
+    public void SetStartPoint()
+    {
+        for (int i = 0; i < Animators.Count; i++)
+        {
+            Transform tx = Animators[i].gameObject.transform;
+            StartPoints[i] = tx.position;
+        }
+    }
 }
-
-
 
 
 
@@ -162,6 +174,8 @@ public class PhxSceneAnimator
                 }
             }
         }
+
+
     }
 
 
