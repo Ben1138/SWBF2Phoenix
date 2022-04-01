@@ -95,7 +95,7 @@ public class PhxAnimationResolver
     {
         if (ResolvedAnimations.TryGetValue(new PhxClipSearch { Desc = animDesc, FindScope = findScope }, out PhxCached result))
         {
-            Debug.Log($"Found already resolved clip: {animDesc}");
+            //Debug.Log($"Found already resolved clip: {animDesc}");
             clip = result.Clip;
             clipScope = result.Scope;
             return true;
@@ -305,10 +305,11 @@ public class PhxAnimationResolver
 
     bool FindScope(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope clipScope, PhxAnimScope findScope)
     {
-        // TODO: Implement a "Does animation exist?" function instead of loading the clip every time
-        clip = PhxAnimLoader.Import(animDesc.Character, animDesc.ToString());
-        if (clip.IsValid())
+        if (PhxAnimLoader.Exists(animDesc.Character, animDesc.ToString()))
         {
+            clip = PhxAnimLoader.Import(animDesc.Character, animDesc.ToString());
+            Debug.Assert(clip.IsValid());
+
             found = animDesc;
             if (string.IsNullOrEmpty(found.Scope))
             {
@@ -322,7 +323,7 @@ public class PhxAnimationResolver
                 }
                 else
                 {
-                    clipScope = PhxAnimScope.Upper;
+                    clipScope = PhxAnimScope.Full;
                 }
             }
             else
@@ -358,6 +359,7 @@ public class PhxAnimationResolver
         {
             found = animDesc;
             clipScope = PhxAnimScope.None;
+            clip = CraClip.None;
             return false;
         }
 

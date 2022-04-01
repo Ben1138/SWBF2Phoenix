@@ -430,6 +430,21 @@ public unsafe struct PhxAnimState
     }
 }
 
+public static class PhxAnimUtils
+{
+    public static readonly Dictionary<string, CraConditionType> StrToCondition = new Dictionary<string, CraConditionType>()
+    {
+        { ">",  CraConditionType.Greater        },
+        { ">=", CraConditionType.GreaterOrEqual },
+
+        { "<",  CraConditionType.Less           },
+        { "<=", CraConditionType.LessOrEqual    },
+
+        { "=",  CraConditionType.Equal          },
+        { "==", CraConditionType.Equal          },
+    };
+}
+
 public class PhxAnimStateMachineManager
 {
     const int BlendTimeMatrixSize = 256;
@@ -461,15 +476,6 @@ public class PhxAnimStateMachineManager
         PhxAnimMachineData data = StateMachines.Get(h.Index);
         data.AnimMachine = humanAnimator.Machine;
 
-        if (!string.IsNullOrEmpty(combo))
-        {
-            Config comb = EnvCon.Get<Config>(combo);
-            if (comb != null)
-            {
-                BuildComboStateMachine(comb, ref data);
-            }
-        }
-
         StateMachines.Set(h.Index, data);
         return h;
     }
@@ -477,15 +483,6 @@ public class PhxAnimStateMachineManager
     public void StateMachine_SetInputFloat(CraMachineValue input, float value)
     {
         input.SetFloat(value);
-    }
-
-    void BuildComboStateMachine(Config combo, ref PhxAnimMachineData data)
-    {
-        Field[] fields = combo.GetFields();
-        for (int i = 0; i < fields.Length; ++i)
-        {
-            Debug.Log(fields[i].GetValueType());
-        }
     }
 
     unsafe struct PhxAnimMachineData

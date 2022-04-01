@@ -8,31 +8,6 @@ using LibSWBF2.Wrappers;
 using LibSWBF2.Utils;
 
 
-
-// From some testing with Rifle / Bazooka / Pistol / Sabre
-// +------------------+-------+-------+
-// |    Animation     | Lower | Upper |
-// +------------------+-------+-------+
-// | Idle             | Rifle | Anim  |
-// | Idle Full        | Anim  | Anim  |
-// | Walk             | Rifle | Anim  |
-// | Walk Full        | Rifle | Anim  |
-// | Idle Alert       | Rifle | Anim  |
-// | Idle Alert Full  | Anim  | Anim  |
-// | Walk Alert       | Rifle | Anim  |
-// | Walk Alert Full  | Rifle | Anim  |
-// | Idle Shoot       | Rifle | Anim  |
-// | Idle Shoot Full  | Rifle | Anim  |
-// | Walk Shoot       | Rifle | Anim  |
-// | Walk Shoot Full  | Rifle | Anim  |
-// | Idle Attack      | Rifle | Anim  |
-// | Idle Attack Full | Anim  | Anim  |
-// | Walk Attack      | Rifle | Anim  |
-// | Walk Attack Full | Rifle | Anim  |
-// +------------------+-------+-------+
-
-
-
 public struct PhxScopedState
 {
     public CraState Lower;
@@ -163,9 +138,11 @@ public class PhxAnimHuman
     public CraLayer LayerLower { get; private set; }
     public CraLayer LayerUpper { get; private set; }
 
-    public CraMachineValue InMovementX { get; private set; }
-    public CraMachineValue InMovementY { get; private set; }
-    public CraMachineValue InMagnitude { get; private set; }
+    public CraMachineValue InThrustX { get; private set; }
+    public CraMachineValue InThrustY { get; private set; }
+    public CraMachineValue InThrustAngle { get; private set; }
+    public CraMachineValue InThrustMagnitude { get; private set; }
+    public CraMachineValue InVelocityMagnitude { get; private set; }
     public CraMachineValue InTurnLeft { get; private set; }
     public CraMachineValue InTurnRight { get; private set; }
     public CraMachineValue InCrouch { get; private set; }
@@ -194,7 +171,7 @@ public class PhxAnimHuman
     const float Deadzone = 0.05f;
     Dictionary<string, CraMachineValue> ComboButtons = new Dictionary<string, CraMachineValue>();
 
-    static Dictionary<string, PhxAnimPosture> StrToPosture = new Dictionary<string, PhxAnimPosture>()
+    static readonly Dictionary<string, PhxAnimPosture> StrToPosture = new Dictionary<string, PhxAnimPosture>()
     {
         { "All", PhxAnimPosture.All },
         { "Any", PhxAnimPosture.All },
@@ -211,7 +188,7 @@ public class PhxAnimHuman
     };
 
 
-    public unsafe PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, PhxAnimWeapon[] weapons)
+    public PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, PhxAnimWeapon[] weapons)
     {
         Debug.Assert(weapons != null);
         Debug.Assert(weapons.Length > 0);
@@ -224,9 +201,11 @@ public class PhxAnimHuman
         LayerLower = Machine.NewLayer();
         LayerUpper = Machine.NewLayer();
 
-        InMovementX = Machine.NewMachineValue(CraValueType.Float, "Movement X");
-        InMovementY = Machine.NewMachineValue(CraValueType.Float, "Movement Y");
-        InMagnitude = Machine.NewMachineValue(CraValueType.Float, "Magnitude");
+        InThrustX = Machine.NewMachineValue(CraValueType.Float, "Thrust X");
+        InThrustY = Machine.NewMachineValue(CraValueType.Float, "Thrust Y");
+        InThrustAngle = Machine.NewMachineValue(CraValueType.Float, "Thrust Angle");
+        InThrustMagnitude = Machine.NewMachineValue(CraValueType.Float, "Thrust Magnitude");
+        InVelocityMagnitude = Machine.NewMachineValue(CraValueType.Float, "Velocity Magnitude");
         InTurnLeft = Machine.NewMachineValue(CraValueType.Trigger, "Turn Left");
         InTurnRight = Machine.NewMachineValue(CraValueType.Trigger, "Turn Right");
         InCrouch = Machine.NewMachineValue(CraValueType.Bool, "Crouch");
@@ -348,8 +327,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             },
@@ -358,8 +337,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                 }
             }
         );
@@ -370,15 +349,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             }
@@ -390,15 +369,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
                 }
             }
         );
@@ -409,8 +388,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
                 }
             }
         );
@@ -421,8 +400,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
                 }
             }
         );
@@ -433,15 +412,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
                 }
             }
         );
@@ -452,15 +431,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             }
@@ -472,15 +451,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                 }
             }
         );
@@ -510,15 +489,15 @@ public class PhxAnimHuman
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And2 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             }
@@ -530,8 +509,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             },
@@ -540,8 +519,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                 }
             }
         );
@@ -552,8 +531,8 @@ public class PhxAnimHuman
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
                 }
             }
         );
@@ -633,15 +612,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And2 = new CraCondition
@@ -658,15 +637,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And2 = new CraCondition
@@ -708,8 +687,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             },
@@ -718,8 +697,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                 }
             }
         );
@@ -730,15 +709,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             }
@@ -750,8 +729,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
                 }
             }
         );
@@ -762,15 +741,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             }
@@ -801,15 +780,15 @@ public class PhxAnimHuman
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And2 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             }
@@ -821,8 +800,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 }
             },
@@ -831,8 +810,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                 }
             }
         );
@@ -843,8 +822,8 @@ public class PhxAnimHuman
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
                 }
             }
         );
@@ -902,15 +881,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And2 = new CraCondition
@@ -927,15 +906,15 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Less,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                     CompareToAbsolute = true
                 },
                 And2 = new CraCondition
@@ -978,7 +957,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InCrouch,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
                     CompareToAbsolute = true
                 }
             }
@@ -991,7 +970,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InCrouch,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
                     CompareToAbsolute = true
                 }
             }
@@ -1004,7 +983,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InCrouch,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
                     CompareToAbsolute = true
                 }
             }
@@ -1020,7 +999,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InCrouch,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
                     CompareToAbsolute = true
                 }
             }
@@ -1033,14 +1012,14 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InCrouch,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementX,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    Input = InThrustX,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
                 }
             }
         );
@@ -1052,14 +1031,14 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InCrouch,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
                 }
             }
         );
@@ -1071,14 +1050,14 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InCrouch,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
                     CompareToAbsolute = true
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
                 }
             }
         );
@@ -1092,14 +1071,14 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.Greater,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Equal,
                     Input = InSprint,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
                 }
             }
         );
@@ -1110,8 +1089,8 @@ public class PhxAnimHuman
                 And0 = new CraCondition
                 {
                     Type = CraConditionType.LessOrEqual,
-                    Input = InMovementY,
-                    Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
+                    Input = InThrustY,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 0.75f },
                 }
             },
             new CraConditionOr
@@ -1120,7 +1099,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InSprint,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false },
                 }
             }
         );
@@ -1190,7 +1169,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InMultiJump,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
                 },
                 And1 = new CraCondition
                 {
@@ -1207,7 +1186,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 },
                 And1 = new CraCondition
                 {
@@ -1224,7 +1203,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
                 },
                 And1 = new CraCondition
                 {
@@ -1244,7 +1223,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 }
             }
         );
@@ -1256,7 +1235,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 }
             }
         );
@@ -1268,7 +1247,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 }
             }
         );
@@ -1280,7 +1259,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 }
             }
         );
@@ -1295,7 +1274,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 }
             }
         );
@@ -1307,7 +1286,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 }
             }
         );
@@ -1319,7 +1298,7 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                 }
             }
         );
@@ -1334,13 +1313,13 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Equal,
                     Input = InLandHardness,
-                    Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = 1 }
+                    Compare = new CraValueUnion { Type = CraValueType.Int, ValueInt = 1 }
                 }
             }
         );
@@ -1352,13 +1331,13 @@ public class PhxAnimHuman
                 {
                     Type = CraConditionType.Equal,
                     Input = InGrounded,
-                    Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                    Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
                 },
                 And1 = new CraCondition
                 {
                     Type = CraConditionType.Equal,
                     Input = InLandHardness,
-                    Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = 2 }
+                    Compare = new CraValueUnion { Type = CraValueType.Int, ValueInt = 2 }
                 }
             }
         );
@@ -1440,7 +1419,7 @@ public class PhxAnimHuman
         var inputDesc = animDesc;
         if (!Resolver.ResolveAnim(ref animDesc, out CraClip clip, out PhxAnimScope animScope))
         {
-            Debug.LogError($"Couldn't resolve {inputDesc}!");
+            Debug.LogError($"Couldn't resolve '{inputDesc}'!");
             return res;
         }
         Debug.Assert(clip.IsValid());
@@ -1451,7 +1430,7 @@ public class PhxAnimHuman
             animDesc.Scope = null;
             if (!Resolver.ResolveAnim(ref animDesc, out CraClip clipRifle, out _, PhxAnimScope.Lower))
             {
-                Debug.LogError($"Couldn't resolve {inputDesc} on scope Lower!");
+                Debug.LogError($"Couldn't resolve '{inputDesc}' on scope Lower!");
                 return res;
             }
             res.Lower = CreateState(root, clipRifle, loop, PhxAnimScope.Lower);
@@ -1461,7 +1440,7 @@ public class PhxAnimHuman
             res.Lower = CreateState(root, clip, loop, PhxAnimScope.Lower);
         }
         res.Upper = CreateState(root, clip, loop, PhxAnimScope.Upper);
-        ResetButtonTriggersOnEnter(res.Lower);
+        //ResetButtonTriggersOnEnter(res.Lower);
 
         Debug.Assert(res.Lower.IsValid());
         Debug.Assert(res.Upper.IsValid());
@@ -1630,7 +1609,6 @@ public class PhxAnimHuman
             }
         }
 #endif
-
         return set;
     }
 
@@ -1686,7 +1664,7 @@ public class PhxAnimHuman
         //WriteTriggerOnEnter(state, InReload, false);
     }
 
-    unsafe void CreateCombo(in PhxAnimHumanSet set, Transform root, string character, string weapon, string comboName)
+    void CreateCombo(in PhxAnimHumanSet set, Transform root, string character, string weapon, string comboName)
     {
         var con = Env.EnvCon;
         Config combo = con.FindConfig(EConfigType.Combo, comboName);
@@ -1697,9 +1675,12 @@ public class PhxAnimHuman
         else
         {
             // Since transitions may refer to yet undefined states (or in circles), we need
-            // to store all the transitions and apply them AFTER the full combo has been parsed.
+            // to store all the transitions and apply them AFTER the full combo has been parsed!
             List<PhxComboTransitionCache> Transitions = new List<PhxComboTransitionCache>();
             Dictionary<string, PhxComboState> ComboStates = new Dictionary<string, PhxComboState>();
+
+            // For proper Debug output only
+            HashSet<string> IgnoredStates = new HashSet<string>();
 
             Field[] fields = combo.GetFields();
             for (int i = 0; i < fields.Length; ++i)
@@ -1708,7 +1689,7 @@ public class PhxAnimHuman
                 if (field.GetNameHash() == Hash_State)
                 {
                     string stateName = field.GetString();
-                    bool isIdle = stateName.ToLower() == "idle";
+                    bool isIdle = PhxUtils.StrEquals(stateName, "IDLE");
 
                     if (ComboStates.ContainsKey(stateName))
                     {
@@ -1716,7 +1697,9 @@ public class PhxAnimHuman
                     }
                     if (!CreateComboState(root, character, weapon, comboName, field, out PhxComboState comboState) && !isIdle)
                     {
-                        Debug.LogError($"Failed to create combo state '{stateName}' in Combo '{comboName}'!");
+                        // State has no Animation() assigned. Silently ignore for now, since their only purpose seems to be to transition towards IDLE.
+                        //Debug.LogError($"Failed to create combo state '{stateName}' in Combo '{comboName}'!");
+                        IgnoredStates.Add(stateName);
                         continue;
                     }
 
@@ -1829,29 +1812,29 @@ public class PhxAnimHuman
                                     timeEnd = attackField.GetFloat(1);
                                     if (attackField.GetNumValues() >= 3)
                                     {
-                                        EDataValueType t1 = attackField.GetValueType(0);
-                                        EDataValueType t2 = attackField.GetValueType(1);
-                                        EDataValueType t3 = attackField.GetValueType(2);
-
                                         string mode = attackField.GetString(2);
                                         switch (mode)
                                         {
                                             case "Seconds":  timeMode = (int)PhxAnimTimeMode.Seconds;  break;
                                             case "Frames":   timeMode = (int)PhxAnimTimeMode.Frames;   break;
                                             case "FromAnim": timeMode = (int)PhxAnimTimeMode.FromAnim; break;
-                                            default: Debug.LogError($"Unknown time mode '{mode}'!");   break;
+                                            default:
+                                            {
+                                                Debug.LogError($"Unknown time mode '{mode}'!");
+                                                break;
+                                            }
                                         }
                                     }
                                 }
                                 else if (attackField.GetNameHash() == Hash_DamageLength)
                                 {
                                     length = attackField.GetFloat(0);
-                                    lengthFromEdge = attackField.GetNumValues() > 1 && attackField.GetString(1) == "FromEdge";
+                                    lengthFromEdge = attackField.GetNumValues() > 1 && PhxUtils.StrEquals(attackField.GetString(1), "FromEdge");
                                 }
                                 else if (attackField.GetNameHash() == Hash_DamageWidth)
                                 {
                                     width = attackField.GetFloat(0);
-                                    widthFromEdge = attackField.GetNumValues() > 1 && attackField.GetString(1) == "FromEdge";
+                                    widthFromEdge = attackField.GetNumValues() > 1 && PhxUtils.StrEquals(attackField.GetString(1), "FromEdge");
                                 }
                                 else if (attackField.GetNameHash() == Hash_Damage)
                                 {
@@ -1958,8 +1941,8 @@ public class PhxAnimHuman
                             And0 = new CraCondition
                             {
                                 Type = CraConditionType.Greater,
-                                Input = InMovementX,
-                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                                Input = InThrustX,
+                                Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                                 CompareToAbsolute = true
                             }
                         },
@@ -1968,8 +1951,8 @@ public class PhxAnimHuman
                             And0 = new CraCondition
                             {
                                 Type = CraConditionType.Greater,
-                                Input = InMovementY,
-                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
+                                Input = InThrustY,
+                                Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = Deadzone },
                             }
                         }
                     );
@@ -1980,8 +1963,8 @@ public class PhxAnimHuman
                             And0 = new CraCondition
                             {
                                 Type = CraConditionType.Less,
-                                Input = InMovementY,
-                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
+                                Input = InThrustY,
+                                Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = -Deadzone },
                             }
                         }
                     );
@@ -1993,6 +1976,7 @@ public class PhxAnimHuman
                 if (!Transitions[ti].SourceState.Lower.IsValid() || !Transitions[ti].SourceState.Upper.IsValid())
                 {
                     // TODO: This should never happen later on
+                    Debug.Assert(false);
                     continue;
                 }
 
@@ -2000,11 +1984,14 @@ public class PhxAnimHuman
                 targetState.State = set.StandIdle;
 
                 string targetStateName = Transitions[ti].TargetStateField.GetString();
-                if (targetStateName.ToLower() != "idle")
+                if (!PhxUtils.StrEquals(targetStateName, "IDLE"))
                 {
                     if (!ComboStates.TryGetValue(targetStateName, out targetState))
                     {
-                        Debug.LogError($"Tried to transition to unknown state '{targetStateName}' in combo '{comboName}'!");
+                        if (!IgnoredStates.Contains(targetStateName))
+                        {
+                            Debug.LogError($"Tried to transition to unknown state '{targetStateName}' in combo '{comboName}'!");
+                        }
                         continue;
                     }
                 }
@@ -2012,6 +1999,7 @@ public class PhxAnimHuman
                 if (!targetState.State.Lower.IsValid() || !targetState.State.Upper.IsValid())
                 {
                     // TODO: This should never happen later on
+                    Debug.Assert(false);
                     continue;
                 }
 
@@ -2032,26 +2020,42 @@ public class PhxAnimHuman
                 CraPlayRange stateRange = Transitions[ti].SourceState.Upper.GetPlayer().GetPlayRange();
                 float stateDuration = stateRange.MaxTime - stateRange.MinTime;
 
-                CraConditionOr[] conditions = GetComboTransitionConditions(Transitions[ti].TargetStateField.Scope, stateDuration);
-                Transition(Transitions[ti].SourceState, targetState.State, 0.15f, conditions);
+                PhxComboTransitionCondition[] conditions = GetComboTransitionConditions(Transitions[ti].TargetStateField.Scope, stateDuration);
 
-                // IDLE is a special state that corresponds to the entire postures the Combo state is allowed in
-                if (Transitions[ti].SourceStateIsIdle)
+                // Since SourceState can be IDLE, and IDLE can represent multiple states, we have to eval each OR condition individually...
+                for (int ci = 0; ci < conditions.Length; ci++)
                 {
-                    // Walk --> Combo State
-                    if ((targetState.Posture & PhxAnimPosture.Stand) != 0)
+                    ref var cond = ref conditions[ci];
+                    if (Transitions[ti].SourceStateIsIdle)
                     {
-                        Transition(set.StandWalkForward.Upper, targetState.State.Upper, 0.15f,
-                            conditions
-                        );
+                        if ((cond.SourcePosture & PhxAnimPosture.Stand) != 0)
+                        {
+                            Debug.Assert(Transitions[ti].SourceState.Lower == set.StandIdle.Lower);
+                            Debug.Assert(Transitions[ti].SourceState.Upper == set.StandIdle.Upper);
+                            Transition(set.StandIdle, targetState.State, 0.15f, cond.Or);
+                        }
+                        if ((cond.SourcePosture & PhxAnimPosture.Crouch) != 0)
+                        {
+                            Transition(set.CrouchIdle, targetState.State, 0.15f, cond.Or);
+                        }
+                        if ((cond.SourcePosture & PhxAnimPosture.Sprint) != 0)
+                        {
+                            Transition(set.Sprint, targetState.State, 0.15f, cond.Or);
+                        }
+                        if ((cond.SourcePosture & PhxAnimPosture.Jump) != 0)
+                        {
+                            Transition(set.Jump, targetState.State, 0.15f, cond.Or);
+                            Transition(set.Fall, targetState.State, 0.15f, cond.Or);
+                        }
 
-                        Transition(set.StandRunForward.Upper, targetState.State.Upper, 0.15f,
-                            conditions
-                        );
-
-                        Transition(set.StandRunBackward.Upper, targetState.State.Upper, 0.15f,
-                            conditions
-                        );
+                        Transition(Transitions[ti].SourceState, targetState.State, 0.15f, cond.Or);
+                        Transition(set.StandWalkForward.Upper, targetState.State.Upper, 0.15f, cond.Or);
+                        Transition(set.StandRunForward.Upper, targetState.State.Upper, 0.15f, cond.Or);
+                        Transition(set.StandRunBackward.Upper, targetState.State.Upper, 0.15f, cond.Or);
+                    }
+                    else
+                    {
+                        Transition(Transitions[ti].SourceState, targetState.State, 0.15f, cond.Or);
                     }
                 }
             }
@@ -2071,6 +2075,7 @@ public class PhxAnimHuman
             {
                 string animname = stateField.GetString();
                 string[] split = animname.Split(new char[] { '_' }, 2);
+                Debug.Assert(split.Length >= 2);
                 comboState.State = CreateScopedState(root, character, weapon, split[0], split[1], true);
                 if (comboState.State.Lower.IsValid() && comboState.State.Upper.IsValid())
                 {
@@ -2095,19 +2100,19 @@ public class PhxAnimHuman
         return false;
     }
 
-    unsafe CraConditionOr[] GetComboTransitionConditions(Scope transitionScope, float stateDuration)
+    unsafe PhxComboTransitionCondition[] GetComboTransitionConditions(Scope transitionScope, float stateDuration)
     {
-        List<CraConditionOr> Ors = new List<CraConditionOr>();
+        List<PhxComboTransitionCondition> consitions = new List<PhxComboTransitionCondition>();
         Field[] orFields = transitionScope.GetFields();
         if (orFields.Length == 0)
         {
-            CraConditionOr newOr = new CraConditionOr();
-            newOr.And0 = new CraCondition
+            PhxComboTransitionCondition newCond = new PhxComboTransitionCondition();
+            newCond.Or.And0 = new CraCondition
             {
                 Input = CraMachineValue.None,
                 Type = CraConditionType.IsFinished
             };
-            Ors.Add(newOr);
+            consitions.Add(newCond);
         }
         else
         {
@@ -2116,8 +2121,8 @@ public class PhxAnimHuman
                 Field orField = orFields[oi];
                 if (orField.GetNameHash() == Hash_If || orField.GetNameHash() == Hash_Or)
                 {
-                    CraConditionOr newOr = new CraConditionOr();
-                    CraCondition* and = &newOr.And0;
+                    PhxComboTransitionCondition newCond = new PhxComboTransitionCondition();
+                    CraCondition* and = &newCond.Or.And0;
 
                     int andIdx = 0;
                     Field[] andFields = orField.Scope.GetFields();
@@ -2143,12 +2148,51 @@ public class PhxAnimHuman
                             and[andIdx].Type = CraConditionType.Trigger;
                             andIdx++;
                         }
+                        else if (andField.GetNameHash() == Hash_Posture)
+                        {
+                            string postureStr = andField.GetString();
+                            if (!StrToPosture.TryGetValue(postureStr, out PhxAnimPosture posture))
+                            {
+                                Debug.LogError($"Cannot resolve unknown Combo Button '{postureStr}' to a CraInput!");
+                            }
+                            newCond.SourcePosture |= posture;
+                        }
+                        else if (andField.GetNameHash() == Hash_Thrust)
+                        {
+                            string condStr = andField.GetString(0);
+                            float condValue = andField.GetFloat(1);
+                            if (!PhxAnimUtils.StrToCondition.TryGetValue(condStr, out CraConditionType cond))
+                            {
+                                Debug.LogError($"Unknown condition '{condStr}'!");
+                                continue;
+                            }
+
+                            and[andIdx].Input = InThrustMagnitude;
+                            and[andIdx].Type = cond;
+                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = condValue };
+                            andIdx++;
+                        }
+                        else if (andField.GetNameHash() == Hash_ThrustAngle)
+                        {
+                            float condMin = andField.GetFloat(0);
+                            float condMax = andField.GetFloat(1);
+
+                            and[andIdx].Input = InThrustAngle;
+                            and[andIdx].Type = CraConditionType.GreaterOrEqual;
+                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = condMin };
+                            andIdx++;
+
+                            and[andIdx].Input = InThrustAngle;
+                            and[andIdx].Type = CraConditionType.LessOrEqual;
+                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = condMax };
+                            andIdx++;
+                        }
                         else if (andField.GetNameHash() == Hash_TimeStart)
                         {
                             float time = GetTimeValue(andField, stateDuration);
                             and[andIdx].Input = CraMachineValue.None;
                             and[andIdx].Type = CraConditionType.TimeMin;
-                            and[andIdx].Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
+                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
                             andIdx++;
                         }
                         else if (andField.GetNameHash() == Hash_TimeEnd)
@@ -2156,20 +2200,20 @@ public class PhxAnimHuman
                             float time = GetTimeValue(andField, stateDuration);
                             and[andIdx].Input = CraMachineValue.None;
                             and[andIdx].Type = CraConditionType.TimeMax;
-                            and[andIdx].Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
+                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
                             andIdx++;
                         }
                     }
 
                     if (andIdx > 0)
                     {
-                        Ors.Add(newOr);
+                        consitions.Add(newCond);
                     }
                 }
             }
         }
 
-        return Ors.ToArray();
+        return consitions.ToArray();
     }
 
     float GetTimeValue(Field timeField, float duration)
@@ -2177,23 +2221,30 @@ public class PhxAnimHuman
         float time = timeField.GetFloat(0);
         if (timeField.GetNumValues() > 1)
         {
-            if (timeField.GetString(1).ToLower() == "frames")
+            string modeStr = timeField.GetString(1);
+            if (PhxUtils.StrEquals(modeStr, "Frames"))
             {
                 // convert from battlefront frames (30 fps) to time
                 time /= 30f;
             }
-            else if (timeField.GetString(1).ToLower() == "fromanim")
+            else if (PhxUtils.StrEquals(modeStr, "FromAnim"))
             {
                 // time is a multiplier of duration
                 time *= duration;
             }
-            else if (timeField.GetString(1).ToLower() == "fromend")
+            else if (PhxUtils.StrEquals(modeStr, "FromEnd"))
             {
                 // start measuring time from end
                 time = duration + time;
             }
         }
         return time;
+    }
+
+    struct PhxComboTransitionCondition
+    {
+        public CraConditionOr Or;
+        public PhxAnimPosture SourcePosture;
     }
 
     struct PhxComboTransitionCache
@@ -2227,6 +2278,8 @@ public class PhxAnimHuman
     static readonly uint Hash_Or = HashUtils.GetFNV("Or");
     static readonly uint Hash_Posture = HashUtils.GetFNV("Posture");
     static readonly uint Hash_Button = HashUtils.GetFNV("Button");
+    static readonly uint Hash_Thrust = HashUtils.GetFNV("Thrust");
+    static readonly uint Hash_ThrustAngle = HashUtils.GetFNV("ThrustAngle");
     static readonly uint Hash_TimeStart = HashUtils.GetFNV("TimeStart");
     static readonly uint Hash_TimeEnd = HashUtils.GetFNV("TimeEnd");
 }

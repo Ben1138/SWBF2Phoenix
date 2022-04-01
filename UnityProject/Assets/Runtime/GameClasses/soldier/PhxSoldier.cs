@@ -670,8 +670,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
         }
 
-        Animator.InMovementX.SetFloat(Controller.MoveDirection.x);
-        Animator.InMovementY.SetFloat(Controller.MoveDirection.y);
+        Animator.InThrustX.SetFloat(Controller.MoveDirection.x);
+        Animator.InThrustY.SetFloat(Controller.MoveDirection.y);
         Animator.InCrouch.SetBool(Controller.Crouch);
         Animator.InSprint.SetBool(sprint);
         Animator.InJump.SetTrigger(jump);
@@ -797,7 +797,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Vector3 moveDirWorld = lookRot * moveDirLocal;
 
             float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
-            Animator.InMagnitude.SetFloat(walk);
+            Animator.InThrustMagnitude.SetFloat(walk);
+
+            float thrustAngle = Mathf.Atan2(-Controller.MoveDirection.x, Controller.MoveDirection.y) * Mathf.Rad2Deg;
+            thrustAngle = PhxUtils.SanitizeEuler360(thrustAngle);
+            Animator.InThrustAngle.SetFloat(thrustAngle);
 
             // TODO: base turn speed in degreees/sec really 45?
             MaxTurnSpeed.y = 45f * C.MaxTurnSpeed * turnFactor;
@@ -836,7 +840,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
 
                 moveRot = Quaternion.LookRotation(moveDirWorld);
-                if (Animator.OutStrafeBackwards.GetBool())
+                if (Animator.OutStrafeBackwards.GetBool() || Controller.MoveDirection.y < 0f)
                 {
                     // invert look direction when strafing left/right backwards
                     moveDirWorld = -moveDirWorld;
@@ -846,7 +850,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
             if (!IsFixated)
             {
-                Animator.InMagnitude.SetFloat(Body.velocity.magnitude / 7f);
+                Animator.InVelocityMagnitude.SetFloat(Body.velocity.magnitude / 7f);
             }
         }
         else
@@ -890,7 +894,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 Animator.InLandHardness.SetInt(0);
             }
 
-            Animator.InMagnitude.SetFloat(0f);
+            Animator.InVelocityMagnitude.SetFloat(0f);
         }
 
         if (IsFixated)

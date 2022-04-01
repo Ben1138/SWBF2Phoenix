@@ -37,6 +37,44 @@ public static class PhxAnimLoader
         ClipDB.Clear();
     }
 
+    public static bool Exists(string bankName, string animName)
+    {
+        if (bankName == "human")
+        {
+            return Exists(HUMANM_BANKS, animName);
+        }
+        return Exists(bankName, HashUtils.GetCRC(animName));
+    }
+
+    public static bool Exists(string[] animBanks, string animName)
+    {
+        for (int i = 0; i < animBanks.Length; ++i)
+        {
+            if (Exists(animBanks[i], animName))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static bool Exists(string bankName, uint animNameCRC)
+    {
+        uint animID = HashUtils.GetCRC(bankName) * animNameCRC;
+        if (ClipDB.TryGetValue(animID, out CraClip clip))
+        {
+            return true;
+        }
+
+        AnimationBank bank = Con.Get<AnimationBank>(bankName);
+        if (bank == null)
+        {
+            return false;
+        }
+
+        return bank.GetAnimationMetadata(animNameCRC, out _, out _);
+    }
+
     public static CraClip Import(string bankName, string animName)
     {
         if (bankName == "human")
@@ -51,9 +89,10 @@ public static class PhxAnimLoader
         CraClip clip = CraClip.None;
         for (int i = 0; i < animBanks.Length; ++i)
         {
-            clip = Import(animBanks[i], animName);
-            if (clip.IsValid())
+            if (Exists(animBanks[i], animName))
             {
+                clip = Import(animBanks[i], animName);
+                Debug.Assert(clip.IsValid());
                 break;
             }
         }
@@ -86,63 +125,6 @@ public static class PhxAnimLoader
 
         uint dummyroot = HashUtils.GetCRC("dummyroot");
         uint[] boneCRCs = bank.GetBoneCRCs(animNameCRC);
-
-        //if (animNameCRC == HashUtils.GetCRC("human_sabre_sprint_full"))
-        //{
-        //    Dictionary<uint, string> hashes = new Dictionary<uint, string>()
-        //    {
-        //        { HashUtils.GetCRC("bone_root"), "bone_root" },
-        //        { HashUtils.GetCRC("root_a_spine"), "root_a_spine" },
-        //        { HashUtils.GetCRC("bone_a_spine"), "bone_a_spine" },
-        //        { HashUtils.GetCRC("bone_b_spine"), "bone_b_spine" },
-        //        { HashUtils.GetCRC("bone_ribcage"), "bone_ribcage" },
-        //        { HashUtils.GetCRC("eff_ribcage"), "eff_ribcage" },
-        //        { HashUtils.GetCRC("root_l_clavicle"), "root_l_clavicle" },
-        //        { HashUtils.GetCRC("bone_l_clavicle"), "bone_l_clavicle" },
-        //        { HashUtils.GetCRC("eff_l_clavicle"), "eff_l_clavicle" },
-        //        { HashUtils.GetCRC("root_l_upperarm"), "root_l_upperarm" },
-        //        { HashUtils.GetCRC("bone_l_upperarm"), "bone_l_upperarm" },
-        //        { HashUtils.GetCRC("bone_l_forearm"), "bone_l_forearm" },
-        //        { HashUtils.GetCRC("eff_l_forearm"), "eff_l_forearm" },
-        //        { HashUtils.GetCRC("root_l_hand"), "root_l_hand" },
-        //        { HashUtils.GetCRC("bone_l_hand"), "bone_l_hand" },
-        //        { HashUtils.GetCRC("root_r_clavicle"), "root_r_clavicle" },
-        //        { HashUtils.GetCRC("bone_r_clavicle"), "bone_r_clavicle" },
-        //        { HashUtils.GetCRC("eff_r_clavicle"), "eff_r_clavicle" },
-        //        { HashUtils.GetCRC("root_r_upperarm"), "root_r_upperarm" },
-        //        { HashUtils.GetCRC("bone_r_upperarm"), "bone_r_upperarm" },
-        //        { HashUtils.GetCRC("bone_r_forearm"), "bone_r_forearm" },
-        //        { HashUtils.GetCRC("eff_r_forearm"), "eff_r_forearm" },
-        //        { HashUtils.GetCRC("root_r_hand"), "root_r_hand" },
-        //        { HashUtils.GetCRC("bone_r_hand"), "bone_r_hand" },
-        //        { HashUtils.GetCRC("root_neck"), "root_neck" },
-        //        { HashUtils.GetCRC("bone_neck"), "bone_neck" },
-        //        { HashUtils.GetCRC("bone_head"), "bone_head" },
-        //        { HashUtils.GetCRC("bone_pelvis"), "bone_pelvis" },
-        //        { HashUtils.GetCRC("root_r_thigh"), "root_r_thigh" },
-        //        { HashUtils.GetCRC("bone_r_thigh"), "bone_r_thigh" },
-        //        { HashUtils.GetCRC("bone_r_calf"), "bone_r_calf" },
-        //        { HashUtils.GetCRC("eff_r_calf"), "eff_r_calf" },
-        //        { HashUtils.GetCRC("root_r_foot"), "root_r_foot" },
-        //        { HashUtils.GetCRC("bone_r_foot"), "bone_r_foot" },
-        //        { HashUtils.GetCRC("bone_r_toe"), "bone_r_toe" },
-        //        { HashUtils.GetCRC("root_l_thigh"), "root_l_thigh" },
-        //        { HashUtils.GetCRC("bone_l_thigh"), "bone_l_thigh" },
-        //        { HashUtils.GetCRC("bone_l_calf"), "bone_l_calf" },
-        //        { HashUtils.GetCRC("eff_l_calf"), "eff_l_calf" },
-        //        { HashUtils.GetCRC("root_l_foot"), "root_l_foot" },
-        //        { HashUtils.GetCRC("bone_l_foot"), "bone_l_foot" },
-        //        { HashUtils.GetCRC("bone_l_toe"), "bone_l_toe" },
-        //    };
-
-        //    for (int i = 0; i < boneCRCs.Length; ++i)
-        //    {
-        //        if (hashes.TryGetValue(boneCRCs[i], out string str))
-        //            Debug.Log($"Animated Bone: {str}");
-        //        else
-        //            Debug.Log($"Animated Bone: {boneCRCs[i]}");
-        //    }
-        //}
 
         List<CraBone> bones = new List<CraBone>();
         for (int i = 0; i < boneCRCs.Length; ++i)

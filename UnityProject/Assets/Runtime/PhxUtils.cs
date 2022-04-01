@@ -8,6 +8,11 @@ using LibSWBF2.Utils;
 
 public static class PhxUtils
 {
+    public static bool StrEquals(string lhs, string rhs)
+    {
+        return lhs.Equals(rhs, StringComparison.InvariantCultureIgnoreCase);
+    }
+
     public static Vector4 Vec4FromString(string val)
     {
         string[] v = val.Split(new string[]{" "}, StringSplitOptions.RemoveEmptyEntries);
@@ -109,6 +114,12 @@ public static class PhxUtils
         while (euler.y < -180f) euler.y += 360f;
     }
 
+    public static float SanitizeEuler360(float euler)
+    {
+        while (euler > 360f) euler -= 360f;
+        while (euler < 0f)   euler += 360f;
+        return euler;
+    }
 
     public static Transform FindTransformRecursive(Transform root, string transformName)
     {
