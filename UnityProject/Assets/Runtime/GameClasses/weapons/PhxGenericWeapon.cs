@@ -484,4 +484,13 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
             }
         }
     }
+
+    protected void RemoveWeaponCollision()
+    {
+        Collider[] colls = gameObject.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colls.Length; i++)
+        {
+            Destroy(colls[i]);
+        }
+    }
 }

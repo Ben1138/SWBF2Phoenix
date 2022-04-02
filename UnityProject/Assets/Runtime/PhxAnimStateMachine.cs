@@ -40,15 +40,12 @@ public enum PhxAnimPosture : ushort
     Prone = 1 << 2,
     Sprint = 1 << 3,
     Jump = 1 << 4,
-    RollLeft = 1 << 5,
-    RollRight = 1 << 6,
-    Jet = 1 << 7,
-    Thrown = 1 << 8,
+    Roll = 1 << 5,
+    Jet = 1 << 6,
+    Thrown = 1 << 7,
 
-    Fall = 1 << 9,
-    Land = 1 << 10,
-
-    Roll = RollLeft | RollRight,
+    Fall = 1 << 8,
+    Land = 1 << 9,
 
     All = 0xffff
 }

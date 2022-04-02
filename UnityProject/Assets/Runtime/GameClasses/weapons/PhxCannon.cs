@@ -14,5 +14,6 @@ public class PhxCannon : PhxGenericWeapon<PhxCannon.ClassProperties>
     public override void Init()
     {
         base.Init();
+        RemoveWeaponCollision();
     }
 }

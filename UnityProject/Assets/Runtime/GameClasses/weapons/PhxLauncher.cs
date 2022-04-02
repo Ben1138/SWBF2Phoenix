@@ -12,6 +12,7 @@ public class PhxLauncher : PhxGenericWeapon<PhxLauncher.ClassProperties>
     public override void Init()
     {
         base.Init();
+        RemoveWeaponCollision();
     }
 
     public override PhxAnimWeapon GetAnimInfo()

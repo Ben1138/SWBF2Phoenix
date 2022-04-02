@@ -71,6 +71,7 @@ public class PhxPlayerController : PhxPawnController
 
         Jump = Input.GetButtonDown("Jump");
         Sprint = Input.GetButton("Sprint");
+        Roll = Input.GetButtonDown("Roll");
         Reload = Input.GetButtonDown("Reload");
         NextPrimaryWeapon = Input.GetAxis("WeaponChange") < 0;
         NextSecondaryWeapon = Input.GetAxis("WeaponChange") > 0;

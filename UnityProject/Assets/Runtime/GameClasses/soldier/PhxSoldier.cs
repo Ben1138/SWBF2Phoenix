@@ -640,6 +640,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         bool sprint = Controller.Sprint;
         bool jump = Controller.Jump;
+        bool roll = Controller.Roll;
         bool ShootPrimary = Controller.ShootPrimary;
         bool ShootSecondary = Controller.ShootSecondary;
         bool reload = Controller.Reload;
@@ -647,6 +648,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         {
             sprint = false;
             jump = false;
+            roll = false;
             ShootPrimary = false;
             ShootSecondary = false;
             reload = false;
@@ -675,6 +677,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InCrouch.SetBool(Controller.Crouch);
         Animator.InSprint.SetBool(sprint);
         Animator.InJump.SetTrigger(jump);
+        Animator.InRoll.SetTrigger(roll);
         Animator.InShootPrimary.SetTrigger(ShootPrimary);
         Animator.InShootSecondary.SetTrigger(ShootSecondary);
         Animator.InReload.SetTrigger(reload);
@@ -786,7 +789,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         TurnTimer = Mathf.Max(TurnTimer - deltaTime, 0f);
 
-        if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Sprint)
+        if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Roll || posture == PhxAnimPosture.Sprint)
         {
             float accStep = C.Acceleration * deltaTime;
             float thrustFactor = ControlValues[posture][0];
@@ -962,11 +965,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             //lookRot.ToAngleAxis(out float angle, out Vector3 axis);
             //Body.angularVelocity = axis * angle * Mathf.Deg2Rad;
 
+            // Handling stairs/steps/slopes
             if (CurrSpeed != Vector3.zero)
             {
                 Vector3 upper = moveRot * StepCheckOffset;
-
-                // Handling stairs/steps/slopes
                 if (Physics.Raycast(Body.position + upper, Vector3.down, out RaycastHit hit, upper.y * 2f))
                 {
                     float height = hit.point.y - Body.position.y;
@@ -976,11 +978,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                         Body.AddForce(Vector3.up * height * StepUpForceMulti, ForceMode.VelocityChange);
                     }
                 }
-
                 //Debug.DrawRay(Body.position + upper, Vector3.down * upper.y, Color.red);
             }
         }
-        else if (posture == PhxAnimPosture.Jump || posture == PhxAnimPosture.Fall)
+        else if (posture == PhxAnimPosture.Jump || posture == PhxAnimPosture.Fall || posture == PhxAnimPosture.Roll)
         {
             Body.AddForce(CurrSpeed, ForceMode.Acceleration);
             Body.MoveRotation(lookRot);

@@ -28,6 +28,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
     public override void Init()
     {
         base.Init();
+        RemoveWeaponCollision();
 
         if (LightsaberMat == null)
         {

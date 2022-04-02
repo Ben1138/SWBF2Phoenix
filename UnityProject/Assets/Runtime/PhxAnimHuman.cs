@@ -99,8 +99,7 @@ public struct PhxAnimHumanSet
     public PhxScopedState Fall;
     public PhxScopedState LandSoft;
     public PhxScopedState LandHard;
-    public PhxScopedState RollLeft;
-    public PhxScopedState RollRight;
+    public PhxScopedState Roll;
     public PhxScopedState Choking;
 
     // Lower
@@ -148,6 +147,7 @@ public class PhxAnimHuman
     public CraMachineValue InCrouch { get; private set; }
     public CraMachineValue InSprint { get; private set; }
     public CraMachineValue InJump { get; private set; }
+    public CraMachineValue InRoll { get; private set; }
     public CraMachineValue InShootPrimary { get; private set; }
     public CraMachineValue InShootSecondary { get; private set; }
     public CraMachineValue InReload { get; private set; }
@@ -181,8 +181,8 @@ public class PhxAnimHuman
         { "Prone",     PhxAnimPosture.Prone     },
         { "Sprint",    PhxAnimPosture.Sprint    },
         { "Jump",      PhxAnimPosture.Jump      },
-        { "RollLeft",  PhxAnimPosture.RollLeft  },
-        { "RollRight", PhxAnimPosture.RollRight },
+        { "RollLeft",  PhxAnimPosture.Roll      },
+        { "RollRight", PhxAnimPosture.Roll      },
         { "Roll",      PhxAnimPosture.Roll      },
         { "Jet",       PhxAnimPosture.Jet       },
     };
@@ -211,6 +211,7 @@ public class PhxAnimHuman
         InCrouch = Machine.NewMachineValue(CraValueType.Bool, "Crouch");
         InSprint = Machine.NewMachineValue(CraValueType.Bool, "Sprint");
         InJump = Machine.NewMachineValue(CraValueType.Trigger, "Jump");
+        InRoll = Machine.NewMachineValue(CraValueType.Trigger, "Roll");
         InEnergy = Machine.NewMachineValue(CraValueType.Float, "Energy");
         InShootPrimary = Machine.NewMachineValue(CraValueType.Trigger, "Shoot Primary");
         InShootSecondary = Machine.NewMachineValue(CraValueType.Trigger, "Shoot Secondary");
@@ -274,6 +275,7 @@ public class PhxAnimHuman
             Transitions_Sprint(in Sets[i]);
             Transitions_Jump(in Sets[i]);
             Transitions_Land(in Sets[i]);
+            Transitions_Roll(in Sets[i]);
         }
 
         LayerLower.SetActiveState(Sets[ActiveSet].StandIdle.Lower);
@@ -1365,6 +1367,83 @@ public class PhxAnimHuman
         );
     }
 
+    void Transitions_Roll(in PhxAnimHumanSet set)
+    {
+        Transition(set.StandWalkForward, set.Roll, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InRoll,
+                }
+            }
+        );
+
+        Transition(set.StandRunForward, set.Roll, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InRoll,
+                }
+            }
+        );
+
+        Transition(set.StandRunBackward, set.Roll, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InRoll,
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.LessOrEqual,
+                    Input = InThrustAngle,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 135 }
+                },
+            },
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InRoll,
+                },
+                And1 = new CraCondition
+                {
+                    Type = CraConditionType.GreaterOrEqual,
+                    Input = InThrustAngle,
+                    Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = 225 }
+                },
+            }
+        );
+
+        Transition(set.Sprint, set.Roll, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.Trigger,
+                    Input = InRoll,
+                }
+            }
+        );
+
+        Transition(set.Roll, set.StandIdle, 0.15f,
+            new CraConditionOr
+            {
+                And0 = new CraCondition
+                {
+                    Type = CraConditionType.IsFinished
+                }
+            }
+        );
+    }
+
     public void SetActiveWeaponBank(string weaponAnimBank)
     {
         if (!WeaponAnimToSetIdx.TryGetValue(weaponAnimBank, out int idx))
@@ -1517,6 +1596,7 @@ public class PhxAnimHuman
         set.Fall = CreateScopedState(root, character, weaponName, "fall", null, true);
         set.LandSoft = CreateScopedState(root, character, weaponName, "landsoft", null, false);
         set.LandHard = CreateScopedState(root, character, weaponName, "landhard", null, false);
+        set.Roll = CreateScopedState(root, character, weaponName, "diveforward", null, false);
 
         WriteIntOnEnter(set.CrouchIdle, OutPosture, (int)PhxAnimPosture.Crouch);
         WriteIntOnEnter(set.CrouchIdleTakeknee, OutPosture, (int)PhxAnimPosture.Crouch);
@@ -1578,6 +1658,7 @@ public class PhxAnimHuman
         WriteIntOnEnter(set.Fall, OutPosture, (int)PhxAnimPosture.Fall);
         WriteIntOnEnter(set.LandSoft, OutPosture, (int)PhxAnimPosture.Land);
         WriteIntOnEnter(set.LandHard, OutPosture, (int)PhxAnimPosture.Land);
+        WriteIntOnEnter(set.Roll, OutPosture, (int)PhxAnimPosture.Roll);
 
 
         WriteBoolOnEnter(set.StandRunBackward, OutStrafeBackwards, true);

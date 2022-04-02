@@ -16,6 +16,7 @@ public abstract class PhxPawnController
     public bool Crouch;
     public bool Jump;
     public bool Sprint;
+    public bool Roll;
     public bool Reload;
     public bool NextPrimaryWeapon;
     public bool NextSecondaryWeapon;
