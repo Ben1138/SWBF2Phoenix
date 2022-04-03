@@ -54,7 +54,6 @@ public class PhxScene
     CraMain Cra;
 
     public PhxAnimationResolver AnimResolver { get; private set; }
-    public PhxAnimStateMachineManager StateMachines { get; private set; }
 
     int InstanceCounter;
 
@@ -80,7 +79,6 @@ public class PhxScene
         });
 
         AnimResolver = new PhxAnimationResolver();
-        StateMachines = new PhxAnimStateMachineManager(EnvCon, AnimResolver);
 
         ModelLoader.Instance.PhyMat = PhxGame.Instance.GroundPhyMat;
         ENV.OnPostLoad += CalcCPCamPositions;

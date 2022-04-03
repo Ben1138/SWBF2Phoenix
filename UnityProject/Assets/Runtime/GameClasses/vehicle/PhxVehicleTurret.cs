@@ -8,7 +8,7 @@ using LibSWBF2.Utils;
 
 
 public class PhxVehicleTurret : PhxSeat
-{   
+{
     /*
 	string TurretYawSound = "";
     float TurretYawSoundPitch = 0.7f;
@@ -76,6 +76,7 @@ public class PhxVehicleTurret : PhxSeat
 
         if (Occupant == null || !CanRotate) return;
 
-        BaseTransform.rotation *= Quaternion.Euler(new Vector3(0f,Occupant.GetController().mouseX,0f));
+        var axes = PlayerInput.GetVehicleAxes(); // TODO: Get rid of this!
+        BaseTransform.rotation *= Quaternion.Euler(new Vector3(0f, axes.View.Axis.x, 0f));
     }
 }

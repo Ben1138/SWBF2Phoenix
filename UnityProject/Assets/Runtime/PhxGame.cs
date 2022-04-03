@@ -69,6 +69,7 @@ public class PhxGame : MonoBehaviour
     byte UIAudioHead = 0;
 
     PhxEnvironment Env;
+    PhxPlayerInput PlayerInput;
     Dictionary<string, string> RegisteredAddons = new Dictionary<string, string>();
     
     // Maps addons to their root folders
@@ -104,6 +105,11 @@ public class PhxGame : MonoBehaviour
     public static PhxEnvironment GetEnvironment()
     {
         return Instance == null ? null : Instance.Env;
+    }
+
+    public static PhxPlayerInput GetPlayerInput()
+    {
+        return Instance == null ? null : Instance.PlayerInput;
     }
 
     public static PhxCamera GetCamera()

@@ -11,6 +11,8 @@ public static class PhxAnimLoader
 
     static Dictionary<uint, CraClip> ClipDB = new Dictionary<uint, CraClip>();
 
+    static readonly uint Hash_dummyroot = HashUtils.GetCRC("dummyroot");
+
     static readonly float[] ComponentMultipliers = 
     {
         -1.0f,
@@ -123,14 +125,13 @@ public static class PhxAnimLoader
         CraSourceClip srcClip = new CraSourceClip();
         srcClip.Name = string.IsNullOrEmpty(clipNameOverride) ? animNameCRC.ToString() : clipNameOverride;
 
-        uint dummyroot = HashUtils.GetCRC("dummyroot");
         uint[] boneCRCs = bank.GetBoneCRCs(animNameCRC);
 
         List<CraBone> bones = new List<CraBone>();
         for (int i = 0; i < boneCRCs.Length; ++i)
         {
             // no root motion
-            if (boneCRCs[i] == dummyroot) continue;
+            if (boneCRCs[i] == Hash_dummyroot) continue;
 
             CraBone bone = new CraBone();
             bone.BoneHash = (int)boneCRCs[i];

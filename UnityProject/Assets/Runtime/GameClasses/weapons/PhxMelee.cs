@@ -24,6 +24,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
 
     static Material LightsaberMat;
     LineRenderer Blade;
+    AudioSource SwingAudio;
 
     public override void Init()
     {
@@ -38,6 +39,19 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         foreach (Dictionary<string, IPhxPropRef> section in C.LightSabers)
         {
             CreateBlade(section);
+        }
+
+        AudioClip FireSound = SoundLoader.Instance.LoadSound("saber_idle02");
+        if (FireSound != null)
+        {
+            Audio = gameObject.AddComponent<AudioSource>();
+            Audio.playOnAwake = true;
+            Audio.spatialBlend = 1.0f;
+            Audio.rolloffMode = AudioRolloffMode.Linear;
+            Audio.minDistance = 2.0f;
+            Audio.maxDistance = 30.0f;
+            Audio.loop = true;
+            Audio.clip = FireSound;
         }
     }
 

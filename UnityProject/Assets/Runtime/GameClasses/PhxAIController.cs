@@ -6,7 +6,7 @@ public abstract class PhxAIController : PhxPawnController
 {
     public override void Tick(float deltaTime)
     {
-        base.Tick(deltaTime);
+        //base.Tick(deltaTime);
 
         // nothing to do
         if (Pawn == null)
@@ -18,7 +18,7 @@ public abstract class PhxAIController : PhxPawnController
 
         if (Target != null)
         {
-            ViewDirection = (Target.transform.position - Pawn.GetInstance().transform.position).normalized;
+            Data.ViewDirection = (Target.transform.position - Pawn.GetInstance().transform.position).normalized;
         }
     }
 }
@@ -35,7 +35,7 @@ public class PhxSoldierAIController : PhxAIController
             // - if vehicle, aim at weak spot
             return Target.transform.position;
         }
-        return ViewDirection * 1000f;
+        return Data.ViewDirection * 1000f;
     }
 
     public override void Tick(float deltaTime)

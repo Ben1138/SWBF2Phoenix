@@ -36,7 +36,9 @@ public interface IPhxSeatable
  
 
 public abstract class PhxSeat : IPhxTrackable, IPhxTickable
-{    
+{
+    // TODO: Get rid of PlayerInput!
+    protected static PhxPlayerInput PlayerInput => PhxGame.GetPlayerInput();
     protected static PhxCamera CAM => PhxGame.GetCamera();
 
     // Max 2, min 1
@@ -104,26 +106,30 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
             return; 
         }
 
-        if (Controller.SwitchSeat && Owner.TrySwitchSeat(Index))
+        PhxPawnControlData data = Controller.GetControlData();
+        if ((data.Events.Pressed & PhxInput.Vehicle_SwitchSeat) != 0 && Owner.TrySwitchSeat(Index))
         {
             Occupant = null;
-            Controller.SwitchSeat = false;
             return;
         }
 
-        if (Controller.Enter && Owner.Eject(Index))
+        if ((data.Events.Pressed & PhxInput.Vehicle_Exit) != 0 && Owner.Eject(Index))
         {
             Occupant = null;
-            Controller.Enter = false;
             return;
         }
-        
 
-        PitchAccum += Controller.mouseY;
-        PitchAccum = Mathf.Clamp(PitchAccum, PitchLimits.x, PitchLimits.y);
 
-        YawAccum += Controller.mouseX;
-        YawAccum = Mathf.Clamp(YawAccum, YawLimits.x, YawLimits.y);        
+        // TODO: We need to settle on one convention: Either calc rotation in Controller, or in Pawn!
+        PhxInputAxesGroup axes = PlayerInput.GetVehicleAxes();
+        if (axes.View.Type == PhxInputAxisType.Relative)
+        {
+            PitchAccum += axes.View.Axis.y;
+            PitchAccum = Mathf.Clamp(PitchAccum, PitchLimits.x, PitchLimits.y);
+
+            YawAccum += axes.View.Axis.x;
+            YawAccum = Mathf.Clamp(YawAccum, YawLimits.x, YawLimits.y);        
+        }
 
 
         // These need work, camera behaviour is slightly off and NormalDirection 
@@ -163,7 +169,7 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
         }
 
 
-        if (Controller.ShootPrimary)
+        if ((data.Events.Down & PhxInput.Flyer_FirePrimary) != 0)
         {   
             if (WeaponSystems.Count > 0)
             {
@@ -171,7 +177,7 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
             }
         }
 
-        if (Controller.ShootSecondary)
+        if ((data.Events.Down & PhxInput.Flyer_FireSecondary) != 0)
         {
             if (WeaponSystems.Count > 1)
             {

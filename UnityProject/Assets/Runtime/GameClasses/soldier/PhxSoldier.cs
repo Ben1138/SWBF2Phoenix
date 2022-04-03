@@ -99,11 +99,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     PhxPoser Poser;
 
     PhxAnimHuman Animator;
-    PhxAnimHandle StateMachine;
     Rigidbody Body;
     CapsuleCollider MovementColl;
 
     // Important skeleton bones
+    Transform DummyRoot;
     Transform HpWeapons;
     Transform Spine;
     Transform Neck;
@@ -172,6 +172,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             ControlValues.Add(cs.Value, GetControlSpeed(cs.Key));
         }
 
+        DummyRoot = transform.GetChild(0);
+        Debug.Assert(DummyRoot != null);
+        
         HpWeapons = PhxUtils.FindTransformRecursive(transform, "hp_weapons");
         Neck = PhxUtils.FindTransformRecursive(transform, "bone_neck");
         Spine = PhxUtils.FindTransformRecursive(transform, "bone_b_spine");
@@ -285,7 +288,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
 
         Animator = new PhxAnimHuman(Scene.AnimResolver, transform, characterAnim, weapAnimBanks);
-        StateMachine = Scene.StateMachines.StateMachine_NewHuman(Animator);
 
         // Assume we're grounded on spawn
         Grounded = true;
@@ -393,10 +395,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         Body = gameObject.AddComponent<Rigidbody>();
         Body.mass = 80f;
-        Body.drag = 0.2f;
-        Body.angularDrag = 10f;
-        Body.interpolation = RigidbodyInterpolation.Interpolate;
-        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        Body.drag = 0f;
+        Body.angularDrag = 1000f;
+        Body.interpolation = RigidbodyInterpolation.Extrapolate;
+        Body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         Body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         GetComponent<SkinnedMeshRenderer>().enabled = true;
@@ -406,9 +408,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         transform.position = position;
 
         Poser = null;
-
-        Controller.Enter = false;
-
 
         if (WeaponIdx[0] >= 0 && Weapons[0][WeaponIdx[0]] != null)
         {
@@ -488,7 +487,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     void UpdatePose(float deltaTime)
     {
-        Vector4 Input = new Vector4(Controller.MoveDirection.x, Controller.MoveDirection.y, Controller.mouseX, Controller.mouseY);
+        var data = Controller.GetControlData();
+
+        // TODO: fill the last two parameters with sensible values again
+        Vector4 Input = new Vector4(data.MoveDirection.x, data.MoveDirection.y, 0f, 0f);
 
         if (Poser != null && CurrentSeat != null)
         {
@@ -592,6 +594,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         //AnimationCorrection();
 
+        var data = Controller.GetControlData();
         AlertTimer = Mathf.Max(AlertTimer - deltaTime, 0f);
 
         if (Controller == null)
@@ -600,7 +603,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
 
         // Will work into specific control schema.  Not sure when you can't enter vehicles...
-        if (Controller.Enter && Context == PhxSoldierContext.Free)
+        if ((data.Events.Pressed & PhxInput.Soldier_Enter) != 0 && Context == PhxSoldierContext.Free)
         {
             PhxVehicle ClosestVehicle = null;
             float ClosestDist = float.MaxValue;
@@ -632,7 +635,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 if (CurrentSeat != null)
                 {
                     SetPilot(CurrentSeat);
-                    Controller.Enter = false;
                     return;
                 }
             }
@@ -644,7 +646,16 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         bool ShootPrimary = Controller.ShootPrimary;
         bool ShootSecondary = Controller.ShootSecondary;
         bool reload = Controller.Reload;
-        if (Animator.OutIsReloading.GetBool())
+
+        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutPosture.GetInt();
+        PhxAnimAction  action  = (PhxAnimAction)Animator.OutAction.GetInt();
+
+        if (posture == PhxAnimPosture.Roll)
+        {
+            roll = false;
+        }
+
+        if (action == PhxAnimAction.Reload)
         {
             sprint = false;
             jump = false;
@@ -683,8 +694,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InReload.SetTrigger(reload);
         Animator.InEnergy.SetFloat(100.0f);
         Animator.InGrounded.SetBool(Grounded);
-
-        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutPosture.GetInt();
 
         if (Controller.NextPrimaryWeapon)
         {
@@ -863,7 +872,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 FallTimer += deltaTime;
                 if (Grounded)
                 {
-                    Animator.InLandHardness.SetInt(FallTimer < 1f ? 1 : 2);
+                    Animator.InLandHardness.SetInt(FallTimer < 1.5f ? 1 : 2);
                 }
                 else
                 {
@@ -908,57 +917,11 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         Grounded = Physics.OverlapSphere(Body.position, 0.2f, GroundedLayerMask).Length > 1;
 
-        // Not jumping -> Falling
-        //if (State != PhxControlState.Jump && !Grounded)
-        //{
-        //    FallTimer += deltaTime;
-        //    if (FallTimer > FallTime)
-        //    {
-        //        State = PhxControlState.Jump;
-        //        Animator.Anim.SetState(0, Animator.Fall);
-        //        Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
-        //    }
-        //}
-
-        //// Jump/Fall -> Land
-        //if (State == PhxControlState.Jump)
-        //{
-        //    FallTimer += deltaTime;
-        //    JumpTimer -= deltaTime;
-
-        //    if (Grounded && JumpTimer < 0f)
-        //    {
-        //        State = PhxControlState.Stand;
-
-        //        if (FallTimer > 1.5f)
-        //        {
-        //            LandTimer = 0.9f;
-        //            Animator.Anim.SetState(0, Animator.LandHard);
-        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
-        //            //Debug.Log($"Land HARD {FallTimer}");
-        //        }
-        //        else if (FallTimer > 1.2f || Controller.MoveDirection.magnitude < 0.1f)
-        //        {
-        //            LandTimer = 0.6f;
-        //            Animator.Anim.SetState(0, Animator.LandSoft);
-        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
-        //            //Debug.Log($"Land Soft {FallTimer}");
-        //        }
-        //        else
-        //        {
-        //            LandTimer = 0.05f;
-        //            Animator.Anim.SetState(0, Animator.LandSoft);
-        //            Animator.Anim.SetState(1, CraMain.Instance.Settings.STATE_NONE);
-        //            //Debug.Log($"Land very Soft {FallTimer}");
-        //        }
-
-        //        FallTimer = 0f;
-        //    }
-        //}
-
         if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Sprint)
         {
             //Body.MovePosition(Body.position + CurrSpeed * deltaTime);
+
+            //Body.velocity = DummyRoot.transform.localPosition;          
             Body.velocity = CurrSpeed;
             Body.MoveRotation(lookRot); // TODO: Use torque here
 

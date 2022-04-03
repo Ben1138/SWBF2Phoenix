@@ -16,7 +16,7 @@ public class PhxAnimTestController : PhxAIController
 
     public override Vector3 GetAimPosition()
     {
-        return TestAim != null ? TestAim.position : ViewDirection * 1000f;
+        return TestAim != null ? TestAim.position : Data.ViewDirection * 1000f;
     }
 
     public override void Tick(float deltaTime)
@@ -33,23 +33,30 @@ public class PhxAnimTestController : PhxAIController
         if (ReloadTimer < 0f)
         {
             ReloadTimer = Random.Range(1f, 10f);
-            Reload = true;
+            Data.Events.Pressed |= PhxInput.Soldier_Reload;
         }
         else
         {
-            Reload = false;
+            Data.Events.Pressed &= ~PhxInput.Soldier_Reload;
         }
 
         float sin = Mathf.Sin(ForwardOffset + Time.timeSinceLevelLoad);
 
-        MoveDirection.x = sin;
-        MoveDirection.y = sin;
+        Data.MoveDirection.x = sin;
+        Data.MoveDirection.y = sin;
 
-        ShootPrimary = sin > -0.5f;
+        if (sin > -0.5f)
+        {
+            Data.Events.Down |= PhxInput.Flyer_FirePrimary;
+        }
+        else
+        {
+            Data.Events.Down &= ~PhxInput.Flyer_FirePrimary;
+        }
 
         if (TestAim != null)
         {
-            ViewDirection = (TestAim.transform.position - Pawn.GetInstance().transform.position).normalized;
+            Data.ViewDirection = (TestAim.transform.position - Pawn.GetInstance().transform.position).normalized;
         }
     }
 }

@@ -179,3 +179,51 @@ public static class PhxUtils
         return format;
     }
 }
+
+public class PhxRingBuffer<T> where T : struct
+{
+    T[]  Elements;
+    int  Head;
+    int  Tail;
+
+    public PhxRingBuffer(int size)
+    {
+        Debug.Assert(size > 1);
+
+        Elements = new T[size];
+        Head = 0;
+        Tail = 0;
+    }
+
+    public void Push(in T elem)
+    {
+        Elements[Head++] = elem;
+        if (Head >= Elements.Length)
+        {
+            Head = 0;
+        }
+        if (Head == Tail)
+        {
+            if (++Tail >= Elements.Length)
+            {
+                Tail = 0;
+            }
+        }
+    }
+
+    public bool Pop(out T elem)
+    {
+        if (Tail == Head)
+        {
+            elem = default;
+            return false;
+        }
+
+        elem = Elements[Tail++];
+        if (Tail >= Elements.Length)
+        {
+            Tail = 0;
+        }
+        return true;
+    }
+}
