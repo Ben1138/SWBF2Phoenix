@@ -132,17 +132,16 @@ public class PhxFlyerMainSection : PhxSeat
             return; 
         }
 
-        if (Controller.SwitchSeat && Owner.TrySwitchSeat(Index))
+        var data = Controller.GetControlData();
+        if (data.Events.IsPressed(PhxInput.Flyer_SwitchSeat) && Owner.TrySwitchSeat(Index))
         {
             Occupant = null;
-            Controller.SwitchSeat = false;
             return;
         }
 
-        if (Controller.Enter && Owner.Eject(Index))
+        if (data.Events.IsPressed(PhxInput.Flyer_Exit) && Owner.Eject(Index))
         {
             Occupant = null;
-            Controller.Enter = false;
             return;
         }
         
@@ -191,7 +190,7 @@ public class PhxFlyerMainSection : PhxSeat
         }
 
 
-        if (Controller.ShootPrimary)
+        if (data.Events.IsPressed(PhxInput.Flyer_FirePrimary))
         {   
             if (WeaponSystems.Count > 0)
             {
@@ -199,7 +198,7 @@ public class PhxFlyerMainSection : PhxSeat
             }
         }
 
-        if (Controller.ShootSecondary)
+        if (data.Events.IsPressed(PhxInput.Flyer_FireSecondary))
         {
             if (WeaponSystems.Count > 1)
             {

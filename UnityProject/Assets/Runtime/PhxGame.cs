@@ -360,6 +360,7 @@ public class PhxGame : MonoBehaviour
         WorldLoader.UseHDRP = true;
         MaterialLoader.UseHDRP = true;
         EffectsLoader.UseHDRP = true;
+        PlayerInput = new PhxPlayerInput();
 
         AddonPath = GamePath / "GameData/addon";
         StdLVLPC = GamePath / "GameData/data/_lvl_pc";
@@ -548,6 +549,7 @@ public class PhxGame : MonoBehaviour
 
     void Update()
     {
+        PlayerInput?.Tick(Time.deltaTime);
         Env?.Tick(Time.deltaTime);
 
         while (LibLog.GetNextLog(out LibLogEntry entry))

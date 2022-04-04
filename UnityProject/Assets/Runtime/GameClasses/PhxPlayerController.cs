@@ -12,7 +12,6 @@ public class PhxPlayerController : PhxPawnController
 
     public PhxPlayerController()
     {
-        LockedInputs = PhxInput.None;
         Team = 1;
     }
 
@@ -40,7 +39,7 @@ public class PhxPlayerController : PhxPawnController
         Data.Events = PlayerInput.GetButtonEvents();
 
         PhxInputAxesGroup axes = PlayerInput.GetSoldierAxes();
-        Data.MoveDirection = axes.Thrust.Axis;
+        Data.MoveDirection = axes.Thrust.GetValues();
 
         Vector2 rotConstraints = Pawn.GetViewConstraint();
         Vector2 maxTurnSpeed = Pawn.GetMaxTurnSpeed();
@@ -52,15 +51,15 @@ public class PhxPlayerController : PhxPawnController
 
         if (axes.View.Type == PhxInputAxisType.Relative)
         {
-            turnX = Mathf.Clamp(axes.View.Axis.y * 2f, -maxTurn.x, maxTurn.x);
-            turnY = Mathf.Clamp(axes.View.Axis.x * 2f, -maxTurn.y, maxTurn.y);
+            turnX = Mathf.Clamp(axes.View.Y.Value * 2f, -maxTurn.x, maxTurn.x);
+            turnY = Mathf.Clamp(axes.View.X.Value * 2f, -maxTurn.y, maxTurn.y);
         }
         else
         {
             Debug.Assert(axes.View.Type == PhxInputAxisType.Absolute);
 
-            turnX = axes.View.Axis.y * maxTurn.x;
-            turnY = axes.View.Axis.x * maxTurn.y;
+            turnX = axes.View.Y.Value * maxTurn.x;
+            turnY = axes.View.X.Value * maxTurn.y;
         }
 
         Quaternion rot = Quaternion.LookRotation(Data.ViewDirection);

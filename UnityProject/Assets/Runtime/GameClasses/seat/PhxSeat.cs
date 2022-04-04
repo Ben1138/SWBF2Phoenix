@@ -107,13 +107,13 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
         }
 
         PhxPawnControlData data = Controller.GetControlData();
-        if ((data.Events.Pressed & PhxInput.Vehicle_SwitchSeat) != 0 && Owner.TrySwitchSeat(Index))
+        if (data.Events.IsPressed(PhxInput.Vehicle_SwitchSeat) && Owner.TrySwitchSeat(Index))
         {
             Occupant = null;
             return;
         }
 
-        if ((data.Events.Pressed & PhxInput.Vehicle_Exit) != 0 && Owner.Eject(Index))
+        if (data.Events.IsPressed(PhxInput.Vehicle_Exit) && Owner.Eject(Index))
         {
             Occupant = null;
             return;
@@ -124,10 +124,10 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
         PhxInputAxesGroup axes = PlayerInput.GetVehicleAxes();
         if (axes.View.Type == PhxInputAxisType.Relative)
         {
-            PitchAccum += axes.View.Axis.y;
+            PitchAccum += axes.View.Y.Value;
             PitchAccum = Mathf.Clamp(PitchAccum, PitchLimits.x, PitchLimits.y);
 
-            YawAccum += axes.View.Axis.x;
+            YawAccum += axes.View.X.Value;
             YawAccum = Mathf.Clamp(YawAccum, YawLimits.x, YawLimits.y);        
         }
 
@@ -169,7 +169,7 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
         }
 
 
-        if ((data.Events.Down & PhxInput.Flyer_FirePrimary) != 0)
+        if (data.Events.IsDown(PhxInput.Flyer_FirePrimary))
         {   
             if (WeaponSystems.Count > 0)
             {
@@ -177,7 +177,7 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
             }
         }
 
-        if ((data.Events.Down & PhxInput.Flyer_FireSecondary) != 0)
+        if (data.Events.IsDown(PhxInput.Flyer_FireSecondary))
         {
             if (WeaponSystems.Count > 1)
             {

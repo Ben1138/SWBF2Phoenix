@@ -80,6 +80,18 @@ public static class PhxAnimUtils
         { "==", CraConditionType.Equal          },
     };
 
+    public static readonly Dictionary<string, PhxInput> StrToSoldierButton = new Dictionary<string, PhxInput>()
+    {
+        { "Fire",           PhxInput.Soldier_FirePrimary   },
+        { "FirePrimary",    PhxInput.Soldier_FirePrimary   },
+        { "FireSecondary",  PhxInput.Soldier_FireSecondary },
+        { "FireBoth",       PhxInput.Soldier_FireBoth      },
+        { "Jump",           PhxInput.Soldier_Jump          },
+        { "Sprint",         PhxInput.Soldier_Sprint        },
+        { "Crouch",         PhxInput.Soldier_Crouch        },
+        { "Reload",         PhxInput.Soldier_Reload        },
+    };
+
     public static void WriteIntOnEnter(PhxScopedState state, CraMachineValue machineValue, int value)
     {
         WriteIntOnEnter(state.Lower, machineValue, value);

@@ -405,9 +405,10 @@ public class PhxHover : PhxVehicle
         DriverController = DriverSeat.GetController();
         if (DriverController != null) 
         {
-            Input.x = DriverController.MoveDirection.x;
-            Input.y = DriverController.MoveDirection.y;
-            Input.z = DriverController.mouseX;
+            var data = DriverController.GetControlData();
+            Input.x = data.MoveDirection.x;
+            Input.y = data.MoveDirection.y;
+            Input.z = 0f; // TODO: MouseX
         }
 
 
@@ -587,14 +588,17 @@ public class PhxHover : PhxVehicle
             return;
         }
 
+        var data = DriverController.GetControlData();
+
         // If we're moving, we Spin, if not we Turn
         float rotRate = Vector3.Magnitude(LocalVel) < .1f ? H.SpinRate : H.TurnRate;
 
-        Quaternion deltaRotation = Quaternion.Euler(new Vector3(0f, 16f * rotRate * DriverController.mouseX, 0f) * deltaTime);
+        float mouseX = 0f; // TODO
+        Quaternion deltaRotation = Quaternion.Euler(new Vector3(0f, 16f * rotRate * mouseX, 0f) * deltaTime);
         Body.MoveRotation(Body.rotation * deltaRotation);
 
-        float strafe = DriverController.MoveDirection.x;
-        float drive  = DriverController.MoveDirection.y;
+        float strafe = data.MoveDirection.x;
+        float drive  = data.MoveDirection.y;
 
         float forwardForce, strafeForce;
 

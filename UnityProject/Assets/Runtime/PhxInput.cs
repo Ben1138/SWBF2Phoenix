@@ -73,6 +73,38 @@ public struct PhxButtonEvents       // Description:                             
     public PhxInput Tab;            // When the button was held for a short time and then released          one frame
     //public PhxInput DoubleTab;    // When the button was tapped twice within a short time period          one frame
     public PhxInput Hold;           // When the button was hold for a slightly longer time, then released   one frame
+
+
+    // I hope these get inlined...
+    public bool IsDown(PhxInput input)
+    {
+        return (Down & input) == input;
+    }
+
+    public bool IsChanged(PhxInput input)
+    {
+        return (Changed & input) == input;
+    }
+
+    public bool IsPressed(PhxInput input)
+    {
+        return (Pressed & input) == input;
+    }
+
+    public bool IsReleased(PhxInput input)
+    {
+        return (Released & input) == input;
+    }
+
+    public bool IsTab(PhxInput input)
+    {
+        return (Tab & input) == input;
+    }
+
+    public bool IsHold(PhxInput input)
+    {
+        return (Hold & input) == input;
+    }
 }
 
 public enum PhxInputAxisType
@@ -81,10 +113,22 @@ public enum PhxInputAxisType
     Relative
 }
 
+public struct PhxInputAxis
+{
+    public float  Value;
+    public bool   Invert;
+}
+
 public struct PhxInputAxis2D
 {
-    public Vector2           Axis;
+    public PhxInputAxis      X;
+    public PhxInputAxis      Y;
     public PhxInputAxisType  Type;
+
+    public Vector2 GetValues()
+    {
+        return new Vector2(X.Value, Y.Value);
+    }
 }
 
 public struct PhxInputAxesGroup
@@ -93,65 +137,53 @@ public struct PhxInputAxesGroup
     public PhxInputAxis2D View;
 }
 
-//public enum PhxInputButtonAction
-//{
-//    None, 
-//    Changed, 
-//    Tab, 
-//    DoubleTab, 
-//    Hold, 
-//    Down
-//}
-
-//public struct PhxInputEvent
-//{
-//    public PhxInput Input;
-//    public PhxInputButtonAction Action;
-//}
-
 public class PhxPlayerInput
 {
-    //public static bool IsAxis(PhxInput input)
-    //{
-    //    return
-    //        input == PhxInput.Thrust ||
-    //        input == PhxInput.View;
-    //}
-
-    //public static bool IsButton(PhxInput input)
-    //{
-    //    return !IsAxis(input) || input == PhxInput.FireBoth;
-    //}
-
     PhxButtonTime[]    PrevFrameButtons;
     PhxButtonEvents    ButtonFrameEvents;
     PhxInputAxesGroup  Soldier_Axes;
     PhxInputAxesGroup  Vehicle_Axes;
     PhxInputAxesGroup  Flyer_Axes;
 
-    static readonly string[] UnityInputNames = new string[10]
+    static readonly string[] UnityInputNames = new string[22]
     {
-        "Cancel",
-        "Submit",
-        "Cancel",
+        "Cancel",               // UI Pause
+        "Submit",               // UI Enter
+        "Cancel",               // UI Back
+                                
+        "Fire1",                // Soldier FirePrimary  
+        "Fire2",                // Soldier FireSecondary
+        "Jump",                 // Soldier Jump  
+        "Sprint",               // Soldier Sprint
+        "Crouch",               // Soldier Crouch
+        "Roll",                 // Soldier Roll  
+        "Reload",               // Soldier Reload
+        "EnterVehicle",         // Soldier Enter 
+        "NextPrimaryWeapon",    // Soldier NextPrimaryWeapon  
+        "NextSecondaryWeapon",  // Soldier NextSecondaryWeapon
 
-        "Fire1",
-        "Fire2",
-        "Jump",
-        "Sprint",
-        "Crouch",
-        "Roll",
-        "EnterVehicle",
+        "Fire1",                // Vehicle FirePrimary  
+        "Fire2",                // Vehicle FireSecondary
+        "Crouch",               // Vehicle SwitchSeat   
+        "EnterVehicle",         // Vehicle Exit         
+                                
+        "Fire1",                // Flyer FirePrimary  
+        "Fire2",                // Flyer FireSecondary
+        "Crouch",               // Flyer SwitchSeat   
+        "Jump",                 // Flyer StartLand    
+        "EnterVehicle",         // Flyer Exit         
     };
 
     public PhxPlayerInput()
     {
-        PrevFrameButtons = new PhxButtonTime[7];
+        PrevFrameButtons = new PhxButtonTime[UnityInputNames.Length];
 
         // Using Mouse, which is a relative axis
         Soldier_Axes.View.Type = PhxInputAxisType.Relative;
         Vehicle_Axes.View.Type = PhxInputAxisType.Relative;
         Flyer_Axes.View.Type   = PhxInputAxisType.Relative;
+
+        Soldier_Axes.View.Y.Invert = true;
     }
 
     public PhxButtonEvents GetButtonEvents()
@@ -191,12 +223,12 @@ public class PhxPlayerInput
         {
             buttons[i]  = Input.GetButton(UnityInputNames[i]);
 
-            down       |= ( buttons[i] ? 1UL : 0UL) << (i);
-            changed    |= ( buttons[i] !=  PrevFrameButtons[i].Down ? 1UL : 0UL) << (i);
-            pressed    |= ( buttons[i] && !PrevFrameButtons[i].Down ? 1UL : 0UL) << (i);
-            released   |= (!buttons[i] &&  PrevFrameButtons[i].Down ? 1UL : 0UL) << (i);
-            tab        |= (!buttons[i] &&  PrevFrameButtons[i].Down && PrevFrameButtons[i].Time <= 0.2f ? 1UL : 0UL) << (i);
-            hold       |= (!buttons[i] &&  PrevFrameButtons[i].Down && PrevFrameButtons[i].Time >  0.2f ? 1UL : 0UL) << (i);
+            down       |= ( buttons[i] ? 1UL : 0UL) << i;
+            changed    |= ( buttons[i] !=  PrevFrameButtons[i].Down ? 1UL : 0UL) << i;
+            pressed    |= ( buttons[i] && !PrevFrameButtons[i].Down ? 1UL : 0UL) << i;
+            released   |= (!buttons[i] &&  PrevFrameButtons[i].Down ? 1UL : 0UL) << i;
+            tab        |= (!buttons[i] &&  PrevFrameButtons[i].Down && PrevFrameButtons[i].Time <= 0.2f ? 1UL : 0UL) << i;
+            hold       |= (!buttons[i] &&  PrevFrameButtons[i].Down && PrevFrameButtons[i].Time >  0.2f ? 1UL : 0UL) << i;
 
             PrevFrameButtons[i].Down = buttons[i];
             if (PrevFrameButtons[i].Down)
@@ -216,23 +248,86 @@ public class PhxPlayerInput
         ButtonFrameEvents.Tab      = (PhxInput)tab;
         ButtonFrameEvents.Hold     = (PhxInput)hold;
 
+        //string logDown = "";
+        //string logChanged = "";
+        //string logPressed = "";
+        //string logReleased = "";
+        //string logTab = "";
+        //string logHold = "";
+
+        //if (tab != 0)
+        //{
+            
+        //    string[] names  = Enum.GetNames(typeof(PhxInput));
+        //    ulong[]  values = (ulong[])Enum.GetValues(typeof(PhxInput));
+
+        //    // Start at 1, skip 'None'
+        //    for (int i = 1; i < names.Length; i++)
+        //    {
+        //        if ((down & values[i]) == values[i])
+        //        {
+        //            logDown += $"{names[i]}, ";
+        //        }
+        //        if ((changed & values[i]) == values[i])
+        //        {
+        //            logChanged += $"{names[i]}, ";
+        //        }
+        //        if ((pressed & values[i]) == values[i])
+        //        {
+        //            logPressed += $"{names[i]}, ";
+        //        }
+        //        if ((released & values[i]) == values[i])
+        //        {
+        //            logReleased += $"{names[i]}, ";
+        //        }
+        //        if ((tab & values[i]) == values[i])
+        //        {
+        //            logTab += $"{names[i]}, ";
+        //        }
+        //        if ((hold & values[i]) == values[i])
+        //        {
+        //            logHold += $"{names[i]}, ";
+        //        }
+        //    }
+
+        //    if (logDown.Length > 0) Debug.Log($"Down: {logDown}");
+        //    if (logChanged.Length > 0) Debug.Log($"Changed: {logChanged}");
+        //    if (logPressed.Length > 0) Debug.Log($"Pressed: {logPressed}");
+        //    if (logReleased.Length > 0) Debug.Log($"Released: {logReleased}");
+        //    if (logTab.Length > 0) Debug.Log($"Tab: {logTab}");
+        //    if (logHold.Length > 0) Debug.Log($"Hold: {logHold}");
+        //}
+
         //
         // Axes
         //
-        Soldier_Axes.Thrust.Axis.x = Input.GetAxis("Horizontal");
-        Soldier_Axes.Thrust.Axis.y = Input.GetAxis("Vertical");
-        Soldier_Axes.View.Axis.x   = Input.GetAxis("Mouse X");
-        Soldier_Axes.View.Axis.y   = Input.GetAxis("Mouse Y");
+        Soldier_Axes.Thrust.X.Value = Input.GetAxis("Horizontal");
+        Soldier_Axes.Thrust.Y.Value = Input.GetAxis("Vertical");
+        Soldier_Axes.View.X.Value   = Input.GetAxis("Mouse X");
+        Soldier_Axes.View.Y.Value   = Input.GetAxis("Mouse Y");
 
-        Vehicle_Axes.Thrust.Axis.x = Input.GetAxis("Horizontal");
-        Vehicle_Axes.Thrust.Axis.y = Input.GetAxis("Vertical");
-        Vehicle_Axes.View.Axis.x   = Input.GetAxis("Mouse X");
-        Vehicle_Axes.View.Axis.y   = Input.GetAxis("Mouse Y");
+        Vehicle_Axes.Thrust.X.Value = Input.GetAxis("Horizontal");
+        Vehicle_Axes.Thrust.Y.Value = Input.GetAxis("Vertical");
+        Vehicle_Axes.View.X.Value   = Input.GetAxis("Mouse X");
+        Vehicle_Axes.View.Y.Value   = Input.GetAxis("Mouse Y");
 
-        Flyer_Axes.Thrust.Axis.x = Input.GetAxis("Horizontal");
-        Flyer_Axes.Thrust.Axis.y = Input.GetAxis("Vertical");
-        Flyer_Axes.View.Axis.x   = Input.GetAxis("Mouse X");
-        Flyer_Axes.View.Axis.y   = Input.GetAxis("Mouse Y");
+        Flyer_Axes.Thrust.X.Value = Input.GetAxis("Horizontal");
+        Flyer_Axes.Thrust.Y.Value = Input.GetAxis("Vertical");
+        Flyer_Axes.View.X.Value   = Input.GetAxis("Mouse X");
+        Flyer_Axes.View.Y.Value   = Input.GetAxis("Mouse Y");
+
+        ApplyInvert(ref Soldier_Axes.Thrust);
+        ApplyInvert(ref Soldier_Axes.View);
+        ApplyInvert(ref Vehicle_Axes.Thrust);
+        ApplyInvert(ref Vehicle_Axes.View);
+        ApplyInvert(ref Flyer_Axes.Thrust);
+        ApplyInvert(ref Flyer_Axes.View);
+    }
+
+    void ApplyInvert(ref PhxInputAxis2D axis)
+    {
+        if (axis.X.Invert) axis.X.Value = -axis.X.Value;
+        if (axis.Y.Invert) axis.Y.Value = -axis.Y.Value;
     }
 
     struct PhxButtonTime

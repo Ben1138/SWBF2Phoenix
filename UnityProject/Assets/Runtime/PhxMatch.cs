@@ -9,6 +9,7 @@ public class PhxMatch
     static PhxScene RTS => PhxGame.GetScene();
     static PhxCamera CAM => PhxGame.GetCamera();
     static PhxTimerDB TDB => PhxGame.GetTimerDB();
+    static PhxPlayerInput PlayerInput => PhxGame.GetPlayerInput();
 
 
     public int? ShowTimer = null;
@@ -204,7 +205,7 @@ public class PhxMatch
             AIControllers[i].Tick(deltaTime);
         }
 
-        if (AvailablePauseMenu && Player.CancelPressed)
+        if (AvailablePauseMenu && PlayerInput.GetButtonEvents().IsPressed(PhxInput.UI_Back))
         {
             if (GAME.IsMenuActive(GAME.PauseMenuPrefab))
             {

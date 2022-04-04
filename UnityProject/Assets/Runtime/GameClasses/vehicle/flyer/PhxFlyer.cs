@@ -264,12 +264,12 @@ public class PhxFlyer : PhxVehicle
 
         if (F.AnimationName.Get() != "")
         {
-            TakeOffPlayer = PhxAnimationLoader.CreatePlayer(transform, F.AnimationName.Get(), "takeoff", false);
-            if (TakeOffPlayer.IsValid())
-            {
-                TakeOffPlayer.SetPlaybackSpeed(1f);
-                TakeOffPlayer.SetLooping(false);
-            }
+            //TakeOffPlayer = PhxAnimationLoader.CreatePlayer(transform, F.AnimationName.Get(), "takeoff", false);
+            //if (TakeOffPlayer.IsValid())
+            //{
+            //    TakeOffPlayer.SetPlaybackSpeed(1f);
+            //    TakeOffPlayer.SetLooping(false);
+            //}
         }
     }
 
@@ -306,31 +306,28 @@ public class PhxFlyer : PhxVehicle
         {
             Debug.Log(F.EntityClass.Name);
         }
-        if (DriverController != null) 
-        {
-            Input.x = DriverController.MoveDirection.x;
-            Input.y = DriverController.MoveDirection.y;
-            Input.z = DriverController.mouseX;
-        }
-        else 
+        if (DriverController == null) 
         {
             return;
         }
 
+        var data = DriverController.GetControlData();
+        Input.x = data.MoveDirection.x;
+        Input.y = data.MoveDirection.y;
+        Input.z = 0f; // TODO: mouseX
+
         // TODO: Implement gradual damage when abandoned
         if (CurrentState == PhxFlyerState.Grounded)
         {
-            if (DriverController.Jump)
+            if (data.Events.IsPressed(PhxInput.Flyer_StartLand))
             {
-                DriverController.Jump = false;
-
                 TakeoffTime = F.TakeoffTime;  
                 TakeoffTimer = TakeoffTime;
 
                 if (TakeOffPlayer.IsValid())
                 {
                     TakeOffPlayer.SetPlaybackSpeed(1f);
-                    TakeOffPlayer.Play();                    
+                    TakeOffPlayer.SetPlay();                    
                 }
 
                 CurrentState = PhxFlyerState.TakingOff;
@@ -364,14 +361,12 @@ public class PhxFlyer : PhxVehicle
         }
         else if (CurrentState == PhxFlyerState.Flying)
         {
-            if (DriverController.Jump)
-            {
-                DriverController.Jump = false;
-                
+            if (data.Events.IsPressed(PhxInput.Flyer_StartLand))
+            {                
                 if (TakeOffPlayer.IsValid())
                 {
                     TakeOffPlayer.SetPlaybackSpeed(-1f);//TakeOffPlayer.GetDuration() / F.TakeoffTime);
-                    TakeOffPlayer.Play(); 
+                    TakeOffPlayer.SetPlay(); 
 
                     foreach (PhxEffect ThrustEff in ThrustEffects)
                     {
@@ -480,12 +475,14 @@ public class PhxFlyer : PhxVehicle
             DriverController = DriverSeat.GetController();
             if (DriverController != null) 
             {
+                var data = DriverController.GetControlData();
                 //Rotation
                 //Quaternion turnRotation = Quaternion.Euler(new Vector3(0f,  0f) * deltaTime);
-                Quaternion rot = Quaternion.Euler(new Vector3(16f * DriverSeat.PitchRate * DriverController.mouseY, 16f * DriverSeat.TurnRate * DriverController.mouseX, - 16f * F.RollRate * DriverController.MoveDirection.x) * deltaTime);
+                float mouseX = 0f; // TODO
+                float mouseY = 0f;
+                Quaternion rot = Quaternion.Euler(new Vector3(16f * DriverSeat.PitchRate * mouseY, 16f * DriverSeat.TurnRate * mouseX, - 16f * F.RollRate * data.MoveDirection.x) * deltaTime);
                 Body.MoveRotation(Body.rotation * rot);
-
-                Fwd = DriverController.MoveDirection.y;
+                Fwd = data.MoveDirection.y;
             }
 
             float Speed = LocalVel.z;

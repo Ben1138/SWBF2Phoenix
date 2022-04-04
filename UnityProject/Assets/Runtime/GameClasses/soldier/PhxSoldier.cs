@@ -142,11 +142,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
     const float StepUpForceMulti = 20.0f;
 
     bool IsFixated => Body == null;
-
-
     bool HasCombo = false;
-    bool LastIdle = false;
-    const float IdleTime = 10f;
 
     // <stance>, <thrustfactor> <strafefactor> <turnfactor>
     Dictionary<PhxAnimPosture, float[]> ControlValues = new Dictionary<PhxAnimPosture, float[]>();
@@ -367,12 +363,12 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
     public override void PlayIntroAnim()
     {
-        Animator.InReload.SetTrigger(true);
+        Animator.InPressedEvents.SetInt(Animator.InPressedEvents.GetInt() | (int)PhxInput.Soldier_Reload);
     }
 
     void FireAnimation(bool primary)
     {
-        Animator.InShootPrimary.SetBool(true);
+        //Animator.InShootPrimary.SetBool(true);
     }
 
     void Reload()
@@ -582,7 +578,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         }
     }
 
-    static bool ShootPrimaryLastFrame = false;
     void UpdateState(float deltaTime)
     {
         if (Context == PhxSoldierContext.Pilot && Controller != null)
@@ -594,7 +589,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         //AnimationCorrection();
 
-        var data = Controller.GetControlData();
         AlertTimer = Mathf.Max(AlertTimer - deltaTime, 0f);
 
         if (Controller == null)
@@ -602,8 +596,10 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             return;
         }
 
+        var data = Controller.GetControlData();
+
         // Will work into specific control schema.  Not sure when you can't enter vehicles...
-        if ((data.Events.Pressed & PhxInput.Soldier_Enter) != 0 && Context == PhxSoldierContext.Free)
+        if (data.Events.IsPressed(PhxInput.Soldier_Enter) && Context == PhxSoldierContext.Free)
         {
             PhxVehicle ClosestVehicle = null;
             float ClosestDist = float.MaxValue;
@@ -640,62 +636,38 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             }
         }
 
-        bool sprint = Controller.Sprint;
-        bool jump = Controller.Jump;
-        bool roll = Controller.Roll;
-        bool ShootPrimary = Controller.ShootPrimary;
-        bool ShootSecondary = Controller.ShootSecondary;
-        bool reload = Controller.Reload;
-
         PhxAnimPosture posture = (PhxAnimPosture)Animator.OutPosture.GetInt();
         PhxAnimAction  action  = (PhxAnimAction)Animator.OutAction.GetInt();
+        PhxInput       locked  = (PhxInput)Animator.OutInputLocks.GetInt();
 
-        if (posture == PhxAnimPosture.Roll)
-        {
-            roll = false;
-        }
+        data.Events.Down      &=  ~(locked);
+        data.Events.Changed   &=  ~(locked);
+        data.Events.Pressed   &=  ~(locked);
+        data.Events.Released  &=  ~(locked);
+        data.Events.Tab       &=  ~(locked);
+        data.Events.Hold      &=  ~(locked);
 
-        if (action == PhxAnimAction.Reload)
-        {
-            sprint = false;
-            jump = false;
-            roll = false;
-            ShootPrimary = false;
-            ShootSecondary = false;
-            reload = false;
-        }
+        float moveX = (locked & PhxInput.Soldier_Thrust) != 0 ? 0f : data.MoveDirection.x;
+        float moveY = (locked & PhxInput.Soldier_Thrust) != 0 ? 0f : data.MoveDirection.y;
 
-        if (!ShootPrimaryLastFrame && ShootPrimary)
-        {
-            ShootPrimaryLastFrame = true;
-        }
-        else if (ShootPrimaryLastFrame && !ShootPrimary)
-        {
-            ShootPrimaryLastFrame = false;
-        }
-        else if (ShootPrimaryLastFrame && ShootPrimary)
-        {
-            ShootPrimary = false;
-        }
+        Animator.InThrustX.SetFloat(moveX);
+        Animator.InThrustY.SetFloat(moveY);
+        Animator.InDownEvents.SetInt((int)data.Events.Down);
+        Animator.InChangedEvents.SetInt((int)data.Events.Changed);
+        Animator.InPressedEvents.SetInt((int)data.Events.Pressed);
+        Animator.InReleasedEvents.SetInt((int)data.Events.Released);
+        Animator.InTabEvents.SetInt((int)data.Events.Tab);
+        Animator.InHoldEvents.SetInt((int)data.Events.Hold);
 
-        if (jump)
+        Animator.InEnergy.SetFloat(100.0f);
+        Animator.InGrounded.SetBool(Grounded);
+
+        if (data.Events.IsPressed(PhxInput.Soldier_Jump))
         {
             Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
         }
 
-        Animator.InThrustX.SetFloat(Controller.MoveDirection.x);
-        Animator.InThrustY.SetFloat(Controller.MoveDirection.y);
-        Animator.InCrouch.SetBool(Controller.Crouch);
-        Animator.InSprint.SetBool(sprint);
-        Animator.InJump.SetTrigger(jump);
-        Animator.InRoll.SetTrigger(roll);
-        Animator.InShootPrimary.SetTrigger(ShootPrimary);
-        Animator.InShootSecondary.SetTrigger(ShootSecondary);
-        Animator.InReload.SetTrigger(reload);
-        Animator.InEnergy.SetFloat(100.0f);
-        Animator.InGrounded.SetBool(Grounded);
-
-        if (Controller.NextPrimaryWeapon)
+        if (data.Events.IsPressed(PhxInput.Soldier_NextPrimaryWeapon))
         {
             NextWeapon(0);
         }
@@ -791,7 +763,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             }
         }
 
-        Vector3 lookWalkForward = Controller.ViewDirection;
+        Vector3 lookWalkForward = data.ViewDirection;
         lookWalkForward.y = 0f;
         Quaternion lookRot = Quaternion.LookRotation(lookWalkForward);
         Quaternion moveRot = Quaternion.identity;
@@ -805,13 +777,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             float strafeFactor = ControlValues[posture][1];
             float turnFactor = ControlValues[posture][2];
 
-            Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
+            Vector3 moveDirLocal = new Vector3(data.MoveDirection.x * turnFactor, 0f, data.MoveDirection.y);
             Vector3 moveDirWorld = lookRot * moveDirLocal;
 
-            float walk = Mathf.Clamp01(Controller.MoveDirection.magnitude);
+            float walk = Mathf.Clamp01(data.MoveDirection.magnitude);
             Animator.InThrustMagnitude.SetFloat(walk);
 
-            float thrustAngle = Mathf.Atan2(-Controller.MoveDirection.x, Controller.MoveDirection.y) * Mathf.Rad2Deg;
+            float thrustAngle = Mathf.Atan2(-data.MoveDirection.x, data.MoveDirection.y) * Mathf.Rad2Deg;
             thrustAngle = PhxUtils.SanitizeEuler360(thrustAngle);
             Animator.InThrustAngle.SetFloat(thrustAngle);
 
@@ -852,7 +824,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 CurrSpeed = Vector3.ClampMagnitude(CurrSpeed, maxSpeed * forwardFactor);
 
                 moveRot = Quaternion.LookRotation(moveDirWorld);
-                if (Animator.OutStrafeBackwards.GetBool() || Controller.MoveDirection.y < 0f)
+                if (Animator.OutStrafeBackwards.GetBool() || data.MoveDirection.y < 0f)
                 {
                     // invert look direction when strafing left/right backwards
                     moveDirWorld = -moveDirWorld;
@@ -883,7 +855,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
                     //Debug.Log($"{thrustFactor} {strafeFactor} {turnFactor}");
 
-                    Vector3 moveDirLocal = new Vector3(Controller.MoveDirection.x * turnFactor, 0f, Controller.MoveDirection.y);
+                    Vector3 moveDirLocal = new Vector3(data.MoveDirection.x * turnFactor, 0f, data.MoveDirection.y);
                     Vector3 moveDirWorld = lookRot * moveDirLocal;
                     if (moveDirWorld != Vector3.zero)
                     {
@@ -954,11 +926,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             Body.velocity = Vector3.zero;
             Body.angularVelocity = Vector3.zero;
         }
-
-        //Anim.SetBool("Alert", AlertTimer > 0f);
-        LastIdle = Controller.IsIdle;
-
-        Controller.Jump = false;
     }
 
     void OnDrawGizmosSelected()
