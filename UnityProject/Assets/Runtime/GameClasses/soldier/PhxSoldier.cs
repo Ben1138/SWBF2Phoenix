@@ -845,13 +845,27 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Vector3 moveDirLocal = new Vector3(moveX, 0f, moveY);
         Vector3 moveDirWorld = AimRotation * moveDirLocal;
 
+        float t = Mathf.Clamp01(moveDirLocal.z);
+        float forwardFactor = Mathf.Lerp(strafeFactor, thrustFactor, t);
+        float maxSpeed = Mathf.Lerp(C.MaxStrafeSpeed, C.MaxSpeed, t);
+
         Quaternion bodyRotation = Body.rotation;
         if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Prone || posture == PhxAnimPosture.Sprint)
         {
             if (moveDirLocal.magnitude > 0f)
             {
                 bodyRotation = AimRotation;
-                CurrrentVelocity += moveDirWorld * accStep;
+                if (Animator.OutAnimatedMove.GetBool())
+                {
+                    float thrustVelocity = Animator.OutVelocityFromThrust.GetFloat();
+                    float strafeVelocity = Animator.OutVelocityFromStrafe.GetFloat();
+                    float forwardVelocity = Mathf.Lerp(strafeVelocity, thrustVelocity, t);
+                    CurrrentVelocity = moveDirWorld * forwardVelocity;
+                }
+                else
+                {
+                    CurrrentVelocity += moveDirWorld * accStep;
+                }
                 bodyRotation *= Quaternion.LookRotation(moveDirLocal);
             }
             else
@@ -883,9 +897,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
 
         Body.MoveRotation(Quaternion.Slerp(Body.rotation, BodyTargetRotation, deltaTime * 5f));
 
-        float t = Mathf.Clamp01(moveDirLocal.z);
-        float maxSpeed = Mathf.Lerp(C.MaxStrafeSpeed, C.MaxSpeed, t);
-        float forwardFactor = Mathf.Lerp(strafeFactor, thrustFactor, t);
         CurrrentVelocity = Vector3.ClampMagnitude(CurrrentVelocity, maxSpeed * forwardFactor * walk);
 
         if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Prone || posture == PhxAnimPosture.Sprint)

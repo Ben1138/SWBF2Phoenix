@@ -167,6 +167,12 @@ public class PhxAnimHuman
     public CraMachineValue OutInputLocks { get; private set; }
     //public CraMachineValue OutInputLockDuration { get; private set; }
     public CraMachineValue OutAimType { get; private set; }
+    public CraMachineValue OutAnimatedMove { get; private set; }
+    public CraMachineValue OutVelocityX { get; private set; }
+    public CraMachineValue OutVelocityZ { get; private set; }
+    public CraMachineValue OutVelocityFromThrust { get; private set; }
+    public CraMachineValue OutVelocityFromStrafe { get; private set; }
+
     public CraMachineValue OutSound { get; private set; }
     public PhxAnimAttackOutput[] OutAttacks { get; private set; }
 
@@ -240,6 +246,11 @@ public class PhxAnimHuman
         OutInputLocks = Machine.NewMachineValue(CraValueType.Int, "Out Input Locks");
         //OutInputLockDuration = Machine.NewMachineValue(CraValueType.Int, "Out Input Lock Duration");
         OutAimType = Machine.NewMachineValue(CraValueType.Int, "Out Aim Type");
+        OutAnimatedMove = Machine.NewMachineValue(CraValueType.Bool, "Out Animated Move");
+        OutVelocityX = Machine.NewMachineValue(CraValueType.Float, "Out Velocity X");
+        OutVelocityZ = Machine.NewMachineValue(CraValueType.Float, "Out Velocity X");
+        OutVelocityFromThrust = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Thrust");
+        OutVelocityFromStrafe = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Strafe");
         OutSound = Machine.NewMachineValue(CraValueType.Int, "Out Sound");
         OutAction = Machine.NewMachineValue(CraValueType.Int, "Out Action");
 
@@ -1733,7 +1744,7 @@ public class PhxAnimHuman
                         {
                             localTransitions.Add(new PhxComboTransitionCache 
                             { 
-                                TargetStateField = stateField, 
+                                TransitionField = stateField, 
                                 SourceStateIsIdle = isIdle
                             });
                         }
@@ -1819,6 +1830,62 @@ public class PhxAnimHuman
                                 MachineValue = OutInputLocks,
                                 Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)PhxInput.None }
                             });
+                        }
+                        else if (stateField.GetNameHash() == Hash_AnimatedMove)
+                        {
+                            comboState.IsAnimatedMove = true;
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutAnimatedMove,
+                                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true }
+                            });
+                            comboState.State.Upper.WriteOnLeave(new CraWriteOutput
+                            {
+                                MachineValue = OutAnimatedMove,
+                                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
+                            });
+
+                            Field[] animatedMoveFields = stateField.Scope.GetFields();
+                            for (int k = 0; k < animatedMoveFields.Length; ++k)
+                            {
+                                Field animMoveField = animatedMoveFields[k];
+                                if (animMoveField.GetNameHash() == Hash_VelocityX)
+                                {
+                                    float velocityMulti = animMoveField.GetFloat();
+                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    {
+                                        MachineValue = OutVelocityX,
+                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
+                                    });
+                                }
+                                else if (animMoveField.GetNameHash() == Hash_VelocityZ)
+                                {
+                                    float velocityMulti = animMoveField.GetFloat();
+                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    {
+                                        MachineValue = OutVelocityZ,
+                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
+                                    });
+                                }
+                                else if (animMoveField.GetNameHash() == Hash_VelocityFromThrust)
+                                {
+                                    float velocityMulti = animMoveField.GetFloat();
+                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    {
+                                        MachineValue = OutVelocityFromThrust,
+                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
+                                    });
+                                }
+                                else if (animMoveField.GetNameHash() == Hash_VelocityFromStrafe)
+                                {
+                                    float velocityMulti = animMoveField.GetFloat();
+                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    {
+                                        MachineValue = OutVelocityFromStrafe,
+                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
+                                    });
+                                }
+                            }
                         }
                         else if (stateField.GetNameHash() == Hash_Attack)
                         {
@@ -1980,7 +2047,45 @@ public class PhxAnimHuman
             {
                 PhxComboState state = comboState.Value;
 
-                if ((state.Posture & PhxAnimPosture.Stand) != 0)
+                if (state.IsAnimatedMove)
+                {
+                    Transition(set.StandWalkForward.Lower, state.State.Lower, 0.15f,
+                        new CraConditionOr
+                        {
+                            And0 = new CraCondition
+                            {
+                                Type = CraConditionType.Equal,
+                                Input = OutAnimatedMove,
+                                Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                            }
+                        }
+                    );
+
+                    Transition(set.StandRunForward.Lower, state.State.Lower, 0.15f,
+                        new CraConditionOr
+                        {
+                            And0 = new CraCondition
+                            {
+                                Type = CraConditionType.Equal,
+                                Input = OutAnimatedMove,
+                                Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                            }
+                        }
+                    );
+
+                    Transition(set.StandRunBackward.Lower, state.State.Lower, 0.15f,
+                        new CraConditionOr
+                        {
+                            And0 = new CraCondition
+                            {
+                                Type = CraConditionType.Equal,
+                                Input = OutAnimatedMove,
+                                Compare = new CraValueUnion { Type = CraValueType.Bool, ValueBool = true },
+                            }
+                        }
+                    );
+                }
+                else if ((state.Posture & PhxAnimPosture.Stand) != 0)
                 {
                     // TODO: Add transitions to all lower walk states and back
                     // Make sure lower walk states can't transition further (e.g. to sprint or crouch)
@@ -2029,7 +2134,7 @@ public class PhxAnimHuman
                 PhxComboState targetState = new PhxComboState();
                 targetState.State = set.StandIdle;
 
-                string targetStateName = Transitions[ti].TargetStateField.GetString();
+                string targetStateName = Transitions[ti].TransitionField.GetString();
                 if (!PhxUtils.StrEquals(targetStateName, "IDLE"))
                 {
                     if (!ComboStates.TryGetValue(targetStateName, out targetState))
@@ -2066,7 +2171,7 @@ public class PhxAnimHuman
                 CraPlayRange stateRange = Transitions[ti].SourceState.Upper.GetPlayer().GetPlayRange();
                 float stateDuration = stateRange.MaxTime - stateRange.MinTime;
 
-                PhxComboTransitionCondition[] conditions = GetComboTransitionConditions(Transitions[ti].TargetStateField.Scope, stateDuration);
+                PhxComboTransitionCondition[] conditions = GetComboTransitionConditions(Transitions[ti].TransitionField.Scope, stateDuration);
 
                 // Since SourceState can be IDLE, and IDLE can represent multiple states, we have to eval each OR condition individually...
                 for (int ci = 0; ci < conditions.Length; ci++)
@@ -2338,7 +2443,7 @@ public class PhxAnimHuman
     struct PhxComboTransitionCache
     {
         public PhxScopedState SourceState;
-        public Field TargetStateField;
+        public Field TransitionField;
         public bool SourceStateIsIdle;
     }
 
@@ -2346,6 +2451,7 @@ public class PhxAnimHuman
     {
         public PhxScopedState State;
         public PhxAnimPosture Posture;
+        public bool           IsAnimatedMove;
     }
 
     struct PhxStateParams
@@ -2371,8 +2477,14 @@ public class PhxAnimHuman
     static readonly uint Hash_Push = HashUtils.GetFNV("Push");
     static readonly uint Hash_DamageLength = HashUtils.GetFNV("DamageLength");
     static readonly uint Hash_DamageWidth = HashUtils.GetFNV("DamageWidth");
+    static readonly uint Hash_AnimatedMove = HashUtils.GetFNV("AnimatedMove");
+    static readonly uint Hash_VelocityX = HashUtils.GetFNV("VelocityX");
+    static readonly uint Hash_VelocityZ = HashUtils.GetFNV("VelocityZ");
+    static readonly uint Hash_VelocityFromThrust = HashUtils.GetFNV("VelocityFromThrust");
+    static readonly uint Hash_VelocityFromStrafe = HashUtils.GetFNV("VelocityFromStrafe");
     static readonly uint Hash_If = HashUtils.GetFNV("If");
     static readonly uint Hash_Or = HashUtils.GetFNV("Or");
+    static readonly uint Hash_Until = HashUtils.GetFNV("Until");
     static readonly uint Hash_Posture = HashUtils.GetFNV("Posture");
     static readonly uint Hash_Button = HashUtils.GetFNV("Button");
     static readonly uint Hash_Thrust = HashUtils.GetFNV("Thrust");
