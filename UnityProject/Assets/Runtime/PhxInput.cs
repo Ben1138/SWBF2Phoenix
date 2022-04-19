@@ -123,6 +123,12 @@ public struct PhxInputAxis2D
     {
         return new Vector2(X.Value, Y.Value);
     }
+
+    public void Reset()
+    {
+        X.Value = 0f;
+        Y.Value = 0f;
+    }
 }
 
 public struct PhxInputAxesGroup
@@ -133,7 +139,7 @@ public struct PhxInputAxesGroup
     public static PhxInputAxesGroup New()
     {
         PhxInputAxesGroup g = new PhxInputAxesGroup();
-        PhxInputAxis ax = new PhxInputAxis { Value = 0f, Scale = 1f, Deadzone = 0.05f };
+        PhxInputAxis ax = new PhxInputAxis { Value = 0f, Scale = 1f, Deadzone = 0.1f };
         g.Thrust = new PhxInputAxis2D { X = ax, Y = ax };
         g.View = new PhxInputAxis2D { X = ax, Y = ax };
         return g;
@@ -186,7 +192,7 @@ public class PhxPlayerInput
         Vehicle_AxesDelta = PhxInputAxesGroup.New();
         Flyer_AxesDelta   = PhxInputAxesGroup.New();
 
-        Soldier_AxesDelta.View.Y.Scale = -1f;
+        Soldier_AxesDelta.View.Y.Scale = 3f;
     }
 
     public PhxButtonEvents GetButtonEvents()
@@ -301,28 +307,46 @@ public class PhxPlayerInput
         //    if (logHold.Length > 0) Debug.Log($"Hold: {logHold}");
         //}
 
+        Soldier_AxesDelta.Thrust.Reset();
+        Soldier_AxesDelta.View.Reset();
+        Vehicle_AxesDelta.Thrust.Reset();
+        Vehicle_AxesDelta.View.Reset();
+        Flyer_AxesDelta.Thrust.Reset();
+        Flyer_AxesDelta.View.Reset();
+
+        float mouseX =  Input.GetAxis("Mouse X") / 2f;
+        float mouseY = -Input.GetAxis("Mouse Y") / 2f;
+        float viewX = Input.GetAxis("ViewHorizontal");
+        float viewY = Input.GetAxis("ViewVertical");
+
         //
         // Axes
         //
         AddAxisDelta(ref Soldier_AxesDelta.Thrust.X, Input.GetAxis("Horizontal"));
         AddAxisDelta(ref Soldier_AxesDelta.Thrust.Y, Input.GetAxis("Vertical"));
-        AddAxisDelta(ref Soldier_AxesDelta.View.X,   Input.GetAxis("Mouse X"));
-        AddAxisDelta(ref Soldier_AxesDelta.View.Y,   Input.GetAxis("Mouse Y"));
+        AddAxisDelta(ref Soldier_AxesDelta.View.X,   mouseX);
+        AddAxisDelta(ref Soldier_AxesDelta.View.Y,   mouseY);
+        AddAxisDelta(ref Soldier_AxesDelta.View.X,   viewX);
+        AddAxisDelta(ref Soldier_AxesDelta.View.Y,   viewY);
 
         AddAxisDelta(ref Vehicle_AxesDelta.Thrust.X, Input.GetAxis("Horizontal"));
         AddAxisDelta(ref Vehicle_AxesDelta.Thrust.Y, Input.GetAxis("Vertical"));
-        AddAxisDelta(ref Vehicle_AxesDelta.View.X,   Input.GetAxis("Mouse X"));
-        AddAxisDelta(ref Vehicle_AxesDelta.View.Y,   Input.GetAxis("Mouse Y"));
+        AddAxisDelta(ref Vehicle_AxesDelta.View.X,   mouseX);
+        AddAxisDelta(ref Vehicle_AxesDelta.View.Y,   mouseY);
+        AddAxisDelta(ref Vehicle_AxesDelta.View.X,   viewX);
+        AddAxisDelta(ref Vehicle_AxesDelta.View.Y,   viewY);
 
         AddAxisDelta(ref Flyer_AxesDelta.Thrust.X, Input.GetAxis("Horizontal"));
         AddAxisDelta(ref Flyer_AxesDelta.Thrust.Y, Input.GetAxis("Vertical"));
-        AddAxisDelta(ref Flyer_AxesDelta.View.X,   Input.GetAxis("Mouse X"));
-        AddAxisDelta(ref Flyer_AxesDelta.View.Y,   Input.GetAxis("Mouse Y"));
+        AddAxisDelta(ref Flyer_AxesDelta.View.X,   mouseX);
+        AddAxisDelta(ref Flyer_AxesDelta.View.Y,   mouseY);
+        AddAxisDelta(ref Flyer_AxesDelta.View.X,   viewX);
+        AddAxisDelta(ref Flyer_AxesDelta.View.Y,   viewY);
     }
 
     void AddAxisDelta(ref PhxInputAxis axis, float delta)
     {
-        axis.Value = delta > axis.Deadzone || delta < -axis.Deadzone ? delta * axis.Scale : 0f;
+        axis.Value += delta > axis.Deadzone || delta < -axis.Deadzone ? delta * axis.Scale : 0f;
     }
 
     struct PhxButtonTime

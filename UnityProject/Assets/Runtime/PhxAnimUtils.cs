@@ -66,14 +66,6 @@ public enum PhxAnimAction : ushort
     Reload,
 }
 
-public struct PhxAnimClip
-{
-    public CraClip         Clip;
-    public PhxTransform[]  RootMotionFrames; // 30 fps
-
-    public static PhxAnimClip None => new PhxAnimClip { Clip = CraClip.None, RootMotionFrames = null };
-}
-
 public enum PhxAnimTimeMode
 {
     Seconds, Frames, FromAnim
@@ -93,8 +85,11 @@ public static class PhxAnimUtils
         { "==", CraConditionType.Equal          },
     };
 
-    public static readonly Dictionary<string, PhxInput> StrToSoldierButton = new Dictionary<string, PhxInput>()
+    public static readonly Dictionary<string, PhxInput> StrToInput = new Dictionary<string, PhxInput>()
     {
+        { "All",            PhxInput.All                   },
+        { "Any",            PhxInput.All                   },
+        { "Thrust",         PhxInput.Soldier_Thrust        },
         { "Fire",           PhxInput.Soldier_FirePrimary   },
         { "FirePrimary",    PhxInput.Soldier_FirePrimary   },
         { "FireSecondary",  PhxInput.Soldier_FireSecondary },
