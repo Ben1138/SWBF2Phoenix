@@ -56,6 +56,10 @@ public enum PhxAnimAction : ushort
 
     // Movement
     Turn,
+    Crouch,
+    Roll,
+    Jump,
+    Sprint,
 
     // Weapon
     ShootPrimary,

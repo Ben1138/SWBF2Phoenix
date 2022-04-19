@@ -644,6 +644,14 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         PhxInput       locked  = (PhxInput)Animator.OutInputLocks.GetInt();
         PhxAimType     aimType = (PhxAimType)Animator.OutAimType.GetInt();
 
+        // Button events can be queried directly, without being affected by locks
+        Animator.InDownEvents.SetInt((int)data.Events.Down);
+        Animator.InChangedEvents.SetInt((int)data.Events.Changed);
+        Animator.InPressedEvents.SetInt((int)data.Events.Pressed);
+        Animator.InReleasedEvents.SetInt((int)data.Events.Released);
+        Animator.InTabEvents.SetInt((int)data.Events.Tab);
+        Animator.InHoldEvents.SetInt((int)data.Events.Hold);
+
         data.Events.Down      &=  ~(locked);
         data.Events.Changed   &=  ~(locked);
         data.Events.Pressed   &=  ~(locked);
@@ -651,17 +659,39 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         data.Events.Tab       &=  ~(locked);
         data.Events.Hold      &=  ~(locked);
 
+        // Determine Action AFTER applying input locks!
+        PhxAnimAction inAction = PhxAnimAction.None;
+        if ((data.Events.Down & PhxInput.Soldier_FirePrimary) != 0)
+        {
+            inAction = PhxAnimAction.ShootPrimary;
+        }
+        else if ((data.Events.Down & PhxInput.Soldier_Reload) != 0)
+        {
+            inAction = PhxAnimAction.Reload;
+        }
+        else if ((data.Events.Down & PhxInput.Soldier_Crouch) != 0)
+        {
+            inAction = PhxAnimAction.Crouch;
+        }
+        else if ((data.Events.Down & PhxInput.Soldier_Roll) != 0)
+        {
+            inAction = PhxAnimAction.Roll;
+        }
+        else if ((data.Events.Down & PhxInput.Soldier_Jump) != 0)
+        {
+            inAction = PhxAnimAction.Jump;
+        }
+        else if ((data.Events.Down & PhxInput.Soldier_Sprint) != 0)
+        {
+            inAction = PhxAnimAction.Sprint;
+        }
+
         float moveX = (locked & PhxInput.Soldier_Thrust) != 0 ? 0f : data.Move.x;
         float moveY = (locked & PhxInput.Soldier_Thrust) != 0 ? 0f : data.Move.y;
 
         Animator.InThrustX.SetFloat(moveX);
         Animator.InThrustY.SetFloat(moveY);
-        Animator.InDownEvents.SetInt((int)data.Events.Down);
-        Animator.InChangedEvents.SetInt((int)data.Events.Changed);
-        Animator.InPressedEvents.SetInt((int)data.Events.Pressed);
-        Animator.InReleasedEvents.SetInt((int)data.Events.Released);
-        Animator.InTabEvents.SetInt((int)data.Events.Tab);
-        Animator.InHoldEvents.SetInt((int)data.Events.Hold);
+        Animator.InAction.SetInt((int)inAction);
 
         Animator.InEnergy.SetFloat(100.0f);
         Animator.InGrounded.SetBool(Grounded);
@@ -870,8 +900,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             
             if (rootMotionVelocity.magnitude > 0f)
             {
-                Debug.Log($"Root Motion: {rootMotionVelocity.magnitude}");
-
                 Vector3 planeVelocity = Body.velocity;
                 planeVelocity.y = 0f;
 
