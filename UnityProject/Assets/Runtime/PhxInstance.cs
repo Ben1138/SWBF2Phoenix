@@ -95,7 +95,8 @@ public abstract class PhxInstance<T> : PhxInstance where T : PhxClass
 public interface IPhxControlableInstance
 {
     public PhxInstance GetInstance();
-    public Vector2 GetViewConstraint();
+    public Quaternion GetAimRotation();
+    public Vector2 GetAimConstraint();
     public Vector2 GetMaxTurnSpeed();
 
     PhxPawnController GetController();
@@ -114,10 +115,13 @@ public interface IPhxControlableInstance
 public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlableInstance where T : PhxClass
 {
     protected PhxPawnController Controller;
-    protected Vector2 ViewConstraint = Vector2.positiveInfinity;
+    [SerializeField]
+    protected Quaternion AimRotation;
+    protected Vector2 AimConstraint = Vector2.positiveInfinity;
 
     // degrees per second
     protected Vector2 MaxTurnSpeed = Vector2.positiveInfinity;
+
 
 
     public PhxInstance GetInstance()
@@ -125,9 +129,14 @@ public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlabl
         return this;
     }
 
-    public Vector2 GetViewConstraint()
+    public Quaternion GetAimRotation()
     {
-        return ViewConstraint;
+        return AimRotation;
+    }
+
+    public Vector2 GetAimConstraint()
+    {
+        return AimConstraint;
     }
 
     public Vector2 GetMaxTurnSpeed()

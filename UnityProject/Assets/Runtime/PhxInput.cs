@@ -61,18 +61,18 @@ public enum PhxInput : ulong
     Flyer_View    = 1 << 27,
 
 
-    All = 0xffff
+    All = 0xffffffffffffffff
 }
 
-public struct PhxButtonEvents       // Description:                                                         Available:
+public struct PhxButtonEvents       // Description:                                                        |  Available:
 {                                   // ---------------------------------------------------------------------------------------                               
-    public PhxInput Down;           // As long as the button is down                                        multiple frames
-    public PhxInput Changed;        // When value changed                                                   one frame
-    public PhxInput Pressed;        // When button was initially pressed down                               one frame
-    public PhxInput Released;       // When button is back up                                               one frame
-    public PhxInput Tab;            // When the button was held for a short time and then released          one frame
-    //public PhxInput DoubleTab;    // When the button was tapped twice within a short time period          one frame
-    public PhxInput Hold;           // When the button was hold for a slightly longer time, then released   one frame
+    public PhxInput Down;           // As long as the button is down                                       |  multiple frames
+    public PhxInput Changed;        // When value changed                                                  |  one frame
+    public PhxInput Pressed;        // When button was initially pressed down                              |  one frame
+    public PhxInput Released;       // When button is back up                                              |  one frame
+    public PhxInput Tab;            // When the button was held for a short time and then released         |  one frame
+    //public PhxInput DoubleTab;    // When the button was tapped twice within a short time period         |  one frame
+    public PhxInput Hold;           // When the button was hold for a slightly longer time, then released  |  one frame
 
 
     // I hope these get inlined...
@@ -107,23 +107,17 @@ public struct PhxButtonEvents       // Description:                             
     }
 }
 
-public enum PhxInputAxisType
-{
-    Absolute,
-    Relative
-}
-
 public struct PhxInputAxis
 {
     public float  Value;
-    public bool   Invert;
+    public float  Scale; // Invert Axis -> negative scale
+    public float  Deadzone;
 }
 
 public struct PhxInputAxis2D
 {
-    public PhxInputAxis      X;
-    public PhxInputAxis      Y;
-    public PhxInputAxisType  Type;
+    public PhxInputAxis X;
+    public PhxInputAxis Y;
 
     public Vector2 GetValues()
     {
@@ -135,15 +129,25 @@ public struct PhxInputAxesGroup
 {
     public PhxInputAxis2D Thrust;
     public PhxInputAxis2D View;
+
+    public static PhxInputAxesGroup New()
+    {
+        PhxInputAxesGroup g = new PhxInputAxesGroup();
+        PhxInputAxis ax = new PhxInputAxis { Value = 0f, Scale = 1f, Deadzone = 0.05f };
+        g.Thrust = new PhxInputAxis2D { X = ax, Y = ax };
+        g.View = new PhxInputAxis2D { X = ax, Y = ax };
+        return g;
+    }
 }
 
+// NOTE: Axes contain the delta changes for the current frame, NOT the absolute values!
 public class PhxPlayerInput
 {
     PhxButtonTime[]    PrevFrameButtons;
     PhxButtonEvents    ButtonFrameEvents;
-    PhxInputAxesGroup  Soldier_Axes;
-    PhxInputAxesGroup  Vehicle_Axes;
-    PhxInputAxesGroup  Flyer_Axes;
+    PhxInputAxesGroup  Soldier_AxesDelta;
+    PhxInputAxesGroup  Vehicle_AxesDelta;
+    PhxInputAxesGroup  Flyer_AxesDelta;
 
     static readonly string[] UnityInputNames = new string[22]
     {
@@ -178,12 +182,11 @@ public class PhxPlayerInput
     {
         PrevFrameButtons = new PhxButtonTime[UnityInputNames.Length];
 
-        // Using Mouse, which is a relative axis
-        Soldier_Axes.View.Type = PhxInputAxisType.Relative;
-        Vehicle_Axes.View.Type = PhxInputAxisType.Relative;
-        Flyer_Axes.View.Type   = PhxInputAxisType.Relative;
+        Soldier_AxesDelta = PhxInputAxesGroup.New();
+        Vehicle_AxesDelta = PhxInputAxesGroup.New();
+        Flyer_AxesDelta   = PhxInputAxesGroup.New();
 
-        Soldier_Axes.View.Y.Invert = true;
+        Soldier_AxesDelta.View.Y.Scale = -1f;
     }
 
     public PhxButtonEvents GetButtonEvents()
@@ -191,17 +194,17 @@ public class PhxPlayerInput
         return ButtonFrameEvents;
     }
 
-    public PhxInputAxesGroup GetSoldierAxes()
+    public PhxInputAxesGroup GetSoldierAxesDelta()
     {
-        return Soldier_Axes;
+        return Soldier_AxesDelta;
     }
-    public PhxInputAxesGroup GetVehicleAxes()
+    public PhxInputAxesGroup GetVehicleAxesDelta()
     {
-        return Vehicle_Axes;
+        return Vehicle_AxesDelta;
     }
-    public PhxInputAxesGroup GetFlyerAxes()
+    public PhxInputAxesGroup GetFlyerAxesDelta()
     {
-        return Flyer_Axes;
+        return Flyer_AxesDelta;
     }
 
     public unsafe void Tick(float deltaTime)
@@ -257,7 +260,7 @@ public class PhxPlayerInput
 
         //if (tab != 0)
         //{
-            
+
         //    string[] names  = Enum.GetNames(typeof(PhxInput));
         //    ulong[]  values = (ulong[])Enum.GetValues(typeof(PhxInput));
 
@@ -301,33 +304,25 @@ public class PhxPlayerInput
         //
         // Axes
         //
-        Soldier_Axes.Thrust.X.Value = Input.GetAxis("Horizontal");
-        Soldier_Axes.Thrust.Y.Value = Input.GetAxis("Vertical");
-        Soldier_Axes.View.X.Value   = Input.GetAxis("Mouse X");
-        Soldier_Axes.View.Y.Value   = Input.GetAxis("Mouse Y");
+        AddAxisDelta(ref Soldier_AxesDelta.Thrust.X, Input.GetAxis("Horizontal"));
+        AddAxisDelta(ref Soldier_AxesDelta.Thrust.Y, Input.GetAxis("Vertical"));
+        AddAxisDelta(ref Soldier_AxesDelta.View.X,   Input.GetAxis("Mouse X"));
+        AddAxisDelta(ref Soldier_AxesDelta.View.Y,   Input.GetAxis("Mouse Y"));
 
-        Vehicle_Axes.Thrust.X.Value = Input.GetAxis("Horizontal");
-        Vehicle_Axes.Thrust.Y.Value = Input.GetAxis("Vertical");
-        Vehicle_Axes.View.X.Value   = Input.GetAxis("Mouse X");
-        Vehicle_Axes.View.Y.Value   = Input.GetAxis("Mouse Y");
+        AddAxisDelta(ref Vehicle_AxesDelta.Thrust.X, Input.GetAxis("Horizontal"));
+        AddAxisDelta(ref Vehicle_AxesDelta.Thrust.Y, Input.GetAxis("Vertical"));
+        AddAxisDelta(ref Vehicle_AxesDelta.View.X,   Input.GetAxis("Mouse X"));
+        AddAxisDelta(ref Vehicle_AxesDelta.View.Y,   Input.GetAxis("Mouse Y"));
 
-        Flyer_Axes.Thrust.X.Value = Input.GetAxis("Horizontal");
-        Flyer_Axes.Thrust.Y.Value = Input.GetAxis("Vertical");
-        Flyer_Axes.View.X.Value   = Input.GetAxis("Mouse X");
-        Flyer_Axes.View.Y.Value   = Input.GetAxis("Mouse Y");
-
-        ApplyInvert(ref Soldier_Axes.Thrust);
-        ApplyInvert(ref Soldier_Axes.View);
-        ApplyInvert(ref Vehicle_Axes.Thrust);
-        ApplyInvert(ref Vehicle_Axes.View);
-        ApplyInvert(ref Flyer_Axes.Thrust);
-        ApplyInvert(ref Flyer_Axes.View);
+        AddAxisDelta(ref Flyer_AxesDelta.Thrust.X, Input.GetAxis("Horizontal"));
+        AddAxisDelta(ref Flyer_AxesDelta.Thrust.Y, Input.GetAxis("Vertical"));
+        AddAxisDelta(ref Flyer_AxesDelta.View.X,   Input.GetAxis("Mouse X"));
+        AddAxisDelta(ref Flyer_AxesDelta.View.Y,   Input.GetAxis("Mouse Y"));
     }
 
-    void ApplyInvert(ref PhxInputAxis2D axis)
+    void AddAxisDelta(ref PhxInputAxis axis, float delta)
     {
-        if (axis.X.Invert) axis.X.Value = -axis.X.Value;
-        if (axis.Y.Invert) axis.Y.Value = -axis.Y.Value;
+        axis.Value = delta > axis.Deadzone || delta < -axis.Deadzone ? delta * axis.Scale : 0f;
     }
 
     struct PhxButtonTime

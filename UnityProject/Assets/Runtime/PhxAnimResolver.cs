@@ -307,7 +307,7 @@ public class PhxAnimationResolver
     {
         if (PhxAnimLoader.Exists(animDesc.Character, animDesc.ToString()))
         {
-            clip = PhxAnimLoader.Import(animDesc.Character, animDesc.ToString());
+            clip = PhxAnimLoader.Import(animDesc.Character, animDesc.ToString()).Clip;
             Debug.Assert(clip.IsValid());
 
             found = animDesc;

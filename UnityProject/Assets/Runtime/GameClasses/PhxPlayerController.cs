@@ -7,8 +7,6 @@ public class PhxPlayerController : PhxPawnController
     PhxPlayerInput PlayerInput => PhxGame.GetPlayerInput();
     PhxCamera Camera => PhxGame.GetCamera();
 
-    Vector3? TargetPos;
-
 
     public PhxPlayerController()
     {
@@ -17,7 +15,8 @@ public class PhxPlayerController : PhxPawnController
 
     public override Vector3 GetAimPosition()
     {
-        return TargetPos.HasValue ? TargetPos.Value : Camera.transform.position + Data.ViewDirection * 1000f;
+        //return TargetPos.HasValue ? TargetPos.Value : Camera.transform.position + Data.ViewDelta * 1000f;
+        return Vector3.zero;
     }
 
     public override void Tick(float deltaTime)
@@ -31,50 +30,38 @@ public class PhxPlayerController : PhxPawnController
         if (Pawn == null || Cursor.lockState != CursorLockMode.Locked)
         {
             Data.Events = new PhxButtonEvents();
-            Data.MoveDirection = Vector2.zero;
-            Data.ViewDirection = Vector2.zero;
+            Data.Move = Vector2.zero;
+            Data.ViewDelta = Vector2.zero;
             return;
         }
 
         Data.Events = PlayerInput.GetButtonEvents();
 
-        PhxInputAxesGroup axes = PlayerInput.GetSoldierAxes();
-        Data.MoveDirection = axes.Thrust.GetValues();
+        PhxInputAxesGroup axes = PlayerInput.GetSoldierAxesDelta();
+        Data.Move = axes.Thrust.GetValues();
+        Data.ViewDelta = axes.View.GetValues();
 
-        Vector2 rotConstraints = Pawn.GetViewConstraint();
-        Vector2 maxTurnSpeed = Pawn.GetMaxTurnSpeed();
+        //Vector2 rotConstraints = Pawn.GetViewConstraint();
+        //Vector2 maxTurnSpeed = Pawn.GetMaxTurnSpeed();
 
-        // max turn degrees per frame
-        Vector2 maxTurn = maxTurnSpeed * deltaTime;
-        float turnX;
-        float turnY;
+        //// max turn degrees per frame
+        //Vector2 maxTurn = maxTurnSpeed * deltaTime;
+        //float turnX = Mathf.Clamp(axes.View.Y.Value * 2f, -maxTurn.x, maxTurn.x);
+        //float turnY = Mathf.Clamp(axes.View.X.Value * 2f, -maxTurn.y, maxTurn.y);
 
-        if (axes.View.Type == PhxInputAxisType.Relative)
-        {
-            turnX = Mathf.Clamp(axes.View.Y.Value * 2f, -maxTurn.x, maxTurn.x);
-            turnY = Mathf.Clamp(axes.View.X.Value * 2f, -maxTurn.y, maxTurn.y);
-        }
-        else
-        {
-            Debug.Assert(axes.View.Type == PhxInputAxisType.Absolute);
+        //Quaternion rot = Quaternion.LookRotation(Data.ViewDelta);
+        //Vector3 euler = rot.eulerAngles;
+        //PhxUtils.SanitizeEuler(ref euler);
+        //euler.x = Mathf.Clamp(euler.x + turnX, -rotConstraints.x, rotConstraints.x);
+        //euler.y = Mathf.Clamp(euler.y + turnY, -rotConstraints.y, rotConstraints.y);
 
-            turnX = axes.View.Y.Value * maxTurn.x;
-            turnY = axes.View.X.Value * maxTurn.y;
-        }
-
-        Quaternion rot = Quaternion.LookRotation(Data.ViewDirection);
-        Vector3 euler = rot.eulerAngles;
-        PhxUtils.SanitizeEuler(ref euler);
-        euler.x = Mathf.Clamp(euler.x + turnX, -rotConstraints.x, rotConstraints.x);
-        euler.y = Mathf.Clamp(euler.y + turnY, -rotConstraints.y, rotConstraints.y);
-
-        rot = Quaternion.Euler(euler);
-        Data.ViewDirection = rot * Vector3.forward;
-        Debug.DrawRay(Camera.transform.position, Data.ViewDirection * 1000f, Color.blue);
+        //rot = Quaternion.Euler(euler);
+        //Data.ViewDelta = rot * Vector3.forward;
+        //Debug.DrawRay(Camera.transform.position, Data.ViewDelta * 1000f, Color.blue);
 
         // ignore vehicle colliders
         int layerMask = 7;
-        if (Physics.Raycast(Camera.transform.position, Data.ViewDirection, out RaycastHit hit, 1000f, layerMask))
+        if (Physics.Raycast(Camera.transform.position, Data.ViewDelta, out RaycastHit hit, 1000f, layerMask))
         {
             PhxInstance GetInstance(Transform t)
             {
@@ -87,11 +74,11 @@ public class PhxPlayerController : PhxPawnController
             }
 
             Target = GetInstance(hit.collider.gameObject.transform);
-            TargetPos = hit.point;
+            //TargetPos = hit.point;
         }
         else
         {
-            TargetPos = null;
+            ////TargetPos = null;
         }
     }
 }

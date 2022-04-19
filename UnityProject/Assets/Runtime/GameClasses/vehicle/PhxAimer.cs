@@ -141,7 +141,7 @@ public class PhxAimer
         Vector3 Angles = Quaternion.FromToRotation(RestDir, AimDir).eulerAngles;
 
 
-        PhxUtils.SanitizeEuler(ref Angles);
+        PhxUtils.SanitizeEuler180(ref Angles);
 
         // These are wrong, needs fixing
         //Angles.x = Mathf.Clamp(Angles.x, PitchRange.x, PitchRange.y);

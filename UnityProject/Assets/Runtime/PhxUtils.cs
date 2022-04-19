@@ -96,7 +96,7 @@ public static class PhxUtils
         }
     }
 
-    public static void SanitizeEuler(ref Vector3 euler)
+    public static void SanitizeEuler180(ref Vector3 euler)
     {
         while (euler.x > 180f) euler.x -= 360f;
         while (euler.y > 180f) euler.y -= 360f;
@@ -106,7 +106,7 @@ public static class PhxUtils
         while (euler.z < -180f) euler.z += 360f;
     }
 
-    public static void SanitizeEuler(ref Vector2 euler)
+    public static void SanitizeEuler180(ref Vector2 euler)
     {
         while (euler.x > 180f) euler.x -= 360f;
         while (euler.y > 180f) euler.y -= 360f;

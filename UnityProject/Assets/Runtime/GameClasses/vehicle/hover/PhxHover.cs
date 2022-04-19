@@ -406,8 +406,8 @@ public class PhxHover : PhxVehicle
         if (DriverController != null) 
         {
             var data = DriverController.GetControlData();
-            Input.x = data.MoveDirection.x;
-            Input.y = data.MoveDirection.y;
+            Input.x = data.Move.x;
+            Input.y = data.Move.y;
             Input.z = 0f; // TODO: MouseX
         }
 
@@ -597,8 +597,8 @@ public class PhxHover : PhxVehicle
         Quaternion deltaRotation = Quaternion.Euler(new Vector3(0f, 16f * rotRate * mouseX, 0f) * deltaTime);
         Body.MoveRotation(Body.rotation * deltaRotation);
 
-        float strafe = data.MoveDirection.x;
-        float drive  = data.MoveDirection.y;
+        float strafe = data.Move.x;
+        float drive  = data.Move.y;
 
         float forwardForce, strafeForce;
 

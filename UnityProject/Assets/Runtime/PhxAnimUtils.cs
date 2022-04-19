@@ -42,7 +42,7 @@ public enum PhxAnimPosture : ushort
     Jump = 1 << 4,
     Roll = 1 << 5,
     Jet = 1 << 6,
-    Thrown = 1 << 7,
+    Tumble = 1 << 7,
 
     Fall = 1 << 8,
     Land = 1 << 9,
@@ -64,6 +64,19 @@ public enum PhxAnimAction : ushort
     ShootSecondary2,
     Charge,
     Reload,
+}
+
+public struct PhxAnimClip
+{
+    public CraClip         Clip;
+    public PhxTransform[]  RootMotionFrames; // 30 fps
+
+    public static PhxAnimClip None => new PhxAnimClip { Clip = CraClip.None, RootMotionFrames = null };
+}
+
+public enum PhxAnimTimeMode
+{
+    Seconds, Frames, FromAnim
 }
 
 public static class PhxAnimUtils

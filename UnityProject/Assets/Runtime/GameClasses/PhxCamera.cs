@@ -88,9 +88,8 @@ public class PhxCamera : MonoBehaviour
             Vector3 rotPoint = FollowInstance.GetInstance().transform.position;
             rotPoint.y += PositionOffset.y;
 
-            //Vector3 viewDir = (FollowInstance.GetTargetPosition() - rotPoint).normalized;
-            PhxPawnControlData data = PhxGame.GetMatch().Player.GetControlData();
-            Vector3 viewDir = data.ViewDirection;
+            //PhxPawnControlData data = PhxGame.GetMatch().Player.GetControlData();
+            Vector3 viewDir = FollowInstance.GetAimRotation() * Vector3.forward;
             Vector3 camTargetPos = rotPoint + viewDir * PositionOffset.z;
             Quaternion camTargetRot = Quaternion.LookRotation(viewDir);
             camTargetPos += camTargetRot * new Vector3(PositionOffset.x, 0f, 0f);

@@ -16,7 +16,8 @@ public class PhxAnimTestController : PhxAIController
 
     public override Vector3 GetAimPosition()
     {
-        return TestAim != null ? TestAim.position : Data.ViewDirection * 1000f;
+        //return TestAim != null ? TestAim.position : Data.ViewDelta * 1000f;
+        return Vector3.zero;
     }
 
     public override void Tick(float deltaTime)
@@ -42,8 +43,8 @@ public class PhxAnimTestController : PhxAIController
 
         float sin = Mathf.Sin(ForwardOffset + Time.timeSinceLevelLoad);
 
-        Data.MoveDirection.x = sin;
-        Data.MoveDirection.y = sin;
+        Data.Move.x = sin;
+        Data.Move.y = sin;
 
         if (sin > -0.5f)
         {
@@ -56,7 +57,7 @@ public class PhxAnimTestController : PhxAIController
 
         if (TestAim != null)
         {
-            Data.ViewDirection = (TestAim.transform.position - Pawn.GetInstance().transform.position).normalized;
+            Data.ViewDelta = (TestAim.transform.position - Pawn.GetInstance().transform.position).normalized;
         }
     }
 }

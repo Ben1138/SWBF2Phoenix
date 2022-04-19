@@ -312,8 +312,8 @@ public class PhxFlyer : PhxVehicle
         }
 
         var data = DriverController.GetControlData();
-        Input.x = data.MoveDirection.x;
-        Input.y = data.MoveDirection.y;
+        Input.x = data.Move.x;
+        Input.y = data.Move.y;
         Input.z = 0f; // TODO: mouseX
 
         // TODO: Implement gradual damage when abandoned
@@ -480,9 +480,9 @@ public class PhxFlyer : PhxVehicle
                 //Quaternion turnRotation = Quaternion.Euler(new Vector3(0f,  0f) * deltaTime);
                 float mouseX = 0f; // TODO
                 float mouseY = 0f;
-                Quaternion rot = Quaternion.Euler(new Vector3(16f * DriverSeat.PitchRate * mouseY, 16f * DriverSeat.TurnRate * mouseX, - 16f * F.RollRate * data.MoveDirection.x) * deltaTime);
+                Quaternion rot = Quaternion.Euler(new Vector3(16f * DriverSeat.PitchRate * mouseY, 16f * DriverSeat.TurnRate * mouseX, - 16f * F.RollRate * data.Move.x) * deltaTime);
                 Body.MoveRotation(Body.rotation * rot);
-                Fwd = data.MoveDirection.y;
+                Fwd = data.Move.y;
             }
 
             float Speed = LocalVel.z;

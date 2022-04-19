@@ -18,7 +18,7 @@ public abstract class PhxAIController : PhxPawnController
 
         if (Target != null)
         {
-            Data.ViewDirection = (Target.transform.position - Pawn.GetInstance().transform.position).normalized;
+            Data.ViewDelta = (Target.transform.position - Pawn.GetInstance().transform.position).normalized;
         }
     }
 }
@@ -35,7 +35,7 @@ public class PhxSoldierAIController : PhxAIController
             // - if vehicle, aim at weak spot
             return Target.transform.position;
         }
-        return Data.ViewDirection * 1000f;
+        return Data.ViewDelta * 1000f;
     }
 
     public override void Tick(float deltaTime)

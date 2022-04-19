@@ -121,15 +121,12 @@ public abstract class PhxSeat : IPhxTrackable, IPhxTickable
 
 
         // TODO: We need to settle on one convention: Either calc rotation in Controller, or in Pawn!
-        PhxInputAxesGroup axes = PlayerInput.GetVehicleAxes();
-        if (axes.View.Type == PhxInputAxisType.Relative)
-        {
-            PitchAccum += axes.View.Y.Value;
-            PitchAccum = Mathf.Clamp(PitchAccum, PitchLimits.x, PitchLimits.y);
+        PhxInputAxesGroup axes = PlayerInput.GetVehicleAxesDelta();
+        PitchAccum += axes.View.Y.Value;
+        PitchAccum = Mathf.Clamp(PitchAccum, PitchLimits.x, PitchLimits.y);
 
-            YawAccum += axes.View.X.Value;
-            YawAccum = Mathf.Clamp(YawAccum, YawLimits.x, YawLimits.y);        
-        }
+        YawAccum += axes.View.X.Value;
+        YawAccum = Mathf.Clamp(YawAccum, YawLimits.x, YawLimits.y);        
 
 
         // These need work, camera behaviour is slightly off and NormalDirection 

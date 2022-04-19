@@ -25,6 +25,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
     static Material LightsaberMat;
     LineRenderer Blade;
     AudioSource SwingAudio;
+    Dictionary<uint, AudioClip> SwingSounds = new Dictionary<uint, AudioClip>();
 
     public override void Init()
     {
@@ -53,6 +54,36 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
             Audio.loop = true;
             Audio.clip = FireSound;
         }
+
+        SwingAudio = gameObject.AddComponent<AudioSource>();
+        SwingAudio.playOnAwake = false;
+        SwingAudio.spatialBlend = 1.0f;
+        SwingAudio.rolloffMode = AudioRolloffMode.Linear;
+        SwingAudio.minDistance = 2.0f;
+        SwingAudio.maxDistance = 30.0f;
+        SwingAudio.loop = false;
+        SwingAudio.clip = null;
+    }
+
+    public void PlaySwingSound(uint soundHash)
+    {
+        if (soundHash == 0)
+        {
+            return;
+        }
+
+        if (!SwingSounds.TryGetValue(soundHash, out AudioClip swingSound))
+        {
+            swingSound = SoundLoader.Instance.LoadSound(soundHash);
+            if (swingSound == null)
+            {
+                Debug.LogError($"Couldn't find swing sound from hash: {soundHash}!");
+                return;
+            }
+            SwingSounds.Add(soundHash, swingSound);
+        }
+        SwingAudio.Stop();
+        SwingAudio.PlayOneShot(swingSound);
     }
 
     public override void Destroy()

@@ -76,7 +76,7 @@ public class PhxVehicleTurret : PhxSeat
 
         if (Occupant == null || !CanRotate) return;
 
-        var axes = PlayerInput.GetVehicleAxes(); // TODO: Get rid of this!
+        var axes = PlayerInput.GetVehicleAxesDelta(); // TODO: Get rid of this!
         BaseTransform.rotation *= Quaternion.Euler(new Vector3(0f, axes.View.X.Value, 0f));
     }
 }

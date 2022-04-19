@@ -6,8 +6,8 @@ using UnityEngine;
 public struct PhxPawnControlData
 {
     public PhxButtonEvents Events;
-    public Vector2 MoveDirection;
-    public Vector3 ViewDirection;
+    public Vector2 Move;
+    public Vector2 ViewDelta;           // Degrees this frame
 }
 
 public abstract class PhxPawnController
@@ -36,9 +36,7 @@ public abstract class PhxPawnController
     public void SetPawn(IPhxControlableInstance pawn)
     {
         Debug.Assert(pawn.GetController() == this);
-
         Pawn = pawn;
-        Data.ViewDirection = Pawn.GetInstance().transform.forward;
     }
 
     // For un-assignment, use IPhxControlableInstance.UnAssign()!

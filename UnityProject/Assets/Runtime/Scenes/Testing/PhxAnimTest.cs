@@ -22,6 +22,7 @@ public class PhxAnimTest : PhxUnityScript
     public override void ScriptInit()
     {
         PhxLuaAPI.ReadDataFile("ingame.lvl");
+        PhxLuaAPI.ReadDataFile("sound/uta.lvl");
         PhxLuaAPI.ReadDataFile("side/rep.lvl",
             //"rep_inf_ep2_rifleman",
             //"rep_inf_ep2_rocketeer",
@@ -35,10 +36,10 @@ public class PhxAnimTest : PhxUnityScript
             //"rep_inf_ep3_engineer",
             //"rep_inf_ep3_officer",
             //"rep_inf_ep3_jettrooper",
-            //"rep_hero_obiwan",
-            "rep_hero_anakin"
-            //"rep_hero_aalya",
-            //"rep_hero_kiyadimundi",
+            "rep_hero_obiwan"
+            //"rep_hero_anakin"
+            //"rep_hero_aalya"
+            //"rep_hero_kiyadimundi"
             //"rep_hero_macewindu"
         );
 
@@ -109,7 +110,7 @@ public class PhxAnimTest : PhxUnityScript
 
         if (SpawnPlayer)
         {
-            Match.SpawnPlayer(scene.GetClass("rep_hero_anakin"), transform.position, Quaternion.identity);
+            Match.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
         }
     }
 
