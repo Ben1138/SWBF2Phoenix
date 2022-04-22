@@ -165,11 +165,13 @@ public class PhxAnimHuman
     public CraMachineValue OutStrafeBackwards { get; private set; }
     public CraMachineValue OutAction { get; private set; }
     public CraMachineValue OutInputLocks { get; private set; }
-    //public CraMachineValue OutInputLockDuration { get; private set; }
+    public CraMachineValue OutInputLockDuration { get; private set; }
     public CraMachineValue OutAimType { get; private set; }
     public CraMachineValue OutAnimatedMove { get; private set; }
     public CraMachineValue OutVelocityX { get; private set; }
     public CraMachineValue OutVelocityZ { get; private set; }
+    public CraMachineValue OutVelocityXFromAnim { get; private set; }
+    public CraMachineValue OutVelocityZFromAnim { get; private set; }
     public CraMachineValue OutVelocityFromThrust { get; private set; }
     public CraMachineValue OutVelocityFromStrafe { get; private set; }
 
@@ -183,7 +185,11 @@ public class PhxAnimHuman
 
     PhxAnimationResolver Resolver;
     Dictionary<string, int> WeaponAnimToSetIdx;
+
+    // In these states, animation playback speed is controlled by current velocity
     HashSet<CraState> MovementStates;
+
+    HashSet<CraState> ComboStates;
 
 
     static readonly Dictionary<string, PhxAnimPosture> StrToPosture = new Dictionary<string, PhxAnimPosture>()
@@ -202,6 +208,14 @@ public class PhxAnimHuman
         { "Jet",       PhxAnimPosture.Jet    },
     };
 
+    static readonly Dictionary<string, PhxAimType> StrToAim = new Dictionary<string, PhxAimType>()
+    {
+        { "None",     PhxAimType.None     },
+        { "Head",     PhxAimType.Head     },
+        { "Torso",    PhxAimType.Torso    },
+        { "FullBody", PhxAimType.FullBody },
+    };
+
 
     public PhxAnimHuman(PhxAnimationResolver resolver, Transform root, string characterAnimBank, PhxAnimWeapon[] weapons)
     {
@@ -211,6 +225,7 @@ public class PhxAnimHuman
         Machine = CraStateMachine.CreateNew();
         WeaponAnimToSetIdx = new Dictionary<string, int>();
         MovementStates = new HashSet<CraState>();
+        ComboStates = new HashSet<CraState>();
 
         Resolver = resolver;
 
@@ -244,11 +259,13 @@ public class PhxAnimHuman
         OutPosture = Machine.NewMachineValue(CraValueType.Int, "Out Posture");
         OutStrafeBackwards = Machine.NewMachineValue(CraValueType.Bool, "Out Strafe Backwards");
         OutInputLocks = Machine.NewMachineValue(CraValueType.Int, "Out Input Locks");
-        //OutInputLockDuration = Machine.NewMachineValue(CraValueType.Int, "Out Input Lock Duration");
+        OutInputLockDuration = Machine.NewMachineValue(CraValueType.Float, "Out Input Lock Duration");
         OutAimType = Machine.NewMachineValue(CraValueType.Int, "Out Aim Type");
         OutAnimatedMove = Machine.NewMachineValue(CraValueType.Bool, "Out Animated Move");
         OutVelocityX = Machine.NewMachineValue(CraValueType.Float, "Out Velocity X");
-        OutVelocityZ = Machine.NewMachineValue(CraValueType.Float, "Out Velocity X");
+        OutVelocityZ = Machine.NewMachineValue(CraValueType.Float, "Out Velocity Z");
+        OutVelocityXFromAnim = Machine.NewMachineValue(CraValueType.Bool, "Out Velocity X From Anim");
+        OutVelocityZFromAnim = Machine.NewMachineValue(CraValueType.Bool, "Out Velocity Z From Anim");
         OutVelocityFromThrust = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Thrust");
         OutVelocityFromStrafe = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Strafe");
         OutSound = Machine.NewMachineValue(CraValueType.Int, "Out Sound");
@@ -311,6 +328,18 @@ public class PhxAnimHuman
         MovementStates.Add(state.Upper);
         MovementStates.Add(state.Lower);
     }
+
+    public bool IsComboState(CraState state)
+    {
+        return ComboStates.Contains(state);
+    }
+
+    void AddComboState(PhxScopedState state)
+    {
+        ComboStates.Add(state.Upper);
+        ComboStates.Add(state.Lower);
+    }
+
     void Transition(in PhxScopedState from, in PhxScopedState to, float transitionTime, params CraConditionOr[] args)
     {
         if (from.Lower.IsValid() && to.Lower.IsValid())
@@ -1632,6 +1661,14 @@ public class PhxAnimHuman
         WriteParamsOnEnter(set.LandHard,     new PhxStateParams { Posture = PhxAnimPosture.Land,   AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
         WriteParamsOnEnter(set.Roll,         new PhxStateParams { Posture = PhxAnimPosture.Roll,   AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.None });
 
+        PhxAnimUtils.WriteBoolOnEnter(set.Roll,  OutAnimatedMove, true);
+        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityX, 1f);
+        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityZ, 1f);
+        PhxAnimUtils.WriteBoolOnEnter(set.Roll,  OutVelocityXFromAnim, true);
+        PhxAnimUtils.WriteBoolOnEnter(set.Roll,  OutVelocityZFromAnim, true);
+        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityFromThrust, 0f);
+        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityFromStrafe, 0f);
+        PhxAnimUtils.WriteBoolOnLeave(set.Roll,  OutAnimatedMove, false);
 
         PhxAnimUtils.WriteBoolOnEnter(set.StandRunBackward.Lower, OutStrafeBackwards, true);
         PhxAnimUtils.WriteBoolOnEnter(set.StandAlertRunBackward.Lower, OutStrafeBackwards, true);
@@ -1640,17 +1677,18 @@ public class PhxAnimHuman
         PhxAnimUtils.WriteBoolOnLeave(set.StandAlertRunBackward.Lower, OutStrafeBackwards, false);
         PhxAnimUtils.WriteBoolOnLeave(set.CrouchAlertWalkBackward.Lower, OutStrafeBackwards, false);
 
+        // In these states, animation playback speed is controlled by current velocity
         AddMovementState(set.CrouchWalkForward);
         AddMovementState(set.CrouchWalkBackward);
         AddMovementState(set.CrouchAlertWalkForward);
         AddMovementState(set.CrouchAlertWalkBackward);
-
         AddMovementState(set.StandWalkForward);
         AddMovementState(set.StandRunForward);
         AddMovementState(set.StandRunBackward);
         AddMovementState(set.StandAlertWalkForward);
         AddMovementState(set.StandAlertRunForward);
         AddMovementState(set.StandAlertRunBackward);
+        AddMovementState(set.Sprint);
 
         //set.Roll.Lower.GetPlayer().SetPlayRange(new CraPlayRange { MinTime = 0f, MaxTime = 0.9f });
         //set.Roll.Upper.GetPlayer().SetPlayRange(new CraPlayRange { MinTime = 0f, MaxTime = 0.9f });
@@ -1720,12 +1758,49 @@ public class PhxAnimHuman
 
                     List<PhxComboTransitionCache> localTransitions = new List<PhxComboTransitionCache>();
 
-                    int attackCount = 0;
-                    Field[] stateFields = field.Scope.GetFields();
-                    for (int j = 0; j < stateFields.Length; ++j)
+                    int   attackCount = 0;
+                    Field[] stateScope = field.Scope.GetFields();
+                    for (int j = 0; j < stateScope.Length; ++j)
                     {
-                        Field stateField = stateFields[j];
-                        if (stateField.GetNameHash() == Hash_Duration)
+                        Field stateField = stateScope[j];
+                        if (stateField.GetNameHash() == Hash_Animation)
+                        {
+                            Field[] animationScope = stateField.Scope.GetFields();
+                            for (int k = 0; k < animationScope.Length; ++k)
+                            {
+                                Field animationField = animationScope[k];
+                                if (animationField.GetNameHash() == Hash_AimType)
+                                {
+                                    string aimStr = animationField.GetString();
+                                    if (StrToAim.TryGetValue(aimStr, out PhxAimType aim))
+                                    {
+                                        comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                        {
+                                            MachineValue = OutAimType,
+                                            Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)aim }
+                                        });
+                                        comboState.State.Upper.WriteOnLeave(new CraWriteOutput
+                                        {
+                                            MachineValue = OutAimType,
+                                            Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)PhxAimType.None }
+                                        });
+                                    }
+                                    else
+                                    {
+                                        Debug.LogError($"Unknown AimType '{aimStr}'!");
+                                    }
+                                }
+                                else if (animationField.GetNameHash() == Hash_BlendInTime)
+                                {
+                                    // TODO
+                                }
+                                else if (animationField.GetNameHash() == Hash_BlendOutTime)
+                                {
+                                    // TODO
+                                }
+                            }
+                        }
+                        else if (stateField.GetNameHash() == Hash_Duration)
                         {
                             float time = GetTimeValue(stateField, comboState.State.Lower.GetPlayer().GetClip().GetDuration());
                             if (time <= 0f)
@@ -1797,10 +1872,24 @@ public class PhxAnimHuman
                         }
                         else if (stateField.GetNameHash() == Hash_InputLock)
                         {
+                            float time = string.IsNullOrEmpty(stateField.GetString(0)) ? stateField.GetFloat(0) : 0f;
                             PhxInput locked = PhxInput.None;
                             for (byte vi = 0; vi < stateField.GetNumValues(); vi++)
                             {
                                 string input = stateField.GetString(vi);
+                                if (string.IsNullOrEmpty(input))
+                                {
+                                    continue;
+                                }
+                                if (PhxUtils.StrEquals(input, "Frames") || PhxUtils.StrEquals(input, "Seconds"))
+                                {
+                                    if (PhxUtils.StrEquals(input, "Frames"))
+                                    {
+                                        time /= 30f;
+                                    }
+                                    continue;
+                                }
+
                                 bool bInvert = input.StartsWith("!");
                                 if (bInvert)
                                 {
@@ -1825,6 +1914,11 @@ public class PhxAnimHuman
                                 MachineValue = OutInputLocks,
                                 Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)locked }
                             });
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutInputLockDuration,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time }
+                            });                         
                             comboState.State.Upper.WriteOnLeave(new CraWriteOutput
                             {
                                 MachineValue = OutInputLocks,
@@ -1833,6 +1927,13 @@ public class PhxAnimHuman
                         }
                         else if (stateField.GetNameHash() == Hash_AnimatedMove)
                         {
+                            float velocityX = 1.0f;
+                            bool  velocityXFromAnim = true;
+                            float velocityZ = 1.0f;
+                            bool  velocityZFromAnim = true;
+                            float velocityFromThrust = 0f;
+                            float velocityFromStrafe = 0f;
+
                             comboState.IsAnimatedMove = true;
                             comboState.State.Upper.WriteOnEnter(new CraWriteOutput
                             {
@@ -1845,47 +1946,75 @@ public class PhxAnimHuman
                                 Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = false }
                             });
 
-                            Field[] animatedMoveFields = stateField.Scope.GetFields();
-                            for (int k = 0; k < animatedMoveFields.Length; ++k)
+                            Field[] animatedMoveScope = stateField.Scope.GetFields();
+                            for (int k = 0; k < animatedMoveScope.Length; ++k)
                             {
-                                Field animMoveField = animatedMoveFields[k];
+                                Field animMoveField = animatedMoveScope[k];
                                 if (animMoveField.GetNameHash() == Hash_VelocityX)
                                 {
-                                    float velocityMulti = animMoveField.GetFloat();
-                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    if (animMoveField.GetNumValues() > 0)
                                     {
-                                        MachineValue = OutVelocityX,
-                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
-                                    });
+                                        velocityX = animMoveField.GetFloat();
+                                    }
+                                    velocityXFromAnim = animMoveField.GetNumValues() > 1;
                                 }
                                 else if (animMoveField.GetNameHash() == Hash_VelocityZ)
                                 {
-                                    float velocityMulti = animMoveField.GetFloat();
-                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    if (animMoveField.GetNumValues() > 0)
                                     {
-                                        MachineValue = OutVelocityZ,
-                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
-                                    });
+                                        velocityZ = animMoveField.GetFloat();
+                                    }
+                                    velocityZFromAnim = animMoveField.GetNumValues() > 1;
                                 }
                                 else if (animMoveField.GetNameHash() == Hash_VelocityFromThrust)
                                 {
-                                    float velocityMulti = animMoveField.GetFloat();
-                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    if (animMoveField.GetNumValues() > 0)
                                     {
-                                        MachineValue = OutVelocityFromThrust,
-                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
-                                    });
+                                        velocityFromThrust = animMoveField.GetFloat();
+                                    }
                                 }
                                 else if (animMoveField.GetNameHash() == Hash_VelocityFromStrafe)
                                 {
-                                    float velocityMulti = animMoveField.GetFloat();
-                                    comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                                    if (animMoveField.GetNumValues() > 0)
                                     {
-                                        MachineValue = OutVelocityFromStrafe,
-                                        Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityMulti }
-                                    });
+                                        velocityFromStrafe = animMoveField.GetFloat();
+                                    }
                                 }
                             }
+
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutVelocityX,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityX }
+                            });
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutVelocityXFromAnim,
+                                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = velocityXFromAnim }
+                            });
+
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutVelocityZ,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityZ }
+                            });
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutVelocityZFromAnim,
+                                Value = new CraValueUnion { Type = CraValueType.Bool, ValueBool = velocityZFromAnim }
+                            });
+
+
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutVelocityFromThrust,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityFromThrust }
+                            });
+                            comboState.State.Upper.WriteOnEnter(new CraWriteOutput
+                            {
+                                MachineValue = OutVelocityFromStrafe,
+                                Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = velocityFromStrafe }
+                            });
                         }
                         else if (stateField.GetNameHash() == Hash_Attack)
                         {
@@ -1899,7 +2028,7 @@ public class PhxAnimHuman
                             int    edge = 0;
                             float  timeStart = 0.2f;
                             float  timeEnd = 0.3f;
-                            int    timeMode = 2; // default: FromAnim
+                            int    timeMode = (int)PhxAnimTimeMode.FromAnim;
                             float  length = 1f;
                             bool   lengthFromEdge = true;
                             float  width = 1f;
@@ -1907,10 +2036,10 @@ public class PhxAnimHuman
                             float  damage = 0f;
                             float  push = 0f;
 
-                            Field[] attackFields = stateField.Scope.GetFields();
-                            for (int ai = 0; ai < attackFields.Length; ++ai)
+                            Field[] attackScope = stateField.Scope.GetFields();
+                            for (int ai = 0; ai < attackScope.Length; ++ai)
                             {
-                                Field attackField = attackFields[ai];
+                                Field attackField = attackScope[ai];
                                 if (attackField.GetNameHash() == Hash_AttackId)
                                 {
                                     // Hash function doesn't really matter here,
@@ -2218,10 +2347,10 @@ public class PhxAnimHuman
         comboState = new PhxComboState();
 
         string stateName = state.GetString();
-        Field[] stateFields = state.Scope.GetFields();
-        for (int i = 0; i < stateFields.Length; ++i)
+        Field[] stateScope = state.Scope.GetFields();
+        for (int i = 0; i < stateScope.Length; ++i)
         {
-            Field stateField = stateFields[i];
+            Field stateField = stateScope[i];
             if (stateField.GetNameHash() == Hash_Animation)
             {
                 string animname = stateField.GetString();
@@ -2233,9 +2362,10 @@ public class PhxAnimHuman
                     comboState.State.Lower.GetPlayer().SetLooping(false);
                     comboState.State.Upper.GetPlayer().SetLooping(false);
 #if UNITY_EDITOR
-                    if (comboState.State.Lower.IsValid()) comboState.State.Lower.SetName($"COMBO Lower {weapon} {stateName}");
-                    if (comboState.State.Upper.IsValid()) comboState.State.Upper.SetName($"COMBO Upper {weapon} {stateName}");
+                    comboState.State.Lower.SetName($"COMBO Lower {weapon} {stateName}");
+                    comboState.State.Upper.SetName($"COMBO Upper {weapon} {stateName}");
 #endif
+                    AddComboState(comboState.State);
                     return true;
                 }
                 else
@@ -2253,8 +2383,8 @@ public class PhxAnimHuman
     unsafe PhxComboTransitionCondition[] GetComboTransitionConditions(Scope transitionScope, float stateDuration)
     {
         List<PhxComboTransitionCondition> conditions = new List<PhxComboTransitionCondition>();
-        Field[] orFields = transitionScope.GetFields();
-        if (orFields.Length == 0)
+        Field[] orScope = transitionScope.GetFields();
+        if (orScope.Length == 0)
         {
             PhxComboTransitionCondition newCond = new PhxComboTransitionCondition();
             newCond.Or.And0 = new CraCondition
@@ -2266,11 +2396,11 @@ public class PhxAnimHuman
         }
         else
         {
-            for (int oi = 0; oi < orFields.Length; ++oi)
+            for (int oi = 0; oi < orScope.Length; ++oi)
             {
                 float energyCost = -9999f;
 
-                Field orField = orFields[oi];
+                Field orField = orScope[oi];
                 if (orField.GetNameHash() == Hash_EnergyCost)
                 {
                     energyCost = orField.GetFloat();
@@ -2289,8 +2419,8 @@ public class PhxAnimHuman
                         andIdx++;
                     }
 
-                    Field[] andFields = orField.Scope.GetFields();
-                    for (int ai = 0; ai < andFields.Length; ++ai)
+                    Field[] andScope = orField.Scope.GetFields();
+                    for (int ai = 0; ai < andScope.Length; ++ai)
                     {
                         if (andIdx >= 10)
                         {
@@ -2298,7 +2428,7 @@ public class PhxAnimHuman
                             break;
                         }
 
-                        Field andField = andFields[ai];
+                        Field andField = andScope[ai];
                         if (andField.GetNameHash() == Hash_Button)
                         {
                             string comboButton = andField.GetString(0);
@@ -2465,6 +2595,9 @@ public class PhxAnimHuman
     static readonly uint Hash_State = HashUtils.GetFNV("State");
     static readonly uint Hash_Duration = HashUtils.GetFNV("Duration");
     static readonly uint Hash_Animation = HashUtils.GetFNV("Animation");
+    static readonly uint Hash_AimType = HashUtils.GetFNV("AimType");
+    static readonly uint Hash_BlendInTime = HashUtils.GetFNV("BlendInTime");
+    static readonly uint Hash_BlendOutTime = HashUtils.GetFNV("BlendOutTime");
     static readonly uint Hash_EnergyRestoreRate = HashUtils.GetFNV("EnergyRestoreRate");
     static readonly uint Hash_InputLock = HashUtils.GetFNV("InputLock");
     static readonly uint Hash_Transition = HashUtils.GetFNV("Transition");

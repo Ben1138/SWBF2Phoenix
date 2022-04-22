@@ -13,8 +13,10 @@ using System.Reflection;
 
 public struct PhxTransform
 {
-    public Vector3     Position;
-    public Quaternion  Rotation;
+    public Vector3 Position;
+    public Quaternion Rotation;
+
+    public static PhxTransform None => new PhxTransform { Position = Vector3.zero, Rotation = Quaternion.identity };
 }
 
 public class PhxScene

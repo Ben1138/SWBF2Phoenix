@@ -51,6 +51,22 @@ public class PhxAnimTest : PhxUnityScript
         //    "cis_hero_darthmaul",
         //    "cis_hero_grievous"
         //);
+
+        //PhxLuaAPI.ReadDataFile("side/imp.lvl",
+        //    //"imp_hero_bobafett"
+        //    //"imp_hero_darthvader"
+        //    //"imp_hero_emperor"
+        //);
+
+        //PhxLuaAPI.ReadDataFile("side/all.lvl",
+        //    //"all_hero_chewbacca"
+        //    //"all_hero_hansolo_storm"
+        //    //"all_hero_hansolo_tat"
+        //    //"all_hero_leia"
+        //    //"all_hero_luke_jedi"
+        //    //"all_hero_luke_storm"
+        //    //"all_hero_luke_tat"
+        //);
     }
 
     public override void ScriptPostLoad()

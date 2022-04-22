@@ -126,6 +126,28 @@ public static class PhxAnimUtils
         state.WriteOnLeave(new CraWriteOutput { MachineValue = machineValue, Value = new CraValueUnion { Type = CraValueType.Int, ValueInt = value } });
     }
 
+    public static void WriteFloatOnEnter(PhxScopedState state, CraMachineValue machineValue, float value)
+    {
+        WriteFloatOnEnter(state.Lower, machineValue, value);
+        WriteFloatOnEnter(state.Upper, machineValue, value);
+    }
+
+    public static void WriteFloatOnEnter(CraState state, CraMachineValue machineValue, float value)
+    {
+        state.WriteOnEnter(new CraWriteOutput { MachineValue = machineValue, Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = value } });
+    }
+
+    public static void WriteFloatOnLeave(PhxScopedState state, CraMachineValue machineValue, float value)
+    {
+        WriteFloatOnLeave(state.Lower, machineValue, value);
+        WriteFloatOnLeave(state.Upper, machineValue, value);
+    }
+
+    public static void WriteFloatOnLeave(CraState state, CraMachineValue machineValue, float value)
+    {
+        state.WriteOnLeave(new CraWriteOutput { MachineValue = machineValue, Value = new CraValueUnion { Type = CraValueType.Float, ValueFloat = value } });
+    }
+
     public static void WriteBoolOnEnter(PhxScopedState state, CraMachineValue machineValue, bool value)
     {
         WriteBoolOnEnter(state.Lower, machineValue, value);

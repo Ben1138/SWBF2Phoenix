@@ -11,9 +11,24 @@ public static class PhxAnimLoader
     public static Container Con;
 
     static Dictionary<uint, CraClip> ClipDB = new Dictionary<uint, CraClip>();
-    static Dictionary<CraClip, Vector3> RootMotionVelocities = new Dictionary<CraClip, Vector3>();
+    static Dictionary<CraClip, RootMotion> RootMotions = new Dictionary<CraClip, RootMotion>();
 
     static readonly uint Hash_dummyroot = HashUtils.GetCRC("dummyroot");
+
+
+    struct RootMotion
+    {
+        // First array index is the channel. Channels:
+        // 0 : rot X
+        // 1 : rot Y
+        // 2 : rot Z
+        // 3 : rot W
+        // 4 : pos X
+        // 5 : pos Y
+        // 6 : pos Z
+        public float[][] Times;
+        public float[][] Values;
+    }
 
     static readonly float[] ComponentMultipliers = 
     {
@@ -39,16 +54,64 @@ public static class PhxAnimLoader
     public static void ClearDB()
     {
         ClipDB.Clear();
-        RootMotionVelocities.Clear();
+        RootMotions.Clear();
     }
 
-    public static Vector3 GetRootMotionVelocity(CraClip clip)
+    public unsafe static PhxTransform GetRootMotion(CraClip clip, float time)
     {
-        if (RootMotionVelocities.TryGetValue(clip, out Vector3 rootMotionVelocity))
+        if (RootMotions.TryGetValue(clip, out RootMotion rootMotion) && rootMotion.Times.Length > 0)
         {
-            return rootMotionVelocity;
+            Debug.Assert(rootMotion.Times.Length == rootMotion.Values.Length);
+
+            float* channelValues = stackalloc float[7];
+            for (int i = 0; i < 7; i++)
+            {
+                int startIdx = 0;
+                for (int j = 0; j < rootMotion.Times[i].Length; j++)
+                {
+                    if (rootMotion.Times[i][j] <= time)
+                    {
+                        startIdx = j;
+                    }
+                    else // rootMotion.Times[i][j] > time
+                    {
+                        break; // startIdx found
+                    }
+                }
+
+                int endIdx = Mathf.Min(startIdx + 1, rootMotion.Times[i].Length - 1);
+                if (startIdx == endIdx)
+                {
+                    channelValues[i] = rootMotion.Values[i][endIdx];
+                }
+                else
+                {
+                    float t = (time - rootMotion.Times[i][startIdx]) / (rootMotion.Times[i][endIdx] - rootMotion.Times[i][startIdx]);
+                    Debug.Assert(t >= 0f && t <= 1f);
+                    channelValues[i] = Mathf.Lerp(rootMotion.Values[i][startIdx], rootMotion.Values[i][endIdx], t);
+                }
+            }
+
+            return new PhxTransform
+            {
+                Rotation = new Quaternion (channelValues[0], channelValues[1], channelValues[2], channelValues[3]),
+                Position = new Vector3    (channelValues[4], channelValues[5], channelValues[6]),
+            };
         }
-        return Vector3.zero;
+        return PhxTransform.None;
+    }
+
+    public static PhxTransform GetRootMotionDelta(CraClip clip, float timeStart, float timeEnd)
+    {
+        Debug.Assert(timeStart < timeEnd);
+        PhxTransform start = GetRootMotion(clip, timeStart);
+        PhxTransform end   = GetRootMotion(clip, timeEnd);
+
+        return new PhxTransform
+        {
+            Position = end.Position - start.Position,
+            Rotation = end.Rotation * Quaternion.Inverse(start.Rotation) // TODO: Not sure whether the order should be flipped
+        };     
     }
 
     public static bool Exists(string bankName, string animName)
@@ -95,10 +158,6 @@ public static class PhxAnimLoader
         {
             return Import(HUMANM_BANKS, animName);
         }
-        if (animName.Contains("runforward"))
-        {
-            Debug.Log("NOOOOOOOO");
-        }
         return Import(bankName, HashUtils.GetCRC(animName), animName);
     }
 
@@ -142,37 +201,31 @@ public static class PhxAnimLoader
         srcClip.Name = string.IsNullOrEmpty(clipNameOverride) ? animNameCRC.ToString() : clipNameOverride;
 
         uint[] boneCRCs = bank.GetBoneCRCs(animNameCRC);
-        Vector3 rootMotionVelocity = Vector3.zero;
+        RootMotion rootMotion = new RootMotion();
 
         List<CraBone> bones = new List<CraBone>();
         for (int i = 0; i < boneCRCs.Length; ++i)
         {
             if (boneCRCs[i] == Hash_dummyroot)
             {
-                ushort[][] indices = new ushort[3][];
-                float[][] values = new float[3][];
+                ushort[][] indices = new ushort[7][];
+                rootMotion.Times   = new float [7][];
+                rootMotion.Values  = new float [7][];
 
-                for (uint j = 0; j < 3; ++j)
+                for (uint j = 0; j < 7; ++j)
                 {
-                    if (!bank.GetCurve(animNameCRC, boneCRCs[i], j + 4, out indices[j], out values[j]))
+                    if (!bank.GetCurve(animNameCRC, boneCRCs[i], j, out indices[j], out rootMotion.Values[j]))
                     {
                         Debug.LogWarning($"Getting curve in animation '{animNameCRC}' of bone '{boneCRCs[i]}' at component 'X' failed!");
                         continue;
                     }
-                    Debug.Assert(indices[j].Length == values[j].Length);
-                }
+                    Debug.Assert(indices[j].Length == rootMotion.Values[j].Length);
 
-                // Assumption: Root motions are always linear
-                if (values[0].Length > 0 && values[2].Length > 0)
-                {
-                    int endX = values[0].Length - 1;
-                    int endY = values[2].Length - 1;
-                    Vector2 start = new Vector2(values[0][0], values[2][0]);
-                    Vector2 end = new Vector2(values[0][endX], values[2][endY]);
-                    float duration = numFrames / 30f;
-                    rootMotionVelocity = (start - end) / duration;
-
-                    Debug.Log($"Clip '{animNameCRC}' has root motion: {rootMotionVelocity.magnitude}");
+                    rootMotion.Times[j] = new float[indices[j].Length];
+                    for (uint k = 0; k < indices[j].Length; ++k)
+                    {
+                        rootMotion.Times[j][k] = indices[j][k] / 30.0f;
+                    }
                 }
             }
             else
@@ -210,8 +263,12 @@ public static class PhxAnimLoader
         clip = CraClip.CreateNew(srcClip);
         ClipDB.Add(animID, clip);
 
-        Debug.Assert(!RootMotionVelocities.ContainsKey(clip));
-        RootMotionVelocities.Add(clip, rootMotionVelocity);
+        if (rootMotion.Times != null)
+        {
+            Debug.Assert(rootMotion.Values != null);
+            Debug.Assert(!RootMotions.ContainsKey(clip));
+            RootMotions.Add(clip, rootMotion);
+        }
 
         return clip;
     }

@@ -639,6 +639,13 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             }
         }
 
+        CraState  stateLower  = Animator.LayerLower.GetActiveState();
+        CraState  stateUpper  = Animator.LayerLower.GetActiveState();
+        CraPlayer playerLower = stateLower.GetPlayer();
+        CraPlayer playerUpper = stateUpper.GetPlayer();
+        CraClip   clipLower   = playerLower.GetClip();
+        CraClip   clipUpper   = playerUpper.GetClip();
+
         PhxAnimPosture posture = (PhxAnimPosture)Animator.OutPosture.GetInt();
         PhxAnimAction  action  = (PhxAnimAction)Animator.OutAction.GetInt();
         PhxInput       locked  = (PhxInput)Animator.OutInputLocks.GetInt();
@@ -652,12 +659,16 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InTabEvents.SetInt((int)data.Events.Tab);
         Animator.InHoldEvents.SetInt((int)data.Events.Hold);
 
-        data.Events.Down      &=  ~(locked);
-        data.Events.Changed   &=  ~(locked);
-        data.Events.Pressed   &=  ~(locked);
-        data.Events.Released  &=  ~(locked);
-        data.Events.Tab       &=  ~(locked);
-        data.Events.Hold      &=  ~(locked);
+        float lockDuration = Animator.OutInputLockDuration.GetFloat();
+        if (lockDuration <= 0f || (playerUpper.GetTime() < lockDuration))
+        {
+            data.Events.Down &= ~(locked);
+            data.Events.Changed &= ~(locked);
+            data.Events.Pressed &= ~(locked);
+            data.Events.Released &= ~(locked);
+            data.Events.Tab &= ~(locked);
+            data.Events.Hold &= ~(locked);
+        }
 
         // Determine Action AFTER applying input locks!
         PhxAnimAction inAction = PhxAnimAction.None;
@@ -684,6 +695,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         else if ((data.Events.Down & PhxInput.Soldier_Sprint) != 0)
         {
             inAction = PhxAnimAction.Sprint;
+
+            Debug.Log($"lockDuration: {lockDuration}   playerUpper: {playerUpper.GetTime()}");
         }
 
         float moveX = (locked & PhxInput.Soldier_Thrust) != 0 ? 0f : data.Move.x;
@@ -822,10 +835,19 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 break;
         }
 
+        float thrustVelocity = C.MaxSpeed;
+        float strafeVelocity = C.MaxStrafeSpeed;
+
         float accStep = C.Acceleration * deltaTime;
         float thrustFactor = ControlValues[minPosture][0];
         float strafeFactor = ControlValues[minPosture][1];
         float turnFactor = ControlValues[minPosture][2];
+
+        if (Animator.IsComboState(stateLower) && Animator.IsComboState(stateUpper) && Animator.OutAnimatedMove.GetBool())
+        {
+            thrustVelocity = Animator.OutVelocityFromThrust.GetFloat();
+            strafeVelocity = Animator.OutVelocityFromStrafe.GetFloat();
+        }
 
         {
             float maxDegrees = 45f * C.MaxTurnSpeed;
@@ -841,40 +863,74 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             AimRotation = Quaternion.Euler(viewRotationEuler);
         }
 
-        bool bJumpFallTumble = posture == PhxAnimPosture.Jump || posture == PhxAnimPosture.Fall || posture == PhxAnimPosture.Tumble;
+        //bool bJumpFallTumble = posture == PhxAnimPosture.Jump || posture == PhxAnimPosture.Fall || posture == PhxAnimPosture.Tumble;
         Vector3 moveDirLocal = new Vector3(moveX, 0f, moveY);
         Vector3 moveDirWorld = AimRotation * moveDirLocal;
 
         float t = Mathf.Clamp01(moveDirLocal.z);
         float forwardFactor = Mathf.Lerp(strafeFactor, thrustFactor, t);
-        float maxSpeed = Mathf.Lerp(C.MaxStrafeSpeed, C.MaxSpeed, t);
-
-        Quaternion bodyRotation = Body.rotation;
-        if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Prone || posture == PhxAnimPosture.Sprint)
+        float maxSpeed = Mathf.Lerp(strafeVelocity, thrustVelocity, t);
+        float walk = Mathf.Clamp01(moveDirLocal.magnitude);
+        if (walk < 0.01f)
         {
-            if (moveDirLocal.magnitude > 0f)
-            {
-                bodyRotation = AimRotation;
-                if (Animator.OutAnimatedMove.GetBool())
-                {
-                    float thrustVelocity = Animator.OutVelocityFromThrust.GetFloat();
-                    float strafeVelocity = Animator.OutVelocityFromStrafe.GetFloat();
-                    float forwardVelocity = Mathf.Lerp(strafeVelocity, thrustVelocity, t);
-                    CurrrentVelocity = moveDirWorld * forwardVelocity;
-                }
-                else
-                {
-                    CurrrentVelocity += moveDirWorld * accStep;
-                }
-                bodyRotation *= Quaternion.LookRotation(moveDirLocal);
-            }
-            else
-            {
-                CurrrentVelocity -= CurrrentVelocity * accStep;
-            }
+            walk = 0f;
         }
 
-        float walk = Mathf.Clamp01(moveDirLocal.magnitude);
+        float signedWalk = walk;
+        if (moveY < 0f)
+        {
+            signedWalk = -signedWalk;
+        }
+
+        Quaternion bodyRotation = Body.rotation;
+        if (aimType == PhxAimType.FullBody)
+        {
+            bodyRotation = AimRotation;
+        }
+        else if (walk > 0f)
+        {
+            bodyRotation = AimRotation * Quaternion.LookRotation(moveDirLocal);
+        }
+
+        if (Animator.OutAnimatedMove.GetBool())
+        {
+            Vector3 overrideVelocity = new Vector3(Animator.OutVelocityX.GetFloat(), 0f, Animator.OutVelocityZ.GetFloat());
+            if (Animator.OutVelocityXFromAnim.GetBool() || Animator.OutVelocityZFromAnim.GetBool())
+            {
+                PhxTransform rootMotionDelta = PhxAnimLoader.GetRootMotionDelta(clipLower, 0f, clipLower.GetDuration());
+                if (Animator.OutVelocityXFromAnim.GetBool())
+                {
+                    overrideVelocity.x = rootMotionDelta.Position.x * Animator.OutVelocityX.GetFloat();
+                }
+                if (Animator.OutVelocityZFromAnim.GetBool())
+                {
+                    overrideVelocity.z = rootMotionDelta.Position.z * Animator.OutVelocityZ.GetFloat();
+                }
+            }
+
+            overrideVelocity += Vector3.forward * maxSpeed * forwardFactor * signedWalk;
+            CurrrentVelocity = Body.rotation * overrideVelocity;
+        }
+        else if (posture == PhxAnimPosture.Land)
+        {
+            CurrrentVelocity = Vector3.zero;
+        }
+        else if (minPosture == PhxAnimPosture.Jump)
+        {
+            Vector3 addVelocity = Vector3.forward * maxSpeed * forwardFactor * signedWalk;
+            CurrrentVelocity += Body.rotation * addVelocity * deltaTime;
+        }
+        else if (walk > 0f)
+        {
+            CurrrentVelocity += moveDirWorld * accStep;
+            CurrrentVelocity = Vector3.ClampMagnitude(CurrrentVelocity, maxSpeed * forwardFactor * walk);
+        }
+        else if (accStep > 0f)
+        {
+            CurrrentVelocity -= CurrrentVelocity / accStep;
+        }
+
+
         Animator.InThrustMagnitude.SetFloat(walk);
 
         float thrustAngle = Mathf.Atan2(-moveX, moveY) * Mathf.Rad2Deg;
@@ -882,7 +938,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         Animator.InThrustAngle.SetFloat(thrustAngle);
 
         bool bInvertDirection = Animator.OutStrafeBackwards.GetBool() || data.Move.y < 0f;
-        if (posture != PhxAnimPosture.Roll)
+        if (aimType != PhxAimType.FullBody && posture != PhxAnimPosture.Roll)
         {
             Vector3 bodyRotationEuler = bodyRotation.eulerAngles;
             bodyRotationEuler.x = 0f;
@@ -895,54 +951,62 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             BodyTargetRotation = Quaternion.Euler(bodyRotationEuler);
         }
 
-        Body.MoveRotation(Quaternion.Slerp(Body.rotation, BodyTargetRotation, deltaTime * 5f));
+        Vector3 planeVelocity = Body.velocity;
+        planeVelocity.y = 0f;
+        if (planeVelocity.magnitude < 0.01f)
+        {
+            planeVelocity = Vector3.zero;
+        }
 
-        CurrrentVelocity = Vector3.ClampMagnitude(CurrrentVelocity, maxSpeed * forwardFactor * walk);
-
+        // Handle Animation playback speed for movement states
         if (posture == PhxAnimPosture.Stand || posture == PhxAnimPosture.Crouch || posture == PhxAnimPosture.Prone || posture == PhxAnimPosture.Sprint)
         {
-            CraState stateLower = Animator.LayerLower.GetActiveState();
-            CraPlayer playerLower = stateLower.GetPlayer();
-            CraClip clip = playerLower.GetClip();
-            Vector3 rootMotionVelocity = PhxAnimLoader.GetRootMotionVelocity(clip);
-
-            CraState stateUpper = Animator.LayerUpper.GetActiveState();
-            CraPlayer playerUpper = stateUpper.GetPlayer();
-            
-            if (rootMotionVelocity.magnitude > 0f)
+            PhxTransform rootMotionDelta = PhxAnimLoader.GetRootMotionDelta(clipLower, 0f, clipLower.GetDuration());      
+            if (rootMotionDelta.Position.magnitude > 0f)
             {
-                Vector3 planeVelocity = Body.velocity;
-                planeVelocity.y = 0f;
+                float rootMotionVelocity = rootMotionDelta.Position.magnitude / clipLower.GetDuration();
+                float playSpeed = planeVelocity.magnitude / rootMotionVelocity;
 
-                float playSpeed = planeVelocity.magnitude / rootMotionVelocity.magnitude;
+                // TODO: use Cra's PlaybackSpeedInput?
                 playerLower.SetPlaybackSpeed(Animator.IsMovementState(stateLower) ? playSpeed : 1f);
                 playerUpper.SetPlaybackSpeed(Animator.IsMovementState(stateUpper) ? playSpeed : 1f);
+
+                //Debug.Log($"Root Motion Delta: {rootMotionDelta.Position}");
+                //Debug.Log($"Root Motion Anim Speed: {playSpeed}");
             }
             else
             {
                 playerLower.SetPlaybackSpeed(1f);
                 playerUpper.SetPlaybackSpeed(1f);
+                //Debug.Log("No Root Motion");
             }
         }
 
-        Vector3 moveVelocity = CurrrentVelocity;
-        moveVelocity.y = 0f;
-        if (bJumpFallTumble || posture == PhxAnimPosture.Roll)
+        if (data.Events.IsPressed(PhxInput.Soldier_Roll))
         {
-            FallTimer += deltaTime;
-            Body.AddForce(moveVelocity, ForceMode.Acceleration);
-        }
-        else
-        {
-            Animator.InLandHardness.SetInt(FallTimer < 1.5f ? 1 : 2);
+            //CurrrentVelocity = CurrrentVelocity.normalized * maxSpeed * forwardFactor;
+            //Body.AddForce(CurrrentVelocity, ForceMode.VelocityChange);
 
-            CurrrentVelocity.y = Body.velocity.y;
-            Body.velocity = CurrrentVelocity;
+            if (bInvertDirection)
+            {
+                BodyTargetRotation *= Quaternion.Euler(new Vector3(0f, 180f, 0f));
+            }
+        }
+        Body.MoveRotation(Quaternion.Slerp(Body.rotation, BodyTargetRotation, deltaTime * 5f));
+
+
+        Animator.InLandHardness.SetInt(FallTimer < 1.5f ? 1 : 2);
+        CurrrentVelocity.y = Body.velocity.y;
+        Body.velocity = CurrrentVelocity;
+
+        if (posture == PhxAnimPosture.Land)
+        {
+            Debug.Log($"Land: {CurrrentVelocity} - {Body.velocity}");
         }
 
         //Animator.InVelocityMagnitude.SetFloat(Body.velocity.magnitude / 7f);
         Animator.InWorldVelocity.SetFloat(Body.velocity.magnitude);   
-        Animator.InMoveVelocity.SetFloat(moveVelocity.magnitude);
+        Animator.InMoveVelocity.SetFloat(planeVelocity.magnitude);
 
         if (data.Events.IsPressed(PhxInput.Soldier_Jump))
         {
@@ -951,16 +1015,6 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 FallTimer = 0f;
             }
             Body.AddForce(Vector3.up * Mathf.Sqrt(C.JumpHeight * -2f * Physics.gravity.y), ForceMode.VelocityChange);
-        }
-        else if (data.Events.IsPressed(PhxInput.Soldier_Roll))
-        {
-            CurrrentVelocity = CurrrentVelocity.normalized * maxSpeed * forwardFactor;
-            Body.AddForce(CurrrentVelocity, ForceMode.VelocityChange);
-
-            if (bInvertDirection)
-            {
-                BodyTargetRotation *= Quaternion.Euler(new Vector3(0f, 180f, 0f));
-            }
         }
 
 
