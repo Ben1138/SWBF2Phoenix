@@ -2501,21 +2501,15 @@ public class PhxAnimHuman
                             and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = condMax };
                             andIdx++;
                         }
-                        else if (andField.GetNameHash() == Hash_TimeStart || andField.GetNameHash() == Hash_Break)
+                        else if (andField.GetNameHash() == Hash_TimeStart)
                         {
                             float time = GetTimeValue(andField, stateDuration);
-                            and[andIdx].Input = CraMachineValue.None;
-                            and[andIdx].Type = CraConditionType.TimeMin;
-                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
-                            andIdx++;
+                            newCond.Or.CheckTimeMin = time;
                         }
                         else if (andField.GetNameHash() == Hash_TimeEnd)
                         {
                             float time = GetTimeValue(andField, stateDuration);
-                            and[andIdx].Input = CraMachineValue.None;
-                            and[andIdx].Type = CraConditionType.TimeMax;
-                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
-                            andIdx++;
+                            newCond.Or.CheckTimeMax = time;
                         }
                     }
 
@@ -2533,9 +2527,9 @@ public class PhxAnimHuman
     float GetTimeValue(Field timeField, float duration)
     {
         float time = timeField.GetFloat(0);
-        if (timeField.GetNumValues() > 1)
+        for (byte i = 1; i < timeField.GetNumValues(); i++)
         {
-            string modeStr = timeField.GetString(1);
+            string modeStr = timeField.GetString(i);
             if (PhxUtils.StrEquals(modeStr, "Frames"))
             {
                 // convert from battlefront frames (30 fps) to time
