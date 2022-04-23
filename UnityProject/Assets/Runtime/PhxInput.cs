@@ -60,8 +60,8 @@ public enum PhxInput : ulong
     Flyer_Thrust  = 1 << 26,
     Flyer_View    = 1 << 27,
 
-
-    All = 0xffffffffffffffff
+    // using this instead of 0xffff... so ToString() returns sensible values
+    All = ~(-1 << 28)
 }
 
 public struct PhxButtonEvents       // Description:                                                        |  Available:

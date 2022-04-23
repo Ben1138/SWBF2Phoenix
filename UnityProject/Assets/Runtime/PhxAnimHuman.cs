@@ -234,19 +234,19 @@ public class PhxAnimHuman
 
         InThrustX = Machine.NewMachineValue(CraValueType.Float, "In Thrust X");
         InThrustY = Machine.NewMachineValue(CraValueType.Float, "In Thrust Y");
-        InThrustAngle = Machine.NewMachineValue(CraValueType.Float, "TIn hrust Angle");
+        InThrustAngle = Machine.NewMachineValue(CraValueType.Float, "In Thrust Angle");
         InThrustMagnitude = Machine.NewMachineValue(CraValueType.Float, "In Thrust Magnitude");
         InWorldVelocity = Machine.NewMachineValue(CraValueType.Float, "In World Velocity");
         InMoveVelocity = Machine.NewMachineValue(CraValueType.Float, "In Move Velocity");
-        InAction = Machine.NewMachineValue(CraValueType.Int, "In Action");
+        InAction = Machine.NewMachineValue(CraValueType.Int, "In Action", (CraMachineValue value) => { return ((PhxAnimAction)value.GetInt()).ToString(); });
         InTurnLeft = Machine.NewMachineValue(CraValueType.Trigger, "In Turn Left");
         InTurnRight = Machine.NewMachineValue(CraValueType.Trigger, "In Turn Right");
-        InDownEvents = Machine.NewMachineValue(CraValueType.Int, "In Down Events");
-        InChangedEvents = Machine.NewMachineValue(CraValueType.Int, "In Changed Events");
-        InPressedEvents = Machine.NewMachineValue(CraValueType.Int, "In Pressed Events");
-        InReleasedEvents = Machine.NewMachineValue(CraValueType.Int, "In Released Events");
-        InTabEvents = Machine.NewMachineValue(CraValueType.Int, "In Tab Events");
-        InHoldEvents = Machine.NewMachineValue(CraValueType.Int, "In Hold Events");
+        InDownEvents = Machine.NewMachineValue(CraValueType.Int, "In Down Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InChangedEvents = Machine.NewMachineValue(CraValueType.Int, "In Changed Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InPressedEvents = Machine.NewMachineValue(CraValueType.Int, "In Pressed Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InReleasedEvents = Machine.NewMachineValue(CraValueType.Int, "In Released Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InTabEvents = Machine.NewMachineValue(CraValueType.Int, "In Tab Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InHoldEvents = Machine.NewMachineValue(CraValueType.Int, "In Hold Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
         InEnergy = Machine.NewMachineValue(CraValueType.Float, "In Energy");
         InGrounded = Machine.NewMachineValue(CraValueType.Bool, "In Grounded");
         InMultiJump = Machine.NewMachineValue(CraValueType.Bool, "In Multi Jump");
@@ -256,11 +256,11 @@ public class PhxAnimHuman
         //InShootSecondary.SetTriggerMaxLifeTime(0.5f);
         //InReload.SetTriggerMaxLifeTime(0.5f);
 
-        OutPosture = Machine.NewMachineValue(CraValueType.Int, "Out Posture");
+        OutPosture = Machine.NewMachineValue(CraValueType.Int, "Out Posture", (CraMachineValue value) => { return ((PhxAnimPosture)value.GetInt()).ToString(); });
         OutStrafeBackwards = Machine.NewMachineValue(CraValueType.Bool, "Out Strafe Backwards");
-        OutInputLocks = Machine.NewMachineValue(CraValueType.Int, "Out Input Locks");
+        OutInputLocks = Machine.NewMachineValue(CraValueType.Int, "Out Input Locks", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
         OutInputLockDuration = Machine.NewMachineValue(CraValueType.Float, "Out Input Lock Duration");
-        OutAimType = Machine.NewMachineValue(CraValueType.Int, "Out Aim Type");
+        OutAimType = Machine.NewMachineValue(CraValueType.Int, "Out Aim Type", (CraMachineValue value) => { return ((PhxAimType)value.GetInt()).ToString(); });
         OutAnimatedMove = Machine.NewMachineValue(CraValueType.Bool, "Out Animated Move");
         OutVelocityX = Machine.NewMachineValue(CraValueType.Float, "Out Velocity X");
         OutVelocityZ = Machine.NewMachineValue(CraValueType.Float, "Out Velocity Z");
@@ -269,7 +269,7 @@ public class PhxAnimHuman
         OutVelocityFromThrust = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Thrust");
         OutVelocityFromStrafe = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Strafe");
         OutSound = Machine.NewMachineValue(CraValueType.Int, "Out Sound");
-        OutAction = Machine.NewMachineValue(CraValueType.Int, "Out Action");
+        OutAction = Machine.NewMachineValue(CraValueType.Int, "Out Action", (CraMachineValue value) => { return ((PhxAnimAction)value.GetInt()).ToString(); });
 
         OutAttacks = new PhxAnimAttackOutput[4];
         for (int i = 0; i < OutAttacks.Length; ++i)

@@ -47,7 +47,8 @@ public enum PhxAnimPosture : ushort
     Fall = 1 << 8,
     Land = 1 << 9,
 
-    All = 0xffff
+    // using this instead of 0xffff... so ToString() returns sensible values
+    All = ~(-1 << 10)
 }
 
 public enum PhxAnimAction : ushort
@@ -103,6 +104,7 @@ public static class PhxAnimUtils
         { "Crouch",         PhxInput.Soldier_Crouch        },
         { "Reload",         PhxInput.Soldier_Reload        },
     };
+
 
     public static void WriteIntOnEnter(PhxScopedState state, CraMachineValue machineValue, int value)
     {
