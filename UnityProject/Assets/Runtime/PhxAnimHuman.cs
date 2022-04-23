@@ -2163,7 +2163,7 @@ public class PhxAnimHuman
                     for (int j = 0; j < localTransitions.Count; ++j)
                     {
                         var lt = localTransitions[j];
-                        lt.SourceState = comboState.State;
+                        lt.SourceState = comboState;
                         localTransitions[j] = lt;
                     }
                     ComboStates.Add(stateName, comboState);
@@ -2171,7 +2171,7 @@ public class PhxAnimHuman
                 }
             }
 
-            // Posture transitions Combo State --> Walk
+            // Lower posture transitions Combo State --> Walk
             foreach (var comboState in ComboStates)
             {
                 PhxComboState state = comboState.Value;
@@ -2253,18 +2253,33 @@ public class PhxAnimHuman
 
             for (int ti = 0; ti < Transitions.Count; ++ti)
             {
-                if (!Transitions[ti].SourceState.Lower.IsValid() || !Transitions[ti].SourceState.Upper.IsValid())
+                PhxComboState sourceState = Transitions[ti].SourceState;
+
+                if (!sourceState.State.Lower.IsValid() || !sourceState.State.Upper.IsValid())
                 {
                     // TODO: This should never happen later on
                     Debug.Assert(false);
                     continue;
                 }
 
-                PhxComboState targetState = new PhxComboState();
-                targetState.State = set.StandIdle;
+                CraPlayRange stateRange = sourceState.State.Upper.GetPlayer().GetPlayRange();
+                float stateDuration = stateRange.MaxTime - stateRange.MinTime;
+                PhxComboTransitionCondition[] conditions = GetComboTransitionConditions(Transitions[ti].TransitionField.Scope, stateDuration);
 
+                PhxComboState targetState = new PhxComboState();
                 string targetStateName = Transitions[ti].TransitionField.GetString();
-                if (!PhxUtils.StrEquals(targetStateName, "IDLE"))
+                if (PhxUtils.StrEquals(targetStateName, "IDLE"))
+                {
+                    if ((sourceState.Posture & PhxAnimPosture.Jump) != 0 || (sourceState.Posture & PhxAnimPosture.Fall) != 0)
+                    {
+                        targetState.State = set.Fall;
+                    }
+                    else
+                    {
+                        targetState.State = set.StandIdle;
+                    }
+                }
+                else
                 {
                     if (!ComboStates.TryGetValue(targetStateName, out targetState))
                     {
@@ -2294,13 +2309,8 @@ public class PhxAnimHuman
                         tar.SetSyncState(src);
                     }
                 }
-                CheckSameAnimation(Transitions[ti].SourceState.Lower, targetState.State.Lower);
-                CheckSameAnimation(Transitions[ti].SourceState.Upper, targetState.State.Upper);
-
-                CraPlayRange stateRange = Transitions[ti].SourceState.Upper.GetPlayer().GetPlayRange();
-                float stateDuration = stateRange.MaxTime - stateRange.MinTime;
-
-                PhxComboTransitionCondition[] conditions = GetComboTransitionConditions(Transitions[ti].TransitionField.Scope, stateDuration);
+                CheckSameAnimation(sourceState.State.Lower, targetState.State.Lower);
+                CheckSameAnimation(sourceState.State.Upper, targetState.State.Upper);
 
                 // Since SourceState can be IDLE, and IDLE can represent multiple states, we have to eval each OR condition individually...
                 for (int ci = 0; ci < conditions.Length; ci++)
@@ -2310,8 +2320,8 @@ public class PhxAnimHuman
                     {
                         if ((cond.SourcePosture & PhxAnimPosture.Stand) != 0)
                         {
-                            Debug.Assert(Transitions[ti].SourceState.Lower == set.StandIdle.Lower);
-                            Debug.Assert(Transitions[ti].SourceState.Upper == set.StandIdle.Upper);
+                            Debug.Assert(sourceState.State.Lower == set.StandIdle.Lower);
+                            Debug.Assert(sourceState.State.Upper == set.StandIdle.Upper);
                             Transition(set.StandIdle, targetState.State, 0.15f, cond.Or);
                         }
                         if ((cond.SourcePosture & PhxAnimPosture.Crouch) != 0)
@@ -2328,14 +2338,14 @@ public class PhxAnimHuman
                             Transition(set.Fall, targetState.State, 0.15f, cond.Or);
                         }
 
-                        Transition(Transitions[ti].SourceState, targetState.State, 0.15f, cond.Or);
+                        Transition(sourceState.State, targetState.State, 0.15f, cond.Or);
                         Transition(set.StandWalkForward.Upper, targetState.State.Upper, 0.15f, cond.Or);
                         Transition(set.StandRunForward.Upper, targetState.State.Upper, 0.15f, cond.Or);
                         Transition(set.StandRunBackward.Upper, targetState.State.Upper, 0.15f, cond.Or);
                     }
                     else
                     {
-                        Transition(Transitions[ti].SourceState, targetState.State, 0.15f, cond.Or);
+                        Transition(sourceState.State, targetState.State, 0.15f, cond.Or);
                     }
                 }
             }
@@ -2440,7 +2450,6 @@ public class PhxAnimHuman
                                 {
                                     case "Down" : input = InDownEvents;    break;
                                     case "Press": input = InPressedEvents; break;
-                                    //case "Press": input = InDownEvents; break;
                                     case "Tab"  : input = InTabEvents;     break;
                                     case "Hold" : input = InHoldEvents;    break;
                                     default:
@@ -2458,18 +2467,46 @@ public class PhxAnimHuman
                             }
 
                             and[andIdx].Input = input;
-                            and[andIdx].Type = CraConditionType.Flags;
+                            and[andIdx].Type = CraConditionType.AllFlags;
                             and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)button };
                             andIdx++;
                         }
                         else if (andField.GetNameHash() == Hash_Posture)
                         {
-                            string postureStr = andField.GetString();
-                            if (!StrToPosture.TryGetValue(postureStr, out PhxAnimPosture posture))
+                            PhxAnimPosture posture = PhxAnimPosture.None;
+                            for (byte pi = 0; pi < andField.GetNumValues(); ++pi)
                             {
-                                Debug.LogError($"Cannot resolve unknown Combo Button '{postureStr}' to a CraInput!");
+                                string postureStr = andField.GetString(pi);
+                                bool negate = postureStr.StartsWith("!");
+                                if (negate)
+                                {
+                                    postureStr = postureStr.Substring(1, postureStr.Length - 1);
+                                }
+                                if (!StrToPosture.TryGetValue(postureStr, out PhxAnimPosture p))
+                                {
+                                    Debug.LogError($"Unknown posture '{postureStr}' in transition condition!");
+                                    continue;
+                                }
+                                if (negate)
+                                {
+                                    posture &= ~p;
+                                }
+                                else
+                                {
+                                    posture |= p;
+                                }
+                            }
+
+                            if (posture == PhxAnimPosture.Jump)
+                            {
+                                posture |= PhxAnimPosture.Fall;
                             }
                             newCond.SourcePosture |= posture;
+
+                            and[andIdx].Input = OutPosture;
+                            and[andIdx].Type = CraConditionType.AnyFlag;
+                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Int, ValueInt = (int)posture };
+                            andIdx++;
                         }
                         else if (andField.GetNameHash() == Hash_Thrust)
                         {
@@ -2499,6 +2536,14 @@ public class PhxAnimHuman
                             and[andIdx].Input = InThrustAngle;
                             and[andIdx].Type = CraConditionType.LessOrEqual;
                             and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = condMax };
+                            andIdx++;
+                        }
+                        else if (andField.GetNameHash() == Hash_Break)
+                        {
+                            float time = GetTimeValue(andField, stateDuration);
+                            and[andIdx].Input = CraMachineValue.None;
+                            and[andIdx].Type = CraConditionType.TimeMin;
+                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
                             andIdx++;
                         }
                         else if (andField.GetNameHash() == Hash_TimeStart)
@@ -2566,7 +2611,7 @@ public class PhxAnimHuman
 
     struct PhxComboTransitionCache
     {
-        public PhxScopedState SourceState;
+        public PhxComboState SourceState;
         public Field TransitionField;
         public bool SourceStateIsIdle;
     }
