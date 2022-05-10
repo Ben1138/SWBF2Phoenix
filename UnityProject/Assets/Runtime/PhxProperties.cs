@@ -108,6 +108,17 @@ public sealed class PhxMultiProp : IPhxPropRef
         return Values.Count > 0 ? (T)Values[0][argIdx] : default;
     }
 
+    //Should mix both with an optional argument (public T Get<T>(int argIdx, int secIdx = 0))
+    public T Get<T>(int argIdx, int secIdx)
+    {
+        return Values.Count > 0 ? (T)Values[secIdx][argIdx] : default;
+    }
+
+    public int GetCount()
+    {
+        return Values.Count;
+    }
+
     // "Set" here actually adds another prop entry
     public void SetFromString(string val)
     {
