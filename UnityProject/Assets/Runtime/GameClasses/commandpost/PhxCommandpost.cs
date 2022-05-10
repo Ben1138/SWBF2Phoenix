@@ -36,8 +36,6 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
     public PhxHoloIcon HoloIcon;
     public HDAdditionalLightData Light;
 
-    public static PhxHoloIcon Hologram; //Atm crash when trying to load more than one time
-
     [Header("Settings")]
     public Vector2 CapturePitch = new Vector2(0.5f, 1.5f);
     public float   HoloPresenceSpeed = 1.0f;
@@ -129,14 +127,9 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
             }
         };
 
-        if (C.HoloOdf.Get() != null && Hologram == null)
+        if (C.HoloOdf.Get() != null)
         {
-            Hologram = (PhxHoloIcon)Scene.CreateInstance(C.HoloOdf, C.HoloOdf.Get().Name, new Vector3(0.0f, 0.0f, 0.0f), Quaternion.identity, false, gameObject.transform);
-        }
-
-        if (Hologram != null)
-        {
-            HoloIcon = Instantiate(Hologram, new Vector3(gameObject.transform.position.x, gameObject.transform.position.y + 4.2f, gameObject.transform.position.z), Quaternion.identity, gameObject.transform);
+            HoloIcon = (PhxHoloIcon)Scene.CreateInstance(C.HoloOdf, $"{name}_{C.HoloOdf.Get().Name}", new Vector3(0.0f, 4.7f, 0.0f), Quaternion.identity, false, hpHolo != null ? hpHolo : gameObject.transform);
         }
     }
     
@@ -287,7 +280,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
         if (CaptureToNeutral) { return; }
         if (Match.Teams[Team].Hologram == null) { LoadIcon(ref Match.Teams[Team].Hologram); }
 
-        HoloIcon.LoadIcon(Match.GetTeamHologram(Team), Match.Player.Team == Team);
+        HoloIcon.LoadIcon(Match.GetTeamHologram(Team), Team);
     }
 
     public void ChangeColorIcon()
@@ -295,7 +288,7 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
         if (CaptureToNeutral) { return; }
         if (Match.Teams[Team].Hologram == null) { LoadIcon(ref Match.Teams[Team].Hologram); }
 
-        HoloIcon.ChangeColorIcon(Match.Player.Team == Team);
+        HoloIcon.ChangeColorIcon(Team);
     }
 
     private void LoadIcon(ref GameObject icon)
@@ -311,14 +304,12 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
             }
         }
 
-        Debug.Log(icon);
-
         //To be destroy and be invisible
         //Vector3 scale = new Vector3(0, 0, 0);
         if (icon != null)
         {
             icon.transform.localScale = new Vector3(0, 0, 0);
-            icon.transform.parent = this.gameObject.transform; //Maybe has to be changed now
+            icon.transform.parent = gameObject.transform; //Maybe has to be changed now
         }
     }
 

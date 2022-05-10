@@ -419,8 +419,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Settings:
-    GamePathString: C:\Program Files (x86)\Steam\steamapps\common\Star Wars Battlefront
-      II Classic
+    GamePathString: 
     Language: english
     BootMode: 0
     BootSWBF2Map: kas2c_con
