@@ -35,6 +35,7 @@ public static class PhxClassRegister
         { "leafpatch",      new GameBaseClass(typeof(PhxLeafPatchClass),                 typeof(PhxLeafPatch))      },
 
         { "commandpost",    new GameBaseClass(typeof(PhxCommandpost.ClassProperties),    typeof(PhxCommandpost))    },
+        { "hologram",       new GameBaseClass(typeof(PhxHoloIcon.ClassProperties),       typeof(PhxHoloIcon))       },
         { "soldier",        new GameBaseClass(typeof(PhxSoldier.ClassProperties),        typeof(PhxSoldier))        },
         { "powerupstation", new GameBaseClass(typeof(PhxPowerupstation.ClassProperties), typeof(PhxPowerupstation)) },
         
