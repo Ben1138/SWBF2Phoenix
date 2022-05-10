@@ -57,6 +57,7 @@ public class PhxMatch
         public string Name = "UNKNOWN TEAM";
         public float Aggressiveness = 1.0f;
         public Texture2D Icon = null;
+        public GameObject Hologram;
         public int UnitCount = 0;
         public int ReinforcementCount = -1; // default is infinite
         public float SpawnDelay = 1.0f;
@@ -107,6 +108,11 @@ public class PhxMatch
             return GAME.Settings.ColorLocals;
         }
         return GAME.Settings.ColorEnemy;
+    }
+
+    public GameObject GetTeamHologram(int teamId)
+    {
+        return Teams[teamId].Hologram;
     }
 
     public void SetPlayerState(PhxPlayerState st)
@@ -335,6 +341,12 @@ public class PhxMatch
     {
         if (!CheckTeamIdx(--teamIdx)) return;
         Teams[teamIdx].Name = name;
+    }
+
+    public String getTeamName(int teamIdx)
+    {
+        if (!CheckTeamIdx(--teamIdx)) return "";
+        return Teams[teamIdx].Name;
     }
 
     public void SetTeamIcon(int teamIdx, string iconName)

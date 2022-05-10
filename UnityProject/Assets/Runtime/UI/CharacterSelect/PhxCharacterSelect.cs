@@ -215,10 +215,21 @@ public class PhxCharacterSelect : PhxMenuInterface
         Match.Player.Team = Match.Player.Team == 1 ? 2 : 1;
         UpdateCharacterList();
 
+        PhxCommandpost cp = null;
         PhxCommandpost[] cps = Scene.GetCommandPosts();
         for (int i = 0; i < cps.Length; ++i)
         {
             cps[i].UpdateColor();
+            cps[i].ChangeColorIcon();
+            if (cps[i].Team == Match.Player.Team) { cp = cps[i]; }
+        }
+
+        if (cp != null)
+        {
+            Map.SelectCP(cp);
+        } else
+        {
+            //Not sure what to do in this case
         }
     }
 
