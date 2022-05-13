@@ -277,18 +277,28 @@ public class PhxCommandpost : PhxInstance<PhxCommandpost.ClassProperties>, IPhxT
 
     public void ChangeIcon()
     {
-        if (CaptureToNeutral) { return; }
+        if (CaptureToNeutral) {
+            if (HoloIcon != null)
+                HoloIcon.Hide();
+            return; 
+        }
         if (Match.Teams[Team].Hologram == null) { LoadIcon(ref Match.Teams[Team].Hologram); }
 
         HoloIcon.LoadIcon(Match.GetTeamHologram(Team), Team);
+        HoloIcon.Show();
     }
 
     public void ChangeColorIcon()
     {
-        if (CaptureToNeutral) { return; }
+        if (CaptureToNeutral) {
+            if(HoloIcon!=null)
+                HoloIcon.Hide();
+            return; 
+        }
         if (Match.Teams[Team].Hologram == null) { LoadIcon(ref Match.Teams[Team].Hologram); }
 
         HoloIcon.ChangeColorIcon(Team);
+        HoloIcon.Show();
     }
 
     private void LoadIcon(ref GameObject icon)
