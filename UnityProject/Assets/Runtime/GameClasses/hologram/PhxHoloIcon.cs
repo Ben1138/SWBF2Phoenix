@@ -82,11 +82,13 @@ public class PhxHoloIcon : PhxInstance<PhxHoloIcon.ClassProperties>, IPhxTickabl
 
     public void Hide()
     {
-        obj.gameObject.SetActive(false);
+        if(obj!=null)
+            obj.gameObject.SetActive(false);
     }
 
     public void Show()
     {
-        obj.gameObject.SetActive(true);
+        if (obj != null)
+            obj.gameObject.SetActive(true);
     }
 }
