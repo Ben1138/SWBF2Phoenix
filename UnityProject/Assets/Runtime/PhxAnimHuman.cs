@@ -2430,6 +2430,7 @@ public class PhxAnimHuman
                         andIdx++;
                     }
 
+                    bool bHasBreak = false;
                     Field[] andScope = orField.Scope.GetFields();
                     for (int ai = 0; ai < andScope.Length; ++ai)
                     {
@@ -2542,10 +2543,15 @@ public class PhxAnimHuman
                         else if (andField.GetNameHash() == Hash_Break)
                         {
                             float time = GetTimeValue(andField, stateDuration);
-                            and[andIdx].Input = CraMachineValue.None;
-                            and[andIdx].Type = CraConditionType.TimeMin;
-                            and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
-                            andIdx++;
+                            if (time < stateDuration)
+                            {
+                                and[andIdx].Input = CraMachineValue.None;
+                                and[andIdx].Type = CraConditionType.TimeMin;
+                                and[andIdx].Compare = new CraValueUnion { Type = CraValueType.Float, ValueFloat = time };
+                                andIdx++;
+
+                                bHasBreak = true;
+                            }
                         }
                         else if (andField.GetNameHash() == Hash_TimeStart)
                         {
@@ -2557,6 +2563,13 @@ public class PhxAnimHuman
                             float time = GetTimeValue(andField, stateDuration);
                             newCond.Or.CheckTimeMax = time;
                         }
+                    }
+
+                    if (!bHasBreak)
+                    {
+                        and[andIdx].Input = CraMachineValue.None;
+                        and[andIdx].Type = CraConditionType.IsFinished;
+                        andIdx++;
                     }
 
                     if (andIdx > 0)

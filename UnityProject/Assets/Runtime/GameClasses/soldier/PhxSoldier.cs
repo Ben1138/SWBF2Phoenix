@@ -697,7 +697,7 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
         {
             inAction = PhxAnimAction.Sprint;
 
-            Debug.Log($"lockDuration: {lockDuration}   playerUpper: {playerUpper.GetTime()}");
+            //Debug.Log($"lockDuration: {lockDuration}   playerUpper: {playerUpper.GetTime()}");
         }
 
         float moveX = (locked & PhxInput.Soldier_Thrust) != 0 ? 0f : data.Move.x;
