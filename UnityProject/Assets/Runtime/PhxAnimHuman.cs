@@ -138,8 +138,8 @@ public class PhxAnimHuman
     PhxEnvironment Env => PhxGame.GetEnvironment();
 
     public CraStateMachine Machine { get; private set; }
-    public CraLayer LayerLower { get; private set; }
-    public CraLayer LayerUpper { get; private set; }
+    public CraLayer        LayerLower { get; private set; }
+    public CraLayer        LayerUpper { get; private set; }
 
     public CraMachineValue InThrustX { get; private set; }
     public CraMachineValue InThrustY { get; private set; }
@@ -178,6 +178,7 @@ public class PhxAnimHuman
     public CraMachineValue OutSound { get; private set; }
     public PhxAnimAttackOutput[] OutAttacks { get; private set; }
 
+
     const float RunVelocityThreshold = 6.8f;
 
     PhxAnimHumanSet[] Sets;
@@ -194,8 +195,8 @@ public class PhxAnimHuman
 
     static readonly Dictionary<string, PhxAnimPosture> StrToPosture = new Dictionary<string, PhxAnimPosture>()
     {
-        { "All", PhxAnimPosture.All },
-        { "Any", PhxAnimPosture.All },
+        { "All",       PhxAnimPosture.All    },
+        { "Any",       PhxAnimPosture.All    },
 
         { "Stand",     PhxAnimPosture.Stand  },
         { "Crouch",    PhxAnimPosture.Crouch },
@@ -232,59 +233,59 @@ public class PhxAnimHuman
         LayerLower = Machine.NewLayer();
         LayerUpper = Machine.NewLayer();
 
-        InThrustX = Machine.NewMachineValue(CraValueType.Float, "In Thrust X");
-        InThrustY = Machine.NewMachineValue(CraValueType.Float, "In Thrust Y");
-        InThrustAngle = Machine.NewMachineValue(CraValueType.Float, "In Thrust Angle");
-        InThrustMagnitude = Machine.NewMachineValue(CraValueType.Float, "In Thrust Magnitude");
-        InWorldVelocity = Machine.NewMachineValue(CraValueType.Float, "In World Velocity");
-        InMoveVelocity = Machine.NewMachineValue(CraValueType.Float, "In Move Velocity");
-        InAction = Machine.NewMachineValue(CraValueType.Int, "In Action", (CraMachineValue value) => { return ((PhxAnimAction)value.GetInt()).ToString(); });
-        InTurnLeft = Machine.NewMachineValue(CraValueType.Trigger, "In Turn Left");
-        InTurnRight = Machine.NewMachineValue(CraValueType.Trigger, "In Turn Right");
-        InDownEvents = Machine.NewMachineValue(CraValueType.Int, "In Down Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
-        InChangedEvents = Machine.NewMachineValue(CraValueType.Int, "In Changed Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
-        InPressedEvents = Machine.NewMachineValue(CraValueType.Int, "In Pressed Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
-        InReleasedEvents = Machine.NewMachineValue(CraValueType.Int, "In Released Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
-        InTabEvents = Machine.NewMachineValue(CraValueType.Int, "In Tab Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
-        InHoldEvents = Machine.NewMachineValue(CraValueType.Int, "In Hold Events", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
-        InEnergy = Machine.NewMachineValue(CraValueType.Float, "In Energy");
-        InGrounded = Machine.NewMachineValue(CraValueType.Bool, "In Grounded");
-        InMultiJump = Machine.NewMachineValue(CraValueType.Bool, "In Multi Jump");
-        InLandHardness = Machine.NewMachineValue(CraValueType.Int, "In Land Hardness");
+        InThrustX             = Machine.NewMachineValue(CraValueType.Float,   "In Thrust X");
+        InThrustY             = Machine.NewMachineValue(CraValueType.Float,   "In Thrust Y");
+        InThrustAngle         = Machine.NewMachineValue(CraValueType.Float,   "In Thrust Angle");
+        InThrustMagnitude     = Machine.NewMachineValue(CraValueType.Float,   "In Thrust Magnitude");
+        InWorldVelocity       = Machine.NewMachineValue(CraValueType.Float,   "In World Velocity");
+        InMoveVelocity        = Machine.NewMachineValue(CraValueType.Float,   "In Move Velocity");
+        InAction              = Machine.NewMachineValue(CraValueType.Int,     "In Action",                 (CraMachineValue value) => { return ((PhxAnimAction)value.GetInt()).ToString(); });
+        InTurnLeft            = Machine.NewMachineValue(CraValueType.Trigger, "In Turn Left");             
+        InTurnRight           = Machine.NewMachineValue(CraValueType.Trigger, "In Turn Right");            
+        InDownEvents          = Machine.NewMachineValue(CraValueType.Int,     "In Down Events",            (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InChangedEvents       = Machine.NewMachineValue(CraValueType.Int,     "In Changed Events",         (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InPressedEvents       = Machine.NewMachineValue(CraValueType.Int,     "In Pressed Events",         (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InReleasedEvents      = Machine.NewMachineValue(CraValueType.Int,     "In Released Events",        (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InTabEvents           = Machine.NewMachineValue(CraValueType.Int,     "In Tab Events",             (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InHoldEvents          = Machine.NewMachineValue(CraValueType.Int,     "In Hold Events",            (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        InEnergy              = Machine.NewMachineValue(CraValueType.Float,   "In Energy");
+        InGrounded            = Machine.NewMachineValue(CraValueType.Bool,    "In Grounded");
+        InMultiJump           = Machine.NewMachineValue(CraValueType.Bool,    "In Multi Jump");
+        InLandHardness        = Machine.NewMachineValue(CraValueType.Int,     "In Land Hardness");
 
         //InShootPrimary.SetTriggerMaxLifeTime(0.5f);
         //InShootSecondary.SetTriggerMaxLifeTime(0.5f);
         //InReload.SetTriggerMaxLifeTime(0.5f);
 
-        OutPosture = Machine.NewMachineValue(CraValueType.Int, "Out Posture", (CraMachineValue value) => { return ((PhxAnimPosture)value.GetInt()).ToString(); });
-        OutStrafeBackwards = Machine.NewMachineValue(CraValueType.Bool, "Out Strafe Backwards");
-        OutInputLocks = Machine.NewMachineValue(CraValueType.Int, "Out Input Locks", (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
-        OutInputLockDuration = Machine.NewMachineValue(CraValueType.Float, "Out Input Lock Duration");
-        OutAimType = Machine.NewMachineValue(CraValueType.Int, "Out Aim Type", (CraMachineValue value) => { return ((PhxAimType)value.GetInt()).ToString(); });
-        OutAnimatedMove = Machine.NewMachineValue(CraValueType.Bool, "Out Animated Move");
-        OutVelocityX = Machine.NewMachineValue(CraValueType.Float, "Out Velocity X");
-        OutVelocityZ = Machine.NewMachineValue(CraValueType.Float, "Out Velocity Z");
-        OutVelocityXFromAnim = Machine.NewMachineValue(CraValueType.Bool, "Out Velocity X From Anim");
-        OutVelocityZFromAnim = Machine.NewMachineValue(CraValueType.Bool, "Out Velocity Z From Anim");
-        OutVelocityFromThrust = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Thrust");
-        OutVelocityFromStrafe = Machine.NewMachineValue(CraValueType.Float, "Out Velocity From Strafe");
-        OutSound = Machine.NewMachineValue(CraValueType.Int, "Out Sound");
-        OutAction = Machine.NewMachineValue(CraValueType.Int, "Out Action", (CraMachineValue value) => { return ((PhxAnimAction)value.GetInt()).ToString(); });
+        OutPosture            = Machine.NewMachineValue(CraValueType.Int,     "Out Posture",               (CraMachineValue value) => { return ((PhxAnimPosture)value.GetInt()).ToString(); });
+        OutStrafeBackwards    = Machine.NewMachineValue(CraValueType.Bool,    "Out Strafe Backwards");
+        OutInputLocks         = Machine.NewMachineValue(CraValueType.Int,     "Out Input Locks",           (CraMachineValue value) => { return ((PhxInput)value.GetInt()).ToString(); });
+        OutInputLockDuration  = Machine.NewMachineValue(CraValueType.Float,   "Out Input Lock Duration");
+        OutAimType            = Machine.NewMachineValue(CraValueType.Int,     "Out Aim Type",              (CraMachineValue value) => { return ((PhxAimType)value.GetInt()).ToString(); });
+        OutAnimatedMove       = Machine.NewMachineValue(CraValueType.Bool,    "Out Animated Move");
+        OutVelocityX          = Machine.NewMachineValue(CraValueType.Float,   "Out Velocity X");
+        OutVelocityZ          = Machine.NewMachineValue(CraValueType.Float,   "Out Velocity Z");
+        OutVelocityXFromAnim  = Machine.NewMachineValue(CraValueType.Bool,    "Out Velocity X From Anim");
+        OutVelocityZFromAnim  = Machine.NewMachineValue(CraValueType.Bool,    "Out Velocity Z From Anim");
+        OutVelocityFromThrust = Machine.NewMachineValue(CraValueType.Float,   "Out Velocity From Thrust");
+        OutVelocityFromStrafe = Machine.NewMachineValue(CraValueType.Float,   "Out Velocity From Strafe");
+        OutSound              = Machine.NewMachineValue(CraValueType.Int,     "Out Sound");
+        OutAction             = Machine.NewMachineValue(CraValueType.Int,     "Out Action",                (CraMachineValue value) => { return ((PhxAnimAction)value.GetInt()).ToString(); });
 
         OutAttacks = new PhxAnimAttackOutput[4];
         for (int i = 0; i < OutAttacks.Length; ++i)
         {
-            OutAttacks[i].AttackID = Machine.NewMachineValue(CraValueType.Int, $"[{i}] Attack ID");
-            OutAttacks[i].AttackEdge = Machine.NewMachineValue(CraValueType.Int, $"[{i}] Attack Edge");
-            OutAttacks[i].AttackDamageTimeStart = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Time Start");
-            OutAttacks[i].AttackDamageTimeEnd = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Time End");
-            OutAttacks[i].AttackDamageTimeMode = Machine.NewMachineValue(CraValueType.Int, $"[{i}] Attack Damage Time Mode");
-            OutAttacks[i].AttackDamageLength = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Length");
-            OutAttacks[i].AttackDamageLengthFromEdge = Machine.NewMachineValue(CraValueType.Bool, $"[{i}] Attack Damage Length From Edge");
-            OutAttacks[i].AttackDamageWidth = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Width");
-            OutAttacks[i].AttackDamageWidthFromEdge = Machine.NewMachineValue(CraValueType.Bool, $"[{i}] Attack Damage Width From Edge");
-            OutAttacks[i].AttackDamage = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage");
-            OutAttacks[i].AttackPush = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack IPush");
+            OutAttacks[i].AttackID                   = Machine.NewMachineValue(CraValueType.Int,   $"[{i}] Attack ID");
+            OutAttacks[i].AttackEdge                 = Machine.NewMachineValue(CraValueType.Int,   $"[{i}] Attack Edge");
+            OutAttacks[i].AttackDamageTimeStart      = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Time Start");
+            OutAttacks[i].AttackDamageTimeEnd        = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Time End");
+            OutAttacks[i].AttackDamageTimeMode       = Machine.NewMachineValue(CraValueType.Int,   $"[{i}] Attack Damage Time Mode");
+            OutAttacks[i].AttackDamageLength         = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Length");
+            OutAttacks[i].AttackDamageLengthFromEdge = Machine.NewMachineValue(CraValueType.Bool,  $"[{i}] Attack Damage Length From Edge");
+            OutAttacks[i].AttackDamageWidth          = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage Width");
+            OutAttacks[i].AttackDamageWidthFromEdge  = Machine.NewMachineValue(CraValueType.Bool,  $"[{i}] Attack Damage Width From Edge");
+            OutAttacks[i].AttackDamage               = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack Damage");
+            OutAttacks[i].AttackPush                 = Machine.NewMachineValue(CraValueType.Float, $"[{i}] Attack IPush");
 
             OutAttacks[i].AttackID.SetInt(-1);
         }
@@ -298,20 +299,20 @@ public class PhxAnimHuman
             Sets[i] = GenerateSet(root, characterAnimBank, weapons[i]);
 
             // TODO: Do not generate reload states when current weapon doesn't have/support reload (same for Alert)
-            Transitions_Stand(in Sets[i]);
-            Transitions_StandReload(in Sets[i]);
-            Transitions_StandTurn(in Sets[i]);
-            Transitions_StandToFall(in Sets[i]);
-            Transitions_StandToCrouch(in Sets[i]);
-            Transitions_Crouch(in Sets[i]);
-            Transitions_CrouchReload(in Sets[i]);
-            Transitions_CrouchTurn(in Sets[i]);
-            Transitions_CrouchToStand(in Sets[i]);
-            Transitions_CrouchToFall(in Sets[i]);
-            Transitions_Sprint(in Sets[i]);
-            Transitions_Jump(in Sets[i]);
-            Transitions_Land(in Sets[i]);
-            Transitions_Roll(in Sets[i]);
+            Transitions_Stand         (in Sets[i]);
+            Transitions_StandReload   (in Sets[i]);
+            Transitions_StandTurn     (in Sets[i]);
+            Transitions_StandToFall   (in Sets[i]);
+            Transitions_StandToCrouch (in Sets[i]);
+            Transitions_Crouch        (in Sets[i]);
+            Transitions_CrouchReload  (in Sets[i]);
+            Transitions_CrouchTurn    (in Sets[i]);
+            Transitions_CrouchToStand (in Sets[i]);
+            Transitions_CrouchToFall  (in Sets[i]);
+            Transitions_Sprint        (in Sets[i]);
+            Transitions_Jump          (in Sets[i]);
+            Transitions_Land          (in Sets[i]);
+            Transitions_Roll          (in Sets[i]);
         }
 
         LayerLower.SetActiveState(Sets[ActiveSet].StandIdle.Lower);
@@ -1537,144 +1538,144 @@ public class PhxAnimHuman
         string weaponName = weapon.AnimationBank;
         PhxAnimHumanSet set = new PhxAnimHumanSet();
 
-        set.CrouchIdle = CreateScopedState(root, character, weaponName, "crouch", "idle_emote", true);
-        set.CrouchIdleTakeknee = CreateScopedState(root, character, weaponName, "crouch", "idle_takeknee", false);
-        set.CrouchHitFront = CreateScopedState(root, character, weaponName, "crouch", "hitfront", false);
-        set.CrouchHitLeft = CreateScopedState(root, character, weaponName, "crouch", "hitleft", false);
-        set.CrouchHitRight = CreateScopedState(root, character, weaponName, "crouch", "hitright", false);
-        set.CrouchReload = CreateScopedState(root, character, weaponName, "crouch", "reload", false);
-        set.CrouchShoot = CreateScopedState(root, character, weaponName, "crouch", "shoot", false);
-        set.CrouchTurnLeft = CreateScopedState(root, character, weaponName, "crouch", "turnleft", false);
-        set.CrouchTurnRight = CreateScopedState(root, character, weaponName, "crouch", "turnright", false);
-        set.CrouchWalkForward = CreateScopedState(root, character, weaponName, "crouch", "walkforward", true);
-        set.CrouchWalkBackward = CreateScopedState(root, character, weaponName, "crouch", "walkbackward", true);
-        set.CrouchAlertIdle = CreateScopedState(root, character, weaponName, "crouchalert", "idle_emote", true);
-        set.CrouchAlertWalkForward = CreateScopedState(root, character, weaponName, "crouchalert", "walkforward", true);
-        set.CrouchAlertWalkBackward = CreateScopedState(root, character, weaponName, "crouchalert", "walkbackward", true);
+        set.CrouchIdle              = CreateScopedState(root, character, weaponName, "crouch",      "idle_emote",       true);
+        set.CrouchIdleTakeknee      = CreateScopedState(root, character, weaponName, "crouch",      "idle_takeknee",    false);
+        set.CrouchHitFront          = CreateScopedState(root, character, weaponName, "crouch",      "hitfront",         false);
+        set.CrouchHitLeft           = CreateScopedState(root, character, weaponName, "crouch",      "hitleft",          false);
+        set.CrouchHitRight          = CreateScopedState(root, character, weaponName, "crouch",      "hitright",         false);
+        set.CrouchReload            = CreateScopedState(root, character, weaponName, "crouch",      "reload",           false);
+        set.CrouchShoot             = CreateScopedState(root, character, weaponName, "crouch",      "shoot",            false);
+        set.CrouchTurnLeft          = CreateScopedState(root, character, weaponName, "crouch",      "turnleft",         false);
+        set.CrouchTurnRight         = CreateScopedState(root, character, weaponName, "crouch",      "turnright",        false);
+        set.CrouchWalkForward       = CreateScopedState(root, character, weaponName, "crouch",      "walkforward",      true);
+        set.CrouchWalkBackward      = CreateScopedState(root, character, weaponName, "crouch",      "walkbackward",     true);
+        set.CrouchAlertIdle         = CreateScopedState(root, character, weaponName, "crouchalert", "idle_emote",       true);
+        set.CrouchAlertWalkForward  = CreateScopedState(root, character, weaponName, "crouchalert", "walkforward",      true);
+        set.CrouchAlertWalkBackward = CreateScopedState(root, character, weaponName, "crouchalert", "walkbackward",     true);
 
-        set.StandIdle = CreateScopedState(root, character, weaponName, "stand", "idle_emote", true);
-        set.StandIdleCheckweapon = CreateScopedState(root, character, weaponName, "stand", "idle_checkweapon", false);
-        set.StandIdleLookaround = CreateScopedState(root, character, weaponName, "stand", "idle_lookaround", false);
-        set.StandWalkForward = CreateScopedState(root, character, weaponName, "stand", "walkforward", true);
-        set.StandRunForward = CreateScopedState(root, character, weaponName, "stand", "runforward", true);
-        set.StandRunBackward = CreateScopedState(root, character, weaponName, "stand", "runbackward", true);
-        set.StandReload = CreateScopedState(root, character, weaponName, "stand", "reload", false);
-        set.StandShootPrimary = CreateScopedState(root, character, weaponName, "stand", "shoot", false);
-        set.StandShootSecondary = CreateScopedState(root, character, weaponName, "stand", "shoot_secondary", false);
-        set.StandAlertIdle = CreateScopedState(root, character, weaponName, "standalert", "idle_emote", true);
-        set.StandAlertWalkForward = CreateScopedState(root, character, weaponName, "standalert", "walkforward", true);
-        set.StandAlertRunForward = CreateScopedState(root, character, weaponName, "standalert", "runforward", true);
-        set.StandAlertRunBackward = CreateScopedState(root, character, weaponName, "standalert", "runbackward", true);
-        set.StandTurnLeft = CreateScopedState(root, character, weaponName, "stand", "turnleft", false);
-        set.StandTurnRight = CreateScopedState(root, character, weaponName, "stand", "turnright", false);
-        set.StandHitFront = CreateScopedState(root, character, weaponName, "stand", "hitfront", false);
-        set.StandHitBack = CreateScopedState(root, character, weaponName, "stand", "hitback", false);
-        set.StandHitLeft = CreateScopedState(root, character, weaponName, "stand", "hitleft", false);
-        set.StandHitRight = CreateScopedState(root, character, weaponName, "stand", "hitright", false);
-        set.StandGetupFront = CreateScopedState(root, character, weaponName, "stand", "getupfront", false);
-        set.StandGetupBack = CreateScopedState(root, character, weaponName, "stand", "getupback", false);
-        set.StandDeathForward = CreateScopedState(root, character, weaponName, "stand", "death_forward", false);
-        set.StandDeathBackward = CreateScopedState(root, character, weaponName, "stand", "death_backward", false);
-        set.StandDeathLeft = CreateScopedState(root, character, weaponName, "stand", "death_left", false);
-        set.StandDeathRight = CreateScopedState(root, character, weaponName, "stand", "death_right", false);
-        set.StandDeadhero = CreateScopedState(root, character, weaponName, "stand", "idle_emote", false);
+        set.StandIdle               = CreateScopedState(root, character, weaponName, "stand",       "idle_emote",       true);
+        set.StandIdleCheckweapon    = CreateScopedState(root, character, weaponName, "stand",       "idle_checkweapon", false);
+        set.StandIdleLookaround     = CreateScopedState(root, character, weaponName, "stand",       "idle_lookaround",  false);
+        set.StandWalkForward        = CreateScopedState(root, character, weaponName, "stand",       "walkforward",      true);
+        set.StandRunForward         = CreateScopedState(root, character, weaponName, "stand",       "runforward",       true);
+        set.StandRunBackward        = CreateScopedState(root, character, weaponName, "stand",       "runbackward",      true);
+        set.StandReload             = CreateScopedState(root, character, weaponName, "stand",       "reload",           false);
+        set.StandShootPrimary       = CreateScopedState(root, character, weaponName, "stand",       "shoot",            false);
+        set.StandShootSecondary     = CreateScopedState(root, character, weaponName, "stand",       "shoot_secondary",  false);
+        set.StandAlertIdle          = CreateScopedState(root, character, weaponName, "standalert",  "idle_emote",       true);
+        set.StandAlertWalkForward   = CreateScopedState(root, character, weaponName, "standalert",  "walkforward",      true);
+        set.StandAlertRunForward    = CreateScopedState(root, character, weaponName, "standalert",  "runforward",       true);
+        set.StandAlertRunBackward   = CreateScopedState(root, character, weaponName, "standalert",  "runbackward",      true);
+        set.StandTurnLeft           = CreateScopedState(root, character, weaponName, "stand",       "turnleft",         false);
+        set.StandTurnRight          = CreateScopedState(root, character, weaponName, "stand",       "turnright",        false);
+        set.StandHitFront           = CreateScopedState(root, character, weaponName, "stand",       "hitfront",         false);
+        set.StandHitBack            = CreateScopedState(root, character, weaponName, "stand",       "hitback",          false);
+        set.StandHitLeft            = CreateScopedState(root, character, weaponName, "stand",       "hitleft",          false);
+        set.StandHitRight           = CreateScopedState(root, character, weaponName, "stand",       "hitright",         false);
+        set.StandGetupFront         = CreateScopedState(root, character, weaponName, "stand",       "getupfront",       false);
+        set.StandGetupBack          = CreateScopedState(root, character, weaponName, "stand",       "getupback",        false);
+        set.StandDeathForward       = CreateScopedState(root, character, weaponName, "stand",       "death_forward",    false);
+        set.StandDeathBackward      = CreateScopedState(root, character, weaponName, "stand",       "death_backward",   false);
+        set.StandDeathLeft          = CreateScopedState(root, character, weaponName, "stand",       "death_left",       false);
+        set.StandDeathRight         = CreateScopedState(root, character, weaponName, "stand",       "death_right",      false);
+        set.StandDeadhero           = CreateScopedState(root, character, weaponName, "stand",       "idle_emote",       false);
 
-        set.TumbleBounceFrontSoft = CreateScopedState(root, character, weaponName, "thrown", "bouncefrontsoft", false);
-        set.TumbleBounceBackSoft = CreateScopedState(root, character, weaponName, "thrown", "bouncebacksoft", false);
-        set.TumbleFlail = CreateScopedState(root, character, weaponName, "thrown", "flail", false);
-        set.TumbleFlyingFront = CreateScopedState(root, character, weaponName, "thrown", "flyingfront", false);
-        set.TumbleFlyingBack = CreateScopedState(root, character, weaponName, "thrown", "flyingback", false);
-        set.TumbleFlyingLeft = CreateScopedState(root, character, weaponName, "thrown", "flyingleft", false);
-        set.TumbleFlyingRight = CreateScopedState(root, character, weaponName, "thrown", "flyingright", false);
-        set.TumbleLandFrontSoft = CreateScopedState(root, character, weaponName, "thrown", "landfrontsoft", false);
-        set.TumbleLandBackSoft = CreateScopedState(root, character, weaponName, "thrown", "landbacksoft", false);
-        set.TumbleTumbleFront = CreateScopedState(root, character, weaponName, "thrown", "tumblefront", false);
-        set.TumbleTumbleBack = CreateScopedState(root, character, weaponName, "thrown", "tumbleback", false);
+        set.TumbleBounceFrontSoft   = CreateScopedState(root, character, weaponName, "thrown",      "bouncefrontsoft",  false);
+        set.TumbleBounceBackSoft    = CreateScopedState(root, character, weaponName, "thrown",      "bouncebacksoft",   false);
+        set.TumbleFlail             = CreateScopedState(root, character, weaponName, "thrown",      "flail",            false);
+        set.TumbleFlyingFront       = CreateScopedState(root, character, weaponName, "thrown",      "flyingfront",      false);
+        set.TumbleFlyingBack        = CreateScopedState(root, character, weaponName, "thrown",      "flyingback",       false);
+        set.TumbleFlyingLeft        = CreateScopedState(root, character, weaponName, "thrown",      "flyingleft",       false);
+        set.TumbleFlyingRight       = CreateScopedState(root, character, weaponName, "thrown",      "flyingright",      false);
+        set.TumbleLandFrontSoft     = CreateScopedState(root, character, weaponName, "thrown",      "landfrontsoft",    false);
+        set.TumbleLandBackSoft      = CreateScopedState(root, character, weaponName, "thrown",      "landbacksoft",     false);
+        set.TumbleTumbleFront       = CreateScopedState(root, character, weaponName, "thrown",      "tumblefront",      false);
+        set.TumbleTumbleBack        = CreateScopedState(root, character, weaponName, "thrown",      "tumbleback",       false);
 
-        set.Sprint = CreateScopedState(root, character, weaponName, "sprint", null, true);
-        set.JetpackHover = CreateScopedState(root, character, weaponName, "jetpack_hover", null, true);
-        set.Jump = CreateScopedState(root, character, weaponName, "jump", null, false);
-        set.Fall = CreateScopedState(root, character, weaponName, "fall", null, true);
-        set.LandSoft = CreateScopedState(root, character, weaponName, "landsoft", null, false);
-        set.LandHard = CreateScopedState(root, character, weaponName, "landhard", null, false);
-        set.Roll = CreateScopedState(root, character, weaponName, "diveforward", null, false);
+        set.Sprint                  = CreateScopedState(root, character, weaponName, "sprint",        null, true);
+        set.JetpackHover            = CreateScopedState(root, character, weaponName, "jetpack_hover", null, true);
+        set.Jump                    = CreateScopedState(root, character, weaponName, "jump",          null, false);
+        set.Fall                    = CreateScopedState(root, character, weaponName, "fall",          null, true);
+        set.LandSoft                = CreateScopedState(root, character, weaponName, "landsoft",      null, false);
+        set.LandHard                = CreateScopedState(root, character, weaponName, "landhard",      null, false);
+        set.Roll                    = CreateScopedState(root, character, weaponName, "diveforward",   null, false);
 
-        WriteParamsOnEnter(set.CrouchIdle,              new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchIdleTakeknee,      new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchHitFront,          new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchHitLeft,           new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchHitRight,          new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchReload,            new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.Reload,       Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchShoot,             new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.ShootPrimary, Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchTurnLeft,          new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchTurnRight,         new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchWalkForward,       new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchWalkBackward,      new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchAlertIdle,         new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchAlertWalkForward,  new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.CrouchAlertWalkBackward, new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,         Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchIdle,              new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchIdleTakeknee,      new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchHitFront,          new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchHitLeft,           new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchHitRight,          new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchReload,            new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.Reload,         Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchShoot,             new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.ShootPrimary,   Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchTurnLeft,          new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchTurnRight,         new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchWalkForward,       new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchWalkBackward,      new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchAlertIdle,         new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchAlertWalkForward,  new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.CrouchAlertWalkBackward, new PhxStateParams { Posture = PhxAnimPosture.Crouch, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
 
-        WriteParamsOnEnter(set.StandIdle,               new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandIdleCheckweapon,    new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandIdleLookaround,     new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandWalkForward,        new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandRunForward,         new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandRunBackward,        new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandReload,             new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.Reload,         Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandShootPrimary,       new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Torso, Action = PhxAnimAction.ShootPrimary,   Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandShootSecondary,     new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Torso, Action = PhxAnimAction.ShootSecondary, Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandAlertIdle,          new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandAlertWalkForward,   new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandAlertRunForward,    new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandAlertRunBackward,   new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandTurnLeft,           new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandTurnRight,          new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandHitFront,           new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandHitBack,            new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandHitLeft,            new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandHitRight,           new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
-        WriteParamsOnEnter(set.StandGetupFront,         new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All });
-        WriteParamsOnEnter(set.StandGetupBack,          new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All });
-        WriteParamsOnEnter(set.StandDeathForward,       new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All });
-        WriteParamsOnEnter(set.StandDeathBackward,      new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All });
-        WriteParamsOnEnter(set.StandDeathLeft,          new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All });
-        WriteParamsOnEnter(set.StandDeathRight,         new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All });
-        WriteParamsOnEnter(set.StandDeadhero,           new PhxStateParams { Posture = PhxAnimPosture.Stand, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All });
+        WriteParamsOnEnter(set.StandIdle,               new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandIdleCheckweapon,    new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandIdleLookaround,     new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandWalkForward,        new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandRunForward,         new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandRunBackward,        new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Head,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandReload,             new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.Reload,         Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandShootPrimary,       new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Torso, Action = PhxAnimAction.ShootPrimary,   Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandShootSecondary,     new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Torso, Action = PhxAnimAction.ShootSecondary, Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandAlertIdle,          new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandAlertWalkForward,   new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandAlertRunForward,    new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandAlertRunBackward,   new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.Torso, Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandTurnLeft,           new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandTurnRight,          new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.Turn,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandHitFront,           new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandHitBack,            new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandHitLeft,            new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandHitRight,           new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.StandGetupFront,         new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.StandGetupBack,          new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.StandDeathForward,       new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.StandDeathBackward,      new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.StandDeathLeft,          new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.StandDeathRight,         new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.StandDeadhero,           new PhxStateParams { Posture = PhxAnimPosture.Stand,  AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+                                                                                                                                                                                                        
+        WriteParamsOnEnter(set.TumbleBounceFrontSoft,   new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleBounceBackSoft,    new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleFlail,             new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleFlyingFront,       new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleFlyingBack,        new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleFlyingLeft,        new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleFlyingRight,       new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleLandFrontSoft,     new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleLandBackSoft,      new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleTumbleFront,       new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.TumbleTumbleBack,        new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+                                                                                                                                                                                                        
+        WriteParamsOnEnter(set.Sprint,                  new PhxStateParams { Posture = PhxAnimPosture.Sprint, AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.JetpackHover,            new PhxStateParams { Posture = PhxAnimPosture.Jet,    AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.Jump,                    new PhxStateParams { Posture = PhxAnimPosture.Jump,   AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.Fall,                    new PhxStateParams { Posture = PhxAnimPosture.Fall,   AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
+        WriteParamsOnEnter(set.LandSoft,                new PhxStateParams { Posture = PhxAnimPosture.Land,   AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.LandHard,                new PhxStateParams { Posture = PhxAnimPosture.Land,   AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.All  });
+        WriteParamsOnEnter(set.Roll,                    new PhxStateParams { Posture = PhxAnimPosture.Roll,   AimType = PhxAimType.None,  Action = PhxAnimAction.None,           Locked = PhxInput.None });
 
-        WriteParamsOnEnter(set.TumbleBounceFrontSoft, new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleBounceBackSoft,  new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleFlail,           new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleFlyingFront,     new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleFlyingBack,      new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleFlyingLeft,      new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleFlyingRight,     new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleLandFrontSoft,   new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleLandBackSoft,    new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleTumbleFront,     new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.TumbleTumbleBack,      new PhxStateParams { Posture = PhxAnimPosture.Tumble, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-
-        WriteParamsOnEnter(set.Sprint,       new PhxStateParams { Posture = PhxAnimPosture.Sprint, AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.None });
-        WriteParamsOnEnter(set.JetpackHover, new PhxStateParams { Posture = PhxAnimPosture.Jet,    AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.None });
-        WriteParamsOnEnter(set.Jump,         new PhxStateParams { Posture = PhxAnimPosture.Jump,   AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.None });
-        WriteParamsOnEnter(set.Fall,         new PhxStateParams { Posture = PhxAnimPosture.Fall,   AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.None });
-        WriteParamsOnEnter(set.LandSoft,     new PhxStateParams { Posture = PhxAnimPosture.Land,   AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.LandHard,     new PhxStateParams { Posture = PhxAnimPosture.Land,   AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.All });
-        WriteParamsOnEnter(set.Roll,         new PhxStateParams { Posture = PhxAnimPosture.Roll,   AimType = PhxAimType.None, Action = PhxAnimAction.None, Locked = PhxInput.None });
-
-        PhxAnimUtils.WriteBoolOnEnter(set.Roll,  OutAnimatedMove, true);
-        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityX, 1f);
-        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityZ, 1f);
-        PhxAnimUtils.WriteBoolOnEnter(set.Roll,  OutVelocityXFromAnim, true);
-        PhxAnimUtils.WriteBoolOnEnter(set.Roll,  OutVelocityZFromAnim, true);
+        PhxAnimUtils.WriteBoolOnEnter (set.Roll, OutAnimatedMove,       true);
+        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityX,          1f);
+        PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityZ,          1f);
+        PhxAnimUtils.WriteBoolOnEnter (set.Roll, OutVelocityXFromAnim,  true);
+        PhxAnimUtils.WriteBoolOnEnter (set.Roll, OutVelocityZFromAnim,  true);
         PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityFromThrust, 0f);
         PhxAnimUtils.WriteFloatOnEnter(set.Roll, OutVelocityFromStrafe, 0f);
-        PhxAnimUtils.WriteBoolOnLeave(set.Roll,  OutAnimatedMove, false);
+        PhxAnimUtils.WriteBoolOnLeave (set.Roll, OutAnimatedMove,       false);
 
-        PhxAnimUtils.WriteBoolOnEnter(set.StandRunBackward.Lower, OutStrafeBackwards, true);
-        PhxAnimUtils.WriteBoolOnEnter(set.StandAlertRunBackward.Lower, OutStrafeBackwards, true);
+        PhxAnimUtils.WriteBoolOnEnter(set.StandRunBackward.Lower,        OutStrafeBackwards, true);
+        PhxAnimUtils.WriteBoolOnEnter(set.StandAlertRunBackward.Lower,   OutStrafeBackwards, true);
         PhxAnimUtils.WriteBoolOnEnter(set.CrouchAlertWalkBackward.Lower, OutStrafeBackwards, true);
-        PhxAnimUtils.WriteBoolOnLeave(set.StandRunBackward.Lower, OutStrafeBackwards, false);
-        PhxAnimUtils.WriteBoolOnLeave(set.StandAlertRunBackward.Lower, OutStrafeBackwards, false);
+        PhxAnimUtils.WriteBoolOnLeave(set.StandRunBackward.Lower,        OutStrafeBackwards, false);
+        PhxAnimUtils.WriteBoolOnLeave(set.StandAlertRunBackward.Lower,   OutStrafeBackwards, false);
         PhxAnimUtils.WriteBoolOnLeave(set.CrouchAlertWalkBackward.Lower, OutStrafeBackwards, false);
 
         // In these states, animation playback speed is controlled by current velocity
@@ -1927,12 +1928,12 @@ public class PhxAnimHuman
                         }
                         else if (stateField.GetNameHash() == Hash_AnimatedMove)
                         {
-                            float velocityX = 1.0f;
-                            bool  velocityXFromAnim = true;
-                            float velocityZ = 1.0f;
-                            bool  velocityZFromAnim = true;
-                            float velocityFromThrust = 0f;
-                            float velocityFromStrafe = 0f;
+                            float  velocityX           = 1.0f;
+                            bool   velocityXFromAnim   = true;
+                            float  velocityZ           = 1.0f;
+                            bool   velocityZFromAnim   = true;
+                            float  velocityFromThrust  = 0f;
+                            float  velocityFromStrafe  = 0f;
 
                             comboState.IsAnimatedMove = true;
                             comboState.State.Upper.WriteOnEnter(new CraWriteOutput
@@ -2024,17 +2025,17 @@ public class PhxAnimHuman
                                 continue;
                             }
 
-                            int    id = 0;
-                            int    edge = 0;
-                            float  timeStart = 0.2f;
-                            float  timeEnd = 0.3f;
-                            int    timeMode = (int)PhxAnimTimeMode.FromAnim;
-                            float  length = 1f;
-                            bool   lengthFromEdge = true;
-                            float  width = 1f;
-                            bool   widthFromEdge = true;
-                            float  damage = 0f;
-                            float  push = 0f;
+                            int    id              = 0;
+                            int    edge            = 0;
+                            float  timeStart       = 0.2f;
+                            float  timeEnd         = 0.3f;
+                            int    timeMode        = (int)PhxAnimTimeMode.FromAnim;
+                            float  length          = 1f;
+                            bool   lengthFromEdge  = true;
+                            float  width           = 1f;
+                            bool   widthFromEdge   = true;
+                            float  damage          = 0f;
+                            float  push            = 0f;
 
                             Field[] attackScope = stateField.Scope.GetFields();
                             for (int ai = 0; ai < attackScope.Length; ++ai)
@@ -2631,38 +2632,38 @@ public class PhxAnimHuman
         public PhxInput       Locked;
     }
 
-    static readonly uint Hash_State = HashUtils.GetFNV("State");
-    static readonly uint Hash_Duration = HashUtils.GetFNV("Duration");
-    static readonly uint Hash_Animation = HashUtils.GetFNV("Animation");
-    static readonly uint Hash_AimType = HashUtils.GetFNV("AimType");
-    static readonly uint Hash_BlendInTime = HashUtils.GetFNV("BlendInTime");
-    static readonly uint Hash_BlendOutTime = HashUtils.GetFNV("BlendOutTime");
-    static readonly uint Hash_EnergyRestoreRate = HashUtils.GetFNV("EnergyRestoreRate");
-    static readonly uint Hash_InputLock = HashUtils.GetFNV("InputLock");
-    static readonly uint Hash_Transition = HashUtils.GetFNV("Transition");
-    static readonly uint Hash_Sound = HashUtils.GetFNV("Sound");
-    static readonly uint Hash_Attack = HashUtils.GetFNV("Attack");
-    static readonly uint Hash_AttackId = HashUtils.GetFNV("AttackId");
-    static readonly uint Hash_Edge = HashUtils.GetFNV("Edge");
-    static readonly uint Hash_DamageTime = HashUtils.GetFNV("DamageTime");
-    static readonly uint Hash_Damage = HashUtils.GetFNV("Damage");
-    static readonly uint Hash_Push = HashUtils.GetFNV("Push");
-    static readonly uint Hash_DamageLength = HashUtils.GetFNV("DamageLength");
-    static readonly uint Hash_DamageWidth = HashUtils.GetFNV("DamageWidth");
-    static readonly uint Hash_AnimatedMove = HashUtils.GetFNV("AnimatedMove");
-    static readonly uint Hash_VelocityX = HashUtils.GetFNV("VelocityX");
-    static readonly uint Hash_VelocityZ = HashUtils.GetFNV("VelocityZ");
-    static readonly uint Hash_VelocityFromThrust = HashUtils.GetFNV("VelocityFromThrust");
-    static readonly uint Hash_VelocityFromStrafe = HashUtils.GetFNV("VelocityFromStrafe");
-    static readonly uint Hash_If = HashUtils.GetFNV("If");
-    static readonly uint Hash_Or = HashUtils.GetFNV("Or");
-    static readonly uint Hash_Until = HashUtils.GetFNV("Until");
-    static readonly uint Hash_Posture = HashUtils.GetFNV("Posture");
-    static readonly uint Hash_Button = HashUtils.GetFNV("Button");
-    static readonly uint Hash_Thrust = HashUtils.GetFNV("Thrust");
-    static readonly uint Hash_ThrustAngle = HashUtils.GetFNV("ThrustAngle");
-    static readonly uint Hash_TimeStart = HashUtils.GetFNV("TimeStart");
-    static readonly uint Hash_TimeEnd = HashUtils.GetFNV("TimeEnd");
-    static readonly uint Hash_Break = HashUtils.GetFNV("Break");
-    static readonly uint Hash_EnergyCost = HashUtils.GetFNV("EnergyCost");
+    static readonly uint Hash_State               = HashUtils.GetFNV("State");
+    static readonly uint Hash_Duration            = HashUtils.GetFNV("Duration");
+    static readonly uint Hash_Animation           = HashUtils.GetFNV("Animation");
+    static readonly uint Hash_AimType             = HashUtils.GetFNV("AimType");
+    static readonly uint Hash_BlendInTime         = HashUtils.GetFNV("BlendInTime");
+    static readonly uint Hash_BlendOutTime        = HashUtils.GetFNV("BlendOutTime");
+    static readonly uint Hash_EnergyRestoreRate   = HashUtils.GetFNV("EnergyRestoreRate");
+    static readonly uint Hash_InputLock           = HashUtils.GetFNV("InputLock");
+    static readonly uint Hash_Transition          = HashUtils.GetFNV("Transition");
+    static readonly uint Hash_Sound               = HashUtils.GetFNV("Sound");
+    static readonly uint Hash_Attack              = HashUtils.GetFNV("Attack");
+    static readonly uint Hash_AttackId            = HashUtils.GetFNV("AttackId");
+    static readonly uint Hash_Edge                = HashUtils.GetFNV("Edge");
+    static readonly uint Hash_DamageTime          = HashUtils.GetFNV("DamageTime");
+    static readonly uint Hash_Damage              = HashUtils.GetFNV("Damage");
+    static readonly uint Hash_Push                = HashUtils.GetFNV("Push");
+    static readonly uint Hash_DamageLength        = HashUtils.GetFNV("DamageLength");
+    static readonly uint Hash_DamageWidth         = HashUtils.GetFNV("DamageWidth");
+    static readonly uint Hash_AnimatedMove        = HashUtils.GetFNV("AnimatedMove");
+    static readonly uint Hash_VelocityX           = HashUtils.GetFNV("VelocityX");
+    static readonly uint Hash_VelocityZ           = HashUtils.GetFNV("VelocityZ");
+    static readonly uint Hash_VelocityFromThrust  = HashUtils.GetFNV("VelocityFromThrust");
+    static readonly uint Hash_VelocityFromStrafe  = HashUtils.GetFNV("VelocityFromStrafe");
+    static readonly uint Hash_If                  = HashUtils.GetFNV("If");
+    static readonly uint Hash_Or                  = HashUtils.GetFNV("Or");
+    static readonly uint Hash_Until               = HashUtils.GetFNV("Until");
+    static readonly uint Hash_Posture             = HashUtils.GetFNV("Posture");
+    static readonly uint Hash_Button              = HashUtils.GetFNV("Button");
+    static readonly uint Hash_Thrust              = HashUtils.GetFNV("Thrust");
+    static readonly uint Hash_ThrustAngle         = HashUtils.GetFNV("ThrustAngle");
+    static readonly uint Hash_TimeStart           = HashUtils.GetFNV("TimeStart");
+    static readonly uint Hash_TimeEnd             = HashUtils.GetFNV("TimeEnd");
+    static readonly uint Hash_Break               = HashUtils.GetFNV("Break");
+    static readonly uint Hash_EnergyCost          = HashUtils.GetFNV("EnergyCost");
 }
