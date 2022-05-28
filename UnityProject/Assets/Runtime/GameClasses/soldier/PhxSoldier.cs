@@ -640,17 +640,17 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
             }
         }
 
-        CraState  stateLower  = Animator.LayerLower.GetActiveState();
-        CraState  stateUpper  = Animator.LayerLower.GetActiveState();
-        CraPlayer playerLower = stateLower.GetPlayer();
-        CraPlayer playerUpper = stateUpper.GetPlayer();
-        CraClip   clipLower   = playerLower.GetClip();
-        CraClip   clipUpper   = playerUpper.GetClip();
+        CraState       stateLower  = Animator.LayerLower.GetActiveState();
+        CraState       stateUpper  = Animator.LayerUpper.GetActiveState();
+        CraPlayer      playerLower = stateLower.GetPlayer();
+        CraPlayer      playerUpper = stateUpper.GetPlayer();
+        CraClip        clipLower   = playerLower.GetClip();
+        CraClip        clipUpper   = playerUpper.GetClip();
 
-        PhxAnimPosture posture = (PhxAnimPosture)Animator.OutPosture.GetInt();
-        PhxAnimAction  action  = (PhxAnimAction)Animator.OutAction.GetInt();
-        PhxInput       locked  = (PhxInput)Animator.OutInputLocks.GetInt();
-        PhxAimType     aimType = (PhxAimType)Animator.OutAimType.GetInt();
+        PhxAnimPosture posture     = (PhxAnimPosture)Animator.OutPosture.GetInt();
+        PhxAnimAction  action      = (PhxAnimAction)Animator.OutAction.GetInt();
+        PhxInput       locked      = (PhxInput)Animator.OutInputLocks.GetInt();
+        PhxAimType     aimType     = (PhxAimType)Animator.OutAimType.GetInt();
 
         // Button events can be queried directly, without being affected by locks
         Animator.InDownEvents.SetInt((int)data.Events.Down);
@@ -1006,6 +1006,9 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                 playerLower.SetPlaybackSpeed(Animator.IsMovementState(stateLower) ? playSpeed : 1f);
                 playerUpper.SetPlaybackSpeed(Animator.IsMovementState(stateUpper) ? playSpeed : 1f);
 
+                //Debug.Log($"playerLower: {playerLower.Handle.Index}");
+                //Debug.Log($"playerUpper: {playerUpper.Handle.Index}");
+                //Debug.Log($"playSpeed: {playSpeed}");
                 //Debug.Log($"Root Motion Delta: {rootMotionDelta.Position}");
                 //Debug.Log($"Root Motion Anim Speed: {playSpeed}");
             }

@@ -152,16 +152,16 @@ public static class PhxAnimLoader
         return bank.GetAnimationMetadata(animNameCRC, out _, out _);
     }
 
-    public static CraClip Import(string bankName, string animName)
+    public static CraClip SearchImport(string bankName, string animName)
     {
         if (bankName == "human")
         {
-            return Import(HUMANM_BANKS, animName);
+            return SearchImport(HUMANM_BANKS, animName);
         }
-        return Import(bankName, HashUtils.GetCRC(animName), animName);
+        return Import(bankName, animName);
     }
 
-    public static CraClip Import(string[] animBanks, string animName)
+    public static CraClip SearchImport(string[] animBanks, string animName)
     {
         CraClip clip = CraClip.None;
         for (int i = 0; i < animBanks.Length; ++i)
@@ -176,9 +176,10 @@ public static class PhxAnimLoader
         return clip;
     }
 
-    public static CraClip Import(string bankName, uint animNameCRC, string clipNameOverride=null)
+    public static CraClip Import(string bankName, string animName)
     {
-        uint animID = HashUtils.GetCRC(bankName) * animNameCRC;
+        uint animNameCRC = HashUtils.GetCRC(animName);
+        uint animID      = HashUtils.GetCRC(bankName) * animNameCRC;
         if (ClipDB.TryGetValue(animID, out CraClip clip))
         {
             return clip;
@@ -198,7 +199,7 @@ public static class PhxAnimLoader
         }
 
         CraSourceClip srcClip = new CraSourceClip();
-        srcClip.Name = string.IsNullOrEmpty(clipNameOverride) ? animNameCRC.ToString() : clipNameOverride;
+        srcClip.Name = animName;
 
         uint[] boneCRCs = bank.GetBoneCRCs(animNameCRC);
         RootMotion rootMotion = new RootMotion();
@@ -261,6 +262,9 @@ public static class PhxAnimLoader
         srcClip.SetBones(bones.ToArray());
         srcClip.Bake(BakeFPS);
         clip = CraClip.CreateNew(srcClip);
+#if UNITY_EDITOR
+        clip.SetName(animName);
+#endif
         ClipDB.Add(animID, clip);
 
         if (rootMotion.Times != null)
