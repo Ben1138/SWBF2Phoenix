@@ -23,38 +23,38 @@ public class PhxAnimTest : PhxUnityScript
     {
         PhxLuaAPI.ReadDataFile("ingame.lvl");
         PhxLuaAPI.ReadDataFile("sound/uta.lvl");
-        PhxLuaAPI.ReadDataFile("side/rep.lvl",
-            //"rep_inf_ep2_rifleman",
-            //"rep_inf_ep2_rocketeer",
-            //"rep_inf_ep2_sniper",
-            //"rep_inf_ep2_engineer",
-            //"rep_inf_ep2_jettrooper",
-            //"rep_inf_ep3_rifleman",
-            //"rep_inf_ep3_rocketeer",
-            //"rep_inf_ep3_sniper",
-            //"rep_inf_ep3_sniper_felucia",
-            //"rep_inf_ep3_engineer",
-            //"rep_inf_ep3_officer",
-            //"rep_inf_ep3_jettrooper",
-            "rep_hero_obiwan"
-            //"rep_hero_anakin"
-            //"rep_hero_aalya"
-            //"rep_hero_kiyadimundi"
-            //"rep_hero_macewindu"
-        );
-
-        //PhxLuaAPI.ReadDataFile("side/cis.lvl",
-        //    "cis_inf_rifleman",
-        //    "cis_inf_rocketeer",
-        //    "cis_inf_sniper",
-        //    "cis_inf_marine"
-        //    "cis_hero_darthmaul",
-        //    "cis_hero_grievous"
+        //PhxLuaAPI.ReadDataFile("side/rep.lvl",
+        //    //"rep_inf_ep2_rifleman",
+        //    //"rep_inf_ep2_rocketeer",
+        //    //"rep_inf_ep2_sniper",
+        //    //"rep_inf_ep2_engineer",
+        //    //"rep_inf_ep2_jettrooper",
+        //    //"rep_inf_ep3_rifleman",
+        //    //"rep_inf_ep3_rocketeer",
+        //    //"rep_inf_ep3_sniper",
+        //    //"rep_inf_ep3_sniper_felucia",
+        //    //"rep_inf_ep3_engineer",
+        //    //"rep_inf_ep3_officer",
+        //    //"rep_inf_ep3_jettrooper",
+        //    //"rep_hero_obiwan"
+        //    //"rep_hero_anakin"
+        //    "rep_hero_aalya"
+        //    //"rep_hero_kiyadimundi"
+        //    //"rep_hero_macewindu"
         //);
+
+        PhxLuaAPI.ReadDataFile("side/cis.lvl",
+            //"cis_inf_rifleman",
+            //"cis_inf_rocketeer",
+            //"cis_inf_sniper",
+            //"cis_inf_marine"
+            "cis_hero_darthmaul"
+            //"cis_hero_grievous"
+        );
 
         //PhxLuaAPI.ReadDataFile("side/imp.lvl",
         //    //"imp_hero_bobafett"
-        //    //"imp_hero_darthvader"
+        //    "imp_hero_darthvader"
         //    //"imp_hero_emperor"
         //);
 
@@ -126,7 +126,7 @@ public class PhxAnimTest : PhxUnityScript
 
         if (SpawnPlayer)
         {
-            Match.SpawnPlayer(scene.GetClass("rep_hero_obiwan"), transform.position, Quaternion.identity);
+            Match.SpawnPlayer(scene.GetClass("cis_hero_darthmaul"), transform.position, Quaternion.identity);
         }
     }
 

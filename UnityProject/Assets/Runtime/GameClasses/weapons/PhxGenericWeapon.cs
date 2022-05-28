@@ -47,7 +47,7 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
     // that of the OwnerController's soldier or vehicle
     protected List<Collider> IgnoredColliders;
 
-
+    protected Transform OwnerSkeletonRoot;
     protected Transform FirePoint;
 
 
@@ -197,6 +197,10 @@ public class PhxGenericWeapon<T> : PhxInstance<T> , IPhxWeapon, IPhxTickable whe
         return true;
     }
 
+    public void SetOwnerSkeletonRoot(Transform Root)
+    {
+        OwnerSkeletonRoot = Root;
+    }
 
     public void SetOwnerController(PhxPawnController Owner)
     {

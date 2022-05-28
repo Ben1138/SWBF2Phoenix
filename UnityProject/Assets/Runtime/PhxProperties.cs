@@ -129,8 +129,14 @@ public sealed class PhxMultiProp : IPhxPropRef
         {
             Debug.LogWarning($"Encountered more property args ({split.Count}) than expected ({ExpectedTypes.Length})! Ignoring surplus...");
         }
-        for (int i = 0; i < vals.Length; ++i)
+        for (int i = 0; i < ExpectedTypes.Length; ++i)
         {
+            if (i >= split.Count)
+            {
+                vals[i] = "";
+                continue;
+            }
+
             split[i] = split[i].Trim();
             try
             {
@@ -221,11 +227,10 @@ public class PhxPropertySection : IEnumerable
 }
 
 
-
+// Property order actually matters here!
 public class PhxImpliedSection : IEnumerable
 {
     public (string, IPhxPropRef)[] Properties { get; private set; }
-    public uint NameHash { get; private set; }
 
     public Dictionary<string, IPhxPropRef>[] Sections { get; private set; }
 
@@ -235,13 +240,11 @@ public class PhxImpliedSection : IEnumerable
 
     public PhxImpliedSection(params (string, IPhxPropRef)[] properties)
     {
-        NameHash = LibSWBF2.Utils.HashUtils.GetFNV(properties[0].Item1);
         Properties = properties;
-
         PropertyHashes = new List<uint>();
         foreach (var prop in Properties)
         {
-            PropertyHashes.Add(LibSWBF2.Utils.HashUtils.GetFNV(prop.Item1));
+            PropertyHashes.Add(HashUtils.GetFNV(prop.Item1));
         }
     }
 
@@ -254,7 +257,7 @@ public class PhxImpliedSection : IEnumerable
         {
             foreach (var propPair in Properties)
             {
-                if (LibSWBF2.Utils.HashUtils.GetFNV(propPair.Item1) == Hash)
+                if (HashUtils.GetFNV(propPair.Item1) == Hash)
                 {
                     PropName = propPair.Item1;
                     break;

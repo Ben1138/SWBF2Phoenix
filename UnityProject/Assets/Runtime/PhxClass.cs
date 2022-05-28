@@ -124,9 +124,10 @@ public abstract class PhxClass
                     PhxImpliedSection section = type.GetField(member.Name).GetValue(this) as PhxImpliedSection;
 
                     // Read properties from top to bottom to fill property sections
-                    uint[] propHashes = new uint[0];
+                    uint[] propHashes   = new uint[0];
                     string[] propValues = new string[0];
-                    try {
+                    try 
+                    {
                         ec.GetAllProperties(out propHashes, out propValues);
                     }
                     catch (Exception e)
@@ -139,19 +140,42 @@ public abstract class PhxClass
                     var foundSections = new List<Dictionary<string, IPhxPropRef>>();
                     Dictionary<string, IPhxPropRef> currSection = null;
 
+                    var sectionProps = new uint[section.Properties.Length];
+                    var handledProps = new HashSet<uint>();
+                    int pi = 0;
+                    foreach (var pair in section.Properties)
+                    {
+                        sectionProps[pi++] = HashUtils.GetFNV(pair.Item1);
+                    }
+
+                    pi = 99999;
                     for (int i = 0; i < propHashes.Length; ++i)
                     {
-                        // Every time we encounter the section header, start a new section
-                        if (propHashes[i] == section.NameHash)
+                        // Treat each prop entry as header, sequentially from top to bottom.
+                        // We are hitting a new section when either crawling over a property that's
+                        // above the last property that served as header, or when hitting the same
+                        // property more than once.
+                        for (int j = 0; j < sectionProps.Length; j++)
                         {
-                            foundSections.Add(section.GetDefault());
-                            currSection = foundSections[foundSections.Count - 1];
-                        }
+                            if (propHashes[i] == sectionProps[j])
+                            {
+                                if (j <= pi || handledProps.Contains(propHashes[i]))
+                                {
+                                    pi = j;
+                                    handledProps.Clear();
+                                    foundSections.Add(section.GetDefault());
+                                    currSection = foundSections[foundSections.Count - 1];
+                                }
 
-                        //string propNameOut = null;
-                        if (currSection != null && section.HasProperty(propHashes[i], out string propNameOut))
-                        {
-                            currSection[propNameOut].SetFromString(propValues[i]);
+                                //string propNameOut = null;
+                                if (currSection != null && section.HasProperty(propHashes[i], out string propNameOut))
+                                {
+                                    currSection[propNameOut].SetFromString(propValues[i]);
+                                }
+
+                                handledProps.Add(propHashes[i]);
+                                break;
+                            }
                         }
                     }
 

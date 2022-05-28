@@ -237,6 +237,8 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                     IPhxWeapon weap = Scene.CreateInstance(weapClass, false, HpWeapons) as IPhxWeapon;
                     if (weap != null)
                     {
+                        weap.SetOwnerSkeletonRoot(transform);
+                        weap.SetOwnerController(Controller);
                         weap.SetIgnoredColliders(new List<Collider>() {gameObject.GetComponent<CapsuleCollider>()});
 
                         PhxAnimWeapon weapAnim = weap.GetAnimInfo();
@@ -255,6 +257,12 @@ public class PhxSoldier : PhxControlableInstance<PhxSoldier.ClassProperties>, IC
                         weap.GetInstance().gameObject.SetActive(false);
                         weap.OnShot(() => FireAnimation(channel == 0));
                         weap.OnReload(Reload);
+
+                        if (weap is PhxMelee)
+                        {
+                            var melee = weap as PhxMelee;
+                            melee.CreateSabers();
+                        }
                     }
                     else
                     {

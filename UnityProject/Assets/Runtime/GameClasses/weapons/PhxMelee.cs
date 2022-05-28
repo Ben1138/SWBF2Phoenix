@@ -4,20 +4,30 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 
+
 public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
 {
+    // NOTE: Number of damage edges != number of blades!
+    // For example, darth maul's third damage edge is a foot kick
+
     public new class ClassProperties : PhxGenericWeapon<ClassProperties>.ClassProperties
     {
-        public PhxProp<int> NumDamageEdges = new PhxProp<int>(0);
+        public PhxProp<int> NumDamageEdges = new PhxProp<int>(1);
         public PhxImpliedSection LightSabers = new PhxImpliedSection(
-            ("FirePointName", new PhxProp<string>("")),
+            ("OffhandGeometryName", new PhxProp<string>("")),
+            ("OffhandFirePointName", new PhxMultiProp(typeof(string), typeof(string))),
+            ("FirePointName", new PhxProp<string>("hp_fire")),
             ("LightSaberLength", new PhxProp<float>(1f)),
             ("LightSaberWidth", new PhxProp<float>(1f)),
             ("LightSaberTexture", new PhxProp<Texture2D>(null)),
             ("LightSaberTrailColor", new PhxProp<Color>(Color.white))
         );
 
-        // TODO: AttachedFirePoint (see cis_weap_doublesaber.odf)
+        public PhxImpliedSection AttachedEdges = new PhxImpliedSection(
+            ("AttachedFirePoint", new PhxMultiProp(typeof(string), typeof(float), typeof(float), typeof(float), typeof(float), typeof(float), typeof(float))),
+            ("DamageEdgeLength", new PhxProp<float>(1f)),
+            ("DamageEdgeWidth", new PhxProp<float>(1f))
+        );
     }
 
     List<Transform> Edges = new List<Transform>();
@@ -37,13 +47,8 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
             LightsaberMat = Resources.Load<Material>("PhxMaterial_lightsabre");
         }
 
-        foreach (Dictionary<string, IPhxPropRef> section in C.LightSabers)
-        {
-            CreateBlade(section);
-        }
-
-        AudioClip FireSound = SoundLoader.Instance.LoadSound("saber_idle02");
-        if (FireSound != null)
+        AudioClip idleSound = SoundLoader.Instance.LoadSound("saber_idle02");
+        if (idleSound != null)
         {
             Audio = gameObject.AddComponent<AudioSource>();
             Audio.playOnAwake = true;
@@ -52,7 +57,7 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
             Audio.minDistance = 2.0f;
             Audio.maxDistance = 30.0f;
             Audio.loop = true;
-            Audio.clip = FireSound;
+            Audio.clip = idleSound;
         }
 
         SwingAudio = gameObject.AddComponent<AudioSource>();
@@ -63,6 +68,15 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         SwingAudio.maxDistance = 30.0f;
         SwingAudio.loop = false;
         SwingAudio.clip = null;
+    }
+
+    public void CreateSabers()
+    {
+        int i = 0;
+        foreach (Dictionary<string, IPhxPropRef> section in C.LightSabers)
+        {
+            CreateBlade(section, i++);
+        }
     }
 
     public void PlaySwingSound(uint soundHash)
@@ -104,6 +118,11 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         return info;
     }
 
+    public void Attack(int edgeIdx, string swingSound)
+    {
+
+    }
+
     public Transform GetEdge(int idx)
     {
         if (idx >= 0 && idx < Edges.Count)
@@ -113,20 +132,65 @@ public class PhxMelee : PhxGenericWeapon<PhxMelee.ClassProperties>
         return null;
     }
 
-    void CreateBlade(Dictionary<string, IPhxPropRef> bladeProps)
+    void CreateBlade(Dictionary<string, IPhxPropRef> bladeProps, int bladeIdx)
     {
-        PhxProp<string> firePointName = bladeProps["FirePointName"] as PhxProp<string>;
-        PhxProp<float> lightSaberWidth = bladeProps["LightSaberWidth"] as PhxProp<float>;
-        PhxProp<float> lightSaberLength = bladeProps["LightSaberLength"] as PhxProp<float>;
-        PhxProp<Texture2D> lightSaberTexture = bladeProps["LightSaberTexture"] as PhxProp<Texture2D>;
-        PhxProp<Color> lightSaberTrailColor = bladeProps["LightSaberTrailColor"] as PhxProp<Color>;
+        var firePointName         = bladeProps["FirePointName"]        as PhxProp<string>;
+        var offhandFirePointName  = bladeProps["OffhandFirePointName"] as PhxMultiProp;
+        var offhandGeometryName   = bladeProps["OffhandGeometryName"]  as PhxProp<string>;
+        var lightSaberWidth       = bladeProps["LightSaberWidth"]      as PhxProp<float>;
+        var lightSaberLength      = bladeProps["LightSaberLength"]     as PhxProp<float>;
+        var lightSaberTexture     = bladeProps["LightSaberTexture"]    as PhxProp<Texture2D>;
+        var lightSaberTrailColor  = bladeProps["LightSaberTrailColor"] as PhxProp<Color>;
 
-        Transform firePoint = transform.GetChild(0).Find(firePointName);
-        if (firePoint == null)
+        string hpWeaponName = "hp_weapons";
+        string hpFireName   = firePointName;
+        if (!string.IsNullOrEmpty(offhandGeometryName))
         {
-            Debug.LogError($"Couldn't find '{firePointName}' for lightsaber blade!");
+            // Seems to be the default when no weapon bone is defined.
+            // See: rep_weap_lightsaber_aalya.odf
+            hpWeaponName = "bone_l_hand";
+        }
+
+        if (offhandFirePointName.Values.Count > 0)
+        {
+            string ohfpn0 = offhandFirePointName.Values[bladeIdx][0] as string;
+            if (!string.IsNullOrEmpty(ohfpn0))
+            {
+                hpFireName = ohfpn0;
+            }
+        }
+        if (offhandFirePointName.Values.Count > 1)
+        {
+            string ohfpn1 = offhandFirePointName.Values[bladeIdx][1] as string;
+            if (!string.IsNullOrEmpty(ohfpn1))
+            {
+                hpWeaponName = ohfpn1;
+            }
+        }
+
+        Transform hpWeapon = PhxUtils.FindTransformRecursive(OwnerSkeletonRoot, hpWeaponName);
+        if (hpWeapon == null)
+        {
+            Debug.LogError($"Couldn't find '{hpWeaponName}' parent bone for melee weapon in '{OwnerSkeletonRoot}'!");
             return;
         }
+
+        if (!string.IsNullOrEmpty(offhandGeometryName))
+        {
+            GameObject SaberModel = ModelLoader.Instance.GetGameObjectFromModel(offhandGeometryName);
+            SaberModel.transform.SetParent(hpWeapon);
+            SaberModel.transform.localPosition = Vector3.zero;
+            SaberModel.transform.localRotation = Quaternion.identity;
+            SaberModel.transform.localScale    = new Vector3(1f, 1f, 1f);
+        }
+
+        Transform firePoint = PhxUtils.FindTransformRecursive(hpWeapon, hpFireName);
+        if (firePoint == null)
+        {
+            Debug.LogError($"Couldn't find '{hpFireName}' for lightsaber blade!");
+            return;
+        }
+
         Edges.Add(firePoint);
 
         Blade = firePoint.gameObject.AddComponent<LineRenderer>();

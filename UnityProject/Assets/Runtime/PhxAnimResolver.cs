@@ -305,6 +305,11 @@ public class PhxAnimationResolver
 
     bool FindScope(PhxAnimDesc animDesc, out PhxAnimDesc found, out CraClip clip, out PhxAnimScope clipScope, PhxAnimScope findScope)
     {
+        if (animDesc.ToString().Contains("sabre_stand_attack1a"))
+        {
+            Debug.Log("qwer");
+        }
+
         if (PhxAnimLoader.Exists(animDesc.Character, animDesc.ToString()))
         {
             clip = PhxAnimLoader.SearchImport(animDesc.Character, animDesc.ToString());

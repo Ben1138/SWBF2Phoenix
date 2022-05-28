@@ -2365,7 +2365,7 @@ public class PhxAnimHuman
             if (stateField.GetNameHash() == Hash_Animation)
             {
                 string animname = stateField.GetString();
-                string[] split = animname.Split(new char[] { '_' }, 2);
+                string[] split = animname.Split(new char[] { '_' });
                 Debug.Assert(split.Length >= 2);
                 comboState.State = CreateScopedState(root, character, weapon, split[0], split[1], true);
                 if (comboState.State.Lower.IsValid() && comboState.State.Upper.IsValid())

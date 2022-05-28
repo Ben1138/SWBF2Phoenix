@@ -188,6 +188,8 @@ public interface IPhxWeapon
     public void SetIgnoredColliders(List<Collider> Colliders);
     public List<Collider> GetIgnoredColliders();
 
+    public void SetOwnerController(PhxPawnController Owner);
+    public void SetOwnerSkeletonRoot(Transform Root);
     public PhxPawnController GetOwnerController();
     public bool IsFiring();
 

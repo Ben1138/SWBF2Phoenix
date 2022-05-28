@@ -149,14 +149,15 @@ public sealed class PhxPropertyDB
         }
         else if (destType == typeof(float))
         {
-            outVal = PhxUtils.FloatFromString(value);                       
+            outVal = PhxUtils.FloatFromString(value);
         }
         else
         {
-            try {
+            try 
+            {
                 outVal = Convert.ChangeType(value, destType, CultureInfo.InvariantCulture);
             }
-            catch (Exception e)
+            catch
             {
                 Debug.LogErrorFormat("Failed to convert string {0} to type {1}...", value, destType.ToString());
                 outVal = 0;
