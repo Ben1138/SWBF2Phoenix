@@ -60,6 +60,9 @@ public class PhxScene
     int InstanceCounter;
 
 
+    public PhxSceneAnimator Animator { get; private set; }
+
+
     public PhxScene(PhxEnvironment env, Container c)
     {
         ENV = env;
@@ -85,6 +88,8 @@ public class PhxScene
         ModelLoader.Instance.PhyMat = PhxGame.Instance.GroundPhyMat;
         ENV.OnPostLoad += CalcCPCamPositions;
         ENV.OnPostLoad += AdjustPaths;
+
+        Animator = new PhxSceneAnimator();
     }
 
     public void SetProperty(string instName, string propName, object propValue)
@@ -295,6 +300,8 @@ public class PhxScene
 
             WorldRoots.Add(worldRoot);
         }
+
+        Animator.InitializeWorldAnimations(worldLayers);        
     }
 
     public SWBFPath GetPath(string pathName)

@@ -112,6 +112,17 @@ public interface IPhxControlableInstance
     IPhxWeapon GetPrimaryWeapon();
 }
 
+
+public interface IPhxDamageableInstance
+{
+    public void AddDamage(float Damage);
+}
+
+
+
+
+
+
 public abstract class PhxControlableInstance<T> : PhxInstance<T>, IPhxControlableInstance where T : PhxClass
 {
     protected PhxPawnController Controller;

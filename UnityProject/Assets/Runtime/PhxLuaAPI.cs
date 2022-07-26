@@ -665,24 +665,29 @@ public static class PhxLuaAPI
 		
 	}
 
-	public static void PlayAnimation(string animName)
+	public static void EnableBarriers(string barrierName)
 	{
 		
 	}
 
+	public static void PlayAnimation(string animName)
+	{
+		RTS.Animator.PlayAnimation(animName.ToLower());
+	}
+
 	public static void PlayAnimationFromTo(string animName, float start, float end)
 	{
-
+		
 	}
 
 	public static void PauseAnimation(string animName)
     {
-
+		RTS.Animator.PauseAnimation(animName.ToLower());
     }
 
 	public static void RewindAnimation(string animName)
 	{
-
+		RTS.Animator.RewindAnimation(animName.ToLower());
 	}
 
 	public static void BlockPlanningGraphArcs(string planNodeName)
@@ -1175,7 +1180,7 @@ public static class PhxLuaAPI
 	}
 	public static void OnObjectKillName(PhxLuaRuntime.LFunction callback, string objName)
 	{
-		
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnObjectKillName, callback, objName.ToLower());
 	}
 	public static void OnObjectKillTeam(PhxLuaRuntime.LFunction callback, int teamIdx)
 	{
@@ -1187,7 +1192,7 @@ public static class PhxLuaAPI
 	}
 	public static void OnObjectRespawnName(PhxLuaRuntime.LFunction callback, string objName)
 	{
-		
+		PhxLuaEvents.Register(PhxLuaEvents.Event.OnObjectRespawnName, callback, objName.ToLower());		
 	}
 
 	public static void OnObjectRepairName(PhxLuaRuntime.LFunction callback, string objName)
@@ -1229,6 +1234,8 @@ public static class PhxLuaEvents
 		OnFinishCaptureName,
 		OnFinishCaptureTeam,
 		OnFinishNeutralize,
+		OnObjectKillName,
+		OnObjectRespawnName,
 	}
 
 	/// <summary>
@@ -1320,6 +1327,10 @@ public static class PhxLuaEvents
 				callbacks[i].Invoke(eventArgs);
 				Debug.Log($"Invoked Lua callback for '{ev}'");
 			}
+		}
+		else 
+		{
+			Debug.Log($"Failed to find callback for '{ev}'");
 		}
 	}
 
