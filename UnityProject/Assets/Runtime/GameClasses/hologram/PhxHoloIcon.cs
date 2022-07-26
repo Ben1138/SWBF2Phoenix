@@ -79,4 +79,16 @@ public class PhxHoloIcon : PhxInstance<PhxHoloIcon.ClassProperties>, IPhxTickabl
         }
         renderer.materials = mats;
     }
+
+    public void Hide()
+    {
+        if(obj!=null)
+            obj.gameObject.SetActive(false);
+    }
+
+    public void Show()
+    {
+        if (obj != null)
+            obj.gameObject.SetActive(true);
+    }
 }
