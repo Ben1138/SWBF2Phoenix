@@ -13,7 +13,7 @@ This project aims for full compatibility with the vanilla game files, and as bes
 ## Windows
 ### Installation Requirements
 * Git. Must be either included in PATH or installed with Git Bash.
-* Visual Studio 2019 with the following:
+* Visual Studio 2022 with the following:
     * Workloads:
         * .NET desktop development
         * Desktop development with C++
