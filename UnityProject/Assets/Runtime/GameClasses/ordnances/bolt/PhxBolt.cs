@@ -95,6 +95,11 @@ public class PhxBolt : PhxOrdnance
 
     void OnCollisionEnter(Collision coll)
     {
+        if (coll.rigidbody != null)
+        {
+            ((IPhxDamageableInstance) coll.rigidbody.gameObject.GetComponent<PhxInstance>())?.AddDamage(100f);
+        }
+
         if (gameObject.activeSelf)
         {
             OnHit?.Invoke(this, coll);
