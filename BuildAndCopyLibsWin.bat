@@ -78,12 +78,12 @@ cmake --build "LibSWBF2/LibSWBF2/build" --target ALL_BUILD --parallel --clean-fi
 
 rem Copy built binaries to Unity project
 copy "LibSWBF2\LibSWBF2\build\%mode%\LibSWBF2.dll" "UnityProject\Assets\Lib\LibSWBF2.dll" /Y
-copy "LibSWBF2\LibSWBF2.NET\bin\x64\%mode%\LibSWBF2.NET.dll" "UnityProject\Assets\Lib\LibSWBF2.NET.dll" /Y
+copy "LibSWBF2\LibSWBF2.NET\bin\x64\%mode%\netstandard2.0\LibSWBF2.NET.dll" "UnityProject\Assets\Lib\LibSWBF2.NET.dll" /Y
 copy "lua5.0-swbf2-x64\bin\x64\%mode%\lua50-swbf2-x64.dll" "UnityProject\Assets\Lib\lua50-swbf2-x64.dll" /Y
 
 rem Copy debug database when in Debug mode, delete it otherwise
 if '%mode%'=='Debug' (
-    copy "LibSWBF2\LibSWBF2.NET\bin\x64\%mode%\LibSWBF2.NET.pdb" "UnityProject\Assets\Lib\LibSWBF2.NET.pdb" /Y
+    copy "LibSWBF2\LibSWBF2.NET\bin\x64\%mode%\netstandard2.0\LibSWBF2.NET.pdb" "UnityProject\Assets\Lib\LibSWBF2.NET.pdb" /Y
 ) else (
     rem Delete file without error message (in case it doesn't exist)
     del "UnityProject\Assets\Lib\LibSWBF2.NET.pdb" 2>nul
