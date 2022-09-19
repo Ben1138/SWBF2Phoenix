@@ -419,6 +419,11 @@ public static class PhxLuaAPI
 		
 	}
 
+	public static void SetStayInTurrets(int toggle)
+    {
+
+    }
+
 	public static void SetHeroClass(int teamIdx, string className)
 	{
 		MT.SetHeroClass(teamIdx, className);
@@ -1173,6 +1178,10 @@ public static class PhxLuaAPI
 		// callback paramters:
 		// - postPtr
 	}
+	public static void OnObjectKill(PhxLuaRuntime.LFunction callback)
+    {
+
+    }
 	public static void OnObjectKillName(PhxLuaRuntime.LFunction callback, string objName)
 	{
 		PhxLuaEvents.Register(PhxLuaEvents.Event.OnObjectKillName, callback, objName.ToLower());
@@ -1189,6 +1198,11 @@ public static class PhxLuaAPI
 	{
 		PhxLuaEvents.Register(PhxLuaEvents.Event.OnObjectRespawnName, callback, objName.ToLower());		
 	}
+
+	public static void OnObjectRepair(PhxLuaRuntime.LFunction callback)
+    {
+
+    }
 
 	public static void OnObjectRepairName(PhxLuaRuntime.LFunction callback, string objName)
 	{
