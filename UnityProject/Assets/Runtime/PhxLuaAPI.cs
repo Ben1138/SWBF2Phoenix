@@ -68,6 +68,36 @@ public static class PhxLuaAPI
 		return 0;
 	}
 
+	public static void ScriptCB_SetAssaultScoreLimit()
+    {
+
+    }	
+
+	public static int ScriptCB_GetHuntMaxTimeLimit()
+    {
+		return 0;
+    }
+
+	public static void ScriptCB_ShowHuntScoreLimit(int unkwn1)
+    {
+
+    }
+
+	public static int ScriptCB_GetHuntScoreLimit()
+    {
+		return 0;
+    }
+
+	public static void ScriptCB_SetUberScoreLimit(int limit)
+    {
+
+    }
+
+	public static int ScriptCB_GetUberScoreLimit()
+    {
+		return 0;
+    }
+
 	public static bool ScriptCB_IsMissionSetupSaved()
 	{
 		// I think this is the "galactic conquest" special items setup (e.g. sabotage, extra health, ...)
@@ -460,6 +490,11 @@ public static class PhxLuaAPI
 	{
 		MT.SetTeamName(teamIdx, name);
 	}
+
+	public static void SetTeamPoints(int teamIdx, int points)
+    {
+
+    }
 
 	public static void SetUnitCount(int teamIdx, int numUnits)
 	{
